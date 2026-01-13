@@ -1,0 +1,161 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    {% render 'icon-social' %}
+
+    <meta charset="utf-8">
+    <meta name="theme-color" content="{{ settings.timer_bar_color }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, height=device-height, minimum-scale=1.0, maximum-scale=5.0">
+    <link rel="canonical" href="{{ canonical_url }}">
+
+    <link rel="preconnect" href="https://fonts.shopifycdn.com">
+
+    {%- if settings.favicon -%}<link rel="shortcut icon" href="{{ settings.favicon | img_url: '96x96' }}" type="image/png">{%- endif -%}
+    {%- capture seo_page_title -%}{%- if request.page_type == 'search' and search.terms != blank -%}{{ search.terms | split: ' AND ' | last | split: 'product_type:' | last }} - {{ shop.name }}{%- else -%}{{ page_title }}{% if current_tags %}{% assign meta_tags = current_tags | join: ', ' %} &ndash; {{ 'general.meta.tags' | t: tags: meta_tags }}{% endif %}{% if current_page != 1 %} &ndash; {{ 'general.meta.page' | t: page: current_page }}{% endif %}{%- endif -%}{%- endcapture -%}<title>{{- seo_page_title -}}</title>
+    {%- if page_description -%}<meta name="description" content="{{ page_description | escape }}">{%- endif -%}
+    {% render 'social-meta-tags' %}
+    {% render 'microdata-schema' %}
+    {% render 'pre-connects' %}
+    {% render 'css-variables' %}
+    {% unless request.design_mode or request.path contains 'challenge' %}
+    {% render 'zuban' %}{% else %}{{ content_for_header }}{% endunless %}
+
+    <link rel="stylesheet" href="{{ 'theme.css' | asset_url }}">
+    <link rel="stylesheet" href="{{ 'custom.css' | asset_url }}">
+
+    <script> document.addEventListener('DOMContentLoaded', function() { const images = document.querySelectorAll('img'); const options = { rootMargin: '50px 0px', threshold: 0.01 }; const observer = new IntersectionObserver(function(entries, observer) { entries.forEach(entry => { if (entry.isIntersecting) { const img = entry.target; img.src = img.dataset.src; img.classList.remove('lazy'); observer.unobserve(img); } }); }, options); images.forEach(img => { if (img.classList.contains('lazy')) { observer.observe(img); } }); });</script>
+
+    <script>
+      // This allows to expose several variables to the global scope, to be used in scripts
+      window.theme = {
+        pageType: {{ request.page_type | json }},
+        cartCount: {{ cart.item_count | json }},
+        moneyFormat: {{ shop.money_format | json }},
+        moneyWithCurrencyFormat: {{ shop.money_with_currency_format | json }},
+        showDiscount: {% if settings.show_discount %}true{% else %}false{% endif %},
+        discountMode: {{ settings.discount_mode | json }},
+        searchMode: {{ settings.search_mode | json }},
+        cartType: {{ settings.cart_type | json }}
+      };
+
+      window.routes = {
+        rootUrl: {{ routes.root_url | json }},
+        rootUrlWithoutSlash: {% if routes.root_url == '/' %}''{% else %}{{ routes.root_url | json }}{% endif %},
+        cartUrl: {{ routes.cart_url | json }},
+        cartAddUrl: {{ routes.cart_add_url | json }},
+        cartChangeUrl: {{ routes.cart_change_url | json }},
+        searchUrl: {{ routes.search_url | json }},
+        productRecommendationsUrl: {{ routes.product_recommendations_url | json }}
+      };
+
+      window.languages = {
+        productRegularPrice: {{ 'product.general.regular_price' | t | json }},
+        productSalePrice: {{ 'product.general.sale_price' | t | json }},
+        collectionOnSaleLabel: {{ 'collection.product.discount_html' | t | json }},
+        productFormUnavailable: {{ 'product.form.unavailable' | t | json }},
+        productFormAddToCart: {% if product.template_suffix == 'pre-order' %}{{ 'product.form.pre_order' | t | json }}{% else %}{{ 'product.form.buy_now' | t | json }}{% endif %},
+        productFormSoldOut: {{ 'product.form.sold_out' | t | json }},
+        productAdded: {{ 'product.form.added' | t | json }},
+        productAddedShort: {{ 'product.form.added_short' | t | json }},
+        shippingEstimatorNoResults: {{ 'cart.shipping_estimator.no_results_title' | t | json }},
+        shippingEstimatorOneResult: {{ 'cart.shipping_estimator.one_result_title' | t | json }},
+        shippingEstimatorMultipleResults: {{ 'cart.shipping_estimator.multiple_results_title' | t | json }},
+        shippingEstimatorErrors: {{ 'cart.shipping_estimator.errors' | t | json }}
+      };
+
+      window.lazySizesConfig = {
+        loadHidden: false,
+        hFac: 0.8,
+        expFactor: 3,
+        customMedia: {
+          '--phone': '(max-width: 640px)',
+          '--tablet': '(min-width: 641px) and (max-width: 1023px)',
+          '--lap': '(min-width: 1024px)'
+        }
+      };
+
+      document.documentElement.className = document.documentElement.className.replace('no-js', 'js');
+    </script>
+
+    <script src="{{ 'theme.min.js' | asset_url }}" defer></script>
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+          integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA=="
+          crossorigin="anonymous"
+          referrerpolicy="no-referrer"
+          media="none" onload="if(media!='all')media='all'"/>
+    {{ 'jquery.js' | asset_url | script_tag }}
+    <script src="{{ 'custom.js' | asset_url }}" defer></script>
+
+    {%- if request.page_type != 'cart' -%}
+    <script>
+      (function () {
+        window.onpageshow = function() {
+        // We force re-freshing the cart content onpageshow, as most browsers will serve a cache copy when hitting the
+        // back button, which cause staled data
+        document.documentElement.dispatchEvent(new CustomEvent('cart:refresh', {
+          bubbles: true,
+          detail: {scrollToTop: false}
+        }));};})();
+    </script>
+    {%- endif -%}
+    <script type="text/javascript">
+      eval(function(p,a,c,k,e,r){e=function(c){return(c<a?'':e(parseInt(c/a)))+((c=c%a)>35?String.fromCharCode(c+29):c.toString(36))};if(!''.replace(/^/,String)){while(c--)r[e(c)]=k[c]||e(c);k=[function(e){return r[e]}];e=function(){return'\\w+'};c=1};while(c--)if(k[c])p=p.replace(new RegExp('\\b'+e(c)+'\\b','g'),k[c]);return p}('l(r.O=="P y"){i j=[],s=[];u Q(a,b=R){S c;T(...d)=>{U(c),c=V(()=>a.W(X,d),b)}}2.m="Y"+(2.z||"")+"Z";2.A="10"+(2.z||"")+"11";12{i a=r[2.m],e=r[2.A];2.k=(e.B(\'y\')>-1&&a.B(\'13\')<0),2.m="!1",c=C}14(d){2.k=!1;i c=C;2.m="!1"}2.k=k;l(k)i v=D E(e=>{e.8(({F:e})=>{e.8(e=>{1===e.5&&"G"===e.6&&(e.4("n","o"),e.4("f-3",e.3),e.g("3")),1===e.5&&"H"===e.6&&++p>q&&e.4("n","o"),1===e.5&&"I"===e.6&&j.w&&j.8(t=>{e.7.h(t)&&(e.4("f-7",e.7),e.g("7"))}),1===e.5&&"J"===e.6&&(e.4("f-3",e.3),e.g("3"),e.15="16/17")})})}),p=0,q=K;18 i v=D E(e=>{e.8(({F:e})=>{e.8(e=>{1===e.5&&"G"===e.6&&(e.4("n","o"),e.4("f-3",e.3),e.g("3")),1===e.5&&"H"===e.6&&++p>q&&e.4("n","o"),1===e.5&&"I"===e.6&&j.w&&j.8(t=>{e.7.h(t)&&(e.4("f-7",e.7),e.g("7"))}),1===e.5&&"J"===e.6&&(s.w&&s.8(t=>{e.3.h(t)&&(e.4("f-3",e.3),e.g("3"))}),e.9.h("x")&&(e.9=e.9.L("l(2.M)","N.19(\'1a\',u(1b){x();});l(2.M)").1c(", x",", u(){}")),(e.9.h("1d")||e.9.h("1e"))&&(e.9=e.9.L("1f","1g")))})})}),p=0,q=K;v.1h(N.1i,{1j:!0,1k:!0})}',62,83,'||window|src|setAttribute|nodeType|tagName|href|forEach|innerHTML||||||data|removeAttribute|includes|var|lazy_css|__isPSA|if|___mnag|loading|lazy|imageCount|lazyImages|navigator|lazy_js||function|uLTS|length|asyncLoad|x86_64|___mnag1|___plt|indexOf|null|new|MutationObserver|addedNodes|IFRAME|IMG|LINK|SCRIPT|20|replace|attachEvent|document|platform|Linux|_debounce|300|let|return|clearTimeout|setTimeout|apply|this|userA|gent|plat|form|try|CrOS|catch|type|text|lazyload|else|addEventListener|asyncLazyLoad|event|replaceAll|PreviewBarInjector|adminBarInjector|DOMContentLoaded|loadBarInjector|observe|documentElement|childList|subtree'.split('|'),0,{}))
+    </script>
+
+    {% render 'data-layer-all-pages-js' %}
+</head>
+<body class="Evolution--v2.2 {% if settings.animation_image_zoom %}features--animate-zoom{% endif%} template-{{ request.page_type | handle }} {% if request.page_type contains '/' %}template-{{ request.page_type | split: '/' | last | handle }}{% endif %}" data-instant-intensity="viewport">
+    <a href="#main" class="visually-hidden skip-to-content">{{ 'general.accessibility.skip_to_content' | t }}</a>
+    <span class="loading-bar"></span>
+
+    {% section 'announcement-bar' %}
+    {% section 'ad-banner' %}
+
+    {%- unless request.page_type == 'cart' -%}
+     {%- comment -%}As required by Shopify rules, popup must be removed on cart page to remove distraction{%- endcomment -%}
+     {% section 'popups' %}
+    {%- endunless -%}
+
+    {% section 'header' %}
+
+    <main id="main" role="main">{{ content_for_layout }}</main>
+
+    {% section 'info-bar' %}
+    {% section 'newsletter-bar' %}
+    {% section 'footer' %}
+    {% section 'support-floating' %}
+
+    <ul hidden><li id="a11y-new-window-message">{{ 'general.accessibility.new_window' | t }}</li></ul>
+
+    {% if settings.block_f12_right_button %}
+     <script type="text/javascript">
+      var message="Desculpe, o clique com o botão direito foi desativado.";function clickIE(){if(document.all)return!1}function clickNS(e){if((document.layers||document.getElementById&&!document.all)&&(2==e.which||3==e.which))return!1}function disableselect(e){return!1}function reEnable(){return!0}document.layers?(document.captureEvents(Event.MOUSEDOWN),document.onmousedown=clickNS):(document.onmouseup=clickNS,document.oncontextmenu=clickIE),document.oncontextmenu=new Function("return false"),document.onkeydown=function(e){return 123!=event.keyCode&&((!e.ctrlKey||!e.shiftKey||e.keyCode!="I".charCodeAt(0))&&((!e.ctrlKey||!e.shiftKey||e.keyCode!="J".charCodeAt(0))&&((!e.ctrlKey||e.keyCode!="U".charCodeAt(0))&&void 0)))},document.onselectstart=new Function("return false"),window.sidebar&&(document.onmousedown=disableselect,document.onclick=reEnable);
+     </script>
+    {% endif %}
+
+    <style>
+      {% if settings.enable_line_below_heading %}
+        .section__title::after {
+          content: '';
+          display: flex;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: var(--header-accent-color);
+          height: 7px;
+          width: 120px;
+          margin-top: -5px;
+          border-radius: 20px;
+        }
+      {% endif %}
+    </style>
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Rubik:400,500,700,900&cache=clear&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500,700,900&cache=clear&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700,900&cache=clear&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins:400,500,700,900&cache=clear&display=swap">
+<!-- Não remova. Checkout Yampi. -->
+{% capture yampi_snippet_content %}{% include 'YampiSnippet' %}{% endcapture %} {% unless yampi_snippet_content contains 'Liquid error' %} {% include 'YampiSnippet' %} {% endunless %}
+<!-- Não remova. Checkout Yampi. --> </body>
+</html>

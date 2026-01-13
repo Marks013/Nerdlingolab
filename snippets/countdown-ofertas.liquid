@@ -1,0 +1,72 @@
+<ul class="{{ section.id }}-countdown-ofertas">
+    <li>
+        <span id="{{ section.id }}-dias" class="tempo-a"></span>
+        <span class="tempo-b">dias</span>
+    </li>
+
+    <li>
+        <span id="{{ section.id }}-hrs" class="tempo-a"></span>
+        <span class="tempo-b">hrs</span>
+    </li>
+
+    <strong>:</strong>
+
+    <li>
+        <span id="{{ section.id }}-min" class="tempo-a" style=""></span>
+        <span class="tempo-b">min</span>
+    </li>
+
+    <strong>:</strong>
+
+    <li>
+        <span id="{{ section.id }}-seg" class="tempo-a"></span>
+        <span class="tempo-b" style="">seg</span>
+    </li>
+</ul>
+
+<script defer="defer">
+    function start() {
+        var tempo = new Date('{{ collection.metafields.ultimate.data_final_oferta }}').getTime();
+
+        tempo = new Date(tempo + 24 * 60 * 60 * 1000 + 10800000);
+
+        var c = setInterval(function () {
+
+            var agora = new Date().getTime();
+            var distancia = tempo - agora;
+
+            var dias = Math.floor(distancia / ((1000 * 60 * 60 * 24)));
+            var hrs = Math.floor((distancia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            var min = Math.floor((distancia % (1000 * 60 * 60)) / (1000 * 60));
+            var seg = Math.floor((distancia % (1000 * 60)) / 1000);
+
+            var divDias = document.getElementById('{{ section.id }}' + '-dias');
+            var divHrs = document.getElementById('{{ section.id }}' + '-hrs');
+            var divMin = document.getElementById('{{ section.id }}' + '-min');
+            var divSeg = document.getElementById('{{ section.id }}' + '-seg');
+
+            if(divDias) {
+                divDias.innerHTML = dias;
+            }
+            if(divHrs) {
+                divHrs.innerHTML = hrs;
+            }
+            if(divMin) {
+                divMin.innerHTML = min;
+            }
+            if(divSeg) {
+                divSeg.innerHTML = seg;
+            }
+
+            if (distancia < 0) {
+                clearInterval(c);
+                document.getElementById('shopify-section-'+'{{ section.id }}').style.display = "none";
+            }
+        }, 1000);
+    }
+
+    document.addEventListener('shopify:section:load', function () {
+        start();
+    });
+    start();
+</script>

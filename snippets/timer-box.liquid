@@ -1,0 +1,66 @@
+{%- assign savings = selected_variant.compare_at_price | minus: selected_variant.price | times: 100.0 | divided_by: selected_variant.compare_at_price | round | append: '%' -%}
+
+<div class="evolution_countdown" style="margin-top: {{ block.settings.margin_top }}px; margin-bottom: {{ block.settings.margin_bottom }}px;">
+    <div>
+        <div class="countdown-heading">{{ block.settings.timer-box-title }}</div>
+        <div class="countdown-subheading">{{ 'product.general.take_advantage' | t }} <br><span class="percent">{{ savings }}</span> {{ 'product.general.discount' | t }}</div>
+    </div>
+    <div class="countdown-timer center">
+        <div class="timediv center" id="dias"></div>
+        <div class="sep "><span> </span></div>
+        <div class="timediv center" id="hrs"></div>
+        <div class="sep center "><span>:</span></div>
+        <div class="timediv center" id="min"></div>
+        <div class="sep center "><span>:</span></div>
+        <div class="timediv center" id="sec"></div>
+    </div>
+</div>
+
+<style>
+    .evolution_countdown {
+        background-color: {{ block.settings.background_color }};
+        color: {{ block.settings.text_color }};
+    }
+
+    .evolution_countdown .timediv {
+        background-color: {{ block.settings.background_box_time }};
+    }
+</style>
+
+<script defer="defer">
+    function start() {
+        var tempo = new Date('{{ product.metafields.ultimate.data_cronometro_oferta }}').getTime();
+        tempo = new Date(tempo + 24 * 60 * 60 * 1000 + 10800000);
+
+        var c = setInterval(function () {
+
+            var agora = new Date().getTime();
+            var distancia = tempo - agora;
+
+            var dias = Math.floor(distancia / ((1000 * 60 * 60 * 24)));
+            var horas = Math.floor((distancia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            var minutos = Math.floor((distancia % (1000 * 60 * 60)) / (1000 * 60));
+            var segundos = Math.floor((distancia % (1000 * 60)) / 1000);
+
+            document.getElementById("dias").innerHTML = "<span style='font-weight: 600; font-size: 20px;'>"+dias+"</span>" + "<br> <span class='subheading'>{{ 'product.general.days' | t }}</span>";
+            document.getElementById("hrs").innerHTML = "<span style='font-weight: 600; font-size: 20px;'>"+horas+"</span>" + "<br> <span class='subheading'>hrs</span>";
+            document.getElementById("min").innerHTML = "<span style='font-weight: 600; font-size: 20px;'>"+minutos+"</span>" + "<br> <span class='subheading'>min</span>";
+            document.getElementById("sec").innerHTML = "<span style='font-weight: 600; font-size: 20px;'>"+segundos+"</span>" + "<br> <span class='subheading'>{{ 'product.general.sec' | t }}</span>";
+
+            var cronometro = document.querySelector('.evolution_countdown');
+            if(cronometro.style.display !== 'block') {
+                cronometro.style.display = 'block';
+            }
+
+            if (distancia < 0) {
+                clearInterval(c);
+                cronometro.style.display = 'none';
+            }
+        }, 1000);
+    }
+
+    document.addEventListener('shopify:section:load', function (event) {
+        start();
+    });
+    start();
+</script>

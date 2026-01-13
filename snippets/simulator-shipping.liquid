@@ -1,0 +1,143 @@
+<div id="simulator-shipping"
+     style="margin-top: {{ block.settings.margin_top }}px; margin-bottom: {{ block.settings.margin_bottom }}px;">
+    <strong>{{ block.settings.title_simulator_ship }}</strong>
+
+    <div class="ss_form">
+        <input name="cep" class="input-small input-cep form__field form__field--text"
+               id="inputCep"
+               placeholder="{{ 'product.general.type_cep' | t }}"
+               maxlength="9" onkeypress="$(this).mask('00000-000');" onchange="$(this).mask('00000-000');">
+        <button class="search_zipcode"
+                style="background: {{ block.settings.fundobotaoconsultar }}">{{ 'product.general.consult' | t }}</button>
+    </div>
+
+    <div class="sr_title">
+        <i>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path fill-rule="nonzero"
+                      d="m 14.837018,10.825607 c 0.784807,-0.784807 1.178381,-1.7312599 1.178381,-2.83936 0,-1.1081006 -0.393574,-2.054554 -1.176039,-2.8393606 A 3.8701504,3.8701504 0 0 0 12,3.9708497 c -1.110442,0 -2.0568953,0.3912301 -2.8393601,1.1760367 A 3.8701504,3.8701504 0 0 0 7.9822591,7.986247 c 0,1.1081001 0.3935742,2.054553 1.1783808,2.83936 0.7824648,0.784807 1.7289181,1.176039 2.8393601,1.176039 1.1081,0 2.054553,-0.391232 2.83936,-1.176039 z m 5.196121,-2.83936 c 0,1.1385546 -0.17336,2.075639 -0.515397,2.808905 L 13.806226,22.937399 A 1.8905638,1.8905638 0 0 1 13.051874,23.75266 1.9749012,1.9749012 0 0 1 12.002342,24.050185 2.0568959,2.0568959 0 0 1 10.934068,23.75266 1.8202826,1.8202826 0 0 1 10.212514,22.937399 L 4.4845989,10.795152 C 4.140221,10.061886 3.9668609,9.1248016 3.9668609,7.9839053 c 0,-2.2162007 0.7848066,-4.1091073 2.3520768,-5.6763765 a 7.7379581,7.7379581 0 0 1 5.6834043,-2.35676384 c 2.2162,0 4.109106,0.7848066 5.678719,2.35441984 a 7.7379581,7.7379581 0 0 1 2.349734,5.6810622 z"
+                      fill="{{ block.settings.corlocalizacao }}"
+                      transform="translate(0)"></path>
+            </svg>
+        </i>
+        <span></span>
+    </div>
+
+    <ul></ul>
+
+    {% if block.settings.mostrarboxmelhorloja %}
+        <div id="melhorloja"
+             style="margin-top: 10px; background-color: #fafafa; padding: 10px 18px; border-radius: 7px; margin-bottom: 5px;">
+            <p style="color: {{ block.settings.cordescricao }}"
+               id="melhorloja-prazoenvio">{{ block.settings.prazoenvio }}</p>
+            <p id="melhorloja-infoadicional">{{ block.settings.infoadicional }}</p>
+
+            <div id="melhorloja-lojadados">
+                <img src="{{ settings.favicon | img_url: '50x50' }}"
+                     alt="{{ settings.favicon.alt | escape }}">
+
+                <div id="melhorloja-infoloja">
+                    <p id="melhorloja-lojadados-nomeloja">
+                        {{ block.settings.nomeloja }}
+                        <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
+                             id="fi_7641727">
+                            <g id="Layer_2" data-name="Layer 2">
+                                <path d="m21.187 10.007a3.457 3.457 0 0 1 -.864-.712 3.378 3.378 0 0 1 .277-1.141c.291-.821.62-1.751.092-2.474s-1.525-.7-2.4-.68a3.422 3.422 0 0 1 -1.155-.078 3.369 3.369 0 0 1 -.425-1.063c-.248-.845-.531-1.8-1.4-2.086-.838-.27-1.614.324-2.3.846a3.285 3.285 0 0 1 -1.012.631 3.285 3.285 0 0 1 -1.023-.631c-.684-.519-1.457-1.119-2.299-.845-.867.282-1.15 1.24-1.4 2.085a3.418 3.418 0 0 1 -.421 1.061 3.482 3.482 0 0 1 -1.157.08c-.878-.024-1.867-.05-2.4.68s-.2 1.653.092 2.473a3.336 3.336 0 0 1 .281 1.141 3.449 3.449 0 0 1 -.863.713c-.732.5-1.563 1.069-1.563 1.993s.831 1.491 1.563 1.993a3.449 3.449 0 0 1 .863.712 3.335 3.335 0 0 1 -.273 1.142c-.29.82-.618 1.75-.091 2.473s1.521.7 2.4.68a3.426 3.426 0 0 1 1.156.078 3.4 3.4 0 0 1 .424 1.063c.248.845.531 1.8 1.4 2.086a1.424 1.424 0 0 0 .431.068 3.382 3.382 0 0 0 1.868-.914 3.285 3.285 0 0 1 1.012-.631 3.285 3.285 0 0 1 1.023.631c.685.523 1.461 1.12 2.3.845.867-.282 1.15-1.24 1.4-2.084a3.388 3.388 0 0 1 .424-1.062 3.425 3.425 0 0 1 1.153-.08c.878.021 1.867.05 2.4-.68s.2-1.653-.092-2.474a3.38 3.38 0 0 1 -.281-1.139 3.436 3.436 0 0 1 .864-.713c.732-.5 1.563-1.07 1.563-1.994s-.834-1.492-1.567-1.993z"
+                                      fill="#49adf4"></path>
+                                <path d="m11 14.75a.745.745 0 0 1 -.53-.22l-2-2a.75.75 0 0 1 1.06-1.06l1.54 1.54 3.48-2.61a.75.75 0 0 1 .9 1.2l-4 3a.751.751 0 0 1 -.45.15z"
+                                      fill="#fff"></path>
+                            </g>
+                        </svg>
+                    </p>
+                    <p id="melhorloja-lojadados-enderecoloja">{{ block.settings.enderecoloja }}</p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+
+<script>
+    $(document).ready(function () {
+        $('.input-cep').on('keyup change blur', function (e) {
+            if (e.type === 'blur' && $(this).val().length !== 9) {
+                $(this).val("");
+            }
+
+            var cep = $(this).val();
+            var cepAntes = $(this).data('val');
+
+            if (cepAntes === cep) {
+                return;
+            }
+
+            $(this).data('val', cep);
+        });
+
+        $('.search_zipcode').click(function () {
+            var cep = $('.input-cep').val();
+
+            if (cep.length !== 9) {
+                return;
+            }
+
+            $(this).prop('disabled', true);
+
+            cep = cep.replace(/[^0-9]/, '');
+
+            var cepnaoencontrado = '<li style="background-color: rgb(254, 246, 247); width: 100%; padding: 12px 16px; display: flex; -webkit-box-align: center; align-items: center; overflow: hidden; height: 100%;"><svg viewBox="0 0 24 24" style="display: flex; width: 20px; height: 20px; fill: rgb(179, 0, 34); margin-right: 10px;"><path fill-rule="nonzero" d="M10 0C4.47 0 0 4.47 0 10C0 15.53 4.47 20 10 20C15.53 20 20 15.53 20 10C20 4.47 15.53 0 10 0ZM14.3 14.3C13.91 14.69 13.28 14.69 12.89 14.3L10 11.41L7.11 14.3C6.72 14.69 6.09 14.69 5.7 14.3C5.31 13.91 5.31 13.28 5.7 12.89L8.59 10L5.7 7.11C5.31 6.72 5.31 6.09 5.7 5.7C6.09 5.31 6.72 5.31 7.11 5.7L10 8.59L12.89 5.7C13.28 5.31 13.91 5.31 14.3 5.7C14.69 6.09 14.69 6.72 14.3 7.11L11.41 10L14.3 12.89C14.68 13.27 14.68 13.91 14.3 14.3Z" fill="" transform="translate(0)"></path></svg><p style="font-size: 0.875rem;line-height: 1.5;color: rgb(179, 0, 34);">Desculpe! No momento este produto não pode ser entregue na região informada.</p></li>';
+            var fretegratis = `<li><span class="ship-name">{{ settings.free_ship_name }}</span><span class="ship-interval">{{ settings.free_ship_estimate }}</span><span class="ship-price">{{ settings.price_simulator_ship_1 }}</span></li>`;
+            var frete = `<li><span class="ship-name">{{ settings.name_simulator_ship }}</span><span class="ship-interval">{{ settings.estimate_simulator_ship }}</span><span class="ship-price">{{ settings.price_simulator_ship }}</span></li>`;
+
+            var separator = $('.card__separator');
+            var melhorloja = $('#melhorloja');
+            var divlocalizacao = $('#simulator-shipping .sr_title');
+            var localizacao = $('#simulator-shipping .sr_title span');
+            var fretes = $('#simulator-shipping ul');
+
+            divlocalizacao.css('display', 'none');
+
+            fretes.off().empty();
+            fretes.show();
+            fretes.addClass('loading');
+
+            $.ajax({
+                url: 'https://viacep.com.br/ws/' + cep + '/json/',
+                dataType: 'jsonp',
+                crossDomain: true,
+                contentType: 'application/json',
+                success: function (res) {
+                    if (res.erro) {
+                        fretes.append(cepnaoencontrado);
+                    } else {
+                        localizacao.text((res.logradouro !== '' ? res.logradouro + ', ' : '') + (res.bairro !== '' ? res.bairro + ' - ' : '') + res.localidade + ' - ' + res.uf);
+
+                        {% if settings.active_free_ship %}fretes.append(fretegratis);{% endif %}
+                        {% if settings.active_paid_ship %}fretes.append(frete);{% endif %}
+
+                        separator.css('display', 'block');
+                        melhorloja.css('display', 'block');
+                        divlocalizacao.css('display', 'flex');
+                    }
+
+                    $('.search_zipcode').prop('disabled', false);
+
+                    fretes.removeClass('loading');
+                }
+            });
+
+        });
+
+        function formatCEP(cep) {
+            cep = cep.replace(/\D/g, '');
+            cep = cep.replace(/^(\d{5})(\d)/, '$1-$2');
+            return cep;
+        }
+
+        var cepInput = document.getElementById('inputCep');
+
+        cepInput.addEventListener('input', function() {
+            this.value = formatCEP(this.value);
+        });
+    });
+</script>

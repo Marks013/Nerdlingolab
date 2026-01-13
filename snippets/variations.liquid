@@ -1,0 +1,120 @@
+   {% if product.available %}
+<div class="allOptions">
+    {% if product.options[0] %}
+      {% assign used = '' %}
+      <div class="itemHere">
+      <div class="product-form__option-info" for="select-one{{product.id}}">{{ product.options[0] }}</div>
+      <div class="block-swatch-list">
+        {% for variant in product.variants %}
+          {% unless used contains variant.option1 %}
+            <div class="block-swatch">
+            <input class="block-swatch__radio product-form__single-selector" type="radio" name="select-one{{product.id}}" id="select-one{{product.id}}-{{ forloop.index }}"
+            value="{{ variant.option1 }}" {% if forloop.first %}checked=""{% endif %} data-option-position="2">
+            <label onclick="letsDoThis{{product.id}}()" class="block-swatch__item" for="select-one{{product.id}}-{{ forloop.index }}" title="{{ variant.option1 }}">
+            <span class="block-swatch__item-text">{{ variant.option1 }}</span>
+            </label>
+            </div>
+            {% capture used %}
+              {{ used }}
+              {{ variant.option1 }}
+            {% endcapture %}
+          {% endunless %}
+        {% endfor %}
+      </div>
+      </div>
+    {% endif %}
+    {% if product.options[1] %}
+      {% assign used = '' %}  
+        <div class="itemHere">
+      <div class="product-form__option-info" for="select-two{{product.id}}">{{ product.options[1] }}</div>
+      <div class="block-swatch-list">
+        {% for variant in product.variants %}
+          {% unless used contains variant.option2 %}
+            <div class="block-swatch">
+            <input class="block-swatch__radio product-form__single-selector" type="radio" name="select-two{{product.id}}" id="select-two{{product.id}}-{{ forloop.index }}"
+            value="{{ variant.option2 }}" {% if forloop.first %}checked=""{% endif %} data-option-position="2">
+            <label onclick="letsDoThis{{product.id}}()" class="block-swatch__item" for="select-two{{product.id}}-{{ forloop.index }}" title="{{ variant.option2 }}">
+            <span class="block-swatch__item-text">{{ variant.option2 }}</span>
+            </label>
+            </div>
+            {% capture used %}
+              {{ used }}
+              {{ variant.option2 }}
+            {% endcapture %}
+          {% endunless %}
+        {% endfor %}
+      </div>
+      </div>
+    {% endif %}
+    {% if product.options[2] %}
+      {% assign used = '' %}  
+        <div class="itemHere">
+      <div class="product-form__option-info" for="select-three{{product.id}}">{{ product.options[2] }}</div>
+      <div class="block-swatch-list">
+        {% for variant in product.variants %}
+          {% unless used contains variant.option3 %}
+            <div class="block-swatch">
+            <input class="block-swatch__radio product-form__single-selector" type="radio" name="select-three{{product.id}}" id="select-three{{product.id}}-{{ forloop.index }}"
+            value="{{ variant.option3 }}" {% if forloop.first %}checked=""{% endif %} data-option-position="2">
+            <label onclick="letsDoThis{{product.id}}()" class="block-swatch__item" for="select-three{{product.id}}-{{ forloop.index }}" title="{{ variant.option3 }}">
+            <span class="block-swatch__item-text">{{ variant.option3 }}</span>
+            </label>
+            </div>
+            {% capture used %}
+              {{ used }}
+              {{ variant.option3 }}
+            {% endcapture %}
+          {% endunless %}
+        {% endfor %}
+      </div>
+      </div>
+    {% endif %}
+
+  <input type="hidden" name="id" id="product-select{{product.id}}" value="{{ product.variants.first.id }}"/>
+</div>
+<script>
+  function letsDoThis{{product.id}}() {
+setTimeout(letsDoThis{{product.id}}original,500);
+  }
+
+ function letsDoThis{{product.id}}original() {
+    {% if product.options[0] %}
+     // var opt1 = document.getElementById("select-one{{product.id}}").value;
+     var opt1 = document.querySelector("input[type='radio'][name='select-one{{product.id}}']:checked").value;
+    {% endif %}
+    {% if product.options[1] %}
+     // var opt2 = document.getElementById("select-two{{product.id}}").value;
+    var opt2 = document.querySelector("input[type='radio'][name='select-two{{product.id}}']:checked").value;
+    {% endif %}
+    {% if product.options[2] %}
+     // var opt3 = document.getElementById("select-three{{product.id}}").value;
+    var opt3 = document.querySelector("input[type='radio'][name='select-three{{product.id}}']:checked").value;
+    {% endif %}
+     var id = "";
+      {% for v in product.variants %}
+      if (
+        opt1 == "{{ v.option1 }}"{% if product.options[1] %} && opt2 == "{{ v.option2 }}"{% endif %}{% if product.options[2] %} && opt3 == "{{ v.option3 }}"{% endif %}
+      ) {
+        var id = {{ v.id }};
+        var price = "{{ v.price | money }}";
+        var comprice = "{{ v.compare_at_price | money }}";
+        var image = "{% if v.featured_image %}{{ v.featured_image | img_url: '300x' }}{% endif %}"
+      }
+    {% endfor %}
+    if (id != "") {
+      document.getElementById("product-select{{product.id}}").value = id; 
+
+      var wrapper = document.querySelector('.upsell{{ product.id }}');
+      wrapper.querySelector('span.comparePrice').innerHTML = comprice;
+      wrapper.querySelector('span.normalPrice').innerHTML = price;
+      if(image != "")
+      { 
+        wrapper.querySelector('img').src = image;
+      }
+      
+      } else {
+      document.getElementById("product-select{{product.id}}").value = ""; 
+    }
+  }
+</script>
+       {% endif %}

@@ -1,0 +1,45 @@
+<div class="mp_platinum" style="margin-top: {{ block.settings.margin_top }}px; margin-bottom: {{ block.settings.margin_bottom }}px;">
+    <div class="ui-seller-info">
+        <div class="ui-pdp-seller__reputation-info">
+            <ul class="ui-pdp-seller__list-description">
+                <li class="ui-pdp-seller__item-description">
+
+                    <strong class="ui-pdp-seller__sales-description">{{ product.selected_or_first_available_variant.inventory_quantity }}</strong>
+
+                    <div class="ui-pdp-seller__text-description">{{ 'product.general.orders_delivered' | t }}</div>
+                </li>
+                <li class="ui-pdp-seller__item-description">
+                    <strong aria-hidden="true" class="ui-pdp-seller__icon-description">
+                        <svg class="ui-pdp-icon ui-pdp-icon--message-positive ui-pdp-color--REP_SELLER_ATTENTION_GOOD" viewBox="0 0 29 24" xmlns="http://www.w3.org/2000/svg">
+                            <g fill-rule="evenodd" fill="none">
+                                <path d="M6.747 21.511l4.538-3.518h8.238c1.032 0 1.868-.98 1.868-2.19V3.21c0-1.21-.836-2.19-1.868-2.19H3.173c-1.032 0-1.869.98-1.869 2.19v14.077c0 .39.316.706.706.706H5.61v2.96a.706.706 0 0 0 1.138.558z" stroke-width="1.5" stroke="#333"></path>
+                                <g transform="translate(14 9)">
+                                    <circle cx="7.5" cy="7.5" r="7.5" fill="#39B54A"></circle>
+                                    <g stroke-linecap="round" stroke-width="1.059" stroke="#FFF"><path d="M3.75 7.5l2.445 2.445M6.25 9.89L11.14 5"></path></g>
+                                </g>
+                            </g>
+                        </svg>
+                    </strong>
+                    <div class="ui-pdp-seller__text-description">{{ 'product.general.good_service' | t }}</div>
+                </li>
+                <li class="ui-pdp-seller__item-description">
+                    <strong aria-hidden="true" class="ui-pdp-seller__icon-description">
+                        <svg class="ui-pdp-icon ui-pdp-icon--time-positive ui-pdp-color--REP_SELLER_DELIVERY_TIME_GOOD" viewBox="0 0 30 26" xmlns="http://www.w3.org/2000/svg">
+                            <g fill-rule="evenodd" fill="none">
+                                <g transform="translate(1 .02)" stroke="#333">
+                                    <ellipse cx="10.5" cy="13.714" rx="10.5" ry="10.286" stroke-width="1.286"></ellipse>
+                                    <path d="M19.107 13.714h-1.59M3.42 13.714H1.83M10.5 5.143v1.59M10.563 20.571v1.59M10.5.857v2.484M8.75.857h3.637M10.313 8.801v4.944H5.24" stroke-linecap="round" stroke-width="1.102"></path>
+                                </g>
+                                <g transform="translate(15 10.02)">
+                                    <circle cx="7.5" cy="7.5" r="7.5" fill="#39B54A"></circle>
+                                    <g stroke-linecap="round" stroke-width="1.059" stroke="#FFF"><path d="M3.75 7.5l2.445 2.445M6.25 9.89L11.14 5"></path></g>
+                                </g>
+                            </g>
+                        </svg>
+                    </strong>
+                    <div class="ui-pdp-seller__text-description">{{ 'product.general.deliver_products_on_time' | t }}</div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,24 @@
+{% assign heading = settings.headingUpsell %}
+{% assign back = settings.upsellsBack %}
+{% assign upsells = settings.upsells %}
+{% assign color = settings.upsellsColor %}
+
+{% assign itemsLeft = 0 %}
+ {% for product in upsells.products %}
+ {% if product.available %}
+ {% assign addIt = true %}{% for item in cart.items %}{% if item.product == product %}{% assign addIt = false %}{% endif %}{% endfor %}{% if addIt %}{% assign itemsLeft = itemsLeft | plus: 1 %}{% endif %}
+ {% endif %}
+{% endfor %}
+            
+{% if upsells != blank %}
+    <div class="upsellMobile items{{ itemsLeft }}" style="background:{{ back }};color:{{ color }};display:none">
+        <p class="title h4">{{ heading }}</p>
+        <div class="upsellProductsAll product-list">
+            {% for product in upsells.products %}
+                {% if product.available %}
+                    {% assign addIt = true %}{% for item in cart.items %}{% if item.product == product %}{% assign addIt = false %}{% endif %}{% endfor %}{% if addIt %}{% render 'upsell-item', show_add_to_cart: true, product: product %}{% endif %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+{% endif %} 

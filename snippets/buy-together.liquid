@@ -1,0 +1,230 @@
+{% assign frequently_handles = product.metafields.ultimate.compre_junto %}
+
+{% if frequently_handles %}
+
+    {% assign frequently_products = frequently_handles | split: "," %}
+
+    {% assign frequently_products_count = 1 %}
+
+    {% assign taxa_segunda_parcela = settings.taxa_segunda_parcela | divided_by: 100 | plus: 1 %}
+    {% assign taxa_terceira_parcela = settings.taxa_terceira_parcela | divided_by: 100 | plus: 1 %}
+    {% assign taxa_quarta_parcela = settings.taxa_quarta_parcela | divided_by: 100 | plus: 1 %}
+    {% assign taxa_quinta_parcela = settings.taxa_quinta_parcela | divided_by: 100 | plus: 1 %}
+    {% assign taxa_sexta_parcela = settings.taxa_sexta_parcela | divided_by: 100 | plus: 1 %}
+    {% assign taxa_setima_parcela = settings.taxa_setima_parcela | divided_by: 100 | plus: 1 %}
+    {% assign taxa_oitava_parcela = settings.taxa_oitava_parcela | divided_by: 100 | plus: 1 %}
+    {% assign taxa_nona_parcela = settings.taxa_nona_parcela | divided_by: 100 | plus: 1 %}
+    {% assign taxa_decima_parcela = settings.taxa_decima_parcela | divided_by: 100 | plus: 1 %}
+    {% assign taxa_decima_primeira_parcela = settings.taxa_decima_primeira_parcela | divided_by: 100 | plus: 1 %}
+    {% assign taxa_decima_segunda_parcela = settings.taxa_decima_segunda_parcela | divided_by: 100 | plus: 1 %}
+
+    <div id="buy-together"
+         style="margin-top: {{ block.settings.margin_top }}px; margin-bottom: {{ block.settings.margin_bottom }}px;">
+        <p class="buy-together-title">
+            {{ block.settings.title }}
+        </p>
+        <div class="buy-together-wrapper">
+            <div class="buy-together-main-product">
+                <div style="max-width: 100%; min-height: 0; height: 100%;">
+                    {%- assign primary_media = product.featured_media -%}
+
+                    {%- capture supported_sizes -%}{%- render 'image-size', sizes: '200,300,400,500,600,700,800', image: primary_media.preview_image -%}{%- endcapture -%}
+
+                    {%- assign image_url = primary_media | img_url: '1x1' | replace: '_1x1.', '_{width}x.' -%}
+
+                    <img class="buy-together-main-product-image image--fade-in lazyload" data-media-id="{{ primary_media.id }}"
+                         data-src="{{ image_url }}" data-sizes="auto" data-widths="[{{ supported_sizes }}]"
+                         alt="{{ primary_media.alt | escape }}">
+                </div>
+                <div class="buy-together-main-product-content">
+                    <p class="buy-together-main-product-name">{{ product.title }}</p>
+                    <p class="buy-together-main-product-price--compare"></p>
+                    <span class="buy-together-main-product-price"></span>
+                </div>
+            </div>
+            <p class="buy-together-plus">+</p>
+            <div class="buy-together-list">
+                {% for products in frequently_products %}
+
+                    {% assign product_handle = products | strip %}
+                    {% assign product_final = all_products[product_handle] %}
+
+                    {% if product_final.title != "" %}
+                        {% assign frequently_products_count = frequently_products_count | plus: 1 %}
+
+                        <div class="buy-together-item">
+                            <div class="buy-together-item-checkbox">
+                                <input type="checkbox" id="{{ product_final.handle }}" data-id="{{ product_final.variants.first.id }}">
+                                <label for="{{ product_final.handle }}"></label>
+                            </div>
+                            <div class="img-wrapper">
+                                <a target="_blank" href="{{ product_final.url }}">
+                                    <div style="max-width: 100%; min-height: 0; height: 100%;">
+                                        {%- assign primary_media = product_final.featured_image -%}
+
+                                        {%- capture supported_sizes -%}{%- render 'image-size', sizes: '200,300,400,500,600,700,800', image: primary_media.preview_image -%}{%- endcapture -%}
+
+                                        {%- assign image_url = primary_media | img_url: '1x1' | replace: '_1x1.', '_{width}x.' -%}
+
+                                        <img class="img-responsive center-block image--fade-in lazyload"
+                                             data-media-id="{{ primary_media.id }}" data-src="{{ image_url }}"
+                                             data-sizes="auto" data-widths="[{{ supported_sizes }}]"
+                                             alt="{{ primary_media.alt | escape }}">
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="b-t-content">
+                                <strong class="product-name">
+                                    <a href="{{ product_final.url }}">{{ product_final.title }}</a>
+                                </strong>
+                                <div class="bottom-content">
+                                    <p class="product-price--compare">{{ product_final.variants[0].compare_at_price | money }}</p>
+                                    <p class="product-price">{{ product_final.variants[0].price | money }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        <div class="buy-together-total-value">
+            <div class="total-price">
+                {{ 'product.general.amount' | t }}:<strong></strong>
+            </div>
+
+            {% if settings.show_installments %}
+                <div class="total-installment">
+                    ou 12x de<strong></strong>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            $(".product-form").each(function () {
+                $(this).on('click', '.botaocomprarjunto, .botaocomprarjunto-qtd', function (event) {
+                    event.stopImmediatePropagation();
+
+                    const addcarrinho = $(this).attr('id') === 'botaoaddcarrinho' ||
+                        !window.theme.botaoaddcarrinho;
+
+                    document.dispatchEvent(new CustomEvent('theme:loading:start'));
+
+                    const arraydeprodutos = [];
+
+                    let formulario = document.querySelector('form[action*="/cart/add"]');
+                    formulario = serialize(formulario);
+
+                    arraydeprodutos.push({
+                        id: formulario['id'],
+                        quantity: formulario['quantity']
+                    });
+
+                    $('.buy-together-list input').each(function () {
+                        if ($(this).prop("checked") === true) {
+                            arraydeprodutos.push({
+                                id: $(this).attr("data-id"),
+                                quantity: 1
+                            });
+                        }
+                    });
+
+                    const data = {
+                        items: arraydeprodutos
+                    };
+
+                    fetch("".concat(window.routes.cartAddUrl, ".js"), {
+                        body: JSON.stringify(data),
+                        credentials: 'same-origin',
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    }).then(function (response) {
+                        if (response.ok) {
+                            if(window.theme.cartType === 'drawer' && addcarrinho) {
+                                 document.dispatchEvent(new CustomEvent("theme:loading:end"));
+
+                                const productTemplateElement = document.querySelector('[data-section-id="product-template"]');
+
+                                if (productTemplateElement) {
+                                    productTemplateElement.dispatchEvent(new CustomEvent("product:added", {
+                                        bubbles: true,
+                                        detail: {
+                                            variant: arraydeprodutos[1],
+                                            quantity: 1
+                                        }
+                                    }));
+                                }
+                            } else {
+                                setTimeout(function () {
+                                    window.location.href = '/cart';
+                                }, 500);
+                            }
+                        }
+                    });
+                });
+            });
+
+            $('.block-swatch__radio, .variant-swatch__radio, .product-form__single-selector, .buy-together-list input').change(function () {
+                setTimeout(function () { comprejunto(); }, 150);
+            });
+
+            $(".options").each(function () {
+                $(this).on("click", function () {
+                    setTimeout(function () { comprejunto(); }, 150);
+                });
+            });
+
+            function comprejunto() {
+                $('.buy-together-main-product-price--compare').html($('#evolution-price-list .price-promotional-wrap span').text());
+                $('.buy-together-main-product-price').html($('#evolution-price-list .price-promotional-wrap strong').text());
+
+                let precoText = $('.buy-together-main-product-price').text();
+                let valorTotal;
+                let preco = precoText.match(/[\d.,]+/);
+
+                let languageCode = '{{ request.locale.iso_code }}';
+                let currencyCode =  window.Shopify.currency.active;
+
+                if(preco) {
+                    preco = parseFloat(preco[0].replace(',', '.'));
+                    valorTotal = parseFloat(preco);
+
+                    $('.buy-together-list input').each(function () {
+                        if ($(this).prop("checked") === true) {
+                            let precoCheckedText = $(this).parent('.buy-together-item-checkbox').parent().find('.b-t-content .product-price').text();
+                            let precoChecked = precoCheckedText.match(/[\d.,]+/);
+
+                            if(precoChecked) {
+                                precoChecked = parseFloat(precoChecked[0].replace(',', '.'));
+                                valorTotal += precoChecked;
+                            }
+                        }
+                    });
+                }
+
+                let calculo = ((valorTotal) * {{ taxa_decima_segunda_parcela }}) / 12;
+
+                $('.total-price strong').html(formatCurrency(valorTotal, languageCode, currencyCode));
+                $('.total-installment strong').html(formatCurrency(calculo, languageCode, currencyCode) {% if taxa_decima_segunda_parcela == 1 %} + ' sem juros' {% endif %});
+            }
+
+            function formatCurrency(value, languageCode, currencyCode) {
+                var formatter = new Intl.NumberFormat(languageCode, {
+                    style: 'currency',
+                    currency: currencyCode,
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                    useGrouping: true,
+                });
+
+                return formatter.format(value);
+            }
+
+            comprejunto();
+        });
+    </script>
+{% endif %}

@@ -1,0 +1,412 @@
+{%- if section.settings.show_supportfloating -%}
+    <section data-section-id="{{ section.id }}" data-section-type="support-floating">
+      <div class="support-floating" style="{%- if section.settings.button_position == 'left' -%}left: 15px;{%- else -%}right: 15px;{%- endif -%}">
+          <div class="support-button" onclick="openClose();">
+              {%- render 'icon', icon: 'support-message' -%}
+          </div>
+
+          <div class="support-popup" style="{%- if section.settings.button_position == 'right' -%}right: 0;{%- endif -%}">
+              <div class="support-header">
+                  <div class="support-close" onclick="openClose();">
+                      {%- render 'icon', icon: 'support-close' -%}
+                  </div>
+
+                  {%- render 'icon', icon: 'support-message' -%}
+
+                  <div class="support-header-b">
+                      <strong>{{ section.settings.title }}</strong>
+                      <span>{{ section.settings.description }}</span>
+                  </div>
+              </div>
+
+              <div class="support-content">
+                  {%- if section.blocks.size > 0 -%}
+                    <div class="service-content">
+                        {%- for block in section.blocks -%}
+                            {%- case block.type -%}
+
+                                {%- when 'ct' -%}
+                                    <div class="a-block ct">
+                                        <div class="title-contact">
+                                            {%- render 'icon', icon: 'support-phone' -%}
+                                            <span>{{ block.settings.ct_title }}:</span>
+                                        </div>
+                                        {%- if block.settings.ct_number != blank and block.settings.ct_service_area != blank -%}
+                                            <a href="tel:{{ block.settings.ct_ddi }}{{ block.settings.ct_number }}" target="_blank">
+                                                <div class="a-block-cont">
+                                                    <span>{{ block.settings.ct_number }}</span>
+                                                    <strong>{{ block.settings.ct_service_area }}</strong>
+                                                </div>
+                                            </a>
+                                        {%- endif -%}
+                                    </div>
+
+                                {%- when 'cw' -%}
+                                    <div class="a-block cw">
+                                        <div class="title-contact">
+                                            {%- render 'icon', icon: 'support-whatsapp' -%}
+                                            <span>{{ block.settings.cw_title }}:</span>
+                                        </div>
+
+                                        {%- if block.settings.show_contact -%}
+                                            <a href="https://wa.me/{{ block.settings.cw_ddi }}{{ block.settings.cw_number | remove: "(" | remove: ")" | remove: " " | remove: "-" }}?text={{ block.settings.cw_text }} {% if block.settings.cw_product_link %} > Link:%20{{ shop.url }}{{ product.url }}{% endif %}" target="_blank">
+                                                {%- if block.settings.cw_number != blank and block.settings.cw_attendant != blank -%}
+                                                    <div class="a-block-cont">
+                                                        <span>{{ block.settings.cw_number }}</span>
+                                                        <strong>{{ block.settings.cw_attendant }}</strong>
+                                                    </div>
+                                                {%- endif -%}
+                                            </a>
+                                        {%- endif -%}
+
+                                        {%- if block.settings.show_contact2 -%}
+                                            <a href="https://wa.me/{{ block.settings.cw_ddi2 }}{{ block.settings.cw_number2 | remove: "(" | remove: ")" | remove: " " | remove: "-" }}?text={{ block.settings.cw_text2 }} {% if block.settings.cw_product_link2 %} > Link:%20{{ shop.url }}{{ product.url }}{% endif %}" target="_blank">
+                                                {%- if block.settings.cw_number2 != blank and block.settings.cw_attendant2 != blank -%}
+                                                    <div class="a-block-cont">
+                                                        <span>{{ block.settings.cw_number2 }}</span>
+                                                        <strong>{{ block.settings.cw_attendant2 }}</strong>
+                                                    </div>
+                                                {%- endif -%}
+                                            </a>
+                                        {%- endif -%}
+                                    </div>
+
+                                {%- when 'ce' -%}
+                                    <div class="a-block ce">
+                                        <div class="title-contact">
+                                            {%- render 'icon', icon: 'support-email' -%}
+                                            <span>{{ block.settings.ce_title }}:</span>
+                                        </div>
+                                        {%- if block.settings.ce_email != blank -%}
+                                            <a target="_blank" href="mailto:{{ block.settings.ce_email }}">
+                                                <div class="a-block-cont">
+                                                    <span>{{ block.settings.ce_email }}</span>
+                                                </div>
+                                            </a>
+                                        {%- endif -%}
+                                    </div>
+
+                                {%- when 'ha' -%}
+                                    <div class="a-block ha">
+                                        <div class="title-contact">
+                                            {%- render 'icon', icon: 'support-opening-hours' -%}
+                                            <span>{{ block.settings.ha_title }}:</span>
+                                        </div>
+                                        <div class="a-block-cont">
+                                            <span>{{ block.settings.ha_description }}</span>
+                                        </div>
+                                    </div>
+
+                            {%- endcase -%}
+                        {%- endfor -%}
+                    </div>
+                  {%- endif -%}
+              </div>
+          </div>
+      </div>
+    </section>
+
+    <style>
+        .support-floating .support-button {
+            background: {{ section.settings.background_color }};
+        }
+
+        .support-floating .support-button svg {
+            fill: {{ section.settings.icon_color }};
+        }
+
+        .support-floating .support-header {
+            background: {{ section.settings.background_color }};
+        }
+
+        .support-floating .support-header-b {
+            color: {{ section.settings.text_color }};
+        }
+
+        .support-floating .support-content {
+            color: {{ section.settings.text_block_color }};
+        }
+
+        .support-floating .a-block .title-contact svg {
+            width: 14px;
+            height: 14px;
+            margin-right: 5px;
+            fill: {{ section.settings.icon_block_color }};
+        }
+
+        .support-floating .a-block .a-block-cont strong {
+            color: {{ section.settings.tag_block_color }};
+            border: 1px solid {{ section.settings.tag_block_color }};
+        }
+    </style>
+
+    <script type="text/javascript">
+      function openClose() {
+        $(".support-floating").toggleClass("support-show");
+      }
+    </script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Suporte flutuante",
+  "class": "overflow-hidden",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_supportfloating",
+      "label": "Mostrar suporte flutuante",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Título",
+      "default": "Precisa de ajuda?"
+    },
+    {
+      "type": "textarea",
+      "id": "description",
+      "label": "Descrição",
+      "default": "Fale com um de nossos atendentes"
+    },
+    {
+      "type": "select",
+      "id": "button_position",
+      "label": "Posição do botão",
+      "options": [
+        {
+          "value": "left",
+          "label": "Canto esquerdo"
+        },
+        {
+          "value": "right",
+          "label": "Canto direito"
+        }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "header",
+      "content": "Cores"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Cor do fundo / Botão",
+      "default": "#00b27a"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Cor do texto / Botão",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "icon_color",
+      "label": "Cor do ícone / Botão",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "text_block_color",
+      "label": "Cor dos textos",
+      "default": "#202020"
+    },
+    {
+      "type": "color",
+      "id": "icon_block_color",
+      "label": "Cor dos ícones",
+      "default": "#00b27a"
+    },
+    {
+      "type": "color",
+      "id": "tag_block_color",
+      "label": "Cor das etiquetas",
+      "default": "#00b27a"
+    }
+  ],
+  "blocks":[
+    {
+      "type": "ct",
+      "name": "Telefone",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "ct_title",
+          "label": "Título",
+          "default": "Telefone"
+        },
+        {
+          "type": "header",
+          "content": "Contato 1"
+        },
+        {
+          "type": "text",
+          "id": "ct_ddi",
+          "label": "DDI (Digito do país)",
+          "default": "55",
+          "info": "Deixe por padrão 55 caso utilize o tema no Brasil."
+        },
+        {
+          "type": "text",
+          "id": "ct_number",
+          "label": "Número para contato",
+          "default": "(11) 99999-9999",
+          "info": "Coloque no número neste formato: (11) 99999-9999"
+        },
+        {
+          "type": "text",
+          "id": "ct_service_area",
+          "label": "Área de atendimento",
+          "default": "Capitais e regiões metropolitanas"
+        }
+      ]
+    },
+    {
+      "type": "cw",
+      "name": "Whatsapp",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "cw_title",
+          "label": "Título",
+          "default": "Whatsapp"
+        },
+        {
+          "type": "header",
+          "content": "Contato 1"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_contact",
+          "label": "Mostrar contato 1",
+          "default": true
+        },
+        {
+          "type": "text",
+          "id": "cw_ddi",
+          "label": "DDI (Digito do país)",
+          "default": "55",
+          "info": "Deixe por padrão 55 caso utilize o tema no Brasil."
+        },
+        {
+          "type": "text",
+          "id": "cw_number",
+          "label": "Número para contato",
+          "default": "(11) 99999-9999",
+          "info": "Coloque no número neste formato: (11) 99999-9999"
+        },
+        {
+          "type": "textarea",
+          "id": "cw_text",
+          "label": "Texto",
+          "default": "Olá vim da sua loja!",
+          "info": "Texto para mensagem do WhatsApp"
+        },
+        {
+          "type": "checkbox",
+          "id": "cw_product_link",
+          "label": "Enviar link do produto junto",
+          "default": false
+        },
+        {
+          "type": "text",
+          "id": "cw_attendant",
+          "label": "Nome do(a) atendente",
+          "default": "Luana"
+        },
+        {
+          "type": "header",
+          "content": "Contato 2"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_contact2",
+          "label": "Mostrar contato 2",
+          "default": false
+        },
+        {
+          "type": "text",
+          "id": "cw_ddi2",
+          "label": "DDI (Digito do país)",
+          "default": "55",
+          "info": "Deixe por padrão 55 caso utilize o tema no Brasil."
+        },
+        {
+          "type": "text",
+          "id": "cw_number2",
+          "label": "Número para contato",
+          "default": "(11) 99999-9999",
+          "info": "Coloque no número neste formato: (11) 99999-9999"
+        },
+        {
+          "type": "textarea",
+          "id": "cw_text2",
+          "label": "Texto",
+          "default": "Olá vim da sua loja!",
+          "info": "Texto para mensagem do WhatsApp"
+        },
+        {
+          "type": "checkbox",
+          "id": "cw_product_link2",
+          "label": "Enviar link do produto junto",
+          "default": false
+        },
+        {
+          "type": "text",
+          "id": "cw_attendant2",
+          "label": "Nome do(a) atendente",
+          "default": "Luana"
+        }
+      ]
+    },
+    {
+      "type": "ce",
+      "name": "E-mail",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "ce_title",
+          "label": "Título",
+          "default": "E-mail"
+        },
+        {
+          "type": "header",
+          "content": "Contato 1"
+        },
+        {
+          "type": "text",
+          "id": "ce_email",
+          "label": "E-mail para contato",
+          "default": "contato@sualoja.com"
+        }
+      ]
+    },
+    {
+      "type": "ha",
+      "name": "Horário de atendimento",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "ha_title",
+          "label": "Título",
+          "default": "Horário de atendimento"
+        },
+        {
+          "type": "html",
+          "id": "ha_description",
+          "label": "Descrição",
+          "default": "<span>seg a sex das 10h às 18h</span><span>sab das 10h às 14h</span>",
+          "info": "Coloque a descrição neste formato: <span>Texto</span>"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

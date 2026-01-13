@@ -1,0 +1,129 @@
+<section data-section-id="{{ section.id }}" data-section-type="advantage-list" style="padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px;">
+    <div class="container">
+        <div class="row-fluid">
+            <div class="carousel advantage-list">
+              {%- for block in section.blocks -%}
+                {%- if block.settings.icon != blank and block.settings.description != blank -%}
+                  <div class="advantage" data-advantage-index="{{ forloop.index0 }}" {{ block.shopify_attributes }}>
+                      <div class="advantage-content">
+                        <div class="advantage-icone">
+                            {{ block.settings.icon }}
+                        </div>
+                        <div class="advantage-text">
+                          <span>{{ block.settings.title }}</span>
+                          <p>{{ block.settings.description }}</p>
+                        </div>
+                      </div>
+                  </div>
+                {%- endif -%}
+              {%- endfor -%}
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+  .advantage-list .advantage {
+    background: {{ section.settings.background_color }};
+  }
+
+  .advantage-list .advantage .advantage-icone svg path {
+    fill: {{ section.settings.icon_color }} !important;
+  }
+
+  .advantage-list .advantage .advantage-content .advantage-text span {
+    color: {{ section.settings.title_color }};
+  }
+
+  .advantage-list .advantage .advantage-content .advantage-text p {
+    color: {{ section.settings.description_color }};
+  }
+
+  @media only screen and (min-width: 1025px) {
+    .advantage-list {
+      background: {{ section.settings.background_color }};
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Lista de vantagens",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Espaçamento"
+    },
+    {
+      "type": "text",
+      "id": "padding_top",
+      "label": "Margem superior (px)",
+      "default": "0"
+    },
+    {
+      "type": "text",
+      "id": "padding_bottom",
+      "label": "Margem inferior (px)",
+      "default": "0"
+    },
+    {
+      "type": "header",
+      "content": "Cores"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Cor do fundo",
+      "default": "#F3F3F3"
+    },
+    {
+      "type": "color",
+      "id": "title_color",
+      "label": "Cor do título",
+      "default": "#CE0F2F"
+    },
+    {
+      "type": "color",
+      "id": "description_color",
+      "label": "Cor da descrição",
+      "default": "#202020"
+    },
+    {
+      "type": "color",
+      "id": "icon_color",
+      "label": "Cor dos ícones",
+      "default": "#202020"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "advantage",
+      "name": "Vantagem",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "html",
+          "id": "icon",
+          "label": "Ícone",
+          "info": "Copie e cole qualquer código SVG dos [ícones de bootstrap] recomendados (https://icons.getbootstrap.com/) biblioteca. Você também pode usar códigos SVG de outras fontes. Para alterar o tamanho do ícone, edite os valores de 'largura' e 'altura' dentro do código SVG."
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Título"
+        },
+        {
+          "type": "textarea",
+          "id": "description",
+          "label": "Descrição"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Lista de vantagens"
+    }
+  ]
+}
+{% endschema %}

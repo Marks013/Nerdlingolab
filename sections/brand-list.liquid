@@ -1,0 +1,100 @@
+<section data-section-id="{{ section.id }}" data-section-type="brand-list" style="padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px;">
+    <div class="container">
+      <div class="row-fluid">
+        {% if section.settings.title != blank %}
+          <header class="section__header">
+            <div class="section__header-stack">
+              <h2 class="section__title heading h3">{{ section.settings.title }}</h2>
+            </div>
+          </header>
+        {% endif %}
+
+        <div class="carousel brand-list">
+          {% for block in section.blocks %}
+            <div class="brand" data-brand-index="{{ forloop.index0 }}" {{ block.shopify_attributes }}>
+                <a href="{{ block.settings.collection.url }}">
+                  {{ block.settings.image }}
+                </a>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+</section>
+
+<style>
+  .brand-list .brand svg {
+    max-width: {{ section.settings.tamanho_imagem }}px;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Lista de marca",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Título",
+      "default": "Compre por sua marca favorita"
+    },
+    {
+      "type": "text",
+      "id": "tamanho_imagem",
+      "label": "Largura da imagem (px)",
+      "default": "80"
+    },
+    {
+      "type": "header",
+      "content": "Espaçamento"
+    },
+    {
+      "type": "text",
+      "id": "padding_top",
+      "label": "Margem superior (px)",
+      "default": "0"
+    },
+    {
+      "type": "text",
+      "id": "padding_bottom",
+      "label": "Margem inferior (px)",
+      "default": "0"
+    },
+    {
+      "type": "header",
+      "content": "Cores"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Cor do fundo",
+      "default": "#FFFFFF"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "marca",
+      "name": "Marca",
+      "settings": [
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Coleção"
+        },
+        {
+          "type": "html",
+          "id": "image",
+          "label": "Imagem",
+          "info": "Copie e cole qualquer código SVG. Você também pode converter outras fontes para SVG [Saiba mais](https://convertio.co/pt/png-svg/).",
+          "default": "<svg width=\"118.000000pt\" height=\"118.000000pt\" viewBox=\"0 0 118.000000 118.000000\" preserveAspectRatio=\"xMidYMid meet\"><g transform=\"translate(0.000000,118.000000) scale(0.100000,-0.100000)\" fill=\"#000000\" stroke=\"none\"><path d=\"M165 1159 c-45 -12 -115 -77 -136 -123 -17 -38 -19 -74 -19 -451 l0 -410 29 -50 c52 -92 130 -125 289 -125 l75 0 -43 29 c-58 39 -114 123 -129 197 -9 43 -12 159 -9 419 3 347 4 362 25 405 25 52 37 67 77 98 l29 22 -79 -1 c-44 0 -93 -5 -109 -10z\"></path><path d=\"M541 1146 c19 -13 43 -42 53 -64 l18 -39 50 33 c39 27 60 34 97 34 53 0 116 -26 148 -61 49 -53 53 -81 53 -354 l0 -255 -295 0 -295 0 0 -33 c0 -61 28 -133 64 -165 49 -43 108 -52 331 -52 l195 0 0 -90 c0 -84 1 -90 20 -90 55 0 140 68 171 135 17 37 19 73 19 434 0 282 -3 405 -12 435 -16 54 -90 128 -144 144 -27 8 -120 12 -275 12 l-234 0 36 -24z\"></path><path d=\"M394 966 c-17 -13 -19 -27 -19 -155 0 -93 4 -144 12 -152 13 -13 78 -26 111 -21 22 3 22 6 22 153 0 136 -2 151 -20 169 -24 24 -77 27 -106 6z\"></path><path d=\"M692 907 c-20 -21 -22 -34 -22 -145 l0 -122 65 0 65 0 0 128 c0 112 -2 131 -18 145 -26 24 -65 21 -90 -6z\"></path></g></svg>"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Lista de marca"
+    }
+  ]
+}
+{% endschema %}

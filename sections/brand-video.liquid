@@ -1,0 +1,150 @@
+<section data-section-id="{{ section.id }}" data-section-type="brand-video"
+         data-section-settings="{{ section_settings }}"
+         style="margin: 0 !important; padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px;">
+    <div class="container">
+        <div class="row-fluid">
+            {% if section.settings.title != blank %}
+                <header class="section__header">
+                    <div class="section__header-stack">
+                        <h2 class="section__title heading h3">{{ section.settings.title }}</h2>
+                    </div>
+                </header>
+            {% endif %}
+
+            {% if section.settings.video_url != blank %}
+                <div class="product-video">
+                    <div class="v-col-video">
+                        <div class="v-video-media" data-youtube>
+                            <div style="position: relative; cursor:pointer;">
+                                <img class="lazyload" width="100%" height="100%" loading="lazy"
+                                     src="https://i.ytimg.com/vi/{{ section.settings.video_url.id }}/maxresdefault.jpg"/>
+                                <button data-youtube-button="https://www.youtube.com/embed/{{ section.settings.video_url.id }}">
+                                    {% render 'icon', icon: 'play' %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="v-col-product">
+                        <div class="v-product" style="margin-top: 0 !important; margin-bottom: 5px;">
+                            <div class="product-item"
+                                 style="min-height: 520px; max-height: 520px; text-align: center; margin-top: -10px; padding: 10px;">
+                                <div class="product-item__info">
+                                    <div class="product-item__info-inner">
+                                        <img src="{{ section.settings.image | img_url: '275x275', crop: 'center' }}"
+                                             alt="{{ section.settings.image.alt | escape }}" style="margin-bottom: 20px; border-radius: 5px;">
+                                        <p class="h4" style="font-weight: bold; color: #000000;">{{ section.settings.description_title }}</p>
+                                        <span style="display: block; font-size: 14px; padding-left: 15px; padding-right: 15px; display: -webkit-box;
+                                            -webkit-line-clamp: 5; /** número de linhas que você quer exibir */
+                                            -webkit-box-orient: vertical;
+                                            overflow: hidden;
+                                            text-overflow: ellipsis;">
+                                            {{ section.settings.description }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if section.settings.link != blank %}
+                            <button style="background-color: {{ section.settings.button_color }};"
+                                    onclick="location.href='{{ section.settings.link }}'">{{ section.settings.button_text }}</button>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{% schema %}
+{
+  "name": "Brand e produto",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Título",
+      "default": "Produto em destaque"
+    },
+    {
+      "type": "video_url",
+      "id": "video_url",
+      "accept": [
+        "youtube"
+      ],
+      "label": "Link do vídeo",
+      "default": "https://www.youtube.com/watch?v=OZhJeelBiPw"
+    },
+    {
+      "type": "header",
+      "content": "Card descritivo"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Image",
+      "info": "278 x 278px .jpg recommended"
+    },
+    {
+      "type": "text",
+      "id": "description_title",
+      "label": "Título da descrição",
+      "default": "Saiba quem somos"
+    },
+    {
+      "type": "text",
+      "id": "description",
+      "label": "Descrição",
+      "default": "A Zuban possui uma variedade fantástica de produtos de alta qualidade. Visitei a loja física e fui muito bem atendido pela equipe, que me ajudou..."
+    },
+    {
+      "type": "header",
+      "content": "Botão"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Texto do botão",
+      "default": "Conheça a Zuban"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "Link do botão"
+    },
+    {
+      "type": "header",
+      "content": "Espaçamento"
+    },
+    {
+      "type": "text",
+      "id": "padding_top",
+      "label": "Margem superior (px)",
+      "default": "0"
+    },
+    {
+      "type": "text",
+      "id": "padding_bottom",
+      "label": "Margem inferior (px)",
+      "default": "0"
+    },
+    {
+      "type": "header",
+      "content": "Cores"
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "Cor do botão",
+      "default": "#FF2834"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Brand e produto",
+      "settings": {}
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,150 @@
+{%- if section.settings.show_section -%}
+  <section class="section section--tight" data-section-id="{{ section.id }}" data-section-type="text-with-icons" style="padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px;">
+    <div id="text-with-icons" style="padding: 30px;">
+      <div class="container-tes container container--flush">
+        <div class="text-with-icons {% if section.settings.stack_mobile %}text-with-icons--stacked{% endif %}">
+          {%- for block in section.blocks -%}
+            <div class="text-with-icons__item" data-block-index="{{ forloop.index0 }}" {{ block.shopify_attributes }}>
+              <div class="text-with-icons__icon-wrapper">
+                {%- if block.settings.custom_icon != blank -%}
+                  <img src="{{ block.settings.custom_icon | img_url: '60x' }}" alt="{{ block.settings.custom_icon.alt | escape }}">
+                {%- else -%}
+                  {{ block.settings.icon }}
+                {%- endif -%}
+              </div>
+
+              {%- if block.settings.title != blank or block.settings.content != blank -%}
+                <div class="text-with-icons__content-wrapper">
+                  {%- if block.settings.title != blank -%}
+                    <p class="text-with-icons__title text--strong">{{ block.settings.title | escape }}</p>
+                  {%- endif -%}
+
+                  {%- if block.settings.content != blank -%}
+                    <div class="text-with-icons__content rte">
+                      {{ block.settings.content  }}
+                    </div>
+                  {%- endif -%}
+                </div>
+              {%- endif -%}
+            </div>
+          {%- endfor -%}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <style>
+    #text-with-icons {
+      background: {{ section.settings.background_color }};
+    }
+
+    .text-with-icons__title {
+      color: {{ section.settings.title_color }};
+    }
+
+    .text-with-icons__content>p {
+      color: {{ section.settings.description_color }};
+    }
+
+    .info-bar svg path {
+      fill: {{ section.settings.icon_color }} !important;
+    }
+  </style>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Text with icons",
+  "max_blocks": 4,
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_section",
+      "label": "Show section",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "stack_mobile",
+      "label": "Stack on mobile",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Espaçamento"
+    },
+    {
+      "type": "text",
+      "id": "padding_top",
+      "label": "Margem superior (px)",
+      "default": "0"
+    },
+    {
+      "type": "text",
+      "id": "padding_bottom",
+      "label": "Margem inferior (px)",
+      "default": "0"
+    },
+    {
+      "type": "header",
+      "content": "Cores"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Cor do fundo",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "color",
+      "id": "title_color",
+      "label": "Cor do título",
+      "default": "#202020"
+    },
+    {
+      "type": "color",
+      "id": "description_color",
+      "label": "Cor da descrição",
+      "default": "#202020"
+    },
+    {
+      "type": "color",
+      "id": "icon_color",
+      "label": "Cor dos ícones",
+      "default": "#ff3742"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "item",
+      "name": "Item",
+      "settings": [
+        {
+          "type": "html",
+          "id": "icon",
+          "label": "Ícone",
+          "info": "Copie e cole qualquer código SVG dos [ícones de bootstrap] recomendados (https://icons.getbootstrap.com/) biblioteca. Você também pode usar códigos SVG de outras fontes. Para alterar o tamanho do ícone, edite os valores de 'largura' e 'altura' dentro do código SVG."
+        },
+        {
+          "type": "image_picker",
+          "id": "custom_icon",
+          "label": "Custom icon",
+          "info": "60 x 60px .png with transparency recommended"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Heading",
+          "default": "Your title"
+        },
+        {
+          "type": "richtext",
+          "id": "content",
+          "label": "Content",
+          "default": "<p>Short content about your store</p>"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,104 @@
+<section data-section-id="{{ section.id }}" data-section-type="review-list" style="padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px;">
+    <div class="container">
+        <div class="row-fluid">
+            {% if section.settings.title != blank %}
+                <header class="section__header">
+                    <div class="section__header-stack">
+                        <h2 class="section__title heading h3">{{ section.settings.title }}</h2>
+                    </div>
+                </header>
+            {% endif %}
+
+            <div class="carousel review-list">
+                {% for block in section.blocks %}
+                    <div class="review" data-review-index="{{ forloop.index0 }}" {{ block.shopify_attributes }}>
+                        <div class="review-card">
+                            <p class="review-heading">{{ block.settings.person_name }}</p>
+                            <p class="review-subheading">{{ block.settings.review_date }}</p>
+                            <p class="review-body">{{ block.settings.review_description }}</p>
+                            <p class="review-stars">
+                                {% for i in (1..block.settings.amount_stars) %}
+                                    <span class="star"></span>
+                                {% endfor %}
+                            </p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="review-audited">
+                {{ 'home_page.review.audited_review' | t }}
+                <img class="lazyload" width="100%" height="100%" loading="lazy"
+                     src="{{ 'Logo RD tesmoney.png' |  asset_img_url: '1x1' }}"
+                     data-src="{{ 'Logo RD tesmoney.png' |  asset_img_url: '90x' }}">
+            </div>
+        </div>
+    </div>
+</section>
+
+{% schema %}
+{
+  "name": "Lista de avaliação",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Título",
+      "default": "O que os clientes falam sobre nós"
+    },
+    {
+      "type": "header",
+      "content": "Espaçamento"
+    },
+    {
+      "type": "text",
+      "id": "padding_top",
+      "label": "Margem superior (px)",
+      "default": "0"
+    },
+    {
+      "type": "text",
+      "id": "padding_bottom",
+      "label": "Margem inferior (px)",
+      "default": "0"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "avaliacao",
+      "name": "Avaliação",
+      "settings": [
+        {
+          "type": "text",
+          "id": "person_name",
+          "label": "Nome da pessoa"
+        },
+        {
+          "type": "text",
+          "id": "review_date",
+          "label": "Data da avaliação"
+        },
+        {
+          "type": "textarea",
+          "id": "review_description",
+          "label": "Descrição da avaliação"
+        },
+        {
+          "type": "range",
+          "id": "amount_stars",
+          "min": 0,
+          "max": 5,
+          "step": 1,
+          "label": "Quantidade de estrelas",
+          "default": 5
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Lista de avaliação"
+    }
+  ]
+}
+{% endschema %}

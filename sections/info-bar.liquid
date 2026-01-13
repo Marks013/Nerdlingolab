@@ -1,0 +1,202 @@
+{%- if section.settings.show_infobar -%}
+  <section data-section-id="{{ section.id }}" data-section-type="info-bar" data-section-settings="{{ section_settings }}" style="padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px;">
+      <div class="info-bar">
+        <div class="container">
+          <ul class="list-unstyled mx-n3 mb-0 row row-cols-{{ section.settings.mobile_lines }} row-cols-md-{{ section.settings.tablet_lines }} row-cols-lg-{{ section.settings.desktop_lines }} {% if section.settings.stack_mobile %}text-with-icons--stacked{% endif %}">
+            {% for block in section.blocks %}
+              <li class="info-bar-item px-3 py-4 d-flex align-items-center" {{ block.shopify_attributes }}>
+
+                <div class="mr-4">
+                  {{ block.settings.icon }}
+                </div>
+
+                <div>
+                  <h3 class="title">{{ block.settings.title }}</h3>
+
+                  <div class="rte">
+                    {{ block.settings.description }}
+                  </div>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+  </section>
+
+  <style>
+    .info-bar {
+      background: {{ section.settings.background_color }};
+    }
+
+    .info-bar .info-bar-item .title {
+      color: {{ section.settings.title_color }};
+    }
+
+    .info-bar .info-bar-item .rte {
+      color: {{ section.settings.description_color }};
+    }
+
+    .info-bar svg path {
+      fill: {{ section.settings.icon_color }} !important;
+    }
+  </style>
+
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Barra de informações",
+  "class": "overflow-hidden",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_infobar",
+      "label": "Mostrar barra de informações",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "stack_mobile",
+      "label": "Stack on mobile",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Linhas"
+    },
+    {
+      "type": "range",
+      "id": "mobile_lines",
+      "label": "Itens por linha / Mobile",
+      "min": 1,
+      "max": 3,
+      "step": 1,
+      "default": 1
+    },
+    {
+      "type": "range",
+      "id": "tablet_lines",
+      "label": "Itens por linha / Tablet",
+      "min": 1,
+      "max": 4,
+      "step": 1,
+      "default": 2
+    },
+    {
+      "type": "range",
+      "id": "desktop_lines",
+      "label": "Itens por linha / Desktop",
+      "min": 1,
+      "max": 6,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "header",
+      "content": "Espaçamento"
+    },
+    {
+      "type": "text",
+      "id": "padding_top",
+      "label": "Margem superior (px)",
+      "default": "0"
+    },
+    {
+      "type": "text",
+      "id": "padding_bottom",
+      "label": "Margem inferior (px)",
+      "default": "0"
+    },
+    {
+      "type": "header",
+      "content": "Cores"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Cor do fundo",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "color",
+      "id": "title_color",
+      "label": "Cor do título",
+      "default": "#202020"
+    },
+    {
+      "type": "color",
+      "id": "description_color",
+      "label": "Cor da descrição",
+      "default": "#202020"
+    },
+    {
+      "type": "color",
+      "id": "icon_color",
+      "label": "Cor dos ícones",
+      "default": "#ff3742"
+    }
+  ],
+  "blocks":[
+    {
+      "type": "text",
+      "name": "Informação",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "html",
+          "id": "icon",
+          "label": "Ícone",
+          "info": "Copie e cole qualquer código SVG dos [ícones de bootstrap] recomendados (https://icons.getbootstrap.com/) biblioteca. Você também pode usar códigos SVG de outras fontes. Para alterar o tamanho do ícone, edite os valores de 'largura' e 'altura' dentro do código SVG."
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Título"
+        },
+        {
+          "type": "textarea",
+          "id": "description",
+          "label": "Descrição"
+        }
+      ]
+    }
+  ],
+  "default": {
+    "blocks": [
+      {
+        "type": "text",
+        "settings": {
+          "icon": "<svg width=\"50px\" height=\"50px\" viewbox=\"0 0 50 50\"><g id=\"surface1\"><path style=\"stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;\" d=\"M 24.535156 42.296875 L 23.933594 42.597656 L 6.25 34.738281 L 6.25 14.101562 L 23.535156 21.785156 C 23.804688 21.90625 24.113281 21.90625 24.382812 21.785156 L 41.667969 14.101562 L 41.667969 22.917969 C 41.671875 23.488281 42.136719 23.949219 42.707031 23.949219 C 43.28125 23.949219 43.746094 23.488281 43.75 22.917969 L 43.75 12.5 C 43.75 12.089844 43.507812 11.714844 43.132812 11.546875 L 24.382812 3.214844 C 24.113281 3.09375 23.804688 3.09375 23.535156 3.214844 L 4.785156 11.546875 C 4.410156 11.714844 4.167969 12.089844 4.167969 12.5 L 4.167969 35.417969 C 4.167969 35.828125 4.410156 36.199219 4.785156 36.367188 L 23.535156 44.703125 C 23.820312 44.828125 24.144531 44.820312 24.421875 44.683594 L 25.464844 44.160156 C 25.800781 43.996094 26.023438 43.664062 26.042969 43.292969 C 26.066406 42.917969 25.890625 42.5625 25.578125 42.355469 C 25.265625 42.152344 24.867188 42.128906 24.535156 42.296875 Z M 23.957031 19.695312 L 16.589844 16.417969 L 32.714844 9.25 C 32.734375 9.242188 32.75 9.230469 32.765625 9.222656 L 40.144531 12.5 Z M 23.957031 5.304688 L 30.210938 8.085938 L 14.160156 15.21875 C 14.117188 15.238281 14.078125 15.261719 14.039062 15.285156 L 7.773438 12.5 Z M 23.957031 5.304688\"></path><path style=\"stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;\" d=\"M 35.417969 23.957031 C 29.664062 23.957031 25 28.621094 25 34.375 C 25 40.128906 29.664062 44.792969 35.417969 44.792969 C 41.167969 44.792969 45.832031 40.128906 45.832031 34.375 C 45.828125 28.625 41.167969 23.964844 35.417969 23.957031 Z M 35.417969 42.707031 C 30.8125 42.707031 27.082031 38.976562 27.082031 34.375 C 27.082031 29.773438 30.8125 26.042969 35.417969 26.042969 C 40.019531 26.042969 43.75 29.773438 43.75 34.375 C 43.746094 38.976562 40.015625 42.703125 35.417969 42.707031 Z M 35.417969 42.707031\"></path><path style=\"stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;\" d=\"M 38.847656 31.554688 L 34.375 36.027344 L 32.507812 34.160156 C 32.246094 33.890625 31.859375 33.785156 31.496094 33.878906 C 31.132812 33.976562 30.851562 34.257812 30.753906 34.621094 C 30.660156 34.984375 30.765625 35.371094 31.035156 35.632812 L 33.636719 38.238281 C 34.046875 38.644531 34.703125 38.644531 35.113281 38.238281 L 40.320312 33.027344 C 40.71875 32.621094 40.714844 31.96875 40.3125 31.5625 C 39.90625 31.160156 39.253906 31.15625 38.847656 31.554688 Z M 38.847656 31.554688\"></path></g></svg>",
+          "title": "Frete grátis para todo o Brasil",
+          "description": "Receba seu pedido no conforto da sua casa com entrega garantida e segurada pelos Correios."
+        }
+      },
+      {
+        "type": "text",
+        "settings": {
+          "icon": "<svg width=\"50px\" height=\"50px\" viewbox=\"0 0 50 50\"><g id=\"surface1\"><path style=\"stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;\" d=\"M 3.125 4.6875 L 8.136719 4.6875 L 13.660156 28.164062 C 11.15625 28.371094 9.265625 30.515625 9.371094 33.027344 C 9.480469 35.535156 11.550781 37.511719 14.0625 37.5 L 40.625 37.5 C 41.488281 37.5 42.1875 36.800781 42.1875 35.9375 C 42.1875 35.074219 41.488281 34.375 40.625 34.375 L 14.0625 34.375 C 13.199219 34.375 12.5 33.675781 12.5 32.8125 C 12.5 31.949219 13.199219 31.25 14.0625 31.25 L 40.441406 31.25 C 42.617188 31.253906 44.511719 29.757812 45.003906 27.636719 L 48.3125 13.574219 C 48.640625 12.179688 48.316406 10.710938 47.425781 9.589844 C 46.535156 8.464844 45.183594 7.8125 43.75 7.8125 L 12.082031 7.8125 L 10.898438 2.765625 C 10.730469 2.0625 10.101562 1.5625 9.375 1.5625 L 3.125 1.5625 C 2.261719 1.5625 1.5625 2.261719 1.5625 3.125 C 1.5625 3.988281 2.261719 4.6875 3.125 4.6875 Z M 43.75 10.9375 C 44.222656 10.945312 44.667969 11.167969 44.964844 11.539062 C 45.257812 11.910156 45.371094 12.394531 45.273438 12.859375 L 41.960938 26.921875 C 41.796875 27.628906 41.167969 28.128906 40.441406 28.125 L 16.863281 28.125 L 12.8125 10.9375 Z M 43.75 10.9375\"></path><path style=\"stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;\" d=\"M 31.25 43.75 C 31.25 46.339844 33.347656 48.4375 35.9375 48.4375 C 38.527344 48.4375 40.625 46.339844 40.625 43.75 C 40.625 41.160156 38.527344 39.0625 35.9375 39.0625 C 33.347656 39.0625 31.25 41.160156 31.25 43.75 Z M 37.5 43.75 C 37.5 44.613281 36.800781 45.3125 35.9375 45.3125 C 35.074219 45.3125 34.375 44.613281 34.375 43.75 C 34.375 42.886719 35.074219 42.1875 35.9375 42.1875 C 36.800781 42.1875 37.5 42.886719 37.5 43.75 Z M 37.5 43.75\"></path><path style=\"stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;\" d=\"M 14.0625 43.75 C 14.0625 46.339844 16.160156 48.4375 18.75 48.4375 C 21.339844 48.4375 23.4375 46.339844 23.4375 43.75 C 23.4375 41.160156 21.339844 39.0625 18.75 39.0625 C 16.160156 39.0625 14.0625 41.160156 14.0625 43.75 Z M 20.3125 43.75 C 20.3125 44.613281 19.613281 45.3125 18.75 45.3125 C 17.886719 45.3125 17.1875 44.613281 17.1875 43.75 C 17.1875 42.886719 17.886719 42.1875 18.75 42.1875 C 19.613281 42.1875 20.3125 42.886719 20.3125 43.75 Z M 20.3125 43.75\"></path></g></svg>",
+          "title": "Pedido monitorado",
+          "description": "Receba seu pedido no conforto da sua casa com entrega garantida e segurada pelos Correios."
+        }
+      },
+      {
+        "type": "text",
+        "settings": {
+          "icon": "<svg width=\"50px\" height=\"50px\" viewBox=\"0 0 16 16\"><path d=\"M8 1a5 5 0 0 0-5 5v1h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a6 6 0 1 1 12 0v6a2.5 2.5 0 0 1-2.5 2.5H9.366a1 1 0 0 1-.866.5h-1a1 1 0 1 1 0-2h1a1 1 0 0 1 .866.5H11.5A1.5 1.5 0 0 0 13 12h-1a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h1V6a5 5 0 0 0-5-5z\"></path></svg>",
+          "title": "Precisa de atendimento?",
+          "description": "Receba seu pedido no conforto da sua casa com entrega garantida e segurada pelos Correios."
+        }
+      },
+      {
+        "type": "text",
+        "settings": {
+          "icon": "<svg width=\"50px\" height=\"50px\" viewBox=\"0 0 50 50\"><g id=\"surface1\"><path style=\"stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;\" d=\"M 43.429688 4.003906 L 6.574219 4.003906 C 2.949219 4.003906 0 6.953125 0 10.578125 L 0 31.609375 C 0 35.160156 2.828125 38.058594 6.347656 38.179688 L 6.347656 43.441406 C 6.347656 44.851562 7.492188 45.996094 8.902344 45.996094 L 20.785156 45.996094 C 22.195312 45.996094 23.339844 44.851562 23.339844 43.441406 L 23.339844 38.183594 L 43.429688 38.183594 C 47.050781 38.183594 50 35.234375 50 31.609375 L 50 10.574219 C 50 6.953125 47.050781 4.003906 43.429688 4.003906 Z M 6.574219 6.933594 L 43.429688 6.933594 C 45.4375 6.933594 47.070312 8.566406 47.070312 10.578125 L 47.070312 11.816406 L 2.929688 11.816406 L 2.929688 10.578125 C 2.929688 8.566406 4.5625 6.933594 6.570312 6.933594 Z M 18.066406 31.347656 L 11.621094 31.347656 L 11.621094 29.6875 C 11.621094 28.339844 12.714844 27.246094 14.0625 27.246094 L 15.625 27.246094 C 16.972656 27.246094 18.066406 28.339844 18.066406 29.6875 Z M 20.410156 43.066406 L 9.277344 43.066406 L 9.277344 34.277344 L 20.410156 34.277344 Z M 43.429688 35.253906 L 23.339844 35.253906 L 23.339844 33.902344 C 23.339844 32.5625 22.304688 31.464844 20.996094 31.355469 L 20.996094 29.6875 C 20.996094 26.726562 18.585938 24.316406 15.625 24.316406 L 14.0625 24.316406 C 11.101562 24.316406 8.691406 26.726562 8.691406 29.6875 L 8.691406 31.355469 C 7.382812 31.464844 6.347656 32.5625 6.347656 33.902344 L 6.347656 35.246094 C 4.445312 35.128906 2.929688 33.542969 2.929688 31.609375 L 2.929688 14.746094 L 47.070312 14.746094 L 47.070312 31.609375 C 47.070312 33.621094 45.4375 35.253906 43.429688 35.253906 Z M 43.429688 35.253906\"></path><path style=\"stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;\" d=\"M 23.4375 18.066406 L 7.8125 18.066406 C 7.003906 18.066406 6.347656 18.722656 6.347656 19.53125 C 6.347656 20.339844 7.003906 20.996094 7.8125 20.996094 L 23.4375 20.996094 C 24.246094 20.996094 24.902344 20.339844 24.902344 19.53125 C 24.902344 18.722656 24.246094 18.066406 23.4375 18.066406 Z M 23.4375 18.066406\"></path><path style=\"stroke:none;fill-rule:nonzero;fill:rgb(0%,0%,0%);fill-opacity:1;\" d=\"M 40.070312 18.066406 L 31.804688 18.066406 C 29.828125 18.066406 28.222656 19.671875 28.222656 21.648438 L 28.222656 23.664062 C 28.222656 25.640625 29.828125 27.246094 31.804688 27.246094 L 40.070312 27.246094 C 42.046875 27.246094 43.652344 25.640625 43.652344 23.664062 L 43.652344 21.648438 C 43.652344 19.671875 42.046875 18.066406 40.070312 18.066406 Z M 40.722656 23.664062 C 40.722656 24.023438 40.429688 24.316406 40.070312 24.316406 L 31.804688 24.316406 C 31.445312 24.316406 31.152344 24.023438 31.152344 23.664062 L 31.152344 21.648438 C 31.152344 21.289062 31.445312 20.996094 31.804688 20.996094 L 40.070312 20.996094 C 40.429688 20.996094 40.722656 21.289062 40.722656 21.648438 Z M 40.722656 23.664062\"></path></g></svg>",
+          "title": "Compra segura",
+          "description": "Receba seu pedido no conforto da sua casa com entrega garantida e segurada pelos Correios."
+        }
+      }
+    ]
+  }
+}
+{% endschema %}

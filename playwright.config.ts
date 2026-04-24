@@ -19,6 +19,7 @@ export default defineConfig({
     url: "http://localhost:3000/api/health",
     env: {
       AUTH_SECRET: process.env.AUTH_SECRET ?? "playwright-local-secret",
+      CHECKOUT_PAYMENT_MOCK: "true",
       DATABASE_URL:
         process.env.DATABASE_URL ??
         "postgresql://nerdlingolab:nerdlingolab_dev_password@localhost:5432/nerdlingolab"

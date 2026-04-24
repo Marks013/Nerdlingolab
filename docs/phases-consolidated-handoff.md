@@ -477,7 +477,32 @@ Observações:
 - `npm run setup` pode travar em ambiente novo porque `prisma migrate dev` fica interativo quando ainda não existe migration. Nesta rodada foi usado `npx prisma migrate dev --name init`.
 - Evitar rodar `check:operational` enquanto `next dev` está ativo no Windows, pois `prisma generate` pode falhar ao renomear o DLL do query engine.
 - O E2E usa `dev:webpack`; o build de produção continua passando com Turbopack.
-- Permanecem avisos de Sentry sobre `onRequestError` e migração de `sentry.client.config.ts` para `instrumentation-client.ts`.
+- Os avisos antigos de Sentry sobre `onRequestError` e `sentry.client.config.ts` foram corrigidos na atualização seguinte.
+
+## Atualização mais recente - fluxo com banco real e substituição do remoto
+
+Concluído nesta atualização:
+
+- Criado `tests/e2e/checkout-db-flow.spec.ts` cobrindo produto -> carrinho -> cupom -> checkout -> pedido -> aprovação de pagamento -> estoque -> cupom -> fidelidade -> webhook em Postgres real.
+- Adicionado modo local explícito `CHECKOUT_PAYMENT_MOCK=true` apenas para E2E sem credenciais sandbox Mercado Pago. Produção continua exigindo token real.
+- Corrigido checkout para manter a confirmação do pedido visível após limpar o carrinho.
+- Corrigidas mensagens de cupom e carrinho com acentuação correta.
+- Extraída função `processApprovedMercadoPagoPayment` para testar o processamento aprovado sem depender da API externa.
+- Prisma deixou de logar queries por padrão; logs detalhados agora exigem `DEBUG_PRISMA_QUERIES=true`.
+- Corrigida configuração Sentry: `src/instrumentation.ts` exporta `onRequestError`, e o client foi migrado para `src/instrumentation-client.ts` com `onRouterTransitionStart`.
+- Removidos do estado atual os diretórios brutos do tema Shopify herdados do remoto antigo: `assets/`, `config/`, `layout/`, `locales/`, `sections/`, `snippets/`, `templates/`.
+- Decisão do usuário: substituir completamente o repositório GitHub pelo projeto local atual; o remoto anterior estava desatualizado.
+
+Validações executadas:
+
+- `npm run validate:project` passou.
+- `npm run check:operational` passou.
+- `npm run build` passou.
+- `npm run test:e2e` passou com 12/12 testes.
+
+Observação:
+
+- O mock de pagamento não mascara produção; ele é uma chave explícita para E2E local sem sandbox Mercado Pago. O fluxo financeiro interno testado usa banco real, transação Prisma, baixa de estoque, cupom, fidelidade e webhook.
 
 ## Estado importante do runtime
 
@@ -510,8 +535,8 @@ npm run test:e2e
 
 Prioridade alta:
 
-- Expandir E2E para fluxo com banco real.
-- Testar fluxo completo: produto -> carrinho -> checkout -> pedido -> webhook aprovado -> estoque -> pontos -> painel.
+- Expandir o fluxo real para login de cliente e painel admin conferindo o pedido pago.
+- Testar replay/duplicidade de webhook aprovado.
 - Criar inventário detalhado dos assets Shopify que entram em `public/`, mantendo somente assets usados.
 - Comparar a home Shopify com `src/app/(shop)/page.tsx` e mapear componentes React equivalentes.
 - Mapear as seções Liquid prioritárias para componentes Next.js: header, footer, home, coleção, produto, carrinho, ofertas e fidelidade.

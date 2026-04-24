@@ -75,6 +75,22 @@ export function CheckoutClient(): React.ReactElement {
   }
 
   if (items.length === 0) {
+    if (message) {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle>Pedido criado</CardTitle>
+            <CardDescription>{message}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link href="/produtos">Continuar comprando</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
+
     return (
       <Card>
         <CardHeader>

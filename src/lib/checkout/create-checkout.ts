@@ -52,7 +52,9 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Create
     throw new Error("Pedidos com total zero ainda não estão habilitados.");
   }
 
-  assertMercadoPagoConfigured();
+  if (!shouldUseLocalPaymentMock()) {
+    assertMercadoPagoConfigured();
+  }
 
   const order = await prisma.order.create({
     data: {
@@ -121,6 +123,12 @@ async function createMercadoPagoPreference({
   input: CheckoutRequestInput;
   totalCents: number;
 }): Promise<MercadoPagoPreferenceResponse> {
+  if (shouldUseLocalPaymentMock()) {
+    return {
+      id: `local-smoke-${orderId}`
+    };
+  }
+
   const preference = await mercadoPagoPreference.create({
     body: {
       items: [
@@ -156,4 +164,8 @@ async function createMercadoPagoPreference({
   });
 
   return preference as MercadoPagoPreferenceResponse;
+}
+
+function shouldUseLocalPaymentMock(): boolean {
+  return process.env.NODE_ENV !== "production" && process.env.CHECKOUT_PAYMENT_MOCK === "true";
 }

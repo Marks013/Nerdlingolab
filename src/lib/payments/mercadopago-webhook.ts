@@ -43,6 +43,22 @@ export async function processMercadoPagoPayment({
 
   const payment = await mercadoPagoPayment.get({ id: paymentId }) as MercadoPagoPaymentResponse;
 
+  await processApprovedMercadoPagoPayment({
+    payment,
+    paymentId,
+    webhookEventId
+  });
+}
+
+export async function processApprovedMercadoPagoPayment({
+  payment,
+  paymentId,
+  webhookEventId
+}: {
+  payment: MercadoPagoPaymentResponse;
+  paymentId: string;
+  webhookEventId: string;
+}): Promise<void> {
   if (payment.status !== "approved" || !payment.external_reference) {
     await markWebhookEvent(webhookEventId, WebhookStatus.IGNORED, "Pagamento não aprovado.");
     return;

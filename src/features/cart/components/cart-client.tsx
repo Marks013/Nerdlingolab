@@ -150,7 +150,7 @@ export function CartClient(): React.ReactElement {
               value={loyaltyPointsToRedeem}
             />
             <p className="text-xs text-muted-foreground">
-              Disponiveis: {validatedCart?.loyalty.availablePoints ?? 0} ponto(s)
+              Disponíveis: {validatedCart?.loyalty.availablePoints ?? 0} ponto(s)
             </p>
           </div>
 

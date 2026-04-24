@@ -23,7 +23,7 @@ export async function validateCoupon({
   });
 
   if (!coupon || !coupon.isActive) {
-    return { coupon: null, discountCents: 0, message: "Cupom invalido ou inativo." };
+    return { coupon: null, discountCents: 0, message: "Cupom inválido ou inativo." };
   }
 
   const invalidMessage = await getCouponInvalidMessage({ coupon, subtotalCents, userId });
@@ -124,7 +124,7 @@ async function validateCouponCustomerLimit({
   });
 
   return customerRedemptionCount >= coupon.perCustomerLimit
-    ? "Cupom ja utilizado por este cliente."
+    ? "Cupom já utilizado por este cliente."
     : null;
 }
 

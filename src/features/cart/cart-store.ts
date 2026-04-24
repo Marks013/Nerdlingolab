@@ -9,11 +9,15 @@ interface CartState {
   items: CartItem[];
   couponCode: string;
   loyaltyPointsToRedeem: number;
+  shippingOptionId: string;
+  shippingPostalCode: string;
   addItem: (item: CartItem) => void;
   removeItem: (variantId: string) => void;
   setQuantity: (variantId: string, quantity: number) => void;
   setCouponCode: (couponCode: string) => void;
   setLoyaltyPointsToRedeem: (points: number) => void;
+  setShippingOption: (optionId: string) => void;
+  setShippingPostalCode: (postalCode: string) => void;
   clearCart: () => void;
   getValidationPayload: () => CartValidationRequestItem[];
 }
@@ -24,6 +28,8 @@ export const useCartStore = create<CartState>()(
       items: [],
       couponCode: "",
       loyaltyPointsToRedeem: 0,
+      shippingOptionId: "",
+      shippingPostalCode: "",
       addItem: (item) => {
         set((state) => {
           const existingItem = state.items.find((cartItem) => cartItem.variantId === item.variantId);
@@ -61,8 +67,14 @@ export const useCartStore = create<CartState>()(
       setLoyaltyPointsToRedeem: (points) => {
         set({ loyaltyPointsToRedeem: Math.max(0, Math.floor(points)) });
       },
+      setShippingOption: (optionId) => {
+        set({ shippingOptionId: optionId });
+      },
+      setShippingPostalCode: (postalCode) => {
+        set({ shippingPostalCode: postalCode });
+      },
       clearCart: () => {
-        set({ items: [], couponCode: "", loyaltyPointsToRedeem: 0 });
+        set({ items: [], couponCode: "", loyaltyPointsToRedeem: 0, shippingOptionId: "", shippingPostalCode: "" });
       },
       getValidationPayload: () =>
         get().items.map((item) => ({

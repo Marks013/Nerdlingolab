@@ -29,9 +29,15 @@ test("cria pedido pela loja e processa aprovação com banco real", async ({ pag
 
   await page.goto(`/produtos/${fixtures.productSlug}`);
   await page.getByRole("button", { name: /Adicionar ao carrinho/i }).click();
-  await page.getByRole("link", { name: /Ver carrinho/i }).click();
+  await Promise.all([
+    page.waitForURL("**/carrinho"),
+    page.getByRole("link", { name: "Ver carrinho" }).click()
+  ]);
 
   await expect(page.getByText(fixtures.productTitle)).toBeVisible();
+  await page.getByLabel("CEP").fill("01001000");
+  await page.getByRole("button", { name: "Calcular" }).click();
+  await expect(page.getByText("Entrega econômica")).toBeVisible();
   const couponInput = page.getByLabel("Cupom");
   await couponInput.fill(fixtures.couponCode);
   await expect(couponInput).toHaveValue(fixtures.couponCode);
@@ -98,8 +104,9 @@ test("cria pedido pela loja e processa aprovação com banco real", async ({ pag
   expect(paidOrder.status).toBe(OrderStatus.PAID);
   expect(paidOrder.paymentStatus).toBe(PaymentStatus.APPROVED);
   expect(paidOrder.discountCents).toBe(500);
-  expect(paidOrder.totalCents).toBe(4_500);
-  expect(paidOrder.loyaltyPointsEarned).toBe(225);
+  expect(paidOrder.shippingCents).toBe(1_490);
+  expect(paidOrder.totalCents).toBe(5_990);
+  expect(paidOrder.loyaltyPointsEarned).toBe(299);
   expect(variant.stockQuantity).toBe(4);
   expect(coupon.usedCount).toBe(1);
   expect(couponRedemptions).toBe(1);

@@ -1,4 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { saveManualShipment, syncMercadoEnviosOrderShipment } from "@/actions/orders";
 import { OrderActions } from "@/features/orders/components/order-actions";
 import {
   formatFulfillmentStatus,
@@ -29,6 +31,7 @@ export function OrderDetail({ order }: OrderDetailProps): React.ReactElement {
         </Card>
 
         <OrderItemsCard order={order} />
+        <ShippingCard order={order} />
         <LedgerCard order={order} />
       </div>
 
@@ -38,6 +41,72 @@ export function OrderDetail({ order }: OrderDetailProps): React.ReactElement {
         <OrderActions order={order} />
       </div>
     </div>
+  );
+}
+
+function ShippingCard({ order }: OrderDetailProps): React.ReactElement {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Entrega e rastreamento</CardTitle>
+        <CardDescription>
+          Frete escolhido: {order.shippingServiceName ?? "Não definido"} · {formatCurrency(order.shippingCents)}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6 text-sm">
+        {order.shipments.length > 0 ? (
+          <div className="space-y-4">
+            {order.shipments.map((shipment) => (
+              <div className="rounded-md border p-4" key={shipment.id}>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="font-medium">{shipment.carrierName ?? shipment.provider}</p>
+                    <p className="text-muted-foreground">
+                      {shipment.trackingNumber ?? shipment.externalShipmentId ?? "Sem código"} · {shipment.status}
+                    </p>
+                  </div>
+                  {shipment.carrierUrl ? (
+                    <a className="text-primary underline-offset-4 hover:underline" href={shipment.carrierUrl}>
+                      Acompanhar entrega
+                    </a>
+                  ) : null}
+                </div>
+                {shipment.events.length > 0 ? (
+                  <ul className="mt-3 space-y-1 text-muted-foreground">
+                    {shipment.events.slice(0, 5).map((event) => (
+                      <li key={event.id}>
+                        {formatDateTime(event.occurredAt)} · {event.status}
+                        {event.substatus ? ` · ${event.substatus}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground">Nenhum rastreamento registrado.</p>
+        )}
+
+        <form action={saveManualShipment.bind(null, order.id)} className="grid gap-3 rounded-md border p-4">
+          <p className="font-medium">Registrar rastreio manual</p>
+          <Input name="carrierName" placeholder="Transportadora" required />
+          <Input name="trackingNumber" placeholder="Código de rastreio" required />
+          <Input name="carrierUrl" placeholder="Link de acompanhamento" />
+          <button className="rounded-md border px-3 py-2 text-sm font-medium" type="submit">
+            Salvar rastreamento
+          </button>
+        </form>
+
+        <form action={syncMercadoEnviosOrderShipment.bind(null, order.id)} className="grid gap-3 rounded-md border p-4">
+          <p className="font-medium">Sincronizar Mercado Envios</p>
+          <Input name="externalShipmentId" placeholder="Código de envio Mercado Envios" required />
+          <button className="rounded-md border px-3 py-2 text-sm font-medium" type="submit">
+            Sincronizar entrega
+          </button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 

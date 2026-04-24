@@ -41,6 +41,8 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Create
     items: input.items,
     couponCode: input.couponCode,
     loyaltyPointsToRedeem: input.loyaltyPointsToRedeem,
+    shippingOptionId: input.shippingOptionId,
+    shippingPostalCode: input.shippingAddress.postalCode,
     userId: input.userId
   });
 
@@ -50,6 +52,10 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Create
 
   if (validatedCart.totalCents <= 0) {
     throw new Error("Pedidos com total zero ainda não estão habilitados.");
+  }
+
+  if (!validatedCart.selectedShippingOption) {
+    throw new Error("Selecione uma opção de entrega antes do pagamento.");
   }
 
   if (!shouldUseLocalPaymentMock()) {
@@ -67,7 +73,12 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Create
       subtotalCents: validatedCart.subtotalCents,
       discountCents: validatedCart.couponDiscountCents,
       loyaltyDiscountCents: validatedCart.loyaltyDiscountCents,
-      shippingCents: 0,
+      shippingCents: validatedCart.shippingCents,
+      shippingOptionId: validatedCart.selectedShippingOption.id,
+      shippingServiceName: validatedCart.selectedShippingOption.name,
+      shippingProvider: validatedCart.selectedShippingOption.provider,
+      shippingPostalCode: input.shippingAddress.postalCode,
+      shippingEstimatedBusinessDays: validatedCart.selectedShippingOption.estimatedBusinessDays,
       taxCents: 0,
       totalCents: validatedCart.totalCents,
       loyaltyPointsRedeemed: validatedCart.loyalty.redeemedPoints,

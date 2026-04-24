@@ -9,6 +9,7 @@ import type {
 } from "@/features/cart/types";
 import { validateCoupon, validateLoyaltyRedemption } from "@/lib/cart/discounts";
 import { prisma } from "@/lib/prisma";
+import { selectShippingOption } from "@/lib/shipping/quotes";
 
 export async function validateCartItems(
   request: CartValidationRequest
@@ -80,6 +81,13 @@ export async function validateCartItems(
     0,
     subtotalCents - couponPreview.discountCents - loyaltyPreview.discountCents
   );
+  const shippingQuote = selectShippingOption({
+    itemCount,
+    postalCode: request.shippingPostalCode,
+    selectedOptionId: request.shippingOptionId,
+    subtotalCents
+  });
+  const shippingCents = shippingQuote.selectedOption?.priceCents ?? 0;
 
   return {
     items: validatedItems,
@@ -87,7 +95,8 @@ export async function validateCartItems(
     subtotalCents,
     couponDiscountCents: couponPreview.discountCents,
     loyaltyDiscountCents: loyaltyPreview.discountCents,
-    totalCents,
+    shippingCents,
+    totalCents: totalCents + shippingCents,
     itemCount,
     appliedCoupon: couponPreview.coupon
       ? {
@@ -96,6 +105,8 @@ export async function validateCartItems(
           discountCents: couponPreview.discountCents
         }
       : null,
+    selectedShippingOption: shippingQuote.selectedOption,
+    shippingOptions: shippingQuote.options,
     couponMessage: couponPreview.message,
     loyalty: loyaltyPreview
   };
@@ -108,9 +119,12 @@ function buildEmptyCartResponse(request: CartValidationRequest): CartValidationR
     subtotalCents: 0,
     couponDiscountCents: 0,
     loyaltyDiscountCents: 0,
+    shippingCents: 0,
     totalCents: 0,
     itemCount: 0,
     appliedCoupon: null,
+    selectedShippingOption: null,
+    shippingOptions: [],
     couponMessage: request.couponCode ? "Adicione produtos antes de aplicar cupom." : null,
     loyalty: {
       availablePoints: 0,

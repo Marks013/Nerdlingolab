@@ -16,7 +16,7 @@ interface CheckoutResponse {
 }
 
 export function CheckoutClient(): React.ReactElement {
-  const { items, couponCode, loyaltyPointsToRedeem, clearCart, getValidationPayload } = useCartStore();
+  const { items, couponCode, loyaltyPointsToRedeem, shippingOptionId, shippingPostalCode, clearCart, getValidationPayload } = useCartStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -31,6 +31,7 @@ export function CheckoutClient(): React.ReactElement {
         items: getValidationPayload(),
         couponCode,
         loyaltyPointsToRedeem,
+        shippingOptionId,
         customer: {
           name: formData.get("name"),
           email: formData.get("email"),
@@ -39,7 +40,7 @@ export function CheckoutClient(): React.ReactElement {
         },
         shippingAddress: {
           recipient: formData.get("name"),
-          postalCode: formData.get("postalCode"),
+          postalCode: shippingPostalCode || formData.get("postalCode"),
           street: formData.get("street"),
           number: formData.get("number"),
           complement: formData.get("complement"),

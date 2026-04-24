@@ -504,6 +504,32 @@ Observação:
 
 - O mock de pagamento não mascara produção; ele é uma chave explícita para E2E local sem sandbox Mercado Pago. O fluxo financeiro interno testado usa banco real, transação Prisma, baixa de estoque, cupom, fidelidade e webhook.
 
+## Atualização mais recente - frete, rastreamento e Mercado Envios
+
+Concluído nesta atualização:
+
+- Criada migration `20260424230300_shipping_quotes_and_tracking`.
+- Adicionados campos de frete no pedido: opção, serviço, provedor, CEP, prazo estimado e valor.
+- Adicionados modelos `Shipment` e `ShipmentEvent` para rastreamento e histórico de entrega.
+- Criado endpoint `POST /api/shipping/quote` para cotação server-side por CEP.
+- Produto agora mostra cálculo de frete.
+- Carrinho agora permite calcular e escolher entrega; o valor entra no total.
+- Checkout revalida a opção de entrega no servidor e grava `shippingCents` no pedido.
+- Admin do pedido mostra entrega/rastreamento, permite registro manual e sincronização com Mercado Envios por `shipment_id`.
+- Criado cliente Mercado Envios para consultar `/shipments/{id}`, `/shipments/{id}/history` e `/shipments/{id}/carrier` quando `MERCADO_ENVIOS_ACCESS_TOKEN` estiver configurado.
+- O E2E com banco real foi atualizado para validar frete dentro do total do pedido.
+
+Decisão técnica:
+
+- Mercado Envios foi tratado como provedor de rastreamento/sincronização por `shipment_id`, conforme API pública do Mercado Livre. A cotação da loja própria permanece server-side local até existir fluxo/credencial habilitado para cotação oficial de envio fora do marketplace.
+
+Validações executadas:
+
+- `npm run validate:project` passou.
+- `npm run check:operational` passou.
+- `npm run build` passou.
+- `npm run test:e2e` passou com 12/12 testes.
+
 ## Estado importante do runtime
 
 Para E2E completo:
@@ -537,6 +563,8 @@ Prioridade alta:
 
 - Expandir o fluxo real para login de cliente e painel admin conferindo o pedido pago.
 - Testar replay/duplicidade de webhook aprovado.
+- Integrar cotação oficial de frete quando a conta Mercado Envios/Mercado Livre expuser endpoint aplicável para loja própria.
+- Testar sincronização Mercado Envios com `MERCADO_ENVIOS_ACCESS_TOKEN` e `shipment_id` reais.
 - Criar inventário detalhado dos assets Shopify que entram em `public/`, mantendo somente assets usados.
 - Comparar a home Shopify com `src/app/(shop)/page.tsx` e mapear componentes React equivalentes.
 - Mapear as seções Liquid prioritárias para componentes Next.js: header, footer, home, coleção, produto, carrinho, ofertas e fidelidade.

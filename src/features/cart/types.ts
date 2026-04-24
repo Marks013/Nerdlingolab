@@ -18,7 +18,18 @@ export interface CartValidationRequest {
   items: CartValidationRequestItem[];
   couponCode?: string;
   loyaltyPointsToRedeem?: number;
+  shippingOptionId?: string;
+  shippingPostalCode?: string;
   userId?: string;
+}
+
+export interface ShippingOption {
+  id: string;
+  name: string;
+  description: string;
+  priceCents: number;
+  estimatedBusinessDays: number;
+  provider: "MANUAL" | "MERCADO_ENVIOS";
 }
 
 export interface AppliedCoupon {
@@ -54,9 +65,12 @@ export interface CartValidationResponse {
   subtotalCents: number;
   couponDiscountCents: number;
   loyaltyDiscountCents: number;
+  shippingCents: number;
   totalCents: number;
   itemCount: number;
   appliedCoupon: AppliedCoupon | null;
+  selectedShippingOption: ShippingOption | null;
+  shippingOptions: ShippingOption[];
   couponMessage: string | null;
   loyalty: LoyaltyRedemptionPreview;
 }

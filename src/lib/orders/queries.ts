@@ -6,6 +6,8 @@ import type {
   Order,
   OrderItem,
   LoyaltyPoints,
+  Shipment,
+  ShipmentEvent,
   User
 } from "@prisma/client";
 
@@ -26,6 +28,7 @@ export type AdminOrderDetail = Order & {
   couponRedemptions: CouponRedemption[];
   loyaltyLedger: LoyaltyLedger[];
   inventoryLedger: InventoryLedger[];
+  shipments: (Shipment & { events: ShipmentEvent[] })[];
 };
 
 export type CustomerOrderListItem = Order & {
@@ -94,6 +97,14 @@ export async function getAdminOrderById(orderId: string): Promise<AdminOrderDeta
         orderBy: { createdAt: "desc" }
       },
       inventoryLedger: {
+        orderBy: { createdAt: "desc" }
+      },
+      shipments: {
+        include: {
+          events: {
+            orderBy: { occurredAt: "desc" }
+          }
+        },
         orderBy: { createdAt: "desc" }
       }
     }

@@ -1,0 +1,102 @@
+<section data-section-id="{{ section.id }}" data-section-type="product-video" data-section-settings="{{ section_settings }}" style="margin: 0 !important; padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px;">
+    <div class="container">
+        <div class="row-fluid">
+            {% if section.settings.title != blank %}
+                <header class="section__header">
+                    <div class="section__header-stack">
+                        <h2 class="section__title heading h3">{{ section.settings.title }}</h2>
+                    </div>
+                </header>
+            {% endif %}
+
+          {% if section.settings.video_url != blank and section.settings.product != blank %}
+            <div class="product-video">
+              <div class="v-col-video">
+                <div class="v-video-media" data-youtube>
+                  <div style="position: relative; cursor:pointer;">
+                    <img class="lazyload" width="100%" height="100%" loading="lazy"
+                         src="https://i.ytimg.com/vi/{{ section.settings.video_url.id }}/maxresdefault.jpg" />
+                    <button data-youtube-button="https://www.youtube.com/embed/{{ section.settings.video_url.id }}">
+                      {% render 'icon', icon: 'play' %}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="v-col-product">
+                <button style="background-color: {{ section.settings.button_color }};" onclick="location.href='{{ section.settings.product.url }}'">{{ section.settings.button_text }}</button>
+                <div>
+                  <div class="v-product" style="min-height: 542px;">
+                    {%- include 'product-item', product: section.settings.product -%}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+    </div>
+</section>
+
+{% schema %}
+{
+  "name": "Vídeo e produto",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Título",
+      "default": "Produto em destaque"
+    },
+    {
+      "type": "video_url",
+      "id": "video_url",
+      "accept": ["youtube"],
+      "label": "Link do vídeo",
+      "default": "https://www.youtube.com/watch?v=OZhJeelBiPw"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Texto do botão",
+      "default": "Produto do vídeo"
+    },
+    {
+      "type": "product",
+      "id": "product",
+      "label": "Produto ofertado"
+    },
+    {
+      "type": "header",
+      "content": "Espaçamento"
+    },
+    {
+      "type": "text",
+      "id": "padding_top",
+      "label": "Margem superior (px)",
+      "default": "0"
+    },
+    {
+      "type": "text",
+      "id": "padding_bottom",
+      "label": "Margem inferior (px)",
+      "default": "0"
+    },
+    {
+      "type": "header",
+      "content": "Cores"
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "Cor do botão",
+      "default": "#FF2834"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Vídeo e produto",
+      "settings": {}
+    }
+  ]
+}
+{% endschema %}

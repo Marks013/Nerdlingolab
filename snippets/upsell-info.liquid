@@ -1,0 +1,15 @@
+<div class="purchaseOptions">
+    {% render 'variations' : product: product %}
+    <div class="purchaseButton">
+        <button type="button" class="botaoaddcarrinho"
+                onclick="submitFunction('#product-select{{ product.id }}')">
+            {{ 'product.form.add_to_cart' | t }}
+        </button>
+        <div class="verdetalhes" style="margin-top: 10px;text-align: center; text-decoration: underline;">
+            <a href="{{ product.url }}">
+                Ver detalhes
+            </a>
+        </div>
+
+    </div>
+</div>

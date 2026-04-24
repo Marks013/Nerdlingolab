@@ -1,0 +1,35 @@
+{%- comment -%}
+If the product contains the special __gift tag, we prevent it to be completely accessible by redirecting to the home page
+{%- endcomment -%}
+
+{%- if product.tags contains '__gift' -%}
+  <script>
+    window.location.href = '/';
+    alert(e);
+  </script>
+{%- else -%}
+  {% section 'product-template' %}
+  {% section 'product-recommendations' %}
+  {% section 'static-promotion-list' %}
+  {% section 'static-recently-viewed-products' %}
+
+  {%- if settings.app_review == 'alireviews' -%}
+    {% section 'ali-reviews-review-box' %}
+  {%- elsif settings.app_review == 'trustoo' -%}
+    {% section 'trustoo-review-box' %}
+  {%- elsif settings.app_review == 'areviews' -%}
+    {% section 'areviews-review-box' %}
+  {%- elsif settings.app_review == 'ryviu' -%}
+    {% section 'ryviu-review-box' %}
+  {%- endif -%}
+
+  <script>
+    window.ShopifyXR=window.ShopifyXR||function(){(ShopifyXR.q=ShopifyXR.q||[]).push(arguments)};
+    ShopifyXR('addModels', {{ product.media | where: 'media_type', 'model' | json }});
+
+    $(window).on('load', function() {
+      var cardHeight = $('.product-block-list__item--info .card').outerHeight();
+      $('.product-block-list__wrapper').css('min-height', cardHeight + 'px');
+    });
+  </script>
+{%- endif -%}

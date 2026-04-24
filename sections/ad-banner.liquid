@@ -1,0 +1,124 @@
+{%- if section.settings.show_adbanner -%}
+  <section id="ad-banner-section" data-section-id="{{ section.id }}" data-section-type="top-banner" data-section-settings="{{ section_settings }}">
+    {%- if section.settings.desktop_banner != blank and section.settings.mobile_banner != blank  -%}
+      <div id="ad-banner">
+      </div>
+    {%- endif -%}
+  </section>
+
+  {% if section.settings.ad_link %}
+    <script>
+      $(document).ready(function () {
+        $("#ad-banner-section").on("touchstart", function () {
+          this.click();
+        });
+
+        $("#ad-banner-section").on("click touchstart", function() {
+          window.location.href = '{{ section.settings.ad_link.url }}';
+        });
+      });
+    </script>
+  {% endif %}
+
+  <style>
+    {% if section.settings.ad_link %}
+    #ad-banner {
+      cursor: pointer;
+    }
+    {% endif %}
+
+    #ad-banner-section {
+      background: radial-gradient({{ section.settings.background1 }} 20%, {{ section.settings.background2 }} 50%, {{ section.settings.background3 }} 80%);
+      width: 100%;
+      background-size: 400% 400%;
+      -webkit-animation: 5s linear 1s infinite rgbAnimation;
+      animation: 5s infinite rgbAnimation;
+    }
+
+    #ad-banner {
+      background: transparent url({{ section.settings.mobile_banner | img_url: '750x32' }}) repeat-x 50% 0;
+      height: 32px;
+    }
+
+    {% if section.settings.active_infinite_banner %}
+      #ad-banner {
+        animation: infinite-shift-left 1000s linear;
+      }
+    {% endif %}
+
+    @media screen and (min-width: 701px) {
+      #ad-banner {
+        background: transparent url({{ section.settings.desktop_banner | img_url: '1920x50' }}) repeat-x 50% 0;
+        height: 50px;
+      }
+    }
+  </style>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Banner de anúncio",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_adbanner",
+      "label": "Mostrar banner de anúncio",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "active_infinite_banner",
+      "label": "Ativar banner infinito",
+      "default": false
+    },
+    {
+      "type": "url",
+      "id": "ad_link",
+      "label": "Link do anúncio",
+      "default": "/collections/all"
+    },
+    {
+      "type": "header",
+      "content": "Imagens"
+    },
+    {
+      "type": "image_picker",
+      "id": "desktop_banner",
+      "label": "Banner / Desktop",
+      "info": "1920 x 60px .png recomendado"
+    },
+    {
+      "type": "image_picker",
+      "id": "mobile_banner",
+      "label": "Banner / Mobile",
+      "info": "750 x 83px .png recomendado"
+    },
+    {
+      "type": "header",
+      "content": "Cores"
+    },
+    {
+      "type": "header",
+      "content": "Barra colorida"
+    },
+    {
+      "type": "color",
+      "id": "background1",
+      "label": "Cor 1",
+      "default": "#00FF48"
+    },
+    {
+      "type": "color",
+      "id": "background2",
+      "label": "Cor 2",
+      "default": "#01C6FF"
+    },
+    {
+      "type": "color",
+      "id": "background3",
+      "label": "Cor 3",
+      "default": "#FFA000"
+    }
+  ]
+}
+{% endschema %}

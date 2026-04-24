@@ -1,0 +1,44 @@
+<div id="social-sharing" style="margin-top: {{ block.settings.margin_top }}px; margin-bottom: {{ block.settings.margin_bottom }}px;">
+    <span>{{ 'product.general.share' | t | upcase }}</span>
+    <div class="sharing-content">
+        {% if block.settings.share_facebook %}
+            <div class="share-item">
+                <a href="//www.facebook.com/sharer.php?u={{ shop.url | append: share_permalink }}" target="_blank">
+                    {% render 'icon-social-facebook' with size: 20 %}
+                </a>
+            </div>
+        {% endif %}
+
+        {% if block.settings.share_twitter %}
+            <div class="share-item">
+                <a href="//twitter.com/share?text={{ share_title | url_param_escape }}&amp;url={{ shop.url | append: share_permalink }}" target="_blank">
+                    {% render 'icon-social-twitter' with size: 20 %}
+                </a>
+            </div>
+        {% endif %}
+
+        {% if block.settings.share_pinterest %}
+            <div class="share-item">
+                <a href="//pinterest.com/pin/create/button/?url={{ shop.url | append: share_permalink }}&amp;media={{ share_image | img_url: 'x1500' }}&amp;description={{ share_title | url_param_escape }}" target="_blank">
+                    {% render 'icon-social-pinterest' with size: 20 %}
+                </a>
+            </div>
+        {% endif %}
+
+        {% if block.settings.share_whatsapp %}
+            <div class="share-item">
+                <a href="https://api.whatsapp.com/send?text={{ share_title | url_param_escape }}%20-%20{{ shop.url | append: share_permalink }}%20" target="_blank">
+                    {% render 'icon-social-whatsapp' size: 20 %}
+                </a>
+            </div>
+        {% endif %}
+
+        {% if block.settings.share_email %}
+            <div class="share-item">
+                <a href="mailto:?subject={{ share_title | url_param_escape }}&body={{ shop.url | append: share_permalink }}%20" target="_blank">
+                    {% render 'icon-social-email' size: 20 %}
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>

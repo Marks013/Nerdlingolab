@@ -1,0 +1,75 @@
+<div id="free-shipping" style="margin-top: {{ block.settings.margin_top }}px; margin-bottom: {{ block.settings.margin_bottom }}px;">
+
+    {%- if request.locale.iso_code == 'pt-BR' and shop.currency == 'BRL' -%}
+        <img src="{{ 'correios.svg' | asset_url  }}" alt="Correios">
+    {%- endif -%}
+
+    <p>
+        <span class="ship-name">{{ block.settings.ship_name }}:</span>
+        <span class="ship-address"></span>
+        <span class="ship-interval"></span>
+    </p>
+</div>
+
+<script defer="defer">
+    function somaDiasUteis(data, dias) {
+        if(isNaN(dias) || !(data instanceof Date)) {
+            return;
+        }
+
+        var dia = data.getDay();
+        var diasAdd = parseInt(dias);
+
+        if (dia === 0)
+            diasAdd++;
+
+        if (dia + diasAdd >= 6) {
+            var diasDeTrabalhoRestante = diasAdd - (5 - dia);
+            diasAdd += 2;
+            if (diasDeTrabalhoRestante > 5) {
+                diasAdd += 2 * Math.floor(diasDeTrabalhoRestante / 5);
+                if (diasDeTrabalhoRestante % 5 === 0)
+                    diasAdd -= 2;
+            }
+        }
+
+        data.setDate(data.getDate() + diasAdd);
+        return data;
+    }
+
+    function estimar() {
+        var prazoMin = somaDiasUteis(new Date(), {{ block.settings.first_date_free_ship }});
+        var prazoMax = somaDiasUteis(new Date(), {{ block.settings.interval_date_free_ship }});
+
+        $.getJSON( "https://wtfismyip.com/json", function(local) {
+            var localizacao = local['YourFuckingLocation'];
+            var partes = localizacao.split(',');
+            partes.pop();
+
+            var regiao = partes.join(',');
+
+            $(".ship-address").html(`{{ 'product.general.for' | t }}` + " " + regiao + " " + `{{ 'product.general.and_region' | t }}` );
+
+            {%- if request.locale.iso_code == 'en' -%}
+                var meses = [ "January", "February", "March", "April", "May", "June",
+                    "July", "August", "September", "October", "November", "December" ];
+                $(".ship-interval").html(`{{ 'product.general.receive_between' | t }}` + ": " + "<span style='font-weight: 500;'>"+meses[prazoMin.getMonth()] + " " + prazoMin.getDate() + "th" + " and " + meses[prazoMax.getMonth()] + " " + prazoMax.getDate() + "th");
+            {%- elsif request.locale.iso_code == 'pt-BR' -%}
+                var meses = [ "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+                    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro" ];
+                $(".ship-interval").html(`{{ 'product.general.receive_between' | t }}` + ": " + "<span style='font-weight: 500;'>"+prazoMin.getDate() + " de " + meses[prazoMin.getMonth()] + " e " + prazoMax.getDate() + " de " + meses[prazoMax.getMonth()]);
+            {%- elsif request.locale.iso_code == 'es' -%}
+                var meses = [ "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre" ];
+                $(".ship-interval").html(`{{ 'product.general.receive_between' | t }}` + ": " + "<span style='font-weight: 500;'>"+prazoMin.getDate() + " de " + meses[prazoMin.getMonth()] + " e " + prazoMax.getDate() + " de " + meses[prazoMax.getMonth()]);
+            {%- endif -%}
+
+            $("#free-shipping").css("display", "flex");
+        });
+    }
+
+    document.addEventListener('shopify:section:load', function (event) {
+        estimar();
+    });
+    estimar();
+</script>

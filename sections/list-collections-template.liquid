@@ -1,0 +1,156 @@
+<section class="section" data-section-id="{{ section.id }}" data-section-type="collection-list">
+    <div class="container">
+        <div class="page__sub-header">
+            <nav aria-label="{{ 'general.breadcrumb.title' | t }}" class="breadcrumb">
+                <ol class="breadcrumb__list" role="list">
+                    <li class="breadcrumb__item">
+                        <a class="breadcrumb__link link"
+                           href="{{ routes.root_url }}">{{ 'general.breadcrumb.home' | t }}</a> {%- render 'icon', icon: 'arrow-right' -%}
+                    </li>
+
+                    <li class="breadcrumb__item">
+                        <span class="breadcrumb__link">{{ 'collection.general.all_collections' | t }}</span>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+
+        <div class="collection-list__section">
+            <header class="page__header page__header--stack page__header--centered">
+                <h1 class="page__title heading h1">{{ 'collection.general.all_collections' | t }}</h1>
+            </header>
+
+            <div class="scroller">
+                <div class="scroller__inner">
+                    <div class="collection-list evolution-list-{{ section.id }}">
+                        {%- if section.settings.collections_to_show == 'all' -%}
+                            {%- for collection in collections -%}
+                                {%- unless collection.template_suffix contains 'brand' -%}
+                                    <a href="{{ collection.url }}"
+                                       class="collection-item"
+                                       data-collection-index="{{ forloop.index0 }}" {{ block.shopify_attributes }}>
+                                        <div class="collection-item__image-wrapper {% if section.settings.round_images %}collection-item__image-wrapper--rounded{% endif %}">
+                                            {%- capture supported_sizes -%}{%- render 'image-size', sizes: '300,400,500,600,700,800', image: collection.image -%}{%- endcapture -%}
+                                            {%- assign image_url = collection.image | img_url: '1x1' | replace: '_1x1.', '_{width}x.' -%}
+
+                                            <div class="aspect-ratio" style="padding-bottom: 100%">
+                                                <img class="lazyload image--fade-in"
+                                                     data-src="{{ image_url }}"
+                                                     data-widths="[{{ supported_sizes }}]" data-sizes="auto"
+                                                     alt="{{ collection.image.alt | escape }}">
+
+                                                <noscript>
+                                                    <img src="{{ collection.image | img_url: '450x' }}"
+                                                         alt="{{ collection.image.alt | escape }}">
+                                                </noscript>
+                                            </div>
+                                        </div>
+
+                                        {%- if section.settings.show_collection_title -%}
+                                            <span class="collection-item__title text--strong">{{ collection.title }} {% render 'icon', icon: 'tail-right' %}</span>
+                                        {%- endif -%}
+                                    </a>
+                                {%- endunless -%}
+                            {%- endfor -%}
+                        {%- else -%}
+                            {%- for block in section.blocks -%}
+                                {%- assign collection = collections[block.settings.collection] -%}
+
+                                {%- unless collection.template_suffix contains 'brand' -%}
+                                    <a href="{{ collection.url }}"
+                                       class="collection-item"
+                                       data-collection-index="{{ forloop.index0 }}" {{ block.shopify_attributes }}>
+                                        <div class="collection-item__image-wrapper {% if section.settings.round_images %}collection-item__image-wrapper--rounded{% endif %}">
+                                            {%- capture supported_sizes -%}{%- render 'image-size', sizes: '300,400,500,600,700,800', image: collection.image -%}{%- endcapture -%}
+                                            {%- assign image_url = collection.image | img_url: '1x1' | replace: '_1x1.', '_{width}x.' -%}
+
+                                            <div class="aspect-ratio" style="padding-bottom: 100%">
+                                                <img class="lazyload image--fade-in"
+                                                     data-src="{{ image_url }}"
+                                                     data-widths="[{{ supported_sizes }}]" data-sizes="auto"
+                                                     alt="{{ collection.image.alt | escape }}">
+
+                                                <noscript>
+                                                    <img src="{{ collection.image | img_url: '450x' }}"
+                                                         alt="{{ collection.image.alt | escape }}">
+                                                </noscript>
+                                            </div>
+                                        </div>
+
+                                        {%- if section.settings.show_collection_title -%}
+                                            <span class="collection-item__title text--strong">{{ collection.title }} {% render 'icon', icon: 'tail-right' %}</span>
+                                        {%- endif -%}
+                                    </a>
+                                {%- endunless -%}
+                            {%- endfor -%}
+                        {%- endif -%}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+{% schema %}
+{
+  "name": "Collection list page",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "You can [learn more](https://support.maestrooo.com/article/185-collection-how-to-use-the-brand-template) about how to set up brand collections."
+    },
+    {
+      "type": "radio",
+      "id": "collections_to_show",
+      "label": "Show collections",
+      "options": [
+        {
+          "value": "all",
+          "label": "All"
+        },
+        {
+          "value": "selected",
+          "label": "Selected"
+        }
+      ],
+      "default": "all"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_collection_title",
+      "label": "Show collection title",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_collection_overlay",
+      "label": "Show collection overlay",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "collection_overlay_opacity",
+      "label": "Overlay opacity",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 20
+    }
+  ],
+  "blocks": [
+    {
+      "type": "collection",
+      "name": "Collection",
+      "settings": [
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

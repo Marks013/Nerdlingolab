@@ -1,0 +1,32 @@
+<script async>
+! function(f, b, e, v, n, t, s) {
+    if (f.fbq) return;
+    n = f.fbq = function() {
+        if (arguments[1] === "Purchase" && typeof arguments[2].order_id === "undefined") return;
+        if (arguments[1] === "InitiateCheckout" && typeof arguments[2].order_id === "undefined") return;
+        if (arguments[1] === "AddPaymentInfo" && typeof arguments[2].order_id === "undefined") return;
+        n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+    };
+    if (!f._fbq) f._fbq = n;
+    n.push = n;
+    n.loaded = !0;
+    n.version = '2.0';
+    n.queue = [];
+    t = b.createElement(e);
+    t.async = !0;
+    t.src = v;
+    s = b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t, s)
+}(window, document, 'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '{{settings.id_pixel}}');
+</script>
+<noscript id="dash">
+<style>body *{display:none}body:before{content: 'ATENÇÃO!!! COPIAR CONTEÚDO PROTEGIDO POR DIREITOS AUTORAIS É CRIME! \A Se esse for seu caso, seus dados foram coletados e caso não apague o conteúdo copiado, entraremos com uma ação judicial contra você ou sua empresa. Contamos com sua colaboração.';
+    text-align: center;
+    display: block;	
+    display: block;
+    margin-top: 200px;
+    white-space: pre-wrap;
+    line-height: 1.8;}  </style>
+  <meta charset="utf-8"><h5><b></h5></b><meta http-equiv="refresh" content="3; URL='https://imadigital.com.br'">
+</noscript>

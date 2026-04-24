@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 4%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 4%;
+  --primary: 25 96% 38%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 190 95% 27%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 210 20% 96%;
+  --muted-foreground: 202 8% 38%;
+  --accent: 190 95% 27%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 44%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 214 20% 90%;
+  --input: 214 20% 90%;
+  --ring: 25 96% 38%;
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: 222 34% 6%;
+  --foreground: 0 0% 98%;
+  --card: 222 28% 9%;
+  --card-foreground: 0 0% 98%;
+  --primary: 28 100% 62%;
+  --primary-foreground: 222 34% 6%;
+  --secondary: 188 88% 47%;
+  --secondary-foreground: 222 34% 6%;
+  --muted: 222 22% 15%;
+  --muted-foreground: 210 10% 72%;
+  --accent: 188 88% 47%;
+  --accent-foreground: 222 34% 6%;
+  --destructive: 0 78% 64%;
+  --destructive-foreground: 222 34% 6%;
+  --border: 222 18% 22%;
+  --input: 222 18% 22%;
+  --ring: 28 100% 62%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  min-height: 100vh;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-feature-settings: "kern";
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: hsl(var(--primary) / 0.28);
+}
+
+a,
+button,
+input,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.surface-polished {
+  background:
+    radial-gradient(circle at top left, hsl(var(--primary) / 0.12), transparent 34rem),
+    radial-gradient(circle at bottom right, hsl(var(--secondary) / 0.10), transparent 30rem),
+    hsl(var(--background));
+}

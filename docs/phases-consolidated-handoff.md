@@ -1,0 +1,574 @@
+# NerdLingoLab - Handoff consolidado sem contexto
+
+Data do handoff: 24/04/2026
+
+Use este arquivo como ponto de partida em um chat novo. Ele consolida as fases já feitas, decisões técnicas, validações, riscos e próximos passos.
+
+Regra de manutenção: conforme o projeto avançar, este arquivo deve ser atualizado no mesmo turno com novas fases, decisões, validações, pendências e comandos executados. Ele é o controle principal para retomar o trabalho em um chat totalmente sem contexto.
+
+## Atualização mais recente - fase 16 migração visual Shopify
+
+Concluído nesta atualização:
+
+- Iniciada a migração visual controlada do tema Shopify para o Next.js.
+- Criado `docs/phase-16-shopify-visual-migration.md`.
+- Criada `public/shopify/` com assets reais selecionados do tema exportado.
+- Atualizados header e home para usar logo e imagem reais, sem importar Liquid.
+- Mantidos os guardrails do blueprint: Shopify como referência visual/comercial e SavePointFinance como referência de robustez técnica.
+
+## Atualização anterior - alinhamento Shopify + SavePointFinance
+
+Concluído nesta atualização:
+
+- Criado `docs/shopify-savepoint-migration-blueprint.md` como regra de migração entre o tema Shopify exportado, o NerdLingoLab e as práticas do SavePointFinance.
+- Confirmado que o tema Shopify deve ser usado como referência visual, comercial e de conteúdo, não como código Liquid de produção.
+- Confirmado que o SavePointFinance deve ser usado como referência de engenharia: organização, validações, auditorias, modelagem Prisma, webhooks persistidos, smoke tests e disciplina operacional.
+- Definido que assets do Shopify só devem entrar em `public/` quando forem realmente usados, com nomes normalizados e sem scripts legados desnecessários.
+
+Arquivos de referência obrigatória:
+
+- `docs/shopify-savepoint-migration-blueprint.md`
+- `C:\Users\User\Desktop\theme_export__nerdlingolab-com-nerdlingolav-v11-9-5__24APR2026-1138am.zip`
+- `C:\Users\User\Desktop\SavePointFinance-reference`
+
+## Atualização anterior - fase 15 sem Docker
+
+Concluído nesta rodada:
+
+- Criado `.env` local de desenvolvimento com valores descartáveis para permitir build e smoke tests.
+- Criado `.gitignore` para não versionar `.env`, `.next`, `node_modules`, resultados Playwright e artefatos locais.
+- Movido `proxy.ts` para `src/proxy.ts`, conforme convenção do Next 16 quando o projeto usa `src/app`.
+- Confirmada proteção de `/admin/*` via E2E.
+- Marcadas como dinâmicas as rotas que dependem de Prisma/Auth, evitando consulta ao banco durante build.
+- Adicionado `/api/health/ready` para checar banco e storage quando Docker/infra estiverem ativos.
+- Ajustado Mercado Pago para validar token no momento de uso, sem quebrar build por import de módulo.
+
+Validações executadas e aprovadas:
+
+- `npm run validate:project`
+- `npm run check:operational`
+- `npm run build`
+- `npm run test:e2e` com 8 testes aprovados em desktop e mobile.
+
+Bloqueio externo atual:
+
+- Docker não está instalado ou não está disponível no PATH desta máquina. Por isso, ainda não foi possível subir Postgres/MinIO, rodar migrations reais, seed e validação completa com banco/storage.
+
+## Pedido original
+
+Construir um e-commerce completo para substituir Shopify, usando Next.js App Router, TypeScript strict, PostgreSQL, Prisma, Auth.js, Tailwind, Shadcn/ui, Zustand, TanStack Query, MinIO, Resend, React Email, Sentry e Mercado Pago.
+
+O projeto deve ter rigor de sistema financeiro para pagamento, estoque, pedidos, cupons e fidelidade. A interface deve ficar em português do Brasil, com acentuação correta e sem textos técnicos como "backend", "frontend", "desenvolvimento" ou instruções para devs em cards/páginas.
+
+## Diretriz de migração Shopify + SavePointFinance
+
+Este projeto substitui o tema Shopify do NerdLingoLab, mas não deve migrar Liquid para produção. O Shopify é a fonte de verdade para identidade visual, estrutura comercial, assets úteis, textos em PT-BR, comunicação de confiança, ofertas, cupons, fidelidade, cashback/nerdcoins, suporte e páginas institucionais.
+
+O SavePointFinance é a referência de robustez, não de domínio. Não copiar regras financeiras pessoais, categorias financeiras, assinaturas ou fluxos que não pertençam ao e-commerce. Reaproveitar o padrão de engenharia: separação de rotas públicas e protegidas, APIs por domínio, Prisma como contrato de dados, webhooks persistidos e idempotentes, auditorias operacionais, smoke tests, validação explícita de ambiente e admin auditável.
+
+Toda fase nova deve responder a três perguntas antes de implementar:
+
+- Qual comportamento do Shopify esta fase preserva ou melhora?
+- Qual prática de robustez do SavePointFinance esta fase aplica?
+- Qual validação comprova que checkout, pedidos, estoque, cupons, fidelidade ou webhooks não regrediram?
+
+## Stack atual
+
+- Next.js `16.2.4`
+- React `19.2.5`
+- TypeScript `6.0.3`
+- Prisma `6.19.3`, fixado por compatibilidade
+- PostgreSQL em Docker Compose
+- MinIO em Docker Compose
+- Auth.js / NextAuth beta `5.0.0-beta.31`
+- Sentry `10.50.0`
+- Mercado Pago SDK `2.12.0`
+- Recharts `3.8.1`
+- Zod `4.3.6`
+- Playwright `1.59.1`
+
+## Scripts principais
+
+- `npm run dev`
+- `npm run build`
+- `npm run validate:project`
+- `npm run validate:encoding`
+- `npm run validate:ui-copy`
+- `npm run check:operational`
+- `npm run test:e2e`
+- `npm run prisma:generate`
+- `npm run db:migrate`
+- `npm run db:seed`
+- `npm run setup`
+
+## Arquivos de política
+
+- `docs/encoding.md`: padrão UTF-8, NFC, sem BOM e sem mojibake.
+- `docs/ui-copy-policy.md`: bloqueia termos técnicos e textos sem acentuação na interface.
+- `docs/shopify-savepoint-migration-blueprint.md`: regras de migração Shopify -> NerdLingoLab usando SavePointFinance como referência de engenharia.
+- `scripts/check-encoding.mjs`: valida encoding do projeto.
+- `scripts/check-ui-copy.mjs`: valida textos visíveis em `.tsx`.
+
+## Inventário base da migração
+
+Tema Shopify exportado:
+
+- 202 arquivos no ZIP.
+- `assets`: 37 arquivos, incluindo CSS/JS customizados, logos, imagens de produto, badges de app, cashback e integrações.
+- `sections`: 58 arquivos Liquid, incluindo header, footer, coleção, produto, carrinho, ofertas, newsletter, loyalty e cashback.
+- `snippets`: 69 fragmentos Liquid.
+- `templates`: 29 templates.
+- `locales`: `pt-BR`, `en` e `es`.
+- `config`: settings e markets.
+
+Repositório SavePointFinance de referência:
+
+- Clonado em `C:\Users\User\Desktop\SavePointFinance-reference` apenas para leitura e comparação.
+- Usar como referência para estrutura, validação e operação.
+- Não usar como fonte de regras de negócio do NerdLingoLab.
+
+## Fase 1 - Fundação e infraestrutura
+
+Entregue:
+
+- `docker-compose.yml` com Postgres e MinIO.
+- `prisma/schema.prisma` com usuários, Auth.js, produtos, categorias, variações, estoque, pedidos, itens, cupons, fidelidade, ledger, webhooks.
+- `prisma/seed.ts` para criar Superadmin.
+- `.env.example`.
+- Configuração inicial Next, Sentry, Prisma e scripts de banco.
+
+Observação:
+
+- O seed exige `SUPERADMIN_EMAIL` e `SUPERADMIN_PASSWORD`.
+
+## Fase 2 - App shell e integrações base
+
+Entregue:
+
+- Estrutura App Router com route groups `(shop)` e `(admin)`.
+- Instâncias singleton em `src/lib`.
+- Auth.js com Credentials e Google.
+- Middleware/proxy administrativo.
+- Layouts iniciais da vitrine e painel.
+
+Atualização importante:
+
+- Em Next 16, `middleware.ts` foi migrado para `src/proxy.ts`.
+
+## Fase 3 - Catálogo inicial
+
+Entregue:
+
+- CRUD administrativo de produtos.
+- CRUD de categorias.
+- Queries públicas para vitrine.
+- Páginas `/produtos` e `/produtos/[slug]`.
+- Componentes de formulário, tabela e cards de produto.
+
+Pendente:
+
+- Variações mais completas por tamanho/cor/sku.
+- Filtros avançados e busca.
+
+## Fase 4 - Carrinho
+
+Entregue:
+
+- Zustand para estado do carrinho.
+- Página `/carrinho`.
+- Botão de adicionar ao carrinho.
+- Validação server-side do carrinho em `/api/cart/validate`.
+
+Atualização pós-React 19:
+
+- Validação automática do carrinho foi ajustada para evitar `setState` síncrono dentro de `useEffect`.
+
+## Fase 5 - Cupons e fidelidade no carrinho
+
+Entregue:
+
+- Motor de cupons com datas, limites e valores.
+- Pontos de fidelidade no carrinho.
+- Revalidação server-side de descontos.
+- CRUD administrativo de cupons.
+
+Regra:
+
+- Nenhum cálculo crítico deve confiar no client.
+
+## Fase 6 - Checkout interno e Mercado Pago
+
+Entregue:
+
+- Página `/checkout`.
+- Endpoint `/api/checkout`.
+- Criação de pedido local antes do pagamento.
+- Criação de preferência Mercado Pago.
+- Retorno em `/checkout/retorno`.
+
+Ajuste feito:
+
+- Criação de `OrderItem` corrigida para relações Prisma tipadas e snapshot JSON serializável.
+
+Pendente:
+
+- Checkout transparente completo com campos avançados.
+- Teste com credenciais reais/sandbox Mercado Pago.
+
+## Fase 7 - Webhook Mercado Pago e pós-pagamento
+
+Entregue:
+
+- Endpoint `/api/webhooks/mercadopago`.
+- Processamento idempotente.
+- Atualização transacional do pedido.
+- Baixa de estoque.
+- Registro de uso de cupom.
+- Registro de pontos no ledger de fidelidade.
+
+Pendente:
+
+- Assinatura/validação robusta do webhook conforme ambiente Mercado Pago real.
+- Testes de replay e duplicidade.
+
+## Fase 8 - Admin de pedidos e encoding
+
+Entregue:
+
+- Listagem administrativa de pedidos.
+- Detalhe de pedido.
+- Histórico de estoque, cupom e fidelidade.
+- Política robusta de encoding e texto da interface.
+
+Regra:
+
+- Orientações técnicas ficam em docs locais, nunca em cards/páginas da interface.
+
+## Fase 9 - Operação de pedidos
+
+Entregue:
+
+- Ações administrativas para avançar pedido.
+- Marcar processamento, envio, entrega e cancelamento permitido.
+- Restrições para evitar transições inválidas.
+
+Pendente:
+
+- Reembolso real integrado ao Mercado Pago.
+- Rastreamento/logística.
+
+## Fase 10 - Upload de imagens de produto
+
+Entregue:
+
+- Upload administrativo para imagens de produto.
+- Integração MinIO/S3-compatible.
+- URLs públicas via storage.
+
+Pendente:
+
+- Compressão/otimização de imagem.
+- Remoção segura de imagens órfãs.
+
+## Fase 11 - Área do cliente
+
+Entregue:
+
+- Página `/conta`.
+- Visão de pedidos do cliente.
+- Detalhe de pedido do cliente.
+- Pontos e histórico de fidelidade.
+
+Pendente:
+
+- Edição de dados pessoais.
+- Endereços salvos.
+- Login social testado em ambiente real.
+
+## Fase 12 - Navegação e layouts
+
+Entregue:
+
+- Navegação pública.
+- Shell administrativo.
+- Separação correta da página de login fora do shell.
+- Links do painel: Painel, Relatórios, Pedidos, Produtos, Categorias, Cupons.
+
+Pendente:
+
+- Estado ativo no menu.
+- Melhorias finas de mobile no painel.
+
+## Fase 13 - Métricas do painel
+
+Entregue:
+
+- Métricas reais no painel administrativo.
+- Receita total.
+- Receita do dia.
+- Receita do ano.
+- Pedidos pagos totais, do dia e do ano.
+- Produtos ativos.
+- Pontos emitidos totais e no ano.
+
+Pedido específico atendido:
+
+- Ano incluído para fins de relatório.
+
+## Fase 14 - Relatórios anuais
+
+Entregue:
+
+- Página `/admin/relatorios`.
+- Consultas em `src/lib/reports/queries.ts`.
+- Gráficos anuais com Recharts.
+- Receita por mês.
+- Descontos por cupons e pontos.
+- Pontos emitidos e resgatados por mês.
+
+Pendente:
+
+- Filtros por período customizado.
+- Exportação CSV/PDF.
+- Relatórios por produto, categoria e cliente.
+
+## Atualização de dependências - 24/04/2026
+
+Atualizado:
+
+- Next, React, Sentry, Zod, Recharts, Mercado Pago, MinIO, React Hook Form, TanStack Query, Resend, React Email, Lucide, Zustand e utilitários.
+
+Mantido por compatibilidade:
+
+- Prisma em `6.19.3`; Prisma 7 exige migração estrutural.
+- Tailwind em `3.4.19`; Tailwind 4 exige migração do pipeline CSS.
+- ESLint em `9.39.4`; ESLint 10 conflita com plugins transitivos do Next.
+- Next canary recusado por conflito com Sentry.
+- React canary recusado por risco sem ganho imediato.
+
+Depreciações corrigidas:
+
+- `package.json#prisma` removido.
+- Criado `prisma.config.ts`.
+- `z.nativeEnum` trocado por `z.enum`.
+- `disableLogger` do Sentry trocado por `webpack.treeshake.removeDebugLogging`.
+- `middleware.ts` trocado por `proxy.ts` para Next 16.
+
+## Fase 15 - Prontidão operacional
+
+Entregue:
+
+- `playwright.config.ts`.
+- `tests/e2e/public-flow.spec.ts`.
+- `scripts/check-operational-readiness.mjs`.
+- `docs/phase-15-operational-readiness.md`.
+- Instalação do Chromium do Playwright.
+- Verificação operacional local.
+- Endpoint `/api/health/ready`.
+- Build sem consulta prematura ao banco.
+- Smoke E2E desktop/mobile aprovado.
+
+Resultado já observado:
+
+- `npm run check:operational` passou.
+- `npm run validate:project` passou.
+- `npm run build` passou.
+- `npm run test:e2e` passou com 8 testes.
+- Playwright conseguiu subir a aplicação e validar `/api/health`.
+
+Estado do E2E no momento do handoff:
+
+- Testes de home, páginas públicas leves, proteção admin e health passaram em desktop e mobile.
+- Testes com banco real ainda dependem de Docker/Postgres/MinIO.
+
+## Fase 16 - Migração visual inicial do Shopify
+
+Entregue:
+
+- `docs/phase-16-shopify-visual-migration.md`.
+- `public/shopify/` com assets selecionados do tema Shopify exportado.
+- Logos, imagem comercial, ícones de conta/carrinho/suporte/nerdcoins e badges de app extraídos do tema.
+- `src/components/shop/shop-header.tsx` usando o logo real do tema.
+- `src/app/(shop)/page.tsx` com hero visual usando imagem real do tema.
+- Texto técnico visível removido da home e copy com acentuação corrigida.
+
+Guardrails aplicados:
+
+- Shopify usado como referência visual e comercial, não como Liquid de produção.
+- SavePointFinance usado apenas como referência de robustez técnica.
+- Nenhuma dependência nova foi adicionada.
+- Nenhum asset foi migrado em massa; apenas arquivos úteis e identificados foram copiados para `public/shopify/`.
+
+Pendências da fase:
+
+- Verificar visualmente home em desktop e mobile.
+- Expandir o mapeamento Liquid -> React para ofertas, coleção, produto, carrinho e fidelidade.
+- Cobrir home/produtos/fidelidade com E2E ou smoke test visual.
+
+## Validações conhecidas
+
+- Após a fase 16, `npm run validate:project` passou.
+- Após a fase 16, `npm run build` passou.
+- Após a fase 16, `npm run test:e2e` passou com 8 testes em desktop e mobile.
+- Docker continua indisponível no PATH, então validação real com Postgres e MinIO permanece bloqueada pelo ambiente.
+
+## Atualização de auditoria - erros, UI e segurança
+
+Concluído nesta rodada:
+
+- Criado sistema de fallback amigável com `src/app/error.tsx`, `src/app/global-error.tsx`, `src/app/not-found.tsx`, `src/app/loading.tsx` e `src/components/feedback/empty-state.tsx`.
+- Criado parser de respostas amigáveis em `src/lib/http/friendly-response.ts` para impedir que clientes mostrem JSON cru ou mensagens técnicas.
+- Adicionado rate limit para carrinho, checkout, upload, webhook Mercado Pago e login administrativo.
+- Adicionada validação de origem para rotas internas mutáveis.
+- Adicionada validação de assinatura do webhook Mercado Pago em `src/lib/security/mercadopago-signature.ts`.
+- Adicionada validação de bytes reais para upload de imagem, além de MIME e tamanho.
+- Corrigidas imagens de produto/carrinho para usar `next/image` com texto alternativo.
+- Corrigidos rótulos visíveis em login, checkout, produto, categorias, cupons e upload de imagens.
+- Corrigido botão de tema para evitar falha de hidratação.
+- Ajustado tema claro/escuro com contraste validado por script.
+- Adicionados `scripts/check-contrast.mjs` e `scripts/audit-routes.mjs`.
+
+Validações executadas após a auditoria:
+
+- `npm run validate:project` passou.
+- `npm run build` passou.
+- `npm run test:e2e` passou com 8/8 testes em desktop e mobile.
+
+Passaram:
+
+- `npm run validate:project`
+- `npm run check:operational`
+- `npx prisma generate`
+- `npm run lint`
+- `npm run typecheck`
+- `node scripts/check-encoding.mjs`
+- `node scripts/check-ui-copy.mjs`
+
+Reexecutar no próximo chat:
+
+- `npm run validate:project`
+- `npm run check:operational`
+- `npm run test:e2e`
+- `npm run build`
+
+## Atualização mais recente - validação Docker e smoke visual
+
+Concluído nesta atualização:
+
+- Docker Desktop estava disponível; Postgres e MinIO foram iniciados com `docker compose up -d`.
+- Criada e aplicada a migration inicial Prisma em `prisma/migrations/20260424220959_init/migration.sql`.
+- Seed executado com sucesso.
+- Bucket MinIO `product-images` criado.
+- `/api/health/ready` retornou 200 com `database` e `storage` saudáveis.
+- Playwright Chromium instalado localmente com `npx playwright install chromium`.
+- Adicionado `dev:webpack` ao `package.json` e o Playwright passou a usar esse script para evitar panic do Turbopack em junctions no Windows.
+- E2E público expandido para cobrir home visual, produtos, fidelidade, rotas públicas e admin redirect em desktop e mobile.
+- Copy visível ajustada em carrinho e fidelidade para PT-BR com acentuação e sem termos técnicos.
+
+Validações executadas:
+
+- `npm run validate:project` passou.
+- `npm run check:operational` passou.
+- `npm run build` passou.
+- `npm run test:e2e` passou com 10/10 testes.
+
+Observações:
+
+- `npm run setup` pode travar em ambiente novo porque `prisma migrate dev` fica interativo quando ainda não existe migration. Nesta rodada foi usado `npx prisma migrate dev --name init`.
+- Evitar rodar `check:operational` enquanto `next dev` está ativo no Windows, pois `prisma generate` pode falhar ao renomear o DLL do query engine.
+- O E2E usa `dev:webpack`; o build de produção continua passando com Turbopack.
+- Permanecem avisos de Sentry sobre `onRequestError` e migração de `sentry.client.config.ts` para `instrumentation-client.ts`.
+
+## Estado importante do runtime
+
+Para E2E completo:
+
+1. Criar `.env` a partir de `.env.example`.
+2. Preencher pelo menos:
+   - `DATABASE_URL`
+   - `AUTH_SECRET`
+   - `SUPERADMIN_EMAIL`
+   - `SUPERADMIN_PASSWORD`
+   - credenciais MinIO.
+3. Subir Postgres e MinIO.
+4. Rodar migrations e seed.
+5. Rodar E2E.
+
+Comandos sugeridos:
+
+```bash
+docker compose up -d
+npx prisma migrate dev --name init
+npm run db:seed
+npm run validate:project
+npm run check:operational
+npm run build
+npm run test:e2e
+```
+
+## O que ainda falta fazer
+
+Prioridade alta:
+
+- Expandir E2E para fluxo com banco real.
+- Testar fluxo completo: produto -> carrinho -> checkout -> pedido -> webhook aprovado -> estoque -> pontos -> painel.
+- Criar inventário detalhado dos assets Shopify que entram em `public/`, mantendo somente assets usados.
+- Comparar a home Shopify com `src/app/(shop)/page.tsx` e mapear componentes React equivalentes.
+- Mapear as seções Liquid prioritárias para componentes Next.js: header, footer, home, coleção, produto, carrinho, ofertas e fidelidade.
+- Expandir auditorias operacionais inspiradas no SavePointFinance para checkout, pedidos, estoque, cupons, fidelidade e Mercado Pago.
+
+Prioridade alta para produção:
+
+- Mercado Pago sandbox/produção com webhooks reais.
+- Reembolso/cancelamento integrado ao Mercado Pago.
+- Backups do Postgres e MinIO.
+- Healthcheck com banco e storage, além de `/api/health`.
+- Variáveis reais de Sentry e Resend.
+- Logs e alertas.
+
+Prioridade média:
+
+- E-mails transacionais com React Email e Resend.
+- PDF de pedido/fatura com `@react-pdf/renderer`.
+- Exportação de relatórios.
+- Filtros avançados em pedidos e relatórios.
+- Busca e filtros do catálogo.
+- Variações de produto mais completas.
+- Endereços salvos na conta do cliente.
+- Otimização de imagens.
+- Normalização final de assets migrados do Shopify.
+- Revisão de textos comerciais herdados do Shopify conforme `docs/ui-copy-policy.md`.
+
+Migrações planejadas:
+
+- Prisma 7 em fase própria.
+- Tailwind 4 em fase própria.
+- ESLint 10 apenas quando plugins do ecossistema estiverem compatíveis.
+- Avaliar Next canary apenas quando Sentry aceitar peer dependency.
+
+## Regras que o próximo chat deve manter
+
+- Atualizar `docs/phases-consolidated-handoff.md` sempre que concluir uma etapa ou descobrir uma pendência relevante.
+- Ler `docs/shopify-savepoint-migration-blueprint.md` antes de migrar visual, conteúdo, assets ou padrões operacionais.
+- Usar o Shopify como referência visual/comercial e o SavePointFinance como referência de robustez técnica.
+- Não importar Liquid como código de produção.
+- Não copiar regras de negócio financeiras do SavePointFinance.
+- Não migrar todos os assets do Shopify de uma vez; mover somente assets usados para `public/`.
+- Não adicionar dependências novas sem necessidade real.
+- Não colocar termos técnicos ou instruções de desenvolvimento na interface.
+- Interface sempre em PT-BR com acentuação correta.
+- Todo cálculo de cupom, pontos, frete, estoque e pagamento deve ser revalidado no servidor.
+- Não confiar no client para valores financeiros.
+- Usar Prisma `$transaction` em mutações críticas.
+- Webhooks devem ser idempotentes.
+- Webhooks críticos devem persistir evento, status e resultado antes de alterar estado financeiro, estoque ou fidelidade.
+- Componentes devem ser pequenos e focados.
+- Documentação técnica deve ir para `docs/`.
+- Preservar comportamento de checkout, pedidos, estoque e fidelidade com teste ou smoke test antes de refatorar.
+- Rodar `npm run validate:project`, `npm run check:operational`, `npm run build` e `npm run test:e2e` antes de considerar pronto quando a mudança tocar fluxo de loja.
+
+## Prompt recomendado para um chat novo
+
+Continue o projeto em `C:\Users\User\Desktop\NerdLingoLab` lendo primeiro `docs/phases-consolidated-handoff.md` e `docs/shopify-savepoint-migration-blueprint.md`. Não assuma contexto anterior. Siga as regras do projeto: Shopify como referência visual/comercial, SavePointFinance como referência de robustez técnica, interface em PT-BR com acentuação correta, sem termos técnicos visíveis na UI, validação server-side para dinheiro/estoque/fidelidade, e documentação técnica apenas em `docs/`.
+
+Primeira tarefa: avançar o fluxo completo com banco real. Com Docker ativo, rode `npm run validate:project`, `npm run check:operational`, `npm run build` e `npm run test:e2e`; depois implemente ou teste o caminho produto -> carrinho -> checkout -> pedido -> webhook aprovado -> estoque -> pontos -> painel. Em paralelo, inventarie assets Shopify úteis e expanda o mapeamento Liquid -> React para ofertas, coleção, produto, carrinho e fidelidade.

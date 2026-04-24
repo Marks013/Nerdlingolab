@@ -1,4 +1,5 @@
 import { ProductCard } from "@/features/catalog/components/product-card";
+import { ShopTrustStrip } from "@/components/shop/shop-trust-strip";
 import { getPublicProducts } from "@/lib/catalog/queries";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +25,9 @@ export default async function ProductsPage(): Promise<React.ReactElement> {
           Nenhum produto ativo no momento.
         </p>
       ) : null}
+      <div className="mt-10">
+        <ShopTrustStrip />
+      </div>
     </main>
   );
 }

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 
 import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
+import { ShopTrustStrip } from "@/components/shop/shop-trust-strip";
 import { getImageUrls, getPrimaryImageUrl } from "@/features/catalog/image-utils";
 import { ShippingEstimator } from "@/features/shipping/components/shipping-estimator";
 import { formatCurrency } from "@/lib/format";
@@ -84,6 +85,9 @@ export default async function ProductPage({ params }: ProductPageProps): Promise
           />
         ) : null}
         <ShippingEstimator subtotalCents={variant?.priceCents ?? product.priceCents} />
+        <div className="mt-6">
+          <ShopTrustStrip />
+        </div>
       </section>
     </main>
   );

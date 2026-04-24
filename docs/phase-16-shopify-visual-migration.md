@@ -10,6 +10,8 @@ Iniciar a substituição visual do tema Shopify sem importar Liquid para produç
 - Extraídos logos, imagem de produto, ícones de conta/carrinho/suporte/nerdcoins e badges de app.
 - Atualizado `src/components/shop/shop-header.tsx` para usar o logo real do tema Shopify.
 - Atualizada a home em `src/app/(shop)/page.tsx` com hero visual usando imagem real do tema.
+- Criado `src/components/shop/shop-trust-strip.tsx` para reutilizar assets reais de suporte, carrinho e Nerdcoins.
+- Catálogo e detalhe do produto agora exibem benefícios visuais herdados do Shopify sem usar Liquid.
 - Removido texto técnico visível da home.
 - Corrigido texto sem acentuação em `histórico`.
 
@@ -39,7 +41,6 @@ Iniciar a substituição visual do tema Shopify sem importar Liquid para produç
 ## Próximos passos
 
 - Verificar visualmente a home em desktop e mobile.
-- Mapear as seções Liquid prioritárias para componentes React: ofertas, coleção, produto, carrinho e fidelidade.
+- Evoluir as pendências do mapa em `docs/shopify-liquid-react-map.md`.
 - Expandir a migração visual para listagem e detalhe de produto usando assets reais normalizados.
 - Adicionar smoke test visual ou E2E cobrindo home, produtos e fidelidade.
-

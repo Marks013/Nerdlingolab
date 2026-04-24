@@ -6,6 +6,29 @@ Use este arquivo como ponto de partida em um chat novo. Ele consolida as fases j
 
 Regra de manutenção: conforme o projeto avançar, este arquivo deve ser atualizado no mesmo turno com novas fases, decisões, validações, pendências e comandos executados. Ele é o controle principal para retomar o trabalho em um chat totalmente sem contexto.
 
+## Atualização mais recente - inventário Shopify e catálogo visual
+
+Concluído nesta atualização:
+
+- Criado `docs/shopify-asset-inventory.md` com decisão arquivo a arquivo para assets do tema Shopify.
+- Criado `docs/shopify-liquid-react-map.md` com equivalência entre seções Liquid prioritárias e componentes/rotas Next.js.
+- Criado `src/components/shop/shop-trust-strip.tsx` usando assets reais de suporte, carrinho e Nerdcoins.
+- Catálogo e detalhe do produto agora mostram benefícios visuais de entrega acompanhada, carrinho seguro e Nerdcoins.
+- E2E público ampliado para cobrir os benefícios visuais do catálogo.
+
+Validações executadas:
+
+- `npm run validate:project` passou.
+- `npm run check:operational` passou.
+- `npm run build` passou.
+- `npm run test:e2e` passou com 12 testes em Chromium desktop e mobile.
+
+Próximas pendências objetivas:
+
+- Criar footer público com base em `sections/footer.liquid`.
+- Adicionar busca/filtros de catálogo por query server-side.
+- Testar Mercado Envios com credencial e `shipment_id` reais.
+
 ## Atualização mais recente - admin, rastreamento manual e idempotência
 
 Concluído nesta atualização:
@@ -585,9 +608,6 @@ Prioridade alta:
 
 - Integrar cotação oficial de frete quando a conta Mercado Envios/Mercado Livre expuser endpoint aplicável para loja própria.
 - Testar sincronização Mercado Envios com `MERCADO_ENVIOS_ACCESS_TOKEN` e `shipment_id` reais.
-- Criar inventário detalhado dos assets Shopify que entram em `public/`, mantendo somente assets usados.
-- Comparar a home Shopify com `src/app/(shop)/page.tsx` e mapear componentes React equivalentes.
-- Mapear as seções Liquid prioritárias para componentes Next.js: header, footer, home, coleção, produto, carrinho, ofertas e fidelidade.
 - Expandir auditorias operacionais inspiradas no SavePointFinance para checkout, pedidos, estoque, cupons, fidelidade e Mercado Pago.
 
 Prioridade alta para produção:

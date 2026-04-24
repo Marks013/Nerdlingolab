@@ -29,6 +29,8 @@ test("mantém páginas públicas essenciais acessíveis e em PT-BR", async ({ pa
 test("cobre seções visuais de produtos e fidelidade", async ({ page }) => {
   await page.goto("/produtos");
   await expect(page.getByText(/seleções especiais da NerdLingoLab/i)).toBeVisible();
+  await expect(page.getByLabel("Benefícios NerdLingoLab")).toContainText("Entrega acompanhada");
+  await expect(page.getByLabel("Benefícios NerdLingoLab")).toContainText("Nerdcoins");
 
   await page.goto("/programa-de-fidelidade");
   await expect(page.getByText(/Acumule Nerdcoins/i)).toBeVisible();

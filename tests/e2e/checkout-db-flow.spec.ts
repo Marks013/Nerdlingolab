@@ -6,12 +6,16 @@ import {
   WebhookStatus,
   PaymentStatus,
   OrderStatus,
+  ShipmentStatus,
   PrismaClient
 } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 import { processApprovedMercadoPagoPayment } from "../../src/lib/payments/mercadopago-webhook";
 
 const prisma = new PrismaClient();
+const adminEmail = "admin-e2e@nerdlingolab.test";
+const adminPassword = "NerdLingoLab#12345";
 
 test.afterAll(async () => {
   await prisma.$disconnect();
@@ -113,7 +117,70 @@ test("cria pedido pela loja e processa aprovação com banco real", async ({ pag
   expect(inventoryEntries).toBe(1);
   expect(loyaltyEntries).toBe(1);
   expect(processedWebhook.status).toBe(WebhookStatus.PROCESSED);
+
+  await processApprovedMercadoPagoPayment({
+    payment: {
+      id: `smoke-payment-${suffix}`,
+      status: "approved",
+      external_reference: order.id
+    },
+    paymentId: `smoke-payment-${suffix}`,
+    webhookEventId: webhookEvent.id
+  });
+
+  const [variantAfterReplay, couponAfterReplay, inventoryEntriesAfterReplay, loyaltyEntriesAfterReplay] =
+    await Promise.all([
+      prisma.productVariant.findUniqueOrThrow({ where: { id: fixtures.variantId } }),
+      prisma.coupon.findUniqueOrThrow({ where: { id: fixtures.couponId } }),
+      prisma.inventoryLedger.count({ where: { orderId: order.id } }),
+      prisma.loyaltyLedger.count({ where: { orderId: order.id, userId: fixtures.customerId } })
+    ]);
+
+  expect(variantAfterReplay.stockQuantity).toBe(4);
+  expect(couponAfterReplay.usedCount).toBe(1);
+  expect(inventoryEntriesAfterReplay).toBe(1);
+  expect(loyaltyEntriesAfterReplay).toBe(1);
+
+  await ensureAdminUser();
+  await page.goto("/admin/login");
+  await page.getByLabel("E-mail").fill(adminEmail);
+  await page.getByLabel("Senha").fill(adminPassword);
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await expect(page).toHaveURL(/\/admin\/dashboard/);
+  await page.goto(`/admin/pedidos/${order.id}`);
+  await expect(page.getByText(order.orderNumber)).toBeVisible();
+  await expect(page.getByText("Entrega econômica")).toBeVisible();
+  await expect(page.getByText("R$ 14,90").first()).toBeVisible();
+  await page.getByPlaceholder("Transportadora").fill("Correios");
+  await page.getByPlaceholder("Código de rastreio").fill(`BR${suffix.replace(/-/g, "").toUpperCase()}123`);
+  await page.getByPlaceholder("Link de acompanhamento").fill("https://rastreamento.correios.com.br/");
+  await page.getByRole("button", { name: "Salvar rastreamento" }).click();
+  await expect(page.getByText("Correios")).toBeVisible();
+  await expect(page.getByText(`BR${suffix.replace(/-/g, "").toUpperCase()}123 · Enviado`)).toBeVisible();
+
+  const shipment = await prisma.shipment.findFirstOrThrow({ where: { orderId: order.id } });
+
+  expect(shipment.status).toBe(ShipmentStatus.SHIPPED);
 });
+
+async function ensureAdminUser(): Promise<void> {
+  const passwordHash = await bcrypt.hash(adminPassword, 12);
+
+  await prisma.user.upsert({
+    where: { email: adminEmail },
+    create: {
+      email: adminEmail,
+      name: "Admin E2E",
+      passwordHash,
+      role: "SUPERADMIN",
+      loyaltyPoints: { create: {} }
+    },
+    update: {
+      passwordHash,
+      role: "SUPERADMIN"
+    }
+  });
+}
 
 async function createCheckoutFixtures(suffix: string): Promise<{
   categoryId: string;
@@ -218,6 +285,8 @@ async function cleanupFixtures({
   });
 
   await prisma.webhookEvent.deleteMany({ where: { externalEventId: { contains: couponCode.toLowerCase() } } });
+  await prisma.shipmentEvent.deleteMany({ where: { shipment: { orderId: { in: orderIds } } } });
+  await prisma.shipment.deleteMany({ where: { orderId: { in: orderIds } } });
   await prisma.inventoryLedger.deleteMany({ where: { orderId: { in: orderIds } } });
   await prisma.loyaltyLedger.deleteMany({
     where: { OR: [{ orderId: { in: orderIds } }, { userId: customer?.id }] }

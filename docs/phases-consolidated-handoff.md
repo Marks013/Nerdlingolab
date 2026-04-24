@@ -6,6 +6,28 @@ Use este arquivo como ponto de partida em um chat novo. Ele consolida as fases j
 
 Regra de manutenção: conforme o projeto avançar, este arquivo deve ser atualizado no mesmo turno com novas fases, decisões, validações, pendências e comandos executados. Ele é o controle principal para retomar o trabalho em um chat totalmente sem contexto.
 
+## Atualização mais recente - admin, rastreamento manual e idempotência
+
+Concluído nesta atualização:
+
+- O fluxo E2E com banco real agora valida replay de webhook aprovado sem duplicar baixa de estoque, uso de cupom, lançamento de inventário ou pontos de fidelidade.
+- O E2E agora cria um usuário admin real, faz login pelo painel, abre o pedido pago e confere frete/total.
+- O painel do pedido agora registra rastreamento manual pela interface e exibe provider/status em PT-BR.
+- Ajustada copy do admin de pedidos para acentuação correta.
+
+Validações executadas:
+
+- `npx playwright test tests/e2e/checkout-db-flow.spec.ts` passou.
+- `npm run validate:project` passou.
+- `npm run check:operational` passou.
+- `npm run build` passou.
+- `npm run test:e2e` passou com 12 testes em Chromium desktop e mobile.
+
+Pendências ainda reais:
+
+- Testar sincronização Mercado Envios com `MERCADO_ENVIOS_ACCESS_TOKEN` e `shipment_id` reais.
+- Integrar cotação oficial de frete apenas quando houver credencial/fluxo oficial aplicável para loja própria.
+
 ## Atualização mais recente - fase 16 migração visual Shopify
 
 Concluído nesta atualização:
@@ -561,8 +583,6 @@ npm run test:e2e
 
 Prioridade alta:
 
-- Expandir o fluxo real para login de cliente e painel admin conferindo o pedido pago.
-- Testar replay/duplicidade de webhook aprovado.
 - Integrar cotação oficial de frete quando a conta Mercado Envios/Mercado Livre expuser endpoint aplicável para loja própria.
 - Testar sincronização Mercado Envios com `MERCADO_ENVIOS_ACCESS_TOKEN` e `shipment_id` reais.
 - Criar inventário detalhado dos assets Shopify que entram em `public/`, mantendo somente assets usados.

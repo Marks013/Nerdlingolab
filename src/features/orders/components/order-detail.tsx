@@ -60,9 +60,10 @@ function ShippingCard({ order }: OrderDetailProps): React.ReactElement {
               <div className="rounded-md border p-4" key={shipment.id}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="font-medium">{shipment.carrierName ?? shipment.provider}</p>
+                    <p className="font-medium">{shipment.carrierName ?? formatShippingProvider(shipment.provider)}</p>
                     <p className="text-muted-foreground">
-                      {shipment.trackingNumber ?? shipment.externalShipmentId ?? "Sem código"} · {shipment.status}
+                      {shipment.trackingNumber ?? shipment.externalShipmentId ?? "Sem código"} ·{" "}
+                      {formatShipmentStatus(shipment.status)}
                     </p>
                   </div>
                   {shipment.carrierUrl ? (
@@ -75,7 +76,7 @@ function ShippingCard({ order }: OrderDetailProps): React.ReactElement {
                   <ul className="mt-3 space-y-1 text-muted-foreground">
                     {shipment.events.slice(0, 5).map((event) => (
                       <li key={event.id}>
-                        {formatDateTime(event.occurredAt)} · {event.status}
+                        {formatDateTime(event.occurredAt)} · {formatShipmentStatus(event.status)}
                         {event.substatus ? ` · ${event.substatus}` : ""}
                       </li>
                     ))}
@@ -108,6 +109,25 @@ function ShippingCard({ order }: OrderDetailProps): React.ReactElement {
       </CardContent>
     </Card>
   );
+}
+
+function formatShippingProvider(provider: string): string {
+  return provider === "MERCADO_ENVIOS" ? "Mercado Envios" : "Rastreamento manual";
+}
+
+function formatShipmentStatus(status: string): string {
+  const labels: Record<string, string> = {
+    CANCELLED: "Cancelado",
+    DELAYED: "Atrasado",
+    DELIVERED: "Entregue",
+    HANDLING: "Em preparação",
+    PENDING: "Pendente",
+    READY_TO_SHIP: "Pronto para envio",
+    SHIPPED: "Enviado",
+    UNKNOWN: "Status indisponível"
+  };
+
+  return labels[status] ?? "Status indisponível";
 }
 
 function StatusLine({ label, value }: { label: string; value: string }): React.ReactElement {

@@ -16,7 +16,7 @@ export function OrdersTable({ orders }: OrdersTableProps): React.ReactElement {
     <Card>
       <CardHeader>
         <CardTitle>Pedidos</CardTitle>
-        <CardDescription>Ultimos 100 pedidos criados no checkout.</CardDescription>
+        <CardDescription>Últimos 100 pedidos criados no checkout.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="divide-y rounded-md border">

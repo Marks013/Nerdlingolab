@@ -1,7 +1,13 @@
 import Link from "next/link";
 
+import {
+  createCustomerAddress,
+  deleteCustomerAddress,
+  setDefaultCustomerAddress
+} from "@/actions/account-addresses";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { formatOrderStatus, formatPaymentStatus } from "@/features/orders/status-labels";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import type { CustomerAccountSummary } from "@/lib/orders/queries";
@@ -27,6 +33,104 @@ export function AccountOverview({ account }: AccountOverviewProps): React.ReactE
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
             Tier atual: {account.loyaltyPoints?.tier ?? "GENIN"}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Endereços de entrega</CardTitle>
+            <CardDescription>Use endereços salvos para acelerar o checkout.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              {account.addresses.map((address) => (
+                <div key={address.id} className="rounded-md border p-3 text-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">{address.label || address.recipient}</p>
+                      <p className="text-muted-foreground">
+                        {address.street}, {address.number}
+                        {address.complement ? ` - ${address.complement}` : ""}
+                      </p>
+                      <p className="text-muted-foreground">
+                        {address.district}, {address.city} - {address.state}
+                      </p>
+                      <p className="text-muted-foreground">CEP {address.postalCode}</p>
+                    </div>
+                    {address.isDefault ? (
+                      <span className="rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+                        Endereço padrão
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {!address.isDefault ? (
+                      <form action={setDefaultCustomerAddress.bind(null, address.id)}>
+                        <Button size="sm" type="submit" variant="outline">
+                          Tornar padrão
+                        </Button>
+                      </form>
+                    ) : null}
+                    <form action={deleteCustomerAddress.bind(null, address.id)}>
+                      <Button size="sm" type="submit" variant="ghost">
+                        Remover
+                      </Button>
+                    </form>
+                  </div>
+                </div>
+              ))}
+              {account.addresses.length === 0 ? (
+                <p className="rounded-md border p-3 text-sm text-muted-foreground">
+                  Nenhum endereço salvo.
+                </p>
+              ) : null}
+            </div>
+            <form action={createCustomerAddress} className="grid gap-3">
+              <label className="grid gap-2 text-sm font-medium">
+                Apelido
+                <Input name="label" placeholder="Casa" />
+              </label>
+              <label className="grid gap-2 text-sm font-medium">
+                Destinatário
+                <Input name="recipient" required />
+              </label>
+              <label className="grid gap-2 text-sm font-medium">
+                CEP
+                <Input name="postalCode" required />
+              </label>
+              <label className="grid gap-2 text-sm font-medium">
+                Rua
+                <Input name="street" required />
+              </label>
+              <div className="grid gap-3 sm:grid-cols-[120px_1fr]">
+                <label className="grid gap-2 text-sm font-medium">
+                  Número
+                  <Input name="number" required />
+                </label>
+                <label className="grid gap-2 text-sm font-medium">
+                  Complemento
+                  <Input name="complement" />
+                </label>
+              </div>
+              <label className="grid gap-2 text-sm font-medium">
+                Bairro
+                <Input name="district" required />
+              </label>
+              <div className="grid gap-3 sm:grid-cols-[1fr_80px]">
+                <label className="grid gap-2 text-sm font-medium">
+                  Cidade
+                  <Input name="city" required />
+                </label>
+                <label className="grid gap-2 text-sm font-medium">
+                  UF
+                  <Input maxLength={2} name="state" required />
+                </label>
+              </div>
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input className="h-4 w-4" name="isDefault" type="checkbox" value="true" />
+                Endereço padrão
+              </label>
+              <Button type="submit">Salvar endereço</Button>
+            </form>
           </CardContent>
         </Card>
       </div>

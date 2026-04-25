@@ -1,6 +1,7 @@
 import { OrderStatus, PaymentStatus, type Prisma } from "@prisma/client";
 
 import type { CheckoutRequestInput } from "@/features/checkout/schemas";
+import type { CustomerAddressInput } from "@/lib/addresses/schema";
 import { validateCartItems } from "@/lib/cart/validation";
 import { env } from "@/lib/env";
 import { assertMercadoPagoConfigured, mercadoPagoPreference } from "@/lib/mercadopago";
@@ -29,6 +30,20 @@ function buildProductSnapshot(item: Awaited<ReturnType<typeof validateCartItems>
   };
 }
 
+function buildShippingAddressSnapshot(address: CustomerAddressInput): Prisma.InputJsonObject {
+  return {
+    recipient: address.recipient,
+    postalCode: address.postalCode,
+    street: address.street,
+    number: address.number,
+    complement: address.complement ?? null,
+    district: address.district,
+    city: address.city,
+    state: address.state,
+    country: address.country
+  };
+}
+
 export interface CreateCheckoutResult {
   orderId: string;
   orderNumber: string;
@@ -37,12 +52,13 @@ export interface CreateCheckoutResult {
 }
 
 export async function createCheckout(input: CreateCheckoutInput): Promise<CreateCheckoutResult> {
+  const shippingAddress = await resolveShippingAddress(input);
   const validatedCart = await validateCartItems({
     items: input.items,
     couponCode: input.couponCode,
     loyaltyPointsToRedeem: input.loyaltyPointsToRedeem,
     shippingOptionId: input.shippingOptionId,
-    shippingPostalCode: input.shippingAddress.postalCode,
+    shippingPostalCode: shippingAddress.postalCode,
     userId: input.userId
   });
 
@@ -77,12 +93,12 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Create
       shippingOptionId: validatedCart.selectedShippingOption.id,
       shippingServiceName: validatedCart.selectedShippingOption.name,
       shippingProvider: validatedCart.selectedShippingOption.provider,
-      shippingPostalCode: input.shippingAddress.postalCode,
+      shippingPostalCode: shippingAddress.postalCode,
       shippingEstimatedBusinessDays: validatedCart.selectedShippingOption.estimatedBusinessDays,
       taxCents: 0,
       totalCents: validatedCart.totalCents,
       loyaltyPointsRedeemed: validatedCart.loyalty.redeemedPoints,
-      shippingAddress: input.shippingAddress,
+      shippingAddress: buildShippingAddressSnapshot(shippingAddress),
       customerSnapshot: input.customer,
       paymentIdempotencyKey: crypto.randomUUID(),
       items: {
@@ -105,6 +121,7 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Create
     orderId: order.id,
     orderNumber: order.orderNumber,
     input,
+    shippingAddress,
     totalCents: validatedCart.totalCents
   });
 
@@ -127,11 +144,13 @@ async function createMercadoPagoPreference({
   orderId,
   orderNumber,
   input,
+  shippingAddress,
   totalCents
 }: {
   orderId: string;
   orderNumber: string;
   input: CheckoutRequestInput;
+  shippingAddress: CustomerAddressInput;
   totalCents: number;
 }): Promise<MercadoPagoPreferenceResponse> {
   if (shouldUseLocalPaymentMock()) {
@@ -157,9 +176,9 @@ async function createMercadoPagoPreference({
         phone: input.customer.phone ? { number: input.customer.phone } : undefined,
         identification: input.customer.cpf ? { type: "CPF", number: input.customer.cpf } : undefined,
         address: {
-          zip_code: input.shippingAddress.postalCode,
-          street_name: input.shippingAddress.street,
-          street_number: input.shippingAddress.number
+          zip_code: shippingAddress.postalCode,
+          street_name: shippingAddress.street,
+          street_number: shippingAddress.number
         }
       },
       back_urls: {
@@ -175,6 +194,39 @@ async function createMercadoPagoPreference({
   });
 
   return preference as MercadoPagoPreferenceResponse;
+}
+
+async function resolveShippingAddress(input: CreateCheckoutInput): Promise<CustomerAddressInput> {
+  if (!input.savedAddressId) {
+    return input.shippingAddress;
+  }
+
+  if (!input.userId) {
+    throw new Error("Entre na conta para usar um endereço salvo.");
+  }
+
+  const savedAddress = await prisma.customerAddress.findFirst({
+    where: {
+      id: input.savedAddressId,
+      userId: input.userId
+    }
+  });
+
+  if (!savedAddress) {
+    throw new Error("Endereço salvo não encontrado.");
+  }
+
+  return {
+    recipient: savedAddress.recipient,
+    postalCode: savedAddress.postalCode,
+    street: savedAddress.street,
+    number: savedAddress.number,
+    complement: savedAddress.complement ?? undefined,
+    district: savedAddress.district,
+    city: savedAddress.city,
+    state: savedAddress.state,
+    country: savedAddress.country
+  };
 }
 
 function shouldUseLocalPaymentMock(): boolean {

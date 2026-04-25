@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { CouponType, PrismaClient, ProductStatus } from "@prisma/client";
+import { CouponType, PrismaClient, ProductStatus, UserRole } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -358,6 +359,124 @@ test("exibe recomendações apenas com produtos ativos e com estoque", async ({ 
   }
 });
 
+test("usa endereço salvo da conta no checkout", async ({ page }, testInfo) => {
+  testInfo.setTimeout(90_000);
+  const suffix = `${Date.now()}-${testInfo.project.name.replace(/[^a-z0-9]/gi, "-").toLowerCase()}`;
+  const email = `endereco-${suffix}@nerdlingolab.test`;
+  const password = "NerdLingoLab#12345";
+  const categorySlug = `categoria-endereco-${suffix}`;
+  const productSlug = `produto-endereco-${suffix}`;
+  const productTitle = `Produto com Endereço ${suffix}`;
+  const addressLabel = `Casa E2E ${suffix}`;
+
+  await cleanupSavedAddressFixtures({ email, productSlug });
+
+  try {
+    const passwordHash = await bcrypt.hash(password, 10);
+    await prisma.user.create({
+      data: {
+        email,
+        name: "Cliente Endereço",
+        passwordHash,
+        role: UserRole.SUPERADMIN,
+        loyaltyPoints: { create: {} }
+      }
+    });
+    const category = await prisma.category.create({
+      data: {
+        isActive: true,
+        name: `Categoria Endereço ${suffix}`,
+        slug: categorySlug
+      }
+    });
+    await prisma.product.create({
+      data: {
+        categoryId: category.id,
+        description: "Produto criado para validar endereço salvo no checkout.",
+        images: ["/shopify/product-1.webp"],
+        priceCents: 3490,
+        publishedAt: new Date(),
+        shortDescription: "Checkout com endereço salvo.",
+        slug: productSlug,
+        status: ProductStatus.ACTIVE,
+        title: productTitle,
+        variants: {
+          create: {
+            isActive: true,
+            priceCents: 3490,
+            sku: `SKU-ENDERECO-${suffix}`,
+            stockQuantity: 3,
+            title: "Padrão"
+          }
+        }
+      }
+    });
+
+    await page.addInitScript(() => {
+      window.localStorage.clear();
+    });
+    await page.goto("/admin/login");
+    await page.getByLabel("E-mail").fill(email);
+    await page.getByLabel("Senha").fill(password);
+    await page.getByRole("button", { name: "Entrar" }).click();
+    await expect(page).toHaveURL(/\/admin\/dashboard/);
+
+    await page.goto("/conta");
+    await page.getByLabel("Apelido").fill(addressLabel);
+    await page.getByLabel("Destinatário").fill("Cliente Endereço");
+    await page.getByLabel("CEP").fill("01001000");
+    await page.getByLabel("Rua").fill("Praça da Sé");
+    await page.getByLabel("Número").fill("200");
+    await page.getByLabel("Bairro").fill("Sé");
+    await page.getByLabel("Cidade").fill("São Paulo");
+    await page.getByLabel("UF").fill("SP");
+    await page.getByLabel("Endereço padrão").check();
+    await page.getByRole("button", { name: "Salvar endereço" }).click();
+    await expect(page.getByText(addressLabel)).toBeVisible();
+    await expect(page.locator("span").filter({ hasText: "Endereço padrão" })).toBeVisible();
+
+    await page.goto(`/produtos/${productSlug}`);
+    await page.getByRole("button", { name: "Adicionar ao carrinho" }).click();
+    await Promise.all([
+      page.waitForURL("**/carrinho"),
+      page.getByRole("link", { name: "Ver carrinho" }).click()
+    ]);
+    await page.getByLabel("CEP").fill("01001000");
+    await page.getByRole("button", { name: "Calcular" }).click();
+    await expect(page.getByText("Entrega econômica")).toBeVisible({ timeout: 15_000 });
+    await Promise.all([
+      page.waitForURL("**/checkout"),
+      page.getByRole("link", { name: /Continuar para checkout/i }).click()
+    ]);
+
+    await expect(page.getByRole("heading", { exact: true, name: "Checkout" })).toBeVisible();
+    await expect(page.getByText(addressLabel)).toBeVisible();
+    await expect(page.getByLabel("CEP")).toHaveValue("01001000");
+    await expect(page.getByLabel("Rua")).toHaveValue("Praça da Sé");
+    await page.getByLabel("Nome completo").fill("Cliente Endereço");
+    await page.getByLabel("E-mail").fill(email);
+    await page.getByLabel("Telefone").fill("11988887777");
+    await page.getByLabel("CPF").fill("12345678909");
+    await page.getByRole("button", { name: /Pagar com Mercado Pago/i }).click();
+    await expect(page.getByText(/Pedido .* criado/i)).toBeVisible();
+
+    const order = await prisma.order.findFirstOrThrow({
+      where: { email },
+      orderBy: { createdAt: "desc" }
+    });
+    const shippingAddress = order.shippingAddress as Record<string, unknown>;
+
+    expect(order.userId).toBeTruthy();
+    expect(order.shippingPostalCode).toBe("01001000");
+    expect(shippingAddress.street).toBe("Praça da Sé");
+    expect(shippingAddress.number).toBe("200");
+    expect(shippingAddress.city).toBe("São Paulo");
+    expect(shippingAddress.state).toBe("SP");
+  } finally {
+    await cleanupSavedAddressFixtures({ email, productSlug });
+  }
+});
+
 test("redireciona área restrita para entrada", async ({ page }) => {
   await page.goto("/admin/dashboard");
 
@@ -392,3 +511,81 @@ test("responde prontidão com banco e armazenamento", async ({ request }) => {
     ])
   );
 });
+
+async function cleanupSavedAddressFixtures({
+  email,
+  productSlug
+}: {
+  email: string;
+  productSlug: string;
+}): Promise<void> {
+  const orders = await prisma.order.findMany({
+    where: { OR: [{ email }, { items: { some: { product: { slug: productSlug } } } }] },
+    select: { id: true }
+  });
+  const orderIds = orders.map((order) => order.id);
+  const product = await prisma.product.findUnique({
+    where: { slug: productSlug },
+    select: { id: true, categoryId: true }
+  });
+  const variants = product
+    ? await prisma.productVariant.findMany({
+        where: { productId: product.id },
+        select: { id: true }
+      })
+    : [];
+  const variantIds = variants.map((variant) => variant.id);
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true }
+  });
+
+  if (orderIds.length > 0) {
+    await prisma.shipmentEvent.deleteMany({ where: { shipment: { orderId: { in: orderIds } } } });
+    await prisma.shipment.deleteMany({ where: { orderId: { in: orderIds } } });
+  }
+
+  if (orderIds.length > 0 || product || variantIds.length > 0) {
+    await prisma.inventoryLedger.deleteMany({
+      where: {
+        OR: [
+          { orderId: { in: orderIds } },
+          ...(product ? [{ productId: product.id }] : []),
+          { variantId: { in: variantIds } }
+        ]
+      }
+    });
+  }
+
+  if (orderIds.length > 0 || user) {
+    await prisma.loyaltyLedger.deleteMany({
+      where: {
+        OR: [
+          { orderId: { in: orderIds } },
+          ...(user ? [{ userId: user.id }] : [])
+        ]
+      }
+    });
+  }
+
+  await prisma.couponRedemption.deleteMany({ where: { orderId: { in: orderIds } } });
+  await prisma.orderItem.deleteMany({ where: { orderId: { in: orderIds } } });
+  await prisma.order.deleteMany({ where: { id: { in: orderIds } } });
+
+  if (user) {
+    await prisma.customerAddress.deleteMany({ where: { userId: user.id } });
+    await prisma.loyaltyPoints.deleteMany({ where: { userId: user.id } });
+    await prisma.session.deleteMany({ where: { userId: user.id } });
+    await prisma.account.deleteMany({ where: { userId: user.id } });
+  }
+
+  await prisma.user.deleteMany({ where: { email } });
+  if (product) {
+    await prisma.productVariant.deleteMany({ where: { productId: product.id } });
+  }
+  await prisma.product.deleteMany({ where: { slug: productSlug } });
+
+  if (product?.categoryId) {
+    await prisma.category.deleteMany({ where: { id: product.categoryId } });
+  }
+}

@@ -1,6 +1,7 @@
 import type {
   Coupon,
   CouponRedemption,
+  CustomerAddress,
   InventoryLedger,
   LoyaltyLedger,
   Order,
@@ -42,9 +43,12 @@ export type CustomerOrderDetail = Order & {
 
 export type CustomerAccountSummary = {
   user: Pick<User, "id" | "name" | "email">;
+  addresses: CustomerAddress[];
   loyaltyPoints: LoyaltyPoints | null;
   orders: CustomerOrderListItem[];
 };
+
+export type CustomerSavedAddress = CustomerAddress;
 
 export async function getAdminOrders(): Promise<AdminOrderListItem[]> {
   return prisma.order.findMany({
@@ -120,6 +124,9 @@ export async function getCustomerAccountSummary(
       id: true,
       name: true,
       email: true,
+      addresses: {
+        orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }]
+      },
       loyaltyPoints: true,
       orders: {
         include: {
@@ -147,9 +154,17 @@ export async function getCustomerAccountSummary(
       name: user.name,
       email: user.email
     },
+    addresses: user.addresses,
     loyaltyPoints: user.loyaltyPoints,
     orders: user.orders
   };
+}
+
+export async function getCustomerSavedAddresses(userId: string): Promise<CustomerSavedAddress[]> {
+  return prisma.customerAddress.findMany({
+    where: { userId },
+    orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }]
+  });
 }
 
 export async function getCustomerOrderById({

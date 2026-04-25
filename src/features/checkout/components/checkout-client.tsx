@@ -15,10 +15,73 @@ interface CheckoutResponse {
   message?: string;
 }
 
-export function CheckoutClient(): React.ReactElement {
+export interface CheckoutSavedAddress {
+  id: string;
+  label: string | null;
+  recipient: string;
+  postalCode: string;
+  street: string;
+  number: string;
+  complement: string | null;
+  district: string;
+  city: string;
+  state: string;
+  country: string;
+  isDefault: boolean;
+}
+
+interface AddressFields {
+  postalCode: string;
+  street: string;
+  number: string;
+  complement: string;
+  district: string;
+  city: string;
+  state: string;
+}
+
+interface CheckoutClientProps {
+  savedAddresses?: CheckoutSavedAddress[];
+}
+
+function fieldsFromAddress(address?: CheckoutSavedAddress): AddressFields {
+  return {
+    postalCode: address?.postalCode ?? "",
+    street: address?.street ?? "",
+    number: address?.number ?? "",
+    complement: address?.complement ?? "",
+    district: address?.district ?? "",
+    city: address?.city ?? "",
+    state: address?.state ?? ""
+  };
+}
+
+export function CheckoutClient({ savedAddresses = [] }: CheckoutClientProps): React.ReactElement {
   const { items, couponCode, loyaltyPointsToRedeem, shippingOptionId, shippingPostalCode, clearCart, getValidationPayload } = useCartStore();
+  const defaultAddress = savedAddresses.find((address) => address.isDefault) ?? savedAddresses[0];
+  const [selectedAddressId, setSelectedAddressId] = useState(defaultAddress?.id ?? "");
+  const [addressFields, setAddressFields] = useState<AddressFields>(fieldsFromAddress(defaultAddress));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  function updateAddressField(field: keyof AddressFields, value: string): void {
+    setAddressFields((currentFields) => ({ ...currentFields, [field]: value }));
+  }
+
+  function selectSavedAddress(addressId: string): void {
+    setSelectedAddressId(addressId);
+
+    const address = savedAddresses.find((savedAddress) => savedAddress.id === addressId);
+    setAddressFields(fieldsFromAddress(address));
+  }
+
+  function useManualAddress(): void {
+    setSelectedAddressId("");
+    setAddressFields((currentFields) => ({
+      ...currentFields,
+      postalCode: currentFields.postalCode || shippingPostalCode
+    }));
+  }
 
   async function handleSubmit(formData: FormData): Promise<void> {
     setIsSubmitting(true);
@@ -32,6 +95,7 @@ export function CheckoutClient(): React.ReactElement {
         couponCode,
         loyaltyPointsToRedeem,
         shippingOptionId,
+        savedAddressId: selectedAddressId || undefined,
         customer: {
           name: formData.get("name"),
           email: formData.get("email"),
@@ -40,13 +104,13 @@ export function CheckoutClient(): React.ReactElement {
         },
         shippingAddress: {
           recipient: formData.get("name"),
-          postalCode: shippingPostalCode || formData.get("postalCode"),
-          street: formData.get("street"),
-          number: formData.get("number"),
-          complement: formData.get("complement"),
-          district: formData.get("district"),
-          city: formData.get("city"),
-          state: formData.get("state"),
+          postalCode: addressFields.postalCode || shippingPostalCode,
+          street: addressFields.street,
+          number: addressFields.number,
+          complement: addressFields.complement,
+          district: addressFields.district,
+          city: addressFields.city,
+          state: addressFields.state,
           country: "BR"
         }
       })
@@ -115,6 +179,48 @@ export function CheckoutClient(): React.ReactElement {
       </CardHeader>
       <CardContent>
         <form action={handleSubmit} className="grid gap-4 md:grid-cols-2">
+          {savedAddresses.length > 0 ? (
+            <fieldset className="grid gap-3 md:col-span-2">
+              <legend className="text-sm font-medium">Endereço salvo</legend>
+              <div className="grid gap-3">
+                {savedAddresses.map((address) => (
+                  <label
+                    className="flex cursor-pointer gap-3 rounded-md border p-3 text-sm"
+                    key={address.id}
+                  >
+                    <input
+                      checked={selectedAddressId === address.id}
+                      className="mt-1 h-4 w-4"
+                      name="savedAddress"
+                      onChange={() => selectSavedAddress(address.id)}
+                      type="radio"
+                      value={address.id}
+                    />
+                    <span>
+                      <span className="block font-medium">
+                        {address.label || address.recipient}
+                        {address.isDefault ? " · padrão" : ""}
+                      </span>
+                      <span className="block text-muted-foreground">
+                        {address.street}, {address.number} · {address.city} - {address.state}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+                <label className="flex cursor-pointer gap-3 rounded-md border p-3 text-sm">
+                  <input
+                    checked={!selectedAddressId}
+                    className="mt-1 h-4 w-4"
+                    name="savedAddress"
+                    onChange={useManualAddress}
+                    type="radio"
+                    value=""
+                  />
+                  <span className="font-medium">Usar outro endereço</span>
+                </label>
+              </div>
+            </fieldset>
+          ) : null}
           <label className="grid gap-2 text-sm font-medium">
             Nome completo
             <Input name="name" required />
@@ -133,31 +239,66 @@ export function CheckoutClient(): React.ReactElement {
           </label>
           <label className="grid gap-2 text-sm font-medium">
             CEP
-            <Input name="postalCode" required />
+            <Input
+              name="postalCode"
+              onChange={(event) => updateAddressField("postalCode", event.target.value)}
+              required
+              value={addressFields.postalCode}
+            />
           </label>
           <label className="grid gap-2 text-sm font-medium">
             Rua
-            <Input name="street" required />
+            <Input
+              name="street"
+              onChange={(event) => updateAddressField("street", event.target.value)}
+              required
+              value={addressFields.street}
+            />
           </label>
           <label className="grid gap-2 text-sm font-medium">
             Número
-            <Input name="number" required />
+            <Input
+              name="number"
+              onChange={(event) => updateAddressField("number", event.target.value)}
+              required
+              value={addressFields.number}
+            />
           </label>
           <label className="grid gap-2 text-sm font-medium">
             Complemento
-            <Input name="complement" />
+            <Input
+              name="complement"
+              onChange={(event) => updateAddressField("complement", event.target.value)}
+              value={addressFields.complement}
+            />
           </label>
           <label className="grid gap-2 text-sm font-medium">
             Bairro
-            <Input name="district" required />
+            <Input
+              name="district"
+              onChange={(event) => updateAddressField("district", event.target.value)}
+              required
+              value={addressFields.district}
+            />
           </label>
           <label className="grid gap-2 text-sm font-medium">
             Cidade
-            <Input name="city" required />
+            <Input
+              name="city"
+              onChange={(event) => updateAddressField("city", event.target.value)}
+              required
+              value={addressFields.city}
+            />
           </label>
           <label className="grid gap-2 text-sm font-medium">
             UF
-            <Input maxLength={2} name="state" required />
+            <Input
+              maxLength={2}
+              name="state"
+              onChange={(event) => updateAddressField("state", event.target.value.toUpperCase())}
+              required
+              value={addressFields.state}
+            />
           </label>
           <Button className="md:col-span-2" disabled={isSubmitting} type="submit">
             {isSubmitting ? "Criando pedido..." : "Pagar com Mercado Pago"}

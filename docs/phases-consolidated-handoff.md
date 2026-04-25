@@ -6,6 +6,32 @@ Use este arquivo como ponto de partida em um chat novo. Ele consolida as fases j
 
 Regra de manutenção: conforme o projeto avançar, este arquivo deve ser atualizado no mesmo turno com novas fases, decisões, validações, pendências e comandos executados. Ele é o controle principal para retomar o trabalho em um chat totalmente sem contexto.
 
+## Atualização mais recente - endereços salvos no checkout
+
+Concluído nesta atualização:
+
+- Criado `src/actions/account-addresses.ts` para salvar, tornar padrão e remover endereços da conta autenticada.
+- Criado `src/lib/addresses/schema.ts` para validar endereço de forma compartilhada entre conta e checkout.
+- A página `/conta` agora lista endereços, exibe o padrão e permite cadastrar novos endereços de entrega.
+- A página `/checkout` carrega endereços salvos do usuário autenticado e permite escolher um endereço salvo ou usar outro endereço.
+- `createCheckout` agora resolve `savedAddressId` no servidor, confere que o endereço pertence ao `userId` da sessão e usa o endereço do banco para frete, pedido e preferência Mercado Pago.
+- A auditoria operacional passou a exigir os contratos de endereço salvo, transação de endereço padrão e E2E do checkout com endereço da conta.
+- O E2E público cobre login, cadastro de endereço, produto, carrinho, frete, checkout e pedido gravado com endereço salvo.
+
+Validações executadas:
+
+- `npm run validate:project` passou.
+- `npx playwright test tests/e2e/public-flow.spec.ts -g "usa endereço salvo"` passou com 2 testes em Chromium desktop e mobile.
+- `npm run check:operational` passou.
+- `npm run build` passou.
+- `npm run test:e2e` passou com 24 testes em Chromium desktop e mobile.
+
+Próximas pendências objetivas:
+
+- Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
+- Testar Mercado Envios com credencial e `shipment_id` reais.
+- Otimizar LCP das imagens principais de produto apontadas pelo Playwright/WebServer.
+
 ## Atualização mais recente - prontidão com banco e armazenamento
 
 Concluído nesta atualização:
@@ -480,7 +506,6 @@ Entregue:
 Pendente:
 
 - Edição de dados pessoais.
-- Endereços salvos.
 - Login social testado em ambiente real.
 
 ## Fase 12 - Navegação e layouts
@@ -780,7 +805,6 @@ Prioridade média:
 - Filtros avançados em pedidos e relatórios.
 - Busca e filtros do catálogo.
 - Variações de produto mais completas.
-- Endereços salvos na conta do cliente.
 - Otimização de imagens.
 - Normalização final de assets migrados do Shopify.
 - Revisão de textos comerciais herdados do Shopify conforme `docs/ui-copy-policy.md`.

@@ -16,6 +16,8 @@ const requiredFiles = [
   "src/app/api/checkout/route.ts",
   "src/app/api/shipping/quote/route.ts",
   "src/app/api/webhooks/mercadopago/route.ts",
+  "src/actions/account-addresses.ts",
+  "src/lib/addresses/schema.ts",
   "src/lib/cart/validation.ts",
   "src/lib/checkout/create-checkout.ts",
   "src/lib/payments/mercadopago-webhook.ts",
@@ -61,6 +63,7 @@ const prismaContractSnippets = [
   ["cupons", "model Coupon"],
   ["resgates de cupom", "model CouponRedemption"],
   ["fidelidade", "model LoyaltyLedger"],
+  ["endereços salvos", "model CustomerAddress"],
   ["inventário", "model InventoryLedger"],
   ["webhooks", "model WebhookEvent"],
   ["entregas", "model Shipment"],
@@ -74,9 +77,20 @@ const criticalSourceContracts = [
     filePath: "src/lib/checkout/create-checkout.ts",
     snippets: [
       ["revalidação do carrinho", "validateCartItems({"],
+      ["endereço salvo por usuário", "resolveShippingAddress(input)"],
+      ["endereço salvo pertence ao usuário", "userId: input.userId"],
       ["entrega obrigatória", "selectedShippingOption"],
       ["mock bloqueado em produção", "process.env.NODE_ENV !== \"production\""],
       ["Mercado Pago obrigatório fora de mock", "assertMercadoPagoConfigured()"]
+    ]
+  },
+  {
+    filePath: "src/actions/account-addresses.ts",
+    snippets: [
+      ["usuário autenticado", "requireCurrentUserId()"],
+      ["transação para endereço padrão", "prisma.$transaction"],
+      ["limpa padrão anterior", "isDefault: false"],
+      ["revalida conta e checkout", "revalidatePath(\"/checkout\")"]
     ]
   },
   {
@@ -174,6 +188,7 @@ const e2eContractSnippets = [
       ["variantes reais", "seleciona variante real do produto antes de adicionar ao carrinho"],
       ["ofertas reais", "exibe ofertas públicas a partir de cupom e produto reais"],
       ["recomendações com estoque", "exibe recomendações apenas com produtos ativos e com estoque"],
+      ["endereços salvos", "usa endereço salvo da conta no checkout"],
       ["prontidão banco e storage", "responde prontidão com banco e armazenamento"]
     ]
   }

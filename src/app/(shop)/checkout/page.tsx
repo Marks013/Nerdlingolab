@@ -1,6 +1,28 @@
 import { CheckoutClient } from "@/features/checkout/components/checkout-client";
+import { auth } from "@/lib/auth";
+import { getCustomerSavedAddresses } from "@/lib/orders/queries";
 
-export default function CheckoutPage(): React.ReactElement {
+export const dynamic = "force-dynamic";
+
+export default async function CheckoutPage(): Promise<React.ReactElement> {
+  const session = await auth();
+  const savedAddresses = session?.user?.id
+    ? (await getCustomerSavedAddresses(session.user.id)).map((address) => ({
+        id: address.id,
+        label: address.label,
+        recipient: address.recipient,
+        postalCode: address.postalCode,
+        street: address.street,
+        number: address.number,
+        complement: address.complement,
+        district: address.district,
+        city: address.city,
+        state: address.state,
+        country: address.country,
+        isDefault: address.isDefault
+      }))
+    : [];
+
   return (
     <main className="mx-auto min-h-screen max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="mb-8">
@@ -9,7 +31,7 @@ export default function CheckoutPage(): React.ReactElement {
           Informe os dados de entrega para criar o pedido e seguir para o pagamento.
         </p>
       </div>
-      <CheckoutClient />
+      <CheckoutClient savedAddresses={savedAddresses} />
     </main>
   );
 }

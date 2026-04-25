@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { PrismaClient, ProductStatus } from "@prisma/client";
+import { CouponType, PrismaClient, ProductStatus } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -10,7 +10,7 @@ test.afterAll(async () => {
 test("carrega a vitrine principal", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: /NerdLingoLab/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Produtos geek com cupons/i })).toBeVisible();
   await expect(page.getByRole("link", { name: /Ver produtos/i })).toBeVisible();
   await expect(page.getByRole("link", { name: /Ver Nerdcoins/i })).toBeVisible();
   await expect(page.getByAltText("NerdLingoLab").first()).toBeVisible();
@@ -164,6 +164,69 @@ test("seleciona variante real do produto antes de adicionar ao carrinho", async 
     await expect(page.getByText("R$ 69,90").first()).toBeVisible();
   } finally {
     await prisma.product.deleteMany({ where: { slug: productSlug } });
+    await prisma.category.deleteMany({ where: { slug: categorySlug } });
+  }
+});
+
+test("exibe ofertas públicas a partir de cupom e produto reais", async ({ page }) => {
+  const suffix = Date.now().toString();
+  const categorySlug = `categoria-oferta-${suffix}`;
+  const productSlug = `produto-oferta-${suffix}`;
+  const productTitle = `Oferta Relâmpago ${suffix}`;
+  const couponCode = `OFERTA${suffix.slice(-6)}`;
+
+  try {
+    const category = await prisma.category.create({
+      data: {
+        isActive: true,
+        name: `Categoria Oferta ${suffix}`,
+        slug: categorySlug
+      }
+    });
+
+    await prisma.coupon.create({
+      data: {
+        code: couponCode,
+        isActive: true,
+        minSubtotalCents: 3000,
+        type: CouponType.PERCENTAGE,
+        value: 15
+      }
+    });
+
+    await prisma.product.create({
+      data: {
+        categoryId: category.id,
+        compareAtPriceCents: 8990,
+        description: "Produto criado para validar ofertas públicas com dados reais.",
+        images: ["/shopify/product-1.webp"],
+        priceCents: 6990,
+        publishedAt: new Date(),
+        shortDescription: "Oferta pública validada.",
+        slug: productSlug,
+        status: ProductStatus.ACTIVE,
+        title: productTitle,
+        variants: {
+          create: {
+            isActive: true,
+            priceCents: 6990,
+            sku: `SKU-OFERTA-${suffix}`,
+            stockQuantity: 5,
+            title: "Padrão"
+          }
+        }
+      }
+    });
+
+    await page.goto("/");
+
+    await expect(page.getByRole("heading", { name: "Ofertas NerdLingoLab" })).toBeVisible();
+    await expect(page.getByText(couponCode)).toBeVisible();
+    await expect(page.getByText("15% de desconto")).toBeVisible();
+    await expect(page.getByRole("link", { name: new RegExp(productTitle) })).toBeVisible();
+  } finally {
+    await prisma.product.deleteMany({ where: { slug: productSlug } });
+    await prisma.coupon.deleteMany({ where: { code: couponCode } });
     await prisma.category.deleteMany({ where: { slug: categorySlug } });
   }
 });

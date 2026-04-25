@@ -6,6 +6,30 @@ Use este arquivo como ponto de partida em um chat novo. Ele consolida as fases j
 
 Regra de manutenção: conforme o projeto avançar, este arquivo deve ser atualizado no mesmo turno com novas fases, decisões, validações, pendências e comandos executados. Ele é o controle principal para retomar o trabalho em um chat totalmente sem contexto.
 
+## Atualização mais recente - ofertas com dados reais
+
+Concluído nesta atualização:
+
+- Criado `src/lib/offers/queries.ts` para buscar cupons ativos e produtos promocionais com estoque.
+- Criado `src/features/offers/components/public-offers-section.tsx`.
+- A home agora exibe ofertas vindas do banco, com cupons ativos e produtos com valor promocional.
+- A seção não importa Liquid nem blocos fixos do tema Shopify; usa dados reais e o carrinho continua revalidando cupom, estoque e valores.
+- O E2E público cria cupom/produto reais, valida a seção de ofertas na home e limpa os dados ao final.
+
+Validações executadas:
+
+- `npm run validate:project` passou.
+- `npx playwright test tests/e2e/public-flow.spec.ts` passou com 16 testes em Chromium desktop e mobile.
+- `npm run check:operational` passou.
+- `npm run build` passou.
+- `npm run test:e2e` passou com 18 testes em Chromium desktop e mobile.
+
+Próximas pendências objetivas:
+
+- Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
+- Testar Mercado Envios com credencial e `shipment_id` reais.
+- Evoluir recomendações de produto com produtos ativos e estoque disponível.
+
 ## Atualização mais recente - variações no produto
 
 Concluído nesta atualização:
@@ -26,7 +50,6 @@ Validações executadas:
 
 Próximas pendências objetivas:
 
-- Criar ofertas com cupons/produtos reais, sem blocos fixos do Liquid.
 - Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
 - Testar Mercado Envios com credencial e `shipment_id` reais.
 

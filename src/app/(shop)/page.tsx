@@ -4,6 +4,8 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PublicOffersSection } from "@/features/offers/components/public-offers-section";
+import { getPublicOffers } from "@/lib/offers/queries";
 
 const highlights = [
   {
@@ -44,7 +46,9 @@ const serviceItems = [
   }
 ];
 
-export default function ShopHomePage(): React.ReactElement {
+export default async function ShopHomePage(): Promise<React.ReactElement> {
+  const offers = await getPublicOffers();
+
   return (
     <main className="min-h-screen bg-background">
       <section className="relative isolate overflow-hidden">
@@ -89,6 +93,8 @@ export default function ShopHomePage(): React.ReactElement {
           </div>
         </div>
       </section>
+
+      <PublicOffersSection coupons={offers.coupons} products={offers.products} />
 
       <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-4 md:grid-cols-3">

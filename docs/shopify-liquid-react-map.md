@@ -16,7 +16,7 @@ Este mapa orienta a migração visual e funcional sem importar Liquid para produ
 | `sections/collection-template.liquid` | `src/app/(shop)/produtos/page.tsx` | Parcial | Busca, categoria e ordenação por URL foram implementadas; ainda faltam filtros avançados. |
 | `sections/product-template.liquid` | `src/app/(shop)/produtos/[slug]/page.tsx` | Parcial | Produto já tem imagem, valor, descrição, variantes reais, carrinho e frete; faltam selos comerciais mais completos. |
 | `sections/cart-template.liquid` | `src/app/(shop)/carrinho/page.tsx` e `src/features/cart/components/cart-client.tsx` | Parcial | Carrinho atual é mais robusto por revalidar estoque, cupom, pontos e frete no servidor. |
-| `sections/offers.liquid` | Componente futuro de ofertas | Pendente | Deve usar cupons reais e produtos ativos, não blocos fixos do Liquid. |
+| `sections/offers.liquid` | `src/features/offers/components/public-offers-section.tsx` | Parcial | Home já exibe cupons ativos e produtos promocionais reais; ainda pode evoluir regras de segmentação. |
 | `sections/joy-loyalty-page.liquid` | `src/app/(shop)/programa-de-fidelidade/page.tsx` | Parcial | Nerdcoins já existem; pode herdar tom visual do Joy sem scripts externos. |
 | `sections/cashback-page.liquid` | Fluxo de Nerdcoins/fidelidade | Pendente | Não copiar regra antiga sem reconciliação com o domínio atual. |
 | `sections/newsletter.liquid` | Componente futuro de newsletter | Pendente | Depende de Resend/lista de contatos. |
@@ -30,12 +30,13 @@ Este mapa orienta a migração visual e funcional sem importar Liquid para produ
 - `ShopFooter` migra a intenção do footer Shopify: barra colorida, atendimento, links, pagamento seguro e entrega acompanhada.
 - O catálogo público usa filtros server-side por busca, categoria e ordenação, preservando URL compartilhável.
 - O detalhe do produto usa variantes reais para seleção, disponibilidade, valor e carrinho.
+- A home usa ofertas vindas do banco, com cupons ativos e produtos promocionais com estoque.
 - O conteúdo visível reforça entrega, carrinho seguro e Nerdcoins.
 - Nenhum script Shopify foi importado.
 - Nenhuma regra financeira antiga foi copiada.
 
 ## Próxima migração recomendada
 
-1. Criar ofertas com cupons/produtos reais, sem blocos fixos do Liquid.
-2. Completar o footer com dados institucionais reais quando o CNPJ/endereço oficial forem definidos.
-3. Testar Mercado Envios com credencial e `shipment_id` reais.
+1. Completar o footer com dados institucionais reais quando o CNPJ/endereço oficial forem definidos.
+2. Testar Mercado Envios com credencial e `shipment_id` reais.
+3. Evoluir recomendações de produto com produtos ativos e estoque disponível.

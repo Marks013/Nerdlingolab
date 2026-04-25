@@ -6,6 +6,28 @@ Use este arquivo como ponto de partida em um chat novo. Ele consolida as fases j
 
 Regra de manutenção: conforme o projeto avançar, este arquivo deve ser atualizado no mesmo turno com novas fases, decisões, validações, pendências e comandos executados. Ele é o controle principal para retomar o trabalho em um chat totalmente sem contexto.
 
+## Atualização mais recente - auditoria operacional ampliada
+
+Concluído nesta atualização:
+
+- `scripts/check-operational-readiness.mjs` agora valida contratos críticos além de presença de arquivos.
+- A auditoria cobre variáveis do `.env.example`, modelos Prisma, webhooks, checkout, carrinho, estoque, cupons, fidelidade, frete, Mercado Pago, Mercado Envios, Sentry e E2E crítico.
+- A auditoria verifica que webhook aprovado usa transação Prisma, ignora replay, baixa estoque, registra cupom/fidelidade e persiste status.
+- A auditoria verifica que o E2E cobre checkout real, replay de webhook, rastreamento manual, filtros, variantes, ofertas e recomendações.
+
+Validações executadas:
+
+- `npm run check:operational` passou.
+- `npm run validate:project` passou.
+- `npm run build` passou.
+- `npm run test:e2e` passou com 20 testes em Chromium desktop e mobile.
+
+Próximas pendências objetivas:
+
+- Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
+- Testar Mercado Envios com credencial e `shipment_id` reais.
+- Ampliar auditorias futuras com smoke real de `/api/health/ready` quando ambiente Docker estiver disponível no fluxo de deploy.
+
 ## Atualização mais recente - recomendações de produto
 
 Concluído nesta atualização:
@@ -27,7 +49,6 @@ Próximas pendências objetivas:
 
 - Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
 - Testar Mercado Envios com credencial e `shipment_id` reais.
-- Expandir auditorias operacionais inspiradas no SavePointFinance para checkout, pedidos, estoque, cupons, fidelidade e Mercado Pago.
 
 ## Atualização mais recente - ofertas com dados reais
 

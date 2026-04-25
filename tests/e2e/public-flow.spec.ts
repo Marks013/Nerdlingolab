@@ -1,4 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { PrismaClient, ProductStatus } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+test.afterAll(async () => {
+  await prisma.$disconnect();
+});
 
 test("carrega a vitrine principal", async ({ page }) => {
   await page.goto("/");
@@ -39,6 +46,60 @@ test("cobre seções visuais de produtos e fidelidade", async ({ page }) => {
   await expect(page.getByText("Ganhe pontos")).toBeVisible();
   await expect(page.getByText("Resgate no checkout")).toBeVisible();
   await expect(page.getByText("Histórico claro")).toBeVisible();
+});
+
+test("filtra catálogo público com dados reais do banco", async ({ page }) => {
+  const suffix = Date.now().toString();
+  const categorySlug = `categoria-filtro-${suffix}`;
+  const productSlug = `produto-filtro-${suffix}`;
+  const productTitle = `Filtro Galáctico ${suffix}`;
+
+  try {
+    const category = await prisma.category.create({
+      data: {
+        isActive: true,
+        name: `Categoria Filtro ${suffix}`,
+        slug: categorySlug
+      }
+    });
+
+    await prisma.product.create({
+      data: {
+        categoryId: category.id,
+        description: "Produto criado para validar busca pública com banco real.",
+        images: ["/shopify/product-1.webp"],
+        priceCents: 4590,
+        publishedAt: new Date(),
+        shortDescription: "Busca pública validada.",
+        slug: productSlug,
+        status: ProductStatus.ACTIVE,
+        title: productTitle,
+        variants: {
+          create: {
+            isActive: true,
+            priceCents: 4590,
+            sku: `SKU-FILTRO-${suffix}`,
+            stockQuantity: 3,
+            title: "Padrão"
+          }
+        }
+      }
+    });
+
+    await page.goto(`/produtos?busca=${encodeURIComponent(productTitle)}&categoria=${categorySlug}&ordem=menor-valor`);
+    await expect(page.getByLabel("Buscar")).toHaveValue(productTitle);
+    await expect(page.getByLabel("Categoria")).toHaveValue(categorySlug);
+    await expect(page.getByLabel("Ordenar")).toHaveValue("menor-valor");
+    await expect(page.getByText("1 produto encontrado.")).toBeVisible();
+    await expect(page.getByRole("link", { name: new RegExp(productTitle) })).toBeVisible();
+
+    await page.goto(`/produtos?busca=${encodeURIComponent(`Produto inexistente ${suffix}`)}`);
+    await expect(page.getByText("Nenhum produto encontrado com esses filtros.")).toBeVisible();
+    await expect(page.getByRole("link", { name: new RegExp(productTitle) })).toHaveCount(0);
+  } finally {
+    await prisma.product.deleteMany({ where: { slug: productSlug } });
+    await prisma.category.deleteMany({ where: { slug: categorySlug } });
+  }
 });
 
 test("redireciona área restrita para entrada", async ({ page }) => {

@@ -6,6 +6,29 @@ Use este arquivo como ponto de partida em um chat novo. Ele consolida as fases j
 
 Regra de manutenção: conforme o projeto avançar, este arquivo deve ser atualizado no mesmo turno com novas fases, decisões, validações, pendências e comandos executados. Ele é o controle principal para retomar o trabalho em um chat totalmente sem contexto.
 
+## Atualização mais recente - busca e filtros do catálogo
+
+Concluído nesta atualização:
+
+- `src/app/(shop)/produtos/page.tsx` agora aceita filtros por URL para busca, categoria e ordenação.
+- `src/lib/catalog/queries.ts` centraliza o contrato público do catálogo, mantendo produto ativo, categoria ativa e variante com estoque como regra server-side.
+- A página de produtos exibe total de resultados e mensagem vazia específica para filtros sem resultado.
+- O E2E público cria produto/categoria reais no banco, valida busca + categoria + ordenação e limpa os dados ao final.
+
+Validações executadas:
+
+- `npm run validate:project` passou.
+- `npx playwright test tests/e2e/public-flow.spec.ts` passou com 12 testes em Chromium desktop e mobile.
+- `npm run check:operational` passou.
+- `npm run build` passou.
+- `npm run test:e2e` passou com 14 testes em Chromium desktop e mobile.
+
+Próximas pendências objetivas:
+
+- Evoluir variações de produto na UI usando o modelo real de variantes.
+- Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
+- Testar Mercado Envios com credencial e `shipment_id` reais.
+
 ## Atualização mais recente - footer público Shopify
 
 Concluído nesta atualização:
@@ -25,7 +48,6 @@ Validações executadas:
 
 Próximas pendências objetivas:
 
-- Adicionar busca/filtros de catálogo por query server-side.
 - Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
 - Testar Mercado Envios com credencial e `shipment_id` reais.
 
@@ -48,7 +70,6 @@ Validações executadas:
 
 Próximas pendências objetivas:
 
-- Adicionar busca/filtros de catálogo por query server-side.
 - Testar Mercado Envios com credencial e `shipment_id` reais.
 
 ## Atualização mais recente - admin, rastreamento manual e idempotência

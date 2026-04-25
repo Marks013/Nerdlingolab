@@ -102,6 +102,72 @@ test("filtra catálogo público com dados reais do banco", async ({ page }) => {
   }
 });
 
+test("seleciona variante real do produto antes de adicionar ao carrinho", async ({ page }) => {
+  const suffix = Date.now().toString();
+  const categorySlug = `categoria-variante-${suffix}`;
+  const productSlug = `produto-variante-${suffix}`;
+  const productTitle = `Produto com Variante ${suffix}`;
+
+  try {
+    const category = await prisma.category.create({
+      data: {
+        isActive: true,
+        name: `Categoria Variante ${suffix}`,
+        slug: categorySlug
+      }
+    });
+
+    await prisma.product.create({
+      data: {
+        categoryId: category.id,
+        description: "Produto criado para validar seleção de variantes com carrinho real.",
+        images: ["/shopify/product-1.webp"],
+        priceCents: 3990,
+        publishedAt: new Date(),
+        shortDescription: "Seleção de opção validada.",
+        slug: productSlug,
+        status: ProductStatus.ACTIVE,
+        title: productTitle,
+        variants: {
+          create: [
+            {
+              isActive: true,
+              priceCents: 3990,
+              sku: `SKU-VAR-PADRAO-${suffix}`,
+              stockQuantity: 2,
+              title: "Padrão"
+            },
+            {
+              compareAtPriceCents: 7990,
+              isActive: true,
+              priceCents: 6990,
+              sku: `SKU-VAR-ESPECIAL-${suffix}`,
+              stockQuantity: 4,
+              title: "Edição especial"
+            }
+          ]
+        }
+      }
+    });
+
+    await page.goto(`/produtos/${productSlug}`);
+    await expect(page.getByRole("heading", { name: productTitle })).toBeVisible();
+    await expect(page.getByLabel("Valor selecionado")).toContainText("R$ 39,90");
+
+    await page.getByLabel(/Edição especial/).check();
+    await expect(page.getByLabel("Valor selecionado")).toContainText("R$ 69,90");
+    await page.getByRole("button", { name: "Adicionar ao carrinho" }).click();
+    await page.getByRole("link", { name: "Ver carrinho" }).click();
+
+    await expect(page.getByText(productTitle)).toBeVisible();
+    await expect(page.getByText("Edição especial")).toBeVisible();
+    await expect(page.getByText("R$ 69,90").first()).toBeVisible();
+  } finally {
+    await prisma.product.deleteMany({ where: { slug: productSlug } });
+    await prisma.category.deleteMany({ where: { slug: categorySlug } });
+  }
+});
+
 test("redireciona área restrita para entrada", async ({ page }) => {
   await page.goto("/admin/dashboard");
 

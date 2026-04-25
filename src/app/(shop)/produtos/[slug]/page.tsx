@@ -1,11 +1,9 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 
-import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
 import { ShopTrustStrip } from "@/components/shop/shop-trust-strip";
 import { getImageUrls, getPrimaryImageUrl } from "@/features/catalog/image-utils";
-import { ShippingEstimator } from "@/features/shipping/components/shipping-estimator";
-import { formatCurrency } from "@/lib/format";
+import { ProductPurchasePanel } from "@/features/catalog/components/product-purchase-panel";
 import { getPublicProductBySlug } from "@/lib/catalog/queries";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +24,13 @@ export default async function ProductPage({ params }: ProductPageProps): Promise
 
   const images = getImageUrls(product.images);
   const primaryImage = getPrimaryImageUrl(product.images);
-  const variant = product.variants[0];
+  const variants = product.variants.map((variant) => ({
+    id: variant.id,
+    title: variant.title,
+    priceCents: variant.priceCents,
+    compareAtPriceCents: variant.compareAtPriceCents,
+    availableStock: Math.max(0, variant.stockQuantity - variant.reservedQuantity)
+  }));
 
   return (
     <main className="mx-auto grid min-h-screen max-w-6xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
@@ -62,29 +66,19 @@ export default async function ProductPage({ params }: ProductPageProps): Promise
       <section className="flex flex-col justify-center">
         <p className="text-sm text-muted-foreground">{product.category?.name ?? "NerdLingoLab"}</p>
         <h1 className="mt-3 text-3xl font-bold tracking-normal">{product.title}</h1>
-        <p className="mt-4 text-2xl font-semibold text-primary">{formatCurrency(product.priceCents)}</p>
         {product.shortDescription ? (
           <p className="mt-4 text-muted-foreground">{product.shortDescription}</p>
         ) : null}
         <div className="mt-6 whitespace-pre-line text-sm leading-7 text-muted-foreground">
           {product.description}
         </div>
-        {variant ? (
-          <AddToCartButton
-            availableStock={variant.stockQuantity - variant.reservedQuantity}
-            item={{
-              productId: product.id,
-              variantId: variant.id,
-              slug: product.slug,
-              title: product.title,
-              variantTitle: variant.title,
-              imageUrl: primaryImage,
-              unitPriceCents: variant.priceCents,
-              quantity: 1
-            }}
-          />
-        ) : null}
-        <ShippingEstimator subtotalCents={variant?.priceCents ?? product.priceCents} />
+        <ProductPurchasePanel
+          imageUrl={primaryImage}
+          productId={product.id}
+          productSlug={product.slug}
+          productTitle={product.title}
+          variants={variants}
+        />
         <div className="mt-6">
           <ShopTrustStrip />
         </div>

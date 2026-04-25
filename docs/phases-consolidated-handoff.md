@@ -6,6 +6,30 @@ Use este arquivo como ponto de partida em um chat novo. Ele consolida as fases j
 
 Regra de manutenção: conforme o projeto avançar, este arquivo deve ser atualizado no mesmo turno com novas fases, decisões, validações, pendências e comandos executados. Ele é o controle principal para retomar o trabalho em um chat totalmente sem contexto.
 
+## Atualização mais recente - variações no produto
+
+Concluído nesta atualização:
+
+- Criado `src/features/catalog/components/product-purchase-panel.tsx`.
+- A página de detalhe do produto agora permite escolher variantes reais ativas antes de adicionar ao carrinho.
+- O valor exibido, disponibilidade, botão de compra e cálculo de frete mudam conforme a variante selecionada.
+- O carrinho continua revalidando variante, estoque e valor no servidor em `/api/cart/validate`.
+- O E2E público cria produto com duas variantes reais, escolhe a variante especial, adiciona ao carrinho e valida variante/valor no carrinho.
+
+Validações executadas:
+
+- `npm run validate:project` passou.
+- `npx playwright test tests/e2e/public-flow.spec.ts` passou com 14 testes em Chromium desktop e mobile.
+- `npm run check:operational` passou.
+- `npm run build` passou.
+- `npm run test:e2e` passou com 16 testes em Chromium desktop e mobile.
+
+Próximas pendências objetivas:
+
+- Criar ofertas com cupons/produtos reais, sem blocos fixos do Liquid.
+- Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
+- Testar Mercado Envios com credencial e `shipment_id` reais.
+
 ## Atualização mais recente - busca e filtros do catálogo
 
 Concluído nesta atualização:
@@ -25,7 +49,6 @@ Validações executadas:
 
 Próximas pendências objetivas:
 
-- Evoluir variações de produto na UI usando o modelo real de variantes.
 - Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
 - Testar Mercado Envios com credencial e `shipment_id` reais.
 

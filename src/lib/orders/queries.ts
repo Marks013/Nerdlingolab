@@ -42,7 +42,7 @@ export type CustomerOrderDetail = Order & {
 };
 
 export type CustomerAccountSummary = {
-  user: Pick<User, "id" | "name" | "email">;
+  user: Pick<User, "id" | "name" | "email" | "cpf" | "phone" | "birthday">;
   addresses: CustomerAddress[];
   loyaltyPoints: LoyaltyPoints | null;
   orders: CustomerOrderListItem[];
@@ -124,6 +124,9 @@ export async function getCustomerAccountSummary(
       id: true,
       name: true,
       email: true,
+      cpf: true,
+      phone: true,
+      birthday: true,
       addresses: {
         orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }]
       },
@@ -152,7 +155,10 @@ export async function getCustomerAccountSummary(
     user: {
       id: user.id,
       name: user.name,
-      email: user.email
+      email: user.email,
+      cpf: user.cpf,
+      phone: user.phone,
+      birthday: user.birthday
     },
     addresses: user.addresses,
     loyaltyPoints: user.loyaltyPoints,

@@ -368,6 +368,7 @@ test("usa endereço salvo da conta no checkout", async ({ page }, testInfo) => {
   const productSlug = `produto-endereco-${suffix}`;
   const productTitle = `Produto com Endereço ${suffix}`;
   const addressLabel = `Casa E2E ${suffix}`;
+  const profileCpf = `12345${Date.now().toString().slice(-6)}`;
 
   await cleanupSavedAddressFixtures({ email, productSlug });
 
@@ -422,6 +423,14 @@ test("usa endereço salvo da conta no checkout", async ({ page }, testInfo) => {
     await expect(page).toHaveURL(/\/admin\/dashboard/);
 
     await page.goto("/conta");
+    await page.getByLabel("Nome").fill("Cliente Perfil Atualizado");
+    await page.getByLabel("Telefone").fill("11977776666");
+    await page.getByLabel("CPF").fill(profileCpf);
+    await page.getByLabel("Nascimento").fill("1995-05-12");
+    await page.getByRole("button", { name: "Salvar dados" }).click();
+    await expect(page.getByRole("heading", { name: "Cliente Perfil Atualizado" })).toBeVisible();
+    await expect(page.getByLabel("Telefone")).toHaveValue("11977776666");
+
     await page.getByLabel("Apelido").fill(addressLabel);
     await page.getByLabel("Destinatário").fill("Cliente Endereço");
     await page.getByLabel("CEP").fill("01001000");
@@ -472,6 +481,13 @@ test("usa endereço salvo da conta no checkout", async ({ page }, testInfo) => {
     expect(shippingAddress.number).toBe("200");
     expect(shippingAddress.city).toBe("São Paulo");
     expect(shippingAddress.state).toBe("SP");
+
+    const customer = await prisma.user.findUniqueOrThrow({ where: { email } });
+
+    expect(customer.name).toBe("Cliente Perfil Atualizado");
+    expect(customer.phone).toBe("11977776666");
+    expect(customer.cpf).toBe(profileCpf);
+    expect(customer.birthday?.toISOString().slice(0, 10)).toBe("1995-05-12");
   } finally {
     await cleanupSavedAddressFixtures({ email, productSlug });
   }

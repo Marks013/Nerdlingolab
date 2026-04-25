@@ -17,6 +17,8 @@ const requiredFiles = [
   "src/app/api/shipping/quote/route.ts",
   "src/app/api/webhooks/mercadopago/route.ts",
   "src/actions/account-addresses.ts",
+  "src/actions/account-profile.ts",
+  "src/lib/account/profile-schema.ts",
   "src/lib/addresses/schema.ts",
   "src/lib/cart/validation.ts",
   "src/lib/checkout/create-checkout.ts",
@@ -82,6 +84,15 @@ const criticalSourceContracts = [
       ["entrega obrigatória", "selectedShippingOption"],
       ["mock bloqueado em produção", "process.env.NODE_ENV !== \"production\""],
       ["Mercado Pago obrigatório fora de mock", "assertMercadoPagoConfigured()"]
+    ]
+  },
+  {
+    filePath: "src/actions/account-profile.ts",
+    snippets: [
+      ["usuário autenticado", "requireCurrentUserId()"],
+      ["schema de perfil", "customerProfileSchema.safeParse"],
+      ["atualiza dados pessoais", "prisma.user.update"],
+      ["revalida conta", "revalidatePath(\"/conta\")"]
     ]
   },
   {
@@ -204,6 +215,7 @@ const e2eContractSnippets = [
       ["variantes reais", "seleciona variante real do produto antes de adicionar ao carrinho"],
       ["ofertas reais", "exibe ofertas públicas a partir de cupom e produto reais"],
       ["recomendações com estoque", "exibe recomendações apenas com produtos ativos e com estoque"],
+      ["dados pessoais da conta", "Cliente Perfil Atualizado"],
       ["endereços salvos", "usa endereço salvo da conta no checkout"],
       ["prontidão banco e storage", "responde prontidão com banco e armazenamento"]
     ]

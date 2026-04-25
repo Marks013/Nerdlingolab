@@ -5,6 +5,7 @@ import {
   deleteCustomerAddress,
   setDefaultCustomerAddress
 } from "@/actions/account-addresses";
+import { updateCustomerProfile } from "@/actions/account-profile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,27 @@ export function AccountOverview({ account }: AccountOverviewProps): React.ReactE
             <CardTitle>{account.user.name ?? "Minha conta"}</CardTitle>
             <CardDescription>{account.user.email}</CardDescription>
           </CardHeader>
+          <CardContent>
+            <form action={updateCustomerProfile} className="grid gap-3">
+              <label className="grid gap-2 text-sm font-medium">
+                Nome
+                <Input defaultValue={account.user.name ?? ""} name="name" required />
+              </label>
+              <label className="grid gap-2 text-sm font-medium">
+                Telefone
+                <Input defaultValue={account.user.phone ?? ""} name="phone" />
+              </label>
+              <label className="grid gap-2 text-sm font-medium">
+                CPF
+                <Input defaultValue={account.user.cpf ?? ""} name="cpf" />
+              </label>
+              <label className="grid gap-2 text-sm font-medium">
+                Nascimento
+                <Input defaultValue={formatBirthdayInput(account.user.birthday)} name="birthday" type="date" />
+              </label>
+              <Button type="submit">Salvar dados</Button>
+            </form>
+          </CardContent>
         </Card>
         <Card>
           <CardHeader>
@@ -167,4 +189,8 @@ export function AccountOverview({ account }: AccountOverviewProps): React.ReactE
       </Card>
     </div>
   );
+}
+
+function formatBirthdayInput(value: Date | null): string {
+  return value?.toISOString().slice(0, 10) ?? "";
 }

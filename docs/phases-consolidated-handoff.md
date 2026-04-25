@@ -6,6 +6,27 @@ Use este arquivo como ponto de partida em um chat novo. Ele consolida as fases j
 
 Regra de manutenção: conforme o projeto avançar, este arquivo deve ser atualizado no mesmo turno com novas fases, decisões, validações, pendências e comandos executados. Ele é o controle principal para retomar o trabalho em um chat totalmente sem contexto.
 
+## Atualização mais recente - dados pessoais da conta
+
+Concluído nesta atualização:
+
+- Criado `src/lib/account/profile-schema.ts` para validar nome, telefone, CPF e nascimento da conta.
+- Criado `src/actions/account-profile.ts` para atualizar dados pessoais apenas do usuário autenticado.
+- A página `/conta` agora exibe formulário de dados pessoais junto do e-mail da conta.
+- A atualização revalida `/conta` e `/checkout`, mantendo os dados do cliente disponíveis para fluxos autenticados.
+- O E2E público foi ampliado para editar dados pessoais antes de salvar endereço e finalizar checkout.
+- A auditoria operacional agora exige a action, o schema e a cobertura E2E dessa edição.
+
+Validações executadas:
+
+- `npm run validate:project` passou.
+- `npx playwright test tests/e2e/public-flow.spec.ts -g "usa endereço salvo"` passou com 2 testes em Chromium desktop e mobile.
+
+Próximas pendências objetivas:
+
+- Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
+- Testar Mercado Envios com credencial e `shipment_id` reais.
+
 ## Atualização mais recente - otimização LCP de imagens
 
 Concluído nesta atualização:
@@ -526,7 +547,6 @@ Entregue:
 
 Pendente:
 
-- Edição de dados pessoais.
 - Login social testado em ambiente real.
 
 ## Fase 12 - Navegação e layouts

@@ -6,6 +6,31 @@ Use este arquivo como ponto de partida em um chat novo. Ele consolida as fases j
 
 Regra de manutenção: conforme o projeto avançar, este arquivo deve ser atualizado no mesmo turno com novas fases, decisões, validações, pendências e comandos executados. Ele é o controle principal para retomar o trabalho em um chat totalmente sem contexto.
 
+## Atualização mais recente - relatórios com período e CSV
+
+Concluído nesta atualização:
+
+- `src/lib/reports/queries.ts` agora aceita filtros de período customizado com `inicio` e `fim`.
+- A página `/admin/relatorios` exibe filtros de data e mantém os indicadores usando apenas pedidos pagos.
+- Criada rota protegida `GET /api/admin/reports/annual.csv` para exportar o relatório mensal em CSV.
+- A exportação exige sessão admin e respeita o mesmo período filtrado na página.
+- O E2E de checkout/admin agora abre relatórios com período, valida os filtros e baixa o CSV.
+- A auditoria operacional exige os contratos de período, CSV e proteção admin da rota de exportação.
+
+Validações executadas:
+
+- `npm run validate:project` passou.
+- `npx playwright test tests/e2e/checkout-db-flow.spec.ts` passou com 2 testes em Chromium desktop e mobile.
+- `npm run check:operational` passou.
+- `npm run build` passou.
+- `npm run test:e2e` passou com 24 testes em Chromium desktop e mobile.
+- O aviso de dimensões do Recharts nos gráficos de relatórios foi corrigido e não reapareceu na suíte completa.
+
+Próximas pendências objetivas:
+
+- Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
+- Testar Mercado Envios com credencial e `shipment_id` reais.
+
 ## Atualização mais recente - dados pessoais da conta
 
 Concluído nesta atualização:
@@ -592,8 +617,7 @@ Entregue:
 
 Pendente:
 
-- Filtros por período customizado.
-- Exportação CSV/PDF.
+- Exportação PDF.
 - Relatórios por produto, categoria e cliente.
 
 ## Atualização de dependências - 24/04/2026
@@ -842,8 +866,8 @@ Prioridade média:
 
 - E-mails transacionais com React Email e Resend.
 - PDF de pedido/fatura com `@react-pdf/renderer`.
-- Exportação de relatórios.
-- Filtros avançados em pedidos e relatórios.
+- Exportação PDF de relatórios.
+- Filtros avançados em pedidos.
 - Busca e filtros do catálogo.
 - Variações de produto mais completas.
 - Otimização de imagens.

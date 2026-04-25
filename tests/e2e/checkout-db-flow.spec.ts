@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import {
   CouponType,
   ProductStatus,
@@ -161,6 +162,22 @@ test("cria pedido pela loja e processa aprovação com banco real", async ({ pag
   const shipment = await prisma.shipment.findFirstOrThrow({ where: { orderId: order.id } });
 
   expect(shipment.status).toBe(ShipmentStatus.SHIPPED);
+
+  const reportYear = new Date().getFullYear();
+  await page.goto(`/admin/relatorios?inicio=${reportYear}-01-01&fim=${reportYear}-12-31`);
+  await expect(page.getByRole("heading", { name: "Relatórios" })).toBeVisible();
+  await expect(page.getByLabel("Início")).toHaveValue(`${reportYear}-01-01`);
+  await expect(page.getByLabel("Fim")).toHaveValue(`${reportYear}-12-31`);
+  await expect(page.getByText("Pedidos pagos")).toBeVisible();
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("link", { name: "Exportar CSV" }).click();
+  const download = await downloadPromise;
+  const downloadPath = await download.path();
+
+  expect(download.suggestedFilename()).toBe(`relatorio-${reportYear}-01-01-${reportYear}-12-31.csv`);
+  expect(downloadPath).not.toBeNull();
+  expect(readFileSync(downloadPath ?? "", "utf8")).toContain("Receita,Pedidos pagos");
 });
 
 async function ensureAdminUser(): Promise<void> {

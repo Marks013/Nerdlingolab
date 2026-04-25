@@ -98,8 +98,8 @@ export function AnnualReportChart({ monthlyItems }: AnnualReportChartProps): Rea
           <CardTitle>Valores por mês</CardTitle>
           <CardDescription>Receita e descontos confirmados no ano.</CardDescription>
         </CardHeader>
-        <CardContent className="h-80">
-          <ResponsiveContainer height="100%" width="100%">
+        <CardContent className="h-80 min-w-0">
+          <ResponsiveContainer height={320} minWidth={0} width="100%">
             <BarChart data={revenueData}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="monthLabel" tickLine={false} />
@@ -119,8 +119,8 @@ export function AnnualReportChart({ monthlyItems }: AnnualReportChartProps): Rea
           <CardTitle>Pontos por mês</CardTitle>
           <CardDescription>Emissão e resgate de recompensas no ano.</CardDescription>
         </CardHeader>
-        <CardContent className="h-80">
-          <ResponsiveContainer height="100%" width="100%">
+        <CardContent className="h-80 min-w-0">
+          <ResponsiveContainer height={320} minWidth={0} width="100%">
             <BarChart data={loyaltyData}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="monthLabel" tickLine={false} />

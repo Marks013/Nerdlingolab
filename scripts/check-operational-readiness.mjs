@@ -14,6 +14,7 @@ const requiredFiles = [
   "src/app/api/health/ready/route.ts",
   "src/app/api/cart/validate/route.ts",
   "src/app/api/checkout/route.ts",
+  "src/app/api/admin/reports/annual.csv/route.ts",
   "src/app/api/shipping/quote/route.ts",
   "src/app/api/webhooks/mercadopago/route.ts",
   "src/actions/account-addresses.ts",
@@ -75,6 +76,24 @@ const prismaContractSnippets = [
 ];
 
 const criticalSourceContracts = [
+  {
+    filePath: "src/lib/reports/queries.ts",
+    snippets: [
+      ["filtros de período", "resolveReportFilters"],
+      ["CSV de relatório", "buildAdminReportCsv"],
+      ["pedidos pagos", "PaymentStatus.APPROVED"],
+      ["período customizado", "startDate: string"]
+    ]
+  },
+  {
+    filePath: "src/app/api/admin/reports/annual.csv/route.ts",
+    snippets: [
+      ["sessão admin", "isAdminSession()"],
+      ["exportação CSV", "text/csv; charset=utf-8"],
+      ["filtros por URL", "requestUrl.searchParams.get(\"inicio\")"],
+      ["nome do arquivo", "relatorio-${filters.startDate}-${filters.endDate}.csv"]
+    ]
+  },
   {
     filePath: "src/lib/checkout/create-checkout.ts",
     snippets: [
@@ -201,6 +220,8 @@ const e2eContractSnippets = [
     snippets: [
       ["checkout com banco real", "cria pedido pela loja e processa aprovação com banco real"],
       ["webhook aprovado", "processApprovedMercadoPagoPayment"],
+      ["relatórios com período", "/admin/relatorios?inicio="],
+      ["exportação CSV", "Exportar CSV"],
       ["replay de webhook", "variantAfterReplay"],
       ["cupom não duplica", "couponAfterReplay.usedCount).toBe(1)"],
       ["inventário não duplica", "inventoryEntriesAfterReplay).toBe(1)"],

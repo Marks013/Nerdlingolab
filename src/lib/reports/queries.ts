@@ -25,8 +25,14 @@ export interface AnnualReportTotals {
 
 export interface AdminAnnualReport {
   currentYear: number;
+  filters: AdminReportFilters;
   monthlyItems: MonthlyReportItem[];
   totals: AnnualReportTotals;
+}
+
+export interface AdminReportFilters {
+  endDate: string;
+  startDate: string;
 }
 
 interface ReportOrderSummary {
@@ -38,13 +44,16 @@ interface ReportOrderSummary {
   loyaltyPointsRedeemed: number;
 }
 
-function createEmptyMonthlyItems(currentYear: number): MonthlyReportItem[] {
-  const monthFormatter = new Intl.DateTimeFormat("pt-BR", { month: "short" });
+function createEmptyMonthlyItems({ endDate, startDate }: AdminReportFilters): MonthlyReportItem[] {
+  const monthFormatter = new Intl.DateTimeFormat("pt-BR", { month: "short", timeZone: "UTC" });
+  const start = parseDateInput(startDate);
+  const end = parseDateInput(endDate);
+  const monthCount = (end.getUTCFullYear() - start.getUTCFullYear()) * 12 + end.getUTCMonth() - start.getUTCMonth() + 1;
 
-  return Array.from({ length: 12 }, (_, monthIndex) => {
-    const monthDate = new Date(currentYear, monthIndex, 1);
+  return Array.from({ length: Math.max(1, monthCount) }, (_, monthIndex) => {
+    const monthDate = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + monthIndex, 1));
     const rawMonthLabel = monthFormatter.format(monthDate).replace(".", "");
-    const monthLabel = rawMonthLabel.charAt(0).toUpperCase() + rawMonthLabel.slice(1);
+    const monthLabel = `${rawMonthLabel.charAt(0).toUpperCase()}${rawMonthLabel.slice(1)}/${monthDate.getUTCFullYear()}`;
 
     return {
       monthIndex,
@@ -80,19 +89,20 @@ function buildAnnualTotals(monthlyItems: MonthlyReportItem[]): AnnualReportTotal
   );
 }
 
-export async function getAdminAnnualReport(): Promise<AdminAnnualReport> {
+export async function getAdminAnnualReport(filters?: Partial<AdminReportFilters>): Promise<AdminAnnualReport> {
   const now = new Date();
   const currentYear = now.getFullYear();
-  const yearStart = new Date(currentYear, 0, 1);
-  const nextYearStart = new Date(currentYear + 1, 0, 1);
-  const monthlyItems = createEmptyMonthlyItems(currentYear);
+  const resolvedFilters = resolveReportFilters(filters, currentYear);
+  const startDate = parseDateInput(resolvedFilters.startDate);
+  const endDate = addDays(parseDateInput(resolvedFilters.endDate), 1);
+  const monthlyItems = createEmptyMonthlyItems(resolvedFilters);
 
   const paidOrders: ReportOrderSummary[] = await prisma.order.findMany({
     where: {
       paymentStatus: PaymentStatus.APPROVED,
       paidAt: {
-        gte: yearStart,
-        lt: nextYearStart
+        gte: startDate,
+        lt: endDate
       }
     },
     select: {
@@ -111,7 +121,7 @@ export async function getAdminAnnualReport(): Promise<AdminAnnualReport> {
       continue;
     }
 
-    const monthIndex = order.paidAt.getMonth();
+    const monthIndex = (order.paidAt.getUTCFullYear() - startDate.getUTCFullYear()) * 12 + order.paidAt.getUTCMonth() - startDate.getUTCMonth();
     const monthlyItem = monthlyItems[monthIndex];
 
     if (!monthlyItem) {
@@ -128,7 +138,83 @@ export async function getAdminAnnualReport(): Promise<AdminAnnualReport> {
 
   return {
     currentYear,
+    filters: resolvedFilters,
     monthlyItems,
     totals: buildAnnualTotals(monthlyItems)
   };
+}
+
+export function buildAdminReportCsv(report: AdminAnnualReport): string {
+  const rows = [
+    [
+      "Mês",
+      "Receita",
+      "Pedidos pagos",
+      "Desconto em cupons",
+      "Desconto em pontos",
+      "Pontos emitidos",
+      "Pontos resgatados"
+    ],
+    ...report.monthlyItems.map((item) => [
+      item.monthLabel,
+      centsToDecimal(item.revenueCents),
+      String(item.paidOrdersCount),
+      centsToDecimal(item.couponDiscountCents),
+      centsToDecimal(item.loyaltyDiscountCents),
+      String(item.loyaltyPointsIssued),
+      String(item.loyaltyPointsRedeemed)
+    ])
+  ];
+
+  return rows.map((row) => row.map(escapeCsvCell).join(",")).join("\n");
+}
+
+export function resolveReportFilters(filters: Partial<AdminReportFilters> | undefined, currentYear = new Date().getFullYear()): AdminReportFilters {
+  const fallbackStartDate = `${currentYear}-01-01`;
+  const fallbackEndDate = `${currentYear}-12-31`;
+  const startDate = isDateInput(filters?.startDate) ? filters?.startDate : fallbackStartDate;
+  const endDate = isDateInput(filters?.endDate) ? filters?.endDate : fallbackEndDate;
+
+  if (parseDateInput(startDate) > parseDateInput(endDate)) {
+    return {
+      startDate: endDate,
+      endDate: startDate
+    };
+  }
+
+  return {
+    startDate,
+    endDate
+  };
+}
+
+function addDays(date: Date, days: number): Date {
+  const nextDate = new Date(date);
+  nextDate.setUTCDate(nextDate.getUTCDate() + days);
+
+  return nextDate;
+}
+
+function centsToDecimal(value: number): string {
+  return (value / 100).toFixed(2);
+}
+
+function escapeCsvCell(value: string): string {
+  if (!/[",\n\r]/.test(value)) {
+    return value;
+  }
+
+  return `"${value.replace(/"/g, "\"\"")}"`;
+}
+
+function isDateInput(value: string | undefined): value is string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  return parseDateInput(value).toISOString().slice(0, 10) === value;
+}
+
+function parseDateInput(value: string): Date {
+  return new Date(`${value}T00:00:00.000Z`);
 }

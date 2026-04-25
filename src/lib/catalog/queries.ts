@@ -85,6 +85,72 @@ export async function getPublicProductBySlug(slug: string): Promise<ProductListI
   });
 }
 
+export async function getPublicProductRecommendations({
+  categoryId,
+  productId,
+  take = 4
+}: {
+  categoryId: string | null;
+  productId: string;
+  take?: number;
+}): Promise<ProductListItem[]> {
+  const baseWhere: Prisma.ProductWhereInput = {
+    AND: [
+      getPublicProductWhere(),
+      {
+        id: {
+          not: productId
+        }
+      }
+    ]
+  };
+  const include = {
+    category: true,
+    variants: {
+      where: { isActive: true },
+      orderBy: { createdAt: "asc" }
+    }
+  } satisfies Prisma.ProductInclude;
+
+  const sameCategoryProducts = categoryId
+    ? await prisma.product.findMany({
+        where: {
+          AND: [
+            baseWhere,
+            {
+              categoryId
+            }
+          ]
+        },
+        include,
+        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+        take
+      })
+    : [];
+
+  if (sameCategoryProducts.length >= take) {
+    return sameCategoryProducts;
+  }
+
+  const fallbackProducts = await prisma.product.findMany({
+    where: {
+      AND: [
+        baseWhere,
+        {
+          id: {
+            notIn: [productId, ...sameCategoryProducts.map((product) => product.id)]
+          }
+        }
+      ]
+    },
+    include,
+    orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+    take: take - sameCategoryProducts.length
+  });
+
+  return [...sameCategoryProducts, ...fallbackProducts];
+}
+
 function getPublicProductWhere(filters: PublicProductFilters = {}): Prisma.ProductWhereInput {
   const query = filters.query?.trim();
   const conditions: Prisma.ProductWhereInput[] = [

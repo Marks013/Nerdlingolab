@@ -6,6 +6,29 @@ Use este arquivo como ponto de partida em um chat novo. Ele consolida as fases j
 
 Regra de manutenção: conforme o projeto avançar, este arquivo deve ser atualizado no mesmo turno com novas fases, decisões, validações, pendências e comandos executados. Ele é o controle principal para retomar o trabalho em um chat totalmente sem contexto.
 
+## Atualização mais recente - recomendações de produto
+
+Concluído nesta atualização:
+
+- Criado `src/features/catalog/components/product-recommendations.tsx`.
+- `src/lib/catalog/queries.ts` agora expõe recomendações públicas que excluem o produto atual, priorizam a mesma categoria e só retornam produtos ativos com estoque.
+- A página de detalhe do produto mostra recomendações abaixo da compra.
+- O E2E público cria produto principal, produto recomendado, produto sem estoque e produto em rascunho; valida que só o recomendado aparece.
+
+Validações executadas:
+
+- `npm run validate:project` passou.
+- `npx playwright test tests/e2e/public-flow.spec.ts` passou com 18 testes em Chromium desktop e mobile.
+- `npm run check:operational` passou.
+- `npm run build` passou.
+- `npm run test:e2e` passou com 20 testes em Chromium desktop e mobile.
+
+Próximas pendências objetivas:
+
+- Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
+- Testar Mercado Envios com credencial e `shipment_id` reais.
+- Expandir auditorias operacionais inspiradas no SavePointFinance para checkout, pedidos, estoque, cupons, fidelidade e Mercado Pago.
+
 ## Atualização mais recente - ofertas com dados reais
 
 Concluído nesta atualização:
@@ -28,7 +51,6 @@ Próximas pendências objetivas:
 
 - Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
 - Testar Mercado Envios com credencial e `shipment_id` reais.
-- Evoluir recomendações de produto com produtos ativos e estoque disponível.
 
 ## Atualização mais recente - variações no produto
 

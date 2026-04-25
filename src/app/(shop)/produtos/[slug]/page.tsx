@@ -4,7 +4,11 @@ import Image from "next/image";
 import { ShopTrustStrip } from "@/components/shop/shop-trust-strip";
 import { getImageUrls, getPrimaryImageUrl } from "@/features/catalog/image-utils";
 import { ProductPurchasePanel } from "@/features/catalog/components/product-purchase-panel";
-import { getPublicProductBySlug } from "@/lib/catalog/queries";
+import { ProductRecommendations } from "@/features/catalog/components/product-recommendations";
+import {
+  getPublicProductBySlug,
+  getPublicProductRecommendations
+} from "@/lib/catalog/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +35,10 @@ export default async function ProductPage({ params }: ProductPageProps): Promise
     compareAtPriceCents: variant.compareAtPriceCents,
     availableStock: Math.max(0, variant.stockQuantity - variant.reservedQuantity)
   }));
+  const recommendedProducts = await getPublicProductRecommendations({
+    categoryId: product.categoryId,
+    productId: product.id
+  });
 
   return (
     <main className="mx-auto grid min-h-screen max-w-6xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
@@ -83,6 +91,7 @@ export default async function ProductPage({ params }: ProductPageProps): Promise
           <ShopTrustStrip />
         </div>
       </section>
+      <ProductRecommendations products={recommendedProducts} />
     </main>
   );
 }

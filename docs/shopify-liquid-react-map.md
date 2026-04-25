@@ -21,7 +21,7 @@ Este mapa orienta a migração visual e funcional sem importar Liquid para produ
 | `sections/cashback-page.liquid` | Fluxo de Nerdcoins/fidelidade | Pendente | Não copiar regra antiga sem reconciliação com o domínio atual. |
 | `sections/newsletter.liquid` | Componente futuro de newsletter | Pendente | Depende de Resend/lista de contatos. |
 | `sections/newsletter-bar.liquid` | Barra promocional futura | Pendente | Deve respeitar PT-BR e não bloquear fluxo de compra. |
-| `sections/product-recommendations.liquid` | Recomendações futuras no produto/carrinho | Pendente | Deve usar produtos ativos e estoque disponível. |
+| `sections/product-recommendations.liquid` | `src/features/catalog/components/product-recommendations.tsx` | Parcial | Detalhe do produto já recomenda produtos ativos com estoque, priorizando a mesma categoria. |
 | `sections/recently-viewed-products.liquid` | Componente futuro client-side | Pendente | Deve preservar privacidade e não afetar checkout. |
 
 ## Decisões aplicadas nesta etapa
@@ -31,6 +31,7 @@ Este mapa orienta a migração visual e funcional sem importar Liquid para produ
 - O catálogo público usa filtros server-side por busca, categoria e ordenação, preservando URL compartilhável.
 - O detalhe do produto usa variantes reais para seleção, disponibilidade, valor e carrinho.
 - A home usa ofertas vindas do banco, com cupons ativos e produtos promocionais com estoque.
+- O detalhe do produto mostra recomendações baseadas em produtos ativos com estoque.
 - O conteúdo visível reforça entrega, carrinho seguro e Nerdcoins.
 - Nenhum script Shopify foi importado.
 - Nenhuma regra financeira antiga foi copiada.
@@ -39,4 +40,4 @@ Este mapa orienta a migração visual e funcional sem importar Liquid para produ
 
 1. Completar o footer com dados institucionais reais quando o CNPJ/endereço oficial forem definidos.
 2. Testar Mercado Envios com credencial e `shipment_id` reais.
-3. Evoluir recomendações de produto com produtos ativos e estoque disponível.
+3. Expandir auditorias operacionais inspiradas no SavePointFinance para checkout, pedidos, estoque, cupons, fidelidade e Mercado Pago.

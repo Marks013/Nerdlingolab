@@ -231,6 +231,133 @@ test("exibe ofertas públicas a partir de cupom e produto reais", async ({ page 
   }
 });
 
+test("exibe recomendações apenas com produtos ativos e com estoque", async ({ page }) => {
+  const suffix = Date.now().toString();
+  const categorySlug = `categoria-recomendacao-${suffix}`;
+  const mainSlug = `produto-principal-${suffix}`;
+  const recommendedSlug = `produto-recomendado-${suffix}`;
+  const unavailableSlug = `produto-sem-estoque-${suffix}`;
+  const draftSlug = `produto-rascunho-${suffix}`;
+  const mainTitle = `Produto Principal ${suffix}`;
+  const recommendedTitle = `Produto Recomendado ${suffix}`;
+  const unavailableTitle = `Produto Sem Estoque ${suffix}`;
+  const draftTitle = `Produto Rascunho ${suffix}`;
+
+  try {
+    const category = await prisma.category.create({
+      data: {
+        isActive: true,
+        name: `Categoria Recomendação ${suffix}`,
+        slug: categorySlug
+      }
+    });
+
+    await prisma.product.createMany({
+      data: [
+        {
+          categoryId: category.id,
+          description: "Produto principal para recomendações.",
+          images: ["/shopify/product-1.webp"],
+          priceCents: 4990,
+          publishedAt: new Date(),
+          shortDescription: "Principal.",
+          slug: mainSlug,
+          status: ProductStatus.ACTIVE,
+          title: mainTitle
+        },
+        {
+          categoryId: category.id,
+          description: "Produto recomendado com estoque.",
+          images: ["/shopify/product-1.webp"],
+          priceCents: 5990,
+          publishedAt: new Date(),
+          shortDescription: "Recomendado.",
+          slug: recommendedSlug,
+          status: ProductStatus.ACTIVE,
+          title: recommendedTitle
+        },
+        {
+          categoryId: category.id,
+          description: "Produto ativo sem estoque.",
+          images: ["/shopify/product-1.webp"],
+          priceCents: 3990,
+          publishedAt: new Date(),
+          shortDescription: "Sem estoque.",
+          slug: unavailableSlug,
+          status: ProductStatus.ACTIVE,
+          title: unavailableTitle
+        },
+        {
+          categoryId: category.id,
+          description: "Produto em rascunho.",
+          images: ["/shopify/product-1.webp"],
+          priceCents: 2990,
+          publishedAt: new Date(),
+          shortDescription: "Rascunho.",
+          slug: draftSlug,
+          status: ProductStatus.DRAFT,
+          title: draftTitle
+        }
+      ]
+    });
+
+    const products = await prisma.product.findMany({
+      where: { slug: { in: [mainSlug, recommendedSlug, unavailableSlug, draftSlug] } },
+      select: { id: true, slug: true }
+    });
+    const productIdBySlug = new Map(products.map((product) => [product.slug, product.id]));
+
+    await prisma.productVariant.createMany({
+      data: [
+        {
+          isActive: true,
+          priceCents: 4990,
+          productId: productIdBySlug.get(mainSlug) ?? "",
+          sku: `SKU-REC-MAIN-${suffix}`,
+          stockQuantity: 2,
+          title: "Padrão"
+        },
+        {
+          isActive: true,
+          priceCents: 5990,
+          productId: productIdBySlug.get(recommendedSlug) ?? "",
+          sku: `SKU-REC-OK-${suffix}`,
+          stockQuantity: 3,
+          title: "Padrão"
+        },
+        {
+          isActive: true,
+          priceCents: 3990,
+          productId: productIdBySlug.get(unavailableSlug) ?? "",
+          sku: `SKU-REC-ZERO-${suffix}`,
+          stockQuantity: 0,
+          title: "Padrão"
+        },
+        {
+          isActive: true,
+          priceCents: 2990,
+          productId: productIdBySlug.get(draftSlug) ?? "",
+          sku: `SKU-REC-DRAFT-${suffix}`,
+          stockQuantity: 4,
+          title: "Padrão"
+        }
+      ]
+    });
+
+    await page.goto(`/produtos/${mainSlug}`);
+
+    await expect(page.getByRole("heading", { name: "Produtos recomendados" })).toBeVisible();
+    await expect(page.getByRole("link", { name: new RegExp(recommendedTitle) })).toBeVisible();
+    await expect(page.getByRole("link", { name: new RegExp(unavailableTitle) })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: new RegExp(draftTitle) })).toHaveCount(0);
+  } finally {
+    await prisma.product.deleteMany({
+      where: { slug: { in: [mainSlug, recommendedSlug, unavailableSlug, draftSlug] } }
+    });
+    await prisma.category.deleteMany({ where: { slug: categorySlug } });
+  }
+});
+
 test("redireciona área restrita para entrada", async ({ page }) => {
   await page.goto("/admin/dashboard");
 

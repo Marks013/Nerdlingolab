@@ -173,7 +173,8 @@ const e2eContractSnippets = [
       ["filtros públicos", "filtra catálogo público com dados reais do banco"],
       ["variantes reais", "seleciona variante real do produto antes de adicionar ao carrinho"],
       ["ofertas reais", "exibe ofertas públicas a partir de cupom e produto reais"],
-      ["recomendações com estoque", "exibe recomendações apenas com produtos ativos e com estoque"]
+      ["recomendações com estoque", "exibe recomendações apenas com produtos ativos e com estoque"],
+      ["prontidão banco e storage", "responde prontidão com banco e armazenamento"]
     ]
   }
 ];

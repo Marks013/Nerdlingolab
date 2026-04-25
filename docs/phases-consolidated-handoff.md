@@ -6,6 +6,28 @@ Use este arquivo como ponto de partida em um chat novo. Ele consolida as fases j
 
 Regra de manutenção: conforme o projeto avançar, este arquivo deve ser atualizado no mesmo turno com novas fases, decisões, validações, pendências e comandos executados. Ele é o controle principal para retomar o trabalho em um chat totalmente sem contexto.
 
+## Atualização mais recente - prontidão com banco e armazenamento
+
+Concluído nesta atualização:
+
+- `tests/e2e/public-flow.spec.ts` agora valida `/api/health/ready` contra o ambiente real de teste.
+- O E2E confirma resposta 200, `ok: true`, serviço `nerdlingolab-commerce` e checks `database` e `storage` saudáveis.
+- `scripts/check-operational-readiness.mjs` agora exige essa cobertura, evitando regressão silenciosa da prontidão operacional.
+- A pendência de smoke real para `/api/health/ready` foi concluída com Docker/Postgres/MinIO disponíveis.
+
+Validações executadas:
+
+- `npm run validate:project` passou.
+- `npx playwright test tests/e2e/public-flow.spec.ts` passou com 20 testes em Chromium desktop e mobile.
+- `npm run check:operational` passou.
+- `npm run build` passou.
+- `npm run test:e2e` passou com 22 testes em Chromium desktop e mobile.
+
+Próximas pendências objetivas:
+
+- Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
+- Testar Mercado Envios com credencial e `shipment_id` reais.
+
 ## Atualização mais recente - auditoria operacional ampliada
 
 Concluído nesta atualização:
@@ -26,7 +48,6 @@ Próximas pendências objetivas:
 
 - Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
 - Testar Mercado Envios com credencial e `shipment_id` reais.
-- Ampliar auditorias futuras com smoke real de `/api/health/ready` quando ambiente Docker estiver disponível no fluxo de deploy.
 
 ## Atualização mais recente - recomendações de produto
 

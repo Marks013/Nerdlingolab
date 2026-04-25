@@ -373,3 +373,22 @@ test("responde verificação de saúde", async ({ request }) => {
   expect(payload.ok).toBe(true);
   expect(payload.service).toBe("nerdlingolab-commerce");
 });
+
+test("responde prontidão com banco e armazenamento", async ({ request }) => {
+  const response = await request.get("/api/health/ready");
+  const payload = (await response.json()) as {
+    checks?: Array<{ name?: string; ok?: boolean }>;
+    ok?: boolean;
+    service?: string;
+  };
+
+  expect(response.ok()).toBe(true);
+  expect(payload.ok).toBe(true);
+  expect(payload.service).toBe("nerdlingolab-commerce");
+  expect(payload.checks).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ name: "database", ok: true }),
+      expect.objectContaining({ name: "storage", ok: true })
+    ])
+  );
+});

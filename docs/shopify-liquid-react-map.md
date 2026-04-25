@@ -11,7 +11,7 @@ Este mapa orienta a migração visual e funcional sem importar Liquid para produ
 | Liquid | Equivalente atual ou destino | Status | Observação |
 | --- | --- | --- | --- |
 | `sections/header.liquid` | `src/components/shop/shop-header.tsx` | Parcial | Logo real já migrado; menus e confiança ainda podem ser refinados. |
-| `sections/footer.liquid` | `src/components/shop/shop-footer.tsx` ou componente futuro | Pendente | Deve preservar dados institucionais, links e comunicação de confiança. |
+| `sections/footer.liquid` | `src/components/shop/shop-footer.tsx` | Parcial | Barra colorida, links, atendimento e selos de confiança foram migrados sem Liquid. |
 | `sections/featured-collection.liquid` | `src/app/(shop)/page.tsx` e `src/app/(shop)/produtos/page.tsx` | Parcial | Catálogo existe com banco real; home ainda pode destacar coleções por categoria. |
 | `sections/collection-template.liquid` | `src/app/(shop)/produtos/page.tsx` | Parcial | Falta filtro/busca/ordenação antes de equivaler à coleção Shopify. |
 | `sections/product-template.liquid` | `src/app/(shop)/produtos/[slug]/page.tsx` | Parcial | Produto já tem imagem, preço, descrição, carrinho e frete; faltam variações avançadas e selos comerciais. |
@@ -27,12 +27,13 @@ Este mapa orienta a migração visual e funcional sem importar Liquid para produ
 ## Decisões aplicadas nesta etapa
 
 - `ShopTrustStrip` concentra os assets visuais de confiança reutilizados no catálogo e no produto.
+- `ShopFooter` migra a intenção do footer Shopify: barra colorida, atendimento, links, pagamento seguro e entrega acompanhada.
 - O conteúdo visível reforça entrega, carrinho seguro e Nerdcoins.
 - Nenhum script Shopify foi importado.
 - Nenhuma regra financeira antiga foi copiada.
 
 ## Próxima migração recomendada
 
-1. Criar footer público com dados institucionais e links úteis baseados em `sections/footer.liquid`.
-2. Adicionar busca/filtros de catálogo com validação por query server-side.
-3. Evoluir produto com variações reais quando o modelo de variantes estiver completo na UI.
+1. Adicionar busca/filtros de catálogo com validação por query server-side.
+2. Evoluir produto com variações reais quando o modelo de variantes estiver completo na UI.
+3. Completar o footer com dados institucionais reais quando o CNPJ/endereço oficial forem definidos.

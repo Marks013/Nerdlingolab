@@ -6,6 +6,29 @@ Use este arquivo como ponto de partida em um chat novo. Ele consolida as fases j
 
 Regra de manutenção: conforme o projeto avançar, este arquivo deve ser atualizado no mesmo turno com novas fases, decisões, validações, pendências e comandos executados. Ele é o controle principal para retomar o trabalho em um chat totalmente sem contexto.
 
+## Atualização mais recente - footer público Shopify
+
+Concluído nesta atualização:
+
+- Criado `src/components/shop/shop-footer.tsx`.
+- O layout público agora exibe footer com barra colorida herdada do tema Shopify, links úteis, atendimento, pagamento seguro e entrega acompanhada.
+- O footer usa assets já migrados, sem importar Liquid, CSS ou JavaScript do tema.
+- E2E público ampliado para verificar o footer.
+
+Validações executadas:
+
+- `npm run validate:project` passou.
+- `npx playwright test tests/e2e/public-flow.spec.ts` passou após correção do warning de imagem.
+- `npm run check:operational` passou.
+- `npm run build` passou.
+- `npm run test:e2e` passou com 12 testes em Chromium desktop e mobile.
+
+Próximas pendências objetivas:
+
+- Adicionar busca/filtros de catálogo por query server-side.
+- Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
+- Testar Mercado Envios com credencial e `shipment_id` reais.
+
 ## Atualização mais recente - inventário Shopify e catálogo visual
 
 Concluído nesta atualização:
@@ -25,7 +48,6 @@ Validações executadas:
 
 Próximas pendências objetivas:
 
-- Criar footer público com base em `sections/footer.liquid`.
 - Adicionar busca/filtros de catálogo por query server-side.
 - Testar Mercado Envios com credencial e `shipment_id` reais.
 

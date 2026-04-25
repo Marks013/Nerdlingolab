@@ -12,6 +12,7 @@ Iniciar a substituição visual do tema Shopify sem importar Liquid para produç
 - Atualizada a home em `src/app/(shop)/page.tsx` com hero visual usando imagem real do tema.
 - Criado `src/components/shop/shop-trust-strip.tsx` para reutilizar assets reais de suporte, carrinho e Nerdcoins.
 - Catálogo e detalhe do produto agora exibem benefícios visuais herdados do Shopify sem usar Liquid.
+- Criado `src/components/shop/shop-footer.tsx` com barra colorida, links, atendimento e selos de confiança inspirados no footer Shopify.
 - Removido texto técnico visível da home.
 - Corrigido texto sem acentuação em `histórico`.
 

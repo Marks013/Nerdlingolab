@@ -7,8 +7,10 @@ test("carrega a vitrine principal", async ({ page }) => {
   await expect(page.getByRole("link", { name: /Ver produtos/i })).toBeVisible();
   await expect(page.getByRole("link", { name: /Ver Nerdcoins/i })).toBeVisible();
   await expect(page.getByAltText("NerdLingoLab").first()).toBeVisible();
-  await expect(page.getByText("Loja geek")).toBeVisible();
+  await expect(page.getByText("Loja geek com recompensas")).toBeVisible();
   await expect(page.getByText("Carrinho inteligente")).toBeVisible();
+  await expect(page.getByRole("contentinfo")).toContainText("Entrega acompanhada");
+  await expect(page.getByRole("contentinfo")).toContainText("Pagamento seguro");
 });
 
 test("mantém páginas públicas essenciais acessíveis e em PT-BR", async ({ page }) => {

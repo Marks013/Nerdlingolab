@@ -6,6 +6,28 @@ Use este arquivo como ponto de partida em um chat novo. Ele consolida as fases j
 
 Regra de manutenção: conforme o projeto avançar, este arquivo deve ser atualizado no mesmo turno com novas fases, decisões, validações, pendências e comandos executados. Ele é o controle principal para retomar o trabalho em um chat totalmente sem contexto.
 
+## Atualização mais recente - otimização LCP de imagens
+
+Concluído nesta atualização:
+
+- Imagens acima da dobra migradas de `priority` para `preload` + `loading="eager"`, conforme API local do Next 16.
+- `ProductCard` agora aceita `imagePriority` para controlar preload sem forçar todas as imagens do catálogo.
+- A primeira linha do catálogo e das recomendações recebe prioridade explícita quando pode entrar na primeira viewport.
+- A primeira miniatura do carrinho recebe prioridade explícita para evitar aviso de LCP em carrinho com poucos elementos.
+- A home e a imagem principal do produto usam `preload` e `loading="eager"`.
+- A auditoria operacional agora exige esses contratos nos componentes de produto e carrinho.
+
+Validações executadas:
+
+- `npm run validate:project` passou.
+- `npx playwright test tests/e2e/public-flow.spec.ts -g "usa endereço salvo"` passou com 2 testes em Chromium desktop e mobile.
+- Inspeção Playwright local confirmou `/shopify/product-1.webp` como `loading="eager"` em home, catálogo e recomendações de produto.
+
+Próximas pendências objetivas:
+
+- Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
+- Testar Mercado Envios com credencial e `shipment_id` reais.
+
 ## Atualização mais recente - endereços salvos no checkout
 
 Concluído nesta atualização:
@@ -30,7 +52,6 @@ Próximas pendências objetivas:
 
 - Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
 - Testar Mercado Envios com credencial e `shipment_id` reais.
-- Otimizar LCP das imagens principais de produto apontadas pelo Playwright/WebServer.
 
 ## Atualização mais recente - prontidão com banco e armazenamento
 

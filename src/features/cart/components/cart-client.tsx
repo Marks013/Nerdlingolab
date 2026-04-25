@@ -118,8 +118,9 @@ export function CartClient(): React.ReactElement {
           <CardDescription>Revise os itens escolhidos antes de finalizar a compra.</CardDescription>
         </CardHeader>
         <CardContent>
-          {validatedCart?.items.map((item) => (
+          {validatedCart?.items.map((item, itemIndex) => (
             <CartLineItem
+              imagePriority={itemIndex === 0}
               item={item}
               key={item.variantId}
               onQuantityChange={setQuantity}

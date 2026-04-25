@@ -9,12 +9,14 @@ import { formatCurrency } from "@/lib/format";
 import type { ValidatedCartItem } from "@/features/cart/types";
 
 interface CartLineItemProps {
+  imagePriority?: boolean;
   item: ValidatedCartItem;
   onQuantityChange: (variantId: string, quantity: number) => void;
   onRemove: (variantId: string) => void;
 }
 
 export function CartLineItem({
+  imagePriority = false,
   item,
   onQuantityChange,
   onRemove
@@ -27,7 +29,15 @@ export function CartLineItem({
         href={`/produtos/${item.slug}`}
       >
         {item.imageUrl ? (
-          <Image alt={`Imagem de ${item.title}`} className="object-cover" fill sizes="96px" src={item.imageUrl} />
+          <Image
+            alt={`Imagem de ${item.title}`}
+            className="object-cover"
+            fill
+            loading={imagePriority ? "eager" : undefined}
+            preload={imagePriority}
+            sizes="96px"
+            src={item.imageUrl}
+          />
         ) : null}
       </Link>
       <div>

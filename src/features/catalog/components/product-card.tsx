@@ -7,10 +7,11 @@ import { formatCurrency } from "@/lib/format";
 import type { ProductListItem } from "@/lib/catalog/queries";
 
 interface ProductCardProps {
+  imagePriority?: boolean;
   product: ProductListItem;
 }
 
-export function ProductCard({ product }: ProductCardProps): React.ReactElement {
+export function ProductCard({ imagePriority = false, product }: ProductCardProps): React.ReactElement {
   const imageUrl = getPrimaryImageUrl(product.images);
 
   return (
@@ -22,6 +23,8 @@ export function ProductCard({ product }: ProductCardProps): React.ReactElement {
               alt={`Imagem de ${product.title}`}
               className="object-cover transition duration-300 group-hover:scale-[1.03]"
               fill
+              loading={imagePriority ? "eager" : undefined}
+              preload={imagePriority}
               sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
               src={imageUrl}
             />

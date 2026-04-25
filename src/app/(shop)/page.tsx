@@ -56,7 +56,8 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
           alt=""
           className="object-cover object-center"
           fill
-          priority
+          loading="eager"
+          preload
           sizes="100vw"
           src="/shopify/product-1.webp"
         />
@@ -67,7 +68,8 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
               alt="NerdLingoLab"
               className="mb-8 h-auto w-48"
               height={120}
-              priority
+              loading="eager"
+              preload
               src="/shopify/logo.webp"
               width={320}
             />

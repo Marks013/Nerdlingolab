@@ -94,6 +94,22 @@ const criticalSourceContracts = [
     ]
   },
   {
+    filePath: "src/features/catalog/components/product-card.tsx",
+    snippets: [
+      ["imagem prioritária explícita", "imagePriority"],
+      ["LCP com carregamento imediato", "loading={imagePriority ? \"eager\" : undefined}"],
+      ["preload controlado", "preload={imagePriority}"]
+    ]
+  },
+  {
+    filePath: "src/features/cart/components/cart-line-item.tsx",
+    snippets: [
+      ["primeira imagem do carrinho", "imagePriority"],
+      ["miniatura acima da dobra", "loading={imagePriority ? \"eager\" : undefined}"],
+      ["preload do item principal", "preload={imagePriority}"]
+    ]
+  },
+  {
     filePath: "src/lib/cart/validation.ts",
     snippets: [
       ["produto ativo", "ProductStatus.ACTIVE"],

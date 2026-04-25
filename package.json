@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "validate:encoding": "node scripts/check-encoding.mjs",
     "validate:ui-copy": "node scripts/check-ui-copy.mjs",
+    "audit:ui-runtime": "node scripts/audit-runtime-ui.mjs",
     "validate:contrast": "node scripts/check-contrast.mjs",
     "audit:routes": "node scripts/audit-routes.mjs",
     "validate:project": "npm run validate:encoding && npm run validate:ui-copy && npm run validate:contrast && npm run audit:routes && npm run lint && npm run typecheck",
@@ -52,6 +53,10 @@
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.3.6",
     "zustand": "^5.0.12"
+  },
+  "overrides": {
+    "postcss": "$postcss",
+    "uuid": "14.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",

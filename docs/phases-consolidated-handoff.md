@@ -6,6 +6,39 @@ Use este arquivo como ponto de partida em um chat novo. Ele consolida as fases j
 
 Regra de manutenção: conforme o projeto avançar, este arquivo deve ser atualizado no mesmo turno com novas fases, decisões, validações, pendências e comandos executados. Ele é o controle principal para retomar o trabalho em um chat totalmente sem contexto.
 
+## Atualização mais recente - Docker Compose, auditoria e hardening
+
+Concluído nesta atualização:
+
+- Criado `Dockerfile` para build reproduzível da aplicação com `npm ci`, `npm run build`, migrações, seed e `next start`.
+- O runtime do container agora executa como usuário `node`, não como root.
+- Criados `.dockerignore` e `.env.docker.example` com credenciais fictícias temporárias para ambiente local.
+- `docker-compose.yml` agora sobe Postgres, MinIO, criação automática do bucket e o app Next com healthcheck em `/api/health/ready`.
+- Adicionado `AUTH_TRUST_HOST=true` aos exemplos e ao Compose para o Auth.js funcionar corretamente no runtime Docker.
+- A home `/` foi marcada como dinâmica para não consultar o banco durante o build da imagem.
+- Adicionado `npm run audit:ui-runtime`, uma auditoria Playwright de UI em desktop/mobile que cobre páginas públicas e admin autenticado.
+- A auditoria de UI valida erros de console, falhas reais de requisição, imagens quebradas, overflow horizontal, controles sem nome acessível e textos indevidos de desenvolvimento.
+- `npm audit` foi zerado com `overrides` controlados para `postcss` e `uuid`, sem aceitar os downgrades quebrados sugeridos pelo `npm audit fix --force`.
+- Corrigida limpeza do E2E de checkout para remover ledger de inventário por pedido, produto e variante, evitando falha de FK entre execuções desktop/mobile.
+- A auditoria operacional agora exige contratos de Docker, UI runtime, overrides de segurança e home dinâmica.
+
+Validações executadas:
+
+- `docker compose --env-file .env.docker.local config --quiet` passou.
+- `docker compose --env-file .env.docker.local up -d --build` passou com app, Postgres e MinIO saudáveis.
+- `/api/health/ready` respondeu `ok: true` com `database` e `storage`.
+- `docker exec nerdlingolab-app id` confirmou runtime como `uid=1000(node)`.
+- `npm audit --audit-level=moderate` passou com 0 vulnerabilidades.
+- `npm run audit:ui-runtime` passou em desktop e mobile contra o app no Docker.
+- `npm run validate:project` passou.
+- `npm run test:e2e` passou com 24 testes em Chromium desktop e mobile usando Postgres/MinIO do Compose.
+
+Próximas pendências objetivas:
+
+- Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
+- Testar Mercado Envios e Mercado Pago com credenciais reais de sandbox/produção.
+- Trocar as credenciais fictícias do `.env.docker.example` antes de qualquer deploy público.
+
 ## Atualização mais recente - relatórios com período e CSV
 
 Concluído nesta atualização:

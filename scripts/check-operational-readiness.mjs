@@ -4,11 +4,15 @@ import { resolve } from "node:path";
 
 const rootDirectory = process.cwd();
 const requiredFiles = [
+  ".dockerignore",
+  ".env.docker.example",
   ".env.example",
+  "Dockerfile",
   "docker-compose.yml",
   "docs/phases-consolidated-handoff.md",
   "prisma/schema.prisma",
   "prisma.config.ts",
+  "scripts/audit-runtime-ui.mjs",
   "src/proxy.ts",
   "src/app/api/health/route.ts",
   "src/app/api/health/ready/route.ts",
@@ -36,6 +40,7 @@ const requiredFiles = [
 
 const requiredPackageScripts = [
   "validate:encoding",
+  "audit:ui-runtime",
   "validate:ui-copy",
   "validate:project",
   "prisma:generate",
@@ -49,6 +54,7 @@ const requiredEnvExampleKeys = [
   "APP_URL",
   "DATABASE_URL",
   "AUTH_SECRET",
+  "AUTH_TRUST_HOST",
   "SUPERADMIN_EMAIL",
   "SUPERADMIN_PASSWORD",
   "MINIO_BUCKET",
@@ -76,6 +82,52 @@ const prismaContractSnippets = [
 ];
 
 const criticalSourceContracts = [
+  {
+    filePath: "Dockerfile",
+    snippets: [
+      ["build reproduzível", "RUN npm ci"],
+      ["build Next", "RUN npm run build"],
+      ["migrações no start", "npx prisma migrate deploy"],
+      ["seed no start", "npx prisma db seed"],
+      ["runtime sem root", "USER node"]
+    ]
+  },
+  {
+    filePath: "docker-compose.yml",
+    snippets: [
+      ["serviço da aplicação", "app:"],
+      ["bucket MinIO", "minio-create-bucket:"],
+      ["healthcheck readiness", "/api/health/ready"],
+      ["host confiável Auth.js", "AUTH_TRUST_HOST"],
+      ["endpoint interno MinIO", "MINIO_ENDPOINT: minio"]
+    ]
+  },
+  {
+    filePath: "package.json",
+    snippets: [
+      ["auditoria runtime de UI", "\"audit:ui-runtime\""],
+      ["override PostCSS", "\"postcss\": \"$postcss\""],
+      ["override UUID", "\"uuid\": \"14.0.0\""]
+    ]
+  },
+  {
+    filePath: "scripts/audit-runtime-ui.mjs",
+    snippets: [
+      ["auditoria Playwright", "chromium.launch"],
+      ["viewports desktop e mobile", "devices[\"Pixel 7\"]"],
+      ["login admin", "loginAsAdmin"],
+      ["overflow horizontal", "overflow horizontal"],
+      ["controles acessíveis", "Controle sem nome acessível"],
+      ["screenshots", "ui-runtime-audit"]
+    ]
+  },
+  {
+    filePath: "src/app/(shop)/page.tsx",
+    snippets: [
+      ["home dinâmica", "export const dynamic = \"force-dynamic\""],
+      ["ofertas do banco", "getPublicOffers()"]
+    ]
+  },
   {
     filePath: "src/lib/reports/queries.ts",
     snippets: [

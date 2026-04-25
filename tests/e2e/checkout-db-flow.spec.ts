@@ -290,8 +290,20 @@ async function cleanupFixtures({
   const orderIds = orders.map((order) => order.id);
   const product = await prisma.product.findUnique({
     where: { slug: productSlug },
-    select: { id: true, categoryId: true }
+    select: {
+      id: true,
+      categoryId: true,
+      variants: {
+        select: { id: true }
+      }
+    }
   });
+  const variantIds = product?.variants.map((variant) => variant.id) ?? [];
+  const inventoryCleanupFilters = [
+    { orderId: { in: orderIds } },
+    ...(product ? [{ productId: product.id }] : []),
+    ...(variantIds.length > 0 ? [{ variantId: { in: variantIds } }] : [])
+  ];
   const customer = await prisma.user.findUnique({
     where: { email: customerEmail },
     select: { id: true }
@@ -304,7 +316,11 @@ async function cleanupFixtures({
   await prisma.webhookEvent.deleteMany({ where: { externalEventId: { contains: couponCode.toLowerCase() } } });
   await prisma.shipmentEvent.deleteMany({ where: { shipment: { orderId: { in: orderIds } } } });
   await prisma.shipment.deleteMany({ where: { orderId: { in: orderIds } } });
-  await prisma.inventoryLedger.deleteMany({ where: { orderId: { in: orderIds } } });
+  await prisma.inventoryLedger.deleteMany({
+    where: {
+      OR: inventoryCleanupFilters
+    }
+  });
   await prisma.loyaltyLedger.deleteMany({
     where: { OR: [{ orderId: { in: orderIds } }, { userId: customer?.id }] }
   });
@@ -316,10 +332,14 @@ async function cleanupFixtures({
   await prisma.coupon.deleteMany({ where: { code: couponCode } });
   await prisma.loyaltyPoints.deleteMany({ where: { userId: customer?.id } });
   await prisma.user.deleteMany({ where: { email: customerEmail } });
-  await prisma.productVariant.deleteMany({ where: { productId: product?.id } });
+  if (!product) {
+    return;
+  }
+
+  await prisma.productVariant.deleteMany({ where: { productId: product.id } });
   await prisma.product.deleteMany({ where: { slug: productSlug } });
 
-  if (product?.categoryId) {
+  if (product.categoryId) {
     await prisma.category.deleteMany({ where: { id: product.categoryId } });
   }
 }

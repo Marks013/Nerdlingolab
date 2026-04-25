@@ -7,6 +7,8 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { PublicOffersSection } from "@/features/offers/components/public-offers-section";
 import { getPublicOffers } from "@/lib/offers/queries";
 
+export const dynamic = "force-dynamic";
+
 const highlights = [
   {
     title: "Coleções nerd",

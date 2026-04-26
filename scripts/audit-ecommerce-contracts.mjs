@@ -99,6 +99,8 @@ assertIncludes("src/actions/loyalty.ts", [
   ["admin ajusta saldo com ledger", "adjustCustomerNerdcoins"],
   ["admin processa aniversário com idempotência anual", "loyalty:birthday:${today.year}:${user.id}"],
   ["admin expira pontos por lote", "expireEligibleNerdcoins"],
+  ["admin gera códigos de indicação faltantes", "backfillReferralCodes"],
+  ["rotina usa geração persistida de código", "ensureReferralCode(customer.id)"],
   ["expiração vinculada ao ledger original", "sourceLedgerId: lot.id"],
   ["configura recompensa para indicador", "referralInviterBonusPoints"],
   ["cliente converte pontos em cupom pessoal", "convertNerdcoinsToCoupon"],
@@ -114,7 +116,9 @@ assertIncludes("src/app/(admin)/admin/(panel)/fidelidade/page.tsx", [
   ["form de configurações", "updateLoyaltySettings"],
   ["ajuste manual", "adjustCustomerNerdcoins"],
   ["rotina de aniversário", "grantBirthdayNerdcoins"],
-  ["rotina de expiração", "expireEligibleNerdcoins"]
+  ["rotina de expiração", "expireEligibleNerdcoins"],
+  ["rotina de códigos de indicação", "backfillReferralCodes"],
+  ["histórico de indicações", "recentReferrals"]
 ]);
 assertIncludes("src/app/(shop)/conta/nerdcoins/page.tsx", [
   ["cliente vê saldo", "Saldo disponível"],

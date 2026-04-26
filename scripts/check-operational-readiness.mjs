@@ -230,6 +230,8 @@ const criticalSourceContracts = [
     snippets: [
       ["configuração de bônus de cadastro", "signupBonusPoints"],
       ["configuração de indicação", "referralInviterBonusPoints"],
+      ["backfill de indicações", "backfillReferralCodes"],
+      ["gera códigos pendentes", "ensureReferralCode(customer.id)"],
       ["aniversário idempotente", "loyalty:birthday:${today.year}:${user.id}"],
       ["expiração idempotente", "loyalty:expire:${lot.id}"],
       ["lote de origem da expiração", "sourceLedgerId: lot.id"],
@@ -249,6 +251,7 @@ const criticalSourceContracts = [
     snippets: [
       ["normaliza código", "normalizeReferralCode"],
       ["gera código único", "ensureReferralCode"],
+      ["fallback persiste código", "referralCode.upsert"],
       ["monta link de cadastro", "buildReferralSignupUrl"]
     ]
   },

@@ -44,7 +44,14 @@ export async function ensureReferralCode(userId: string, client: ReferralClient 
     throw new Error("Cliente não encontrado para gerar indicação.");
   }
 
-  return `${REFERRAL_CODE_PREFIX}${fallbackUser.id.slice(-10).toUpperCase()}`;
+  const fallbackCode = `${REFERRAL_CODE_PREFIX}${fallbackUser.id.slice(-10).toUpperCase()}`;
+  const referralCode = await client.referralCode.upsert({
+    where: { userId },
+    create: { code: fallbackCode, userId },
+    update: {}
+  });
+
+  return referralCode.code;
 }
 
 export function buildReferralSignupUrl(appUrl: string, code: string): string {

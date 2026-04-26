@@ -13,6 +13,7 @@ import {
   getLoyaltyProgramSettings,
   getPointsExpirationDate
 } from "@/lib/loyalty/settings";
+import { ensureReferralCode } from "@/lib/loyalty/referrals";
 import { prisma } from "@/lib/prisma";
 
 const settingsSchema = z.object({
@@ -279,6 +280,30 @@ export async function expireEligibleNerdcoins(): Promise<void> {
 
   revalidatePath("/admin/fidelidade");
   revalidatePath("/conta/nerdcoins");
+}
+
+export async function backfillReferralCodes(): Promise<void> {
+  await requireAdmin();
+
+  try {
+    const customersWithoutCodes = await prisma.user.findMany({
+      select: { id: true },
+      take: 500,
+      where: {
+        referralCode: null,
+        role: UserRole.CUSTOMER
+      }
+    });
+
+    for (const customer of customersWithoutCodes) {
+      await ensureReferralCode(customer.id);
+    }
+  } catch (error) {
+    Sentry.captureException(error);
+    throw new Error("Não foi possível gerar os códigos de indicação pendentes.");
+  }
+
+  revalidatePath("/admin/fidelidade");
 }
 
 export async function adjustCustomerNerdcoins(formData: FormData): Promise<void> {

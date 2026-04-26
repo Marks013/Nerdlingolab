@@ -1,11 +1,21 @@
-import { LoyaltyLedgerType, PaymentStatus, ReferralStatus } from "@/generated/prisma/client";
+import { LoyaltyLedgerType, PaymentStatus, ReferralStatus, UserRole } from "@/generated/prisma/client";
 
 import { getLoyaltyProgramSettings } from "@/lib/loyalty/settings";
 import { prisma } from "@/lib/prisma";
 
 export async function getAdminLoyaltyDashboard() {
-  const [settings, totals, customers, recentActivity, redeemedOrders, memberCount, generatedCoupons, referralTotals] =
-    await Promise.all([
+  const [
+    settings,
+    totals,
+    customers,
+    recentActivity,
+    redeemedOrders,
+    memberCount,
+    customersWithoutReferralCode,
+    generatedCoupons,
+    referralTotals,
+    recentReferrals
+  ] = await Promise.all([
       getLoyaltyProgramSettings(),
       prisma.loyaltyLedger.groupBy({
         by: ["type"],
@@ -45,6 +55,12 @@ export async function getAdminLoyaltyDashboard() {
         }
       }),
       prisma.loyaltyPoints.count(),
+      prisma.user.count({
+        where: {
+          referralCode: null,
+          role: UserRole.CUSTOMER
+        }
+      }),
       prisma.coupon.findMany({
         include: {
           assignedUser: { select: { email: true, name: true } }
@@ -59,6 +75,15 @@ export async function getAdminLoyaltyDashboard() {
       prisma.referral.groupBy({
         by: ["status"],
         _count: true
+      }),
+      prisma.referral.findMany({
+        include: {
+          invitee: { select: { email: true, name: true } },
+          inviter: { select: { email: true, name: true } },
+          qualifyingOrder: { select: { orderNumber: true, totalCents: true } }
+        },
+        orderBy: { createdAt: "desc" },
+        take: 12
       })
     ]);
   const pointsByType = new Map(totals.map((entry) => [entry.type, entry._sum.pointsDelta ?? 0]));
@@ -66,6 +91,7 @@ export async function getAdminLoyaltyDashboard() {
 
   return {
     customers,
+    customersWithoutReferralCode,
     generatedCoupons,
     memberCount,
     pointsEarned: pointsByType.get(LoyaltyLedgerType.EARN) ?? 0,
@@ -73,6 +99,7 @@ export async function getAdminLoyaltyDashboard() {
     pointsRedeemed: Math.abs(pointsByType.get(LoyaltyLedgerType.REDEEM) ?? 0),
     referralsPending: referralsByStatus.get(ReferralStatus.PENDING) ?? 0,
     referralsRewarded: referralsByStatus.get(ReferralStatus.REWARDED) ?? 0,
+    recentReferrals,
     recentActivity,
     redeemedOrders,
     settings

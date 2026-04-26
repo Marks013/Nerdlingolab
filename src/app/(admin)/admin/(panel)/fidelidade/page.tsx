@@ -1,7 +1,8 @@
-import { Award, CalendarDays, Coins, Hourglass, Settings, TicketPercent } from "lucide-react";
+import { Award, CalendarDays, Coins, Hourglass, Settings, TicketPercent, UserRoundPlus } from "lucide-react";
 
 import {
   adjustCustomerNerdcoins,
+  backfillReferralCodes,
   expireEligibleNerdcoins,
   grantBirthdayNerdcoins,
   updateLoyaltySettings
@@ -11,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { getAdminLoyaltyDashboard } from "@/lib/admin/loyalty";
 import { formatCurrency, formatDateTime } from "@/lib/format";
+import { getReferralStatusLabel } from "@/lib/loyalty/referrals";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +40,11 @@ export default async function AdminLoyaltyPage(): Promise<React.ReactElement> {
       <section className="mt-4 grid gap-4 md:grid-cols-2">
         <MetricCard icon={Award} label="Indicações pendentes" value={dashboard.referralsPending.toString()} />
         <MetricCard icon={Award} label="Indicações recompensadas" value={dashboard.referralsRewarded.toString()} />
+        <MetricCard
+          icon={UserRoundPlus}
+          label="Clientes sem código"
+          value={dashboard.customersWithoutReferralCode.toString()}
+        />
       </section>
 
       <section className="mt-6 grid min-w-0 gap-6 2xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
@@ -109,6 +116,12 @@ export default async function AdminLoyaltyPage(): Promise<React.ReactElement> {
                 <Button className="w-full min-w-0 justify-start gap-2 whitespace-normal text-left" type="submit" variant="outline">
                   <Hourglass className="h-4 w-4" />
                   Expirar pontos vencidos
+                </Button>
+              </form>
+              <form action={backfillReferralCodes} className="min-w-0">
+                <Button className="w-full min-w-0 justify-start gap-2 whitespace-normal text-left" type="submit" variant="outline">
+                  <UserRoundPlus className="h-4 w-4" />
+                  Gerar códigos de indicação faltantes
                 </Button>
               </form>
             </CardContent>
@@ -194,6 +207,37 @@ export default async function AdminLoyaltyPage(): Promise<React.ReactElement> {
                 ))}
                 {dashboard.generatedCoupons.length === 0 ? (
                   <p className="p-3 text-sm text-muted-foreground">Nenhum cupom pessoal gerado ainda.</p>
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="min-w-0">
+            <CardHeader>
+              <CardTitle>Indicações recentes</CardTitle>
+              <CardDescription>Convites, pedidos qualificadores e status de recompensa.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="divide-y rounded-lg border">
+                {dashboard.recentReferrals.map((referral) => (
+                  <div className="grid gap-1 p-3 text-sm md:grid-cols-[1fr_140px_180px]" key={referral.id}>
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">
+                        {referral.inviter.name ?? referral.inviter.email} indicou{" "}
+                        {referral.invitee.name ?? referral.invitee.email}
+                      </p>
+                      <p className="text-muted-foreground">
+                        {referral.qualifyingOrder
+                          ? `${referral.qualifyingOrder.orderNumber} · ${formatCurrency(referral.qualifyingOrder.totalCents)}`
+                          : "Aguardando primeiro pedido qualificado"}
+                      </p>
+                    </div>
+                    <p>{getReferralStatusLabel(referral.status)}</p>
+                    <p className="text-muted-foreground">{formatDateTime(referral.createdAt)}</p>
+                  </div>
+                ))}
+                {dashboard.recentReferrals.length === 0 ? (
+                  <p className="p-3 text-sm text-muted-foreground">Nenhuma indicação registrada ainda.</p>
                 ) : null}
               </div>
             </CardContent>

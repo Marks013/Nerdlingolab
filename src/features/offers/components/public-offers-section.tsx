@@ -24,7 +24,7 @@ export function PublicOffersSection({
   }
 
   return (
-    <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+    <section id="ofertas-cupons" className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-medium text-primary">Seleção especial</p>

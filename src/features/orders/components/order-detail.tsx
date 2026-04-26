@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { saveManualShipment, syncMercadoEnviosOrderShipment } from "@/actions/orders";
 import { OrderActions } from "@/features/orders/components/order-actions";
 import {
@@ -38,6 +39,17 @@ export function OrderDetail({ order }: OrderDetailProps): React.ReactElement {
       <div className="space-y-6">
         <CustomerCard order={order} />
         <TotalsCard order={order} />
+        <Card>
+          <CardHeader>
+            <CardTitle>Documentos</CardTitle>
+            <CardDescription>Arquivos administrativos do pedido.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full" variant="outline">
+              <a href={`/api/admin/orders/${order.id}/invoice.pdf`}>Baixar fatura PDF</a>
+            </Button>
+          </CardContent>
+        </Card>
         <OrderActions order={order} />
       </div>
     </div>

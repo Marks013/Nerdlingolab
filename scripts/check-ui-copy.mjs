@@ -15,7 +15,7 @@ const forbiddenPatterns = [
   /fundação/i,
   /base pronta/i,
   /base operacional/i,
-  /substituir a shopify/i,
+  /substituir a loja anterior/i,
   /revalidado[as]? no servidor/i,
   /snapshot/i,
   /configure o mercado pago/i,

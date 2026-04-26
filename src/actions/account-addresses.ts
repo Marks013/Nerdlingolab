@@ -63,6 +63,7 @@ export async function createCustomerAddress(formData: FormData): Promise<void> {
   }
 
   revalidateAddressPaths();
+  redirect(`/conta?endereco=${encodeURIComponent(parsedAddress.data.label || parsedAddress.data.recipient)}`);
 }
 
 export async function setDefaultCustomerAddress(addressId: string): Promise<void> {
@@ -94,6 +95,7 @@ export async function setDefaultCustomerAddress(addressId: string): Promise<void
   }
 
   revalidateAddressPaths();
+  redirect("/conta");
 }
 
 export async function deleteCustomerAddress(addressId: string): Promise<void> {
@@ -133,6 +135,7 @@ export async function deleteCustomerAddress(addressId: string): Promise<void> {
   }
 
   revalidateAddressPaths();
+  redirect("/conta");
 }
 
 async function requireCurrentUserId(): Promise<string> {

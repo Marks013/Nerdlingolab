@@ -1,5 +1,15 @@
-import { ProductStatus, type Category, type Prisma, type Product, type ProductVariant } from "@prisma/client";
+import { ProductStatus, type Category, type Product, type ProductVariant } from "@/generated/prisma/client";
+import type {
+  ProductInclude,
+  ProductOrderByWithRelationInput,
+  ProductWhereInput
+} from "@/generated/prisma/models/Product";
 
+import {
+  fallbackCategories,
+  fallbackProducts,
+  shouldUseCatalogFallback
+} from "@/lib/catalog/fallback";
 import { prisma } from "@/lib/prisma";
 
 export const publicProductSorts = ["recentes", "menor-valor", "maior-valor", "nome"] as const;
@@ -8,8 +18,11 @@ export type PublicProductSort = (typeof publicProductSorts)[number];
 
 export interface PublicProductFilters {
   categorySlug?: string;
+  maxPriceCents?: number;
+  minPriceCents?: number;
   query?: string;
   sort?: PublicProductSort;
+  tags?: string[];
 }
 
 export type ProductListItem = Product & {
@@ -44,45 +57,69 @@ export async function getAdminProductById(id: string): Promise<ProductListItem |
 }
 
 export async function getPublicCategories(): Promise<Category[]> {
-  return prisma.category.findMany({
-    where: {
-      isActive: true,
-      products: {
-        some: getPublicProductWhere()
-      }
-    },
-    orderBy: [{ position: "asc" }, { name: "asc" }]
-  });
+  try {
+    return await prisma.category.findMany({
+      where: {
+        isActive: true,
+        products: {
+          some: getPublicProductWhere()
+        }
+      },
+      orderBy: [{ position: "asc" }, { name: "asc" }]
+    });
+  } catch (error) {
+    if (shouldUseCatalogFallback(error)) {
+      return fallbackCategories;
+    }
+
+    throw error;
+  }
 }
 
 export async function getPublicProducts(filters: PublicProductFilters = {}): Promise<ProductListItem[]> {
-  return prisma.product.findMany({
-    where: getPublicProductWhere(filters),
-    include: {
-      category: true,
-      variants: {
-        where: { isActive: true },
-        orderBy: { createdAt: "asc" }
-      }
-    },
-    orderBy: getPublicProductOrderBy(filters.sort)
-  });
+  try {
+    return await prisma.product.findMany({
+      where: getPublicProductWhere(filters),
+      include: {
+        category: true,
+        variants: {
+          where: { isActive: true },
+          orderBy: { createdAt: "asc" }
+        }
+      },
+      orderBy: getPublicProductOrderBy(filters.sort)
+    });
+  } catch (error) {
+    if (shouldUseCatalogFallback(error)) {
+      return filterFallbackProducts(filters);
+    }
+
+    throw error;
+  }
 }
 
 export async function getPublicProductBySlug(slug: string): Promise<ProductListItem | null> {
-  return prisma.product.findFirst({
-    where: {
-      slug,
-      status: ProductStatus.ACTIVE
-    },
-    include: {
-      category: true,
-      variants: {
-        where: { isActive: true },
-        orderBy: { createdAt: "asc" }
+  try {
+    return await prisma.product.findFirst({
+      where: {
+        slug,
+        status: ProductStatus.ACTIVE
+      },
+      include: {
+        category: true,
+        variants: {
+          where: { isActive: true },
+          orderBy: { createdAt: "asc" }
+        }
       }
+    });
+  } catch (error) {
+    if (shouldUseCatalogFallback(error)) {
+      return fallbackProducts.find((product) => product.slug === slug) ?? fallbackProducts[0] ?? null;
     }
-  });
+
+    throw error;
+  }
 }
 
 export async function getPublicProductRecommendations({
@@ -94,7 +131,7 @@ export async function getPublicProductRecommendations({
   productId: string;
   take?: number;
 }): Promise<ProductListItem[]> {
-  const baseWhere: Prisma.ProductWhereInput = {
+  const baseWhere: ProductWhereInput = {
     AND: [
       getPublicProductWhere(),
       {
@@ -110,29 +147,39 @@ export async function getPublicProductRecommendations({
       where: { isActive: true },
       orderBy: { createdAt: "asc" }
     }
-  } satisfies Prisma.ProductInclude;
+  } satisfies ProductInclude;
 
-  const sameCategoryProducts = categoryId
-    ? await prisma.product.findMany({
-        where: {
-          AND: [
-            baseWhere,
-            {
-              categoryId
-            }
-          ]
-        },
-        include,
-        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
-        take
-      })
-    : [];
+  let sameCategoryProducts: ProductListItem[];
+
+  try {
+    sameCategoryProducts = categoryId
+      ? await prisma.product.findMany({
+          where: {
+            AND: [
+              baseWhere,
+              {
+                categoryId
+              }
+            ]
+          },
+          include,
+          orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+          take
+        })
+      : [];
+  } catch (error) {
+    if (shouldUseCatalogFallback(error)) {
+      return fallbackProducts.filter((product) => product.id !== productId).slice(0, take);
+    }
+
+    throw error;
+  }
 
   if (sameCategoryProducts.length >= take) {
     return sameCategoryProducts;
   }
 
-  const fallbackProducts = await prisma.product.findMany({
+  const additionalProducts = await prisma.product.findMany({
     where: {
       AND: [
         baseWhere,
@@ -148,12 +195,12 @@ export async function getPublicProductRecommendations({
     take: take - sameCategoryProducts.length
   });
 
-  return [...sameCategoryProducts, ...fallbackProducts];
+  return [...sameCategoryProducts, ...additionalProducts];
 }
 
-function getPublicProductWhere(filters: PublicProductFilters = {}): Prisma.ProductWhereInput {
+function getPublicProductWhere(filters: PublicProductFilters = {}): ProductWhereInput {
   const query = filters.query?.trim();
-  const conditions: Prisma.ProductWhereInput[] = [
+  const conditions: ProductWhereInput[] = [
     {
       status: ProductStatus.ACTIVE,
       variants: {
@@ -190,10 +237,32 @@ function getPublicProductWhere(filters: PublicProductFilters = {}): Prisma.Produ
     });
   }
 
+  if (filters.tags?.length) {
+    conditions.push({
+      tags: {
+        hasEvery: filters.tags
+      }
+    });
+  }
+
+  if (filters.minPriceCents !== undefined || filters.maxPriceCents !== undefined) {
+    conditions.push({
+      variants: {
+        some: {
+          isActive: true,
+          priceCents: {
+            gte: filters.minPriceCents,
+            lte: filters.maxPriceCents
+          }
+        }
+      }
+    });
+  }
+
   return { AND: conditions };
 }
 
-function getPublicProductOrderBy(sort: PublicProductSort = "recentes"): Prisma.ProductOrderByWithRelationInput[] {
+function getPublicProductOrderBy(sort: PublicProductSort = "recentes"): ProductOrderByWithRelationInput[] {
   if (sort === "menor-valor") {
     return [{ priceCents: "asc" }, { title: "asc" }];
   }
@@ -207,4 +276,43 @@ function getPublicProductOrderBy(sort: PublicProductSort = "recentes"): Prisma.P
   }
 
   return [{ publishedAt: "desc" }, { createdAt: "desc" }];
+}
+
+function filterFallbackProducts(filters: PublicProductFilters): ProductListItem[] {
+  const query = filters.query?.toLowerCase();
+
+  return fallbackProducts
+    .filter((product) => {
+      const matchesQuery = query
+        ? [product.title, product.shortDescription, product.description, product.brand]
+            .filter(Boolean)
+            .some((value) => value?.toLowerCase().includes(query))
+        : true;
+      const matchesCategory = filters.categorySlug
+        ? product.category?.slug === filters.categorySlug
+        : true;
+      const matchesMinPrice = filters.minPriceCents !== undefined
+        ? product.priceCents >= filters.minPriceCents
+        : true;
+      const matchesMaxPrice = filters.maxPriceCents !== undefined
+        ? product.priceCents <= filters.maxPriceCents
+        : true;
+
+      return matchesQuery && matchesCategory && matchesMinPrice && matchesMaxPrice;
+    })
+    .sort((a, b) => {
+      if (filters.sort === "menor-valor") {
+        return a.priceCents - b.priceCents;
+      }
+
+      if (filters.sort === "maior-valor") {
+        return b.priceCents - a.priceCents;
+      }
+
+      if (filters.sort === "nome") {
+        return a.title.localeCompare(b.title);
+      }
+
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
 }

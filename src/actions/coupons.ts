@@ -21,7 +21,8 @@ export async function createCoupon(formData: FormData): Promise<void> {
       ? Number(formData.get("perCustomerLimit"))
       : undefined,
     expiresAt: formData.get("expiresAt"),
-    isActive: formData.get("isActive") === "on"
+    isActive: formData.get("isActive") === "on",
+    isPublic: formData.get("isPublic") === "on"
   });
 
   if (!parsedInput.success) {
@@ -38,6 +39,7 @@ export async function createCoupon(formData: FormData): Promise<void> {
   }
 
   revalidatePath("/admin/cupons");
+  revalidatePath("/cupons");
 }
 
 export async function deactivateCoupon(couponId: string): Promise<void> {
@@ -54,4 +56,25 @@ export async function deactivateCoupon(couponId: string): Promise<void> {
   }
 
   revalidatePath("/admin/cupons");
+  revalidatePath("/cupons");
+}
+
+export async function setCouponPublicVisibility(
+  couponId: string,
+  isPublic: boolean
+): Promise<void> {
+  await requireAdmin();
+
+  try {
+    await prisma.coupon.update({
+      where: { id: couponId },
+      data: { isPublic }
+    });
+  } catch (error) {
+    Sentry.captureException(error);
+    throw new Error("Não foi possível atualizar a visibilidade do cupom.");
+  }
+
+  revalidatePath("/admin/cupons");
+  revalidatePath("/cupons");
 }

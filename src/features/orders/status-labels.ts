@@ -1,4 +1,4 @@
-import type { FulfillmentStatus, OrderStatus, PaymentStatus } from "@prisma/client";
+import type { FulfillmentStatus, OrderStatus, PaymentStatus } from "@/generated/prisma/client";
 
 export function formatOrderStatus(status: OrderStatus): string {
   const labels: Record<OrderStatus, string> = {

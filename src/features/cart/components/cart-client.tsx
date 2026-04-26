@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ShoppingCart } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -96,17 +97,18 @@ export function CartClient(): React.ReactElement {
 
   if (!hasItems) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Seu carrinho está vazio</CardTitle>
-          <CardDescription>Adicione produtos para continuar para o checkout.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button asChild>
-            <Link href="/produtos">Ver produtos</Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <section className="flex min-h-[620px] items-center justify-center">
+        <div className="flex min-h-[310px] w-full items-center justify-center rounded-2xl bg-white p-10 text-center shadow-sm">
+          <div>
+            <ShoppingCart className="mx-auto h-16 w-16 stroke-[1.6] text-black" />
+            <h1 className="mt-8 text-xl font-black text-[#677279]">Carrinho</h1>
+            <p className="mt-2 text-sm text-[#677279]">Seu carrinho está vazio</p>
+            <Button asChild className="mt-7 bg-primary px-9 font-black text-white hover:bg-primary/90">
+              <Link href="/produtos">Veja nossos produtos</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
     );
   }
 
@@ -215,17 +217,35 @@ export function CartClient(): React.ReactElement {
             <label className="text-sm font-medium" htmlFor="loyaltyPoints">
               Pontos de fidelidade
             </label>
-            <Input
-              id="loyaltyPoints"
-              min={0}
-              onChange={(event) => setLoyaltyPointsToRedeem(Number(event.target.value))}
-              placeholder="0"
-              type="number"
-              value={loyaltyPointsToRedeem}
-            />
+            <div className="flex gap-2">
+              <Input
+                id="loyaltyPoints"
+                max={validatedCart?.loyalty.maxRedeemablePoints ?? undefined}
+                min={0}
+                onChange={(event) => setLoyaltyPointsToRedeem(Number(event.target.value))}
+                placeholder="0"
+                type="number"
+                value={loyaltyPointsToRedeem}
+              />
+              <Button
+                disabled={!validatedCart?.loyalty.isAvailable || !validatedCart.loyalty.maxRedeemablePoints}
+                onClick={() => {
+                  setLoyaltyPointsToRedeem(validatedCart?.loyalty.maxRedeemablePoints ?? 0);
+                  window.setTimeout(() => void validateCart({ showLoading: false }), 0);
+                }}
+                type="button"
+                variant="outline"
+              >
+                Máximo
+              </Button>
+            </div>
             <p className="text-xs text-muted-foreground">
-              Disponíveis: {validatedCart?.loyalty.availablePoints ?? 0} ponto(s)
+              Disponíveis: {validatedCart?.loyalty.availablePoints ?? 0} · mínimo: {validatedCart?.loyalty.minRedeemPoints ?? 0}
+              {validatedCart?.loyalty.maxRedeemablePoints ? ` · máximo neste carrinho: ${validatedCart.loyalty.maxRedeemablePoints}` : ""}
             </p>
+            {validatedCart?.loyalty.message ? (
+              <p className="text-xs text-muted-foreground">{validatedCart.loyalty.message}</p>
+            ) : null}
           </div>
 
           <div className="flex items-center justify-between text-sm">

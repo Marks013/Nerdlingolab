@@ -1,11 +1,15 @@
-import { CouponType, ProductStatus, type Coupon } from "@prisma/client";
+import { CouponType, ProductStatus, type Coupon } from "@/generated/prisma/client";
 
+import {
+  fallbackProducts,
+  shouldUseCatalogFallback
+} from "@/lib/catalog/fallback";
 import type { ProductListItem } from "@/lib/catalog/queries";
 import { prisma } from "@/lib/prisma";
 
 export type PublicOfferCoupon = Pick<
   Coupon,
-  "code" | "type" | "value" | "minSubtotalCents" | "maxDiscountCents" | "expiresAt"
+  "code" | "type" | "value" | "minSubtotalCents" | "maxDiscountCents" | "expiresAt" | "isPublic"
 >;
 
 export interface PublicOffers {
@@ -15,57 +19,71 @@ export interface PublicOffers {
 
 export async function getPublicOffers(): Promise<PublicOffers> {
   const now = new Date();
-  const [coupons, products] = await Promise.all([
-    prisma.coupon.findMany({
-      where: {
-        isActive: true,
-        OR: [{ startsAt: null }, { startsAt: { lte: now } }],
-        AND: [
-          {
-            OR: [{ expiresAt: null }, { expiresAt: { gte: now } }]
-          }
-        ]
-      },
-      orderBy: [{ expiresAt: "asc" }, { createdAt: "desc" }],
-      select: {
-        code: true,
-        expiresAt: true,
-        maxDiscountCents: true,
-        minSubtotalCents: true,
-        type: true,
-        usageLimit: true,
-        usedCount: true,
-        value: true
-      },
-      take: 12
-    }),
-    prisma.product.findMany({
-      where: {
-        compareAtPriceCents: {
-          not: null
-        },
-        status: ProductStatus.ACTIVE,
-        variants: {
-          some: {
-            isActive: true,
-            stockQuantity: {
-              gt: 0
+  let coupons: Array<PublicOfferCoupon & { usageLimit: number | null; usedCount: number }>;
+  let products: ProductListItem[];
+
+  try {
+    [coupons, products] = await Promise.all([
+      prisma.coupon.findMany({
+        where: {
+          isActive: true,
+          isPublic: true,
+          OR: [{ startsAt: null }, { startsAt: { lte: now } }],
+          AND: [
+            {
+              OR: [{ expiresAt: null }, { expiresAt: { gte: now } }]
             }
+          ]
+        },
+        orderBy: [{ expiresAt: "asc" }, { createdAt: "desc" }],
+        select: {
+          code: true,
+          expiresAt: true,
+          isPublic: true,
+          maxDiscountCents: true,
+          minSubtotalCents: true,
+          type: true,
+          usageLimit: true,
+          usedCount: true,
+          value: true
+        },
+        take: 12
+      }),
+      prisma.product.findMany({
+        where: {
+          compareAtPriceCents: {
+            not: null
+          },
+          status: ProductStatus.ACTIVE,
+          variants: {
+            some: {
+              isActive: true,
+              stockQuantity: {
+                gt: 0
+              }
+            }
+          },
+          OR: [{ categoryId: null }, { category: { isActive: true } }]
+        },
+        include: {
+          category: true,
+          variants: {
+            where: { isActive: true },
+            orderBy: { createdAt: "asc" }
           }
         },
-        OR: [{ categoryId: null }, { category: { isActive: true } }]
-      },
-      include: {
-        category: true,
-        variants: {
-          where: { isActive: true },
-          orderBy: { createdAt: "asc" }
-        }
-      },
-      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
-      take: 4
-    })
-  ]);
+        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+        take: 4
+      })
+    ]);
+  } catch (error) {
+    if (!shouldUseCatalogFallback(error)) {
+      throw error;
+    }
+
+    coupons = [];
+    products = fallbackProducts.slice(0, 4);
+  }
 
   return {
     coupons: coupons

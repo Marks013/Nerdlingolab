@@ -1,6 +1,6 @@
-import { CouponType, type Coupon } from "@prisma/client";
+import { CouponType, type Coupon } from "@/generated/prisma/client";
 
-import { createCoupon, deactivateCoupon } from "@/actions/coupons";
+import { createCoupon, deactivateCoupon, setCouponPublicVisibility } from "@/actions/coupons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ export function CouponManager({ coupons }: CouponManagerProps): React.ReactEleme
         <CardContent>
           <div className="divide-y rounded-md border">
             {coupons.map((coupon) => (
-              <div key={coupon.id} className="grid gap-3 p-4 md:grid-cols-[1fr_auto_auto] md:items-center">
+              <div key={coupon.id} className="grid gap-3 p-4 md:grid-cols-[1fr_auto_auto_auto] md:items-center">
                 <div>
                   <p className="font-medium">{coupon.code}</p>
                   <p className="text-sm text-muted-foreground">
@@ -31,6 +31,11 @@ export function CouponManager({ coupons }: CouponManagerProps): React.ReactEleme
                 <span className="text-sm text-muted-foreground">
                   {coupon.isActive ? "Ativo" : "Inativo"}
                 </span>
+                <form action={setCouponPublicVisibility.bind(null, coupon.id, !coupon.isPublic)}>
+                  <Button disabled={!coupon.isActive} size="sm" type="submit" variant="outline">
+                    {coupon.isPublic ? "Ocultar" : "Publicar"}
+                  </Button>
+                </form>
                 <form action={deactivateCoupon.bind(null, coupon.id)}>
                   <Button disabled={!coupon.isActive} size="sm" type="submit" variant="outline">
                     Desativar
@@ -91,6 +96,10 @@ export function CouponManager({ coupons }: CouponManagerProps): React.ReactEleme
             <label className="flex items-center gap-2 text-sm">
               <input defaultChecked name="isActive" type="checkbox" />
               Cupom ativo
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input defaultChecked name="isPublic" type="checkbox" />
+              Visível na página de cupons
             </label>
             <Button className="w-full" type="submit">
               Criar cupom

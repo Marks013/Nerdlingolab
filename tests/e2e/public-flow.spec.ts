@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { CouponType, PrismaClient, ProductStatus, UserRole } from "@prisma/client";
+import { CouponType, ProductStatus, UserRole } from "../../src/generated/prisma/client";
 import bcrypt from "bcryptjs";
 
-const prisma = new PrismaClient();
+import { prisma } from "../../src/lib/prisma";
 
 test.afterAll(async () => {
   await prisma.$disconnect();
@@ -68,7 +68,7 @@ test("filtra catálogo público com dados reais do banco", async ({ page }) => {
       data: {
         categoryId: category.id,
         description: "Produto criado para validar busca pública com banco real.",
-        images: ["/shopify/product-1.webp"],
+        images: ["/brand-assets/ESTAMPAS_MAIS_VENDIDAS_-_NERDLINGOLAB.webp"],
         priceCents: 4590,
         publishedAt: new Date(),
         shortDescription: "Busca pública validada.",
@@ -122,7 +122,7 @@ test("seleciona variante real do produto antes de adicionar ao carrinho", async 
       data: {
         categoryId: category.id,
         description: "Produto criado para validar seleção de variantes com carrinho real.",
-        images: ["/shopify/product-1.webp"],
+        images: ["/brand-assets/ESTAMPAS_MAIS_VENDIDAS_-_NERDLINGOLAB.webp"],
         priceCents: 3990,
         publishedAt: new Date(),
         shortDescription: "Seleção de opção validada.",
@@ -189,6 +189,7 @@ test("exibe ofertas públicas a partir de cupom e produto reais", async ({ page 
       data: {
         code: couponCode,
         isActive: true,
+        isPublic: true,
         minSubtotalCents: 3000,
         type: CouponType.PERCENTAGE,
         value: 15
@@ -200,7 +201,7 @@ test("exibe ofertas públicas a partir de cupom e produto reais", async ({ page 
         categoryId: category.id,
         compareAtPriceCents: 8990,
         description: "Produto criado para validar ofertas públicas com dados reais.",
-        images: ["/shopify/product-1.webp"],
+        images: ["/brand-assets/ESTAMPAS_MAIS_VENDIDAS_-_NERDLINGOLAB.webp"],
         priceCents: 6990,
         publishedAt: new Date(),
         shortDescription: "Oferta pública validada.",
@@ -258,7 +259,7 @@ test("exibe recomendações apenas com produtos ativos e com estoque", async ({ 
         {
           categoryId: category.id,
           description: "Produto principal para recomendações.",
-          images: ["/shopify/product-1.webp"],
+          images: ["/brand-assets/ESTAMPAS_MAIS_VENDIDAS_-_NERDLINGOLAB.webp"],
           priceCents: 4990,
           publishedAt: new Date(),
           shortDescription: "Principal.",
@@ -269,7 +270,7 @@ test("exibe recomendações apenas com produtos ativos e com estoque", async ({ 
         {
           categoryId: category.id,
           description: "Produto recomendado com estoque.",
-          images: ["/shopify/product-1.webp"],
+          images: ["/brand-assets/ESTAMPAS_MAIS_VENDIDAS_-_NERDLINGOLAB.webp"],
           priceCents: 5990,
           publishedAt: new Date(),
           shortDescription: "Recomendado.",
@@ -280,7 +281,7 @@ test("exibe recomendações apenas com produtos ativos e com estoque", async ({ 
         {
           categoryId: category.id,
           description: "Produto ativo sem estoque.",
-          images: ["/shopify/product-1.webp"],
+          images: ["/brand-assets/ESTAMPAS_MAIS_VENDIDAS_-_NERDLINGOLAB.webp"],
           priceCents: 3990,
           publishedAt: new Date(),
           shortDescription: "Sem estoque.",
@@ -291,7 +292,7 @@ test("exibe recomendações apenas com produtos ativos e com estoque", async ({ 
         {
           categoryId: category.id,
           description: "Produto em rascunho.",
-          images: ["/shopify/product-1.webp"],
+          images: ["/brand-assets/ESTAMPAS_MAIS_VENDIDAS_-_NERDLINGOLAB.webp"],
           priceCents: 2990,
           publishedAt: new Date(),
           shortDescription: "Rascunho.",
@@ -394,7 +395,7 @@ test("usa endereço salvo da conta no checkout", async ({ page }, testInfo) => {
       data: {
         categoryId: category.id,
         description: "Produto criado para validar endereço salvo no checkout.",
-        images: ["/shopify/product-1.webp"],
+        images: ["/brand-assets/ESTAMPAS_MAIS_VENDIDAS_-_NERDLINGOLAB.webp"],
         priceCents: 3490,
         publishedAt: new Date(),
         shortDescription: "Checkout com endereço salvo.",
@@ -490,6 +491,41 @@ test("usa endereço salvo da conta no checkout", async ({ page }, testInfo) => {
     expect(customer.birthday?.toISOString().slice(0, 10)).toBe("1995-05-12");
   } finally {
     await cleanupSavedAddressFixtures({ email, productSlug });
+  }
+});
+
+test("exibe em cupons apenas códigos publicados", async ({ page }) => {
+  const suffix = Date.now().toString();
+  const publicCode = `PUBLICO${suffix.slice(-6)}`;
+  const hiddenCode = `OCULTO${suffix.slice(-6)}`;
+
+  try {
+    await prisma.coupon.createMany({
+      data: [
+        {
+          code: publicCode,
+          isActive: true,
+          isPublic: true,
+          type: CouponType.FIXED_AMOUNT,
+          value: 500
+        },
+        {
+          code: hiddenCode,
+          isActive: true,
+          isPublic: false,
+          type: CouponType.FIXED_AMOUNT,
+          value: 700
+        }
+      ]
+    });
+
+    await page.goto("/cupons");
+
+    await expect(page.getByRole("heading", { name: "Cupons disponíveis" })).toBeVisible();
+    await expect(page.getByText(publicCode)).toBeVisible();
+    await expect(page.getByText(hiddenCode)).toHaveCount(0);
+  } finally {
+    await prisma.coupon.deleteMany({ where: { code: { in: [publicCode, hiddenCode] } } });
   }
 });
 

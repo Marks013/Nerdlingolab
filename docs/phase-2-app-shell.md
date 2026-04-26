@@ -9,7 +9,7 @@
 - Rota Auth.js em `/api/auth/[...nextauth]`.
 - Rota `/api/health` para verificacao simples de disponibilidade.
 - Singletons de `prisma`, Mercado Pago e MinIO.
-- Tema Tailwind/Shadcn inicial inspirado no tema Shopify exportado.
+- Tema Tailwind/Shadcn inicial inspirado no tema legado exportado.
 
 ## Limites intencionais
 

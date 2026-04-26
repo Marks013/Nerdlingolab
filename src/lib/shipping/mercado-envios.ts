@@ -4,7 +4,7 @@ import {
   ShipmentStatus,
   ShippingProvider,
   type Prisma
-} from "@prisma/client";
+} from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/prisma";
 

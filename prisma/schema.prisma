@@ -1,10 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum UserRole {
@@ -67,6 +67,12 @@ enum LoyaltyLedgerType {
   REFUND_REVERSAL
 }
 
+enum ReferralStatus {
+  PENDING
+  REWARDED
+  CANCELED
+}
+
 enum InventoryLedgerType {
   INITIAL
   SALE
@@ -103,6 +109,13 @@ enum ShipmentStatus {
   UNKNOWN
 }
 
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -124,9 +137,35 @@ model User {
   loyaltyPoints     LoyaltyPoints?
   loyaltyLedger     LoyaltyLedger[]
   addresses         CustomerAddress[]
+  supportTickets    SupportTicket[]
+  assignedCoupons   Coupon[] @relation("AssignedCoupons")
+  referralCode      ReferralCode?
+  referralsSent     Referral[] @relation("ReferralInviter")
+  referralReceived  Referral?  @relation("ReferralInvitee")
 
   @@index([role])
   @@index([createdAt])
+}
+
+model SupportTicket {
+  id          String              @id @default(cuid())
+  ticketId    String              @unique
+  userId      String?
+  name        String
+  email       String
+  phone       String?
+  subject     String
+  subjectLabel String
+  message     String              @db.Text
+  status      SupportTicketStatus @default(OPEN)
+  resendId    String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
 }
 
 model Account {
@@ -321,6 +360,7 @@ model Order {
   loyaltyLedger     LoyaltyLedger[]
   inventoryLedger   InventoryLedger[]
   shipments         Shipment[]
+  referralsQualified Referral[]
 
   @@index([userId, createdAt])
   @@index([paymentStatus, status])
@@ -403,18 +443,54 @@ model Coupon {
   usageLimit       Int?
   usedCount        Int        @default(0)
   perCustomerLimit Int?
+  assignedUserId   String?
   startsAt         DateTime?
   expiresAt        DateTime?
   isActive         Boolean    @default(true)
+  isPublic         Boolean    @default(true)
   createdByUserId  String?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
   orders      Order[]
   redemptions CouponRedemption[]
+  assignedUser User? @relation("AssignedCoupons", fields: [assignedUserId], references: [id], onDelete: SetNull)
 
   @@index([code, isActive])
+  @@index([isActive, isPublic])
+  @@index([assignedUserId])
   @@index([startsAt, expiresAt])
+}
+
+model LoyaltyProgramSettings {
+  id                    String   @id @default(cuid())
+  singletonKey          String   @unique @default("default")
+  programName           String   @default("Nerdcoins")
+  isEnabled             Boolean  @default(true)
+  pointsPerReal         Int      @default(5)
+  signupBonusPoints     Int      @default(50)
+  birthdayBonusPoints   Int      @default(100)
+  referralInviterBonusPoints Int @default(150)
+  referralInviteeBonusPoints Int @default(50)
+  referralMinOrderCents Int      @default(0)
+  redeemCentsPerPoint   Int      @default(1)
+  minRedeemPoints       Int      @default(100)
+  maxRedeemPoints       Int?
+  couponExpiresInDays   Int      @default(30)
+  pointsExpireInDays    Int?
+  showPendingPoints     Boolean  @default(true)
+  requireAccountToRedeem Boolean @default(true)
+  chuninOrderThreshold  Int      @default(3)
+  joninOrderThreshold   Int      @default(10)
+  hokageOrderThreshold  Int      @default(20)
+  chuninSpendThresholdCents Int   @default(30000)
+  joninSpendThresholdCents  Int   @default(100000)
+  hokageSpendThresholdCents Int   @default(200000)
+  chuninMultiplier      Int      @default(120)
+  joninMultiplier       Int      @default(150)
+  hokageMultiplier      Int      @default(200)
+  updatedAt             DateTime @updatedAt
+  createdAt             DateTime @default(now())
 }
 
 model CouponRedemption {
@@ -463,6 +539,7 @@ model LoyaltyLedger {
   reason         String
   customerNote   String?
   expiresAt      DateTime?
+  sourceLedgerId String?
   idempotencyKey String            @unique
   metadata       Json              @default("{}")
   createdAt      DateTime          @default(now())
@@ -472,7 +549,43 @@ model LoyaltyLedger {
 
   @@index([userId, createdAt])
   @@index([orderId])
+  @@index([sourceLedgerId])
   @@index([type])
+}
+
+model ReferralCode {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  code      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([code, isActive])
+}
+
+model Referral {
+  id             String         @id @default(cuid())
+  inviterId      String
+  inviteeId      String         @unique
+  referralCode   String
+  status         ReferralStatus @default(PENDING)
+  qualifyingOrderId String?
+  inviterRewardPoints Int      @default(0)
+  inviteeRewardPoints Int      @default(0)
+  rewardedAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  inviter User @relation("ReferralInviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitee User @relation("ReferralInvitee", fields: [inviteeId], references: [id], onDelete: Cascade)
+  qualifyingOrder Order? @relation(fields: [qualifyingOrderId], references: [id], onDelete: SetNull)
+
+  @@index([inviterId, status])
+  @@index([referralCode])
+  @@index([qualifyingOrderId])
 }
 
 model WebhookEvent {

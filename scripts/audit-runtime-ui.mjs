@@ -1,9 +1,12 @@
+import { existsSync, readFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
 import { chromium, devices } from "@playwright/test";
 
-const baseUrl = process.env.UI_AUDIT_BASE_URL ?? "http://localhost:3000";
+loadDotEnvFile(".env");
+
+const baseUrl = process.env.UI_AUDIT_BASE_URL ?? process.env.APP_URL ?? "http://localhost:3000";
 const adminEmail = process.env.UI_AUDIT_ADMIN_EMAIL ?? process.env.SUPERADMIN_EMAIL ?? "admin@nerdlingolab.local";
 const adminPassword = process.env.UI_AUDIT_ADMIN_PASSWORD ?? process.env.SUPERADMIN_PASSWORD ?? "Temporary-admin-password-123!";
 const screenshotDirectory = join(process.cwd(), "test-results", "ui-runtime-audit");
@@ -14,6 +17,7 @@ const adminPaths = [
   "/admin/produtos",
   "/admin/categorias",
   "/admin/cupons",
+  "/admin/fidelidade",
   "/admin/pedidos",
   "/admin/relatorios"
 ];
@@ -22,6 +26,24 @@ const projects = [
   { name: "desktop", use: devices["Desktop Chrome"] },
   { name: "mobile", use: devices["Pixel 7"] }
 ];
+
+function loadDotEnvFile(filePath) {
+  if (!existsSync(filePath)) {
+    return;
+  }
+
+  const source = readFileSync(filePath, "utf8");
+
+  for (const line of source.split(/\r?\n/)) {
+    const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+
+    if (!match || process.env[match[1]]) {
+      continue;
+    }
+
+    process.env[match[1]] = match[2].replace(/^["']|["']$/g, "");
+  }
+}
 
 function pageUrl(path) {
   return new URL(path, baseUrl).toString();
@@ -145,7 +167,13 @@ async function auditPage(page, path, projectName) {
       .map((element) => `Controle sem nome acessível: ${element.tagName.toLowerCase()}`);
 
     const clippedButtons = Array.from(document.querySelectorAll("button, a[href]"))
-      .filter((element) => element.scrollWidth > element.clientWidth + 2 || element.scrollHeight > element.clientHeight + 2)
+      .filter((element) => {
+        if (element.classList.contains("sr-only") && document.activeElement !== element) {
+          return false;
+        }
+
+        return element.scrollWidth > element.clientWidth + 2 || element.scrollHeight > element.clientHeight + 2;
+      })
       .map((element) => `Texto possivelmente cortado: ${element.tagName.toLowerCase()} "${element.textContent?.trim() ?? ""}"`);
 
     return [

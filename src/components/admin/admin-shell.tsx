@@ -1,4 +1,4 @@
-import { BarChart3, Boxes, LayoutDashboard, ListTree, ReceiptText, TicketPercent } from "lucide-react";
+import { Award, BarChart3, Boxes, Headphones, LayoutDashboard, ListTree, ReceiptText, TicketPercent, UsersRound } from "lucide-react";
 import Link from "next/link";
 
 import { signOutFromAdmin } from "@/actions/auth";
@@ -9,6 +9,9 @@ const adminLinks = [
   { href: "/admin/dashboard", label: "Painel", icon: LayoutDashboard },
   { href: "/admin/relatorios", label: "Relatórios", icon: BarChart3 },
   { href: "/admin/pedidos", label: "Pedidos", icon: ReceiptText },
+  { href: "/admin/clientes", label: "Clientes", icon: UsersRound },
+  { href: "/admin/fidelidade", label: "Nerdcoins", icon: Award },
+  { href: "/admin/suporte", label: "Suporte", icon: Headphones },
   { href: "/admin/produtos", label: "Produtos", icon: Boxes },
   { href: "/admin/categorias", label: "Categorias", icon: ListTree },
   { href: "/admin/cupons", label: "Cupons", icon: TicketPercent }
@@ -20,7 +23,7 @@ interface AdminShellProps {
 
 export function AdminShell({ children }: AdminShellProps): React.ReactElement {
   return (
-    <div className="min-h-screen bg-muted">
+    <div className="min-h-screen overflow-x-hidden bg-muted">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r bg-background p-4 lg:block">
         <Link className="block px-2 text-lg font-bold tracking-normal" href="/admin/dashboard">
           NerdLingoLab
@@ -44,7 +47,7 @@ export function AdminShell({ children }: AdminShellProps): React.ReactElement {
           </form>
         </div>
       </aside>
-      <div className="lg:pl-64">
+      <div className="min-w-0 overflow-x-hidden lg:pl-64">
         <header className="sticky top-0 z-30 border-b bg-background/95 px-4 py-3 backdrop-blur lg:hidden">
           <div className="flex items-center justify-between">
             <Link className="font-bold" href="/admin/dashboard">

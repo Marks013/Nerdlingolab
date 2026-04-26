@@ -1,4 +1,4 @@
-import { LoyaltyLedgerType, PaymentStatus, ProductStatus } from "@prisma/client";
+import { LoyaltyLedgerType, PaymentStatus, ProductStatus } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/prisma";
 

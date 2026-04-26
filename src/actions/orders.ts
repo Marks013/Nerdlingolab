@@ -1,10 +1,17 @@
 "use server";
 
-import { FulfillmentStatus, OrderStatus, ShipmentStatus, ShippingProvider } from "@prisma/client";
+import {
+  FulfillmentStatus,
+  OrderStatus,
+  PaymentStatus,
+  ShipmentStatus,
+  ShippingProvider
+} from "@/generated/prisma/client";
 import * as Sentry from "@sentry/nextjs";
 import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/admin";
+import { releaseInventoryReservations } from "@/lib/inventory/reservations";
 import { prisma } from "@/lib/prisma";
 import { syncMercadoEnviosShipment } from "@/lib/shipping/mercado-envios";
 
@@ -32,15 +39,26 @@ export async function cancelUnpaidOrder(orderId: string): Promise<void> {
   await requireAdmin();
 
   try {
-    await prisma.order.update({
-      where: {
-        id: orderId,
-        paidAt: null
-      },
-      data: {
-        status: OrderStatus.CANCELED,
-        canceledAt: new Date()
-      }
+    await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findFirstOrThrow({
+        where: {
+          id: orderId,
+          paidAt: null
+        },
+        include: {
+          items: true
+        }
+      });
+
+      await releaseInventoryReservations(tx, order.items);
+      await tx.order.update({
+        where: { id: order.id },
+        data: {
+          canceledAt: new Date(),
+          paymentStatus: PaymentStatus.CANCELED,
+          status: OrderStatus.CANCELED
+        }
+      });
     });
   } catch (error) {
     Sentry.captureException(error);

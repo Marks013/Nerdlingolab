@@ -1,10 +1,9 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import Image from "next/image";
 
-import { ShopTrustStrip } from "@/components/shop/shop-trust-strip";
-import { getImageUrls, getPrimaryImageUrl } from "@/features/catalog/image-utils";
-import { ProductPurchasePanel } from "@/features/catalog/components/product-purchase-panel";
+import { ProductDetailShell } from "@/features/catalog/components/product-detail-shell";
 import { ProductRecommendations } from "@/features/catalog/components/product-recommendations";
+import { getImageUrls, getPrimaryImageUrl } from "@/features/catalog/image-utils";
 import {
   getPublicProductBySlug,
   getPublicProductRecommendations
@@ -31,9 +30,11 @@ export default async function ProductPage({ params }: ProductPageProps): Promise
   const variants = product.variants.map((variant) => ({
     id: variant.id,
     title: variant.title,
+    optionValues: variant.optionValues,
     priceCents: variant.priceCents,
     compareAtPriceCents: variant.compareAtPriceCents,
-    availableStock: Math.max(0, variant.stockQuantity - variant.reservedQuantity)
+    availableStock: Math.max(0, variant.stockQuantity - variant.reservedQuantity),
+    imageUrl: getVariantImageUrl(variant.optionValues)
   }));
   const recommendedProducts = await getPublicProductRecommendations({
     categoryId: product.categoryId,
@@ -41,58 +42,38 @@ export default async function ProductPage({ params }: ProductPageProps): Promise
   });
 
   return (
-    <main className="mx-auto grid min-h-screen max-w-6xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
-      <div>
-        <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
-          {primaryImage ? (
-            <Image
-              alt={`Imagem principal de ${product.title}`}
-              className="object-cover"
-              fill
-              loading="eager"
-              preload
-              sizes="(min-width: 1024px) 50vw, 100vw"
-              src={primaryImage}
-            />
-          ) : null}
-        </div>
-        {images.length > 1 ? (
-          <div className="mt-3 grid grid-cols-4 gap-2">
-            {images.slice(1, 5).map((imageUrl, imageIndex) => (
-              <div className="relative aspect-square overflow-hidden rounded-lg bg-muted" key={imageUrl}>
-                <Image
-                  alt={`Imagem ${imageIndex + 2} de ${product.title}`}
-                  className="object-cover"
-                  fill
-                  sizes="25vw"
-                  src={imageUrl}
-                />
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </div>
-      <section className="flex flex-col justify-center">
-        <p className="text-sm text-muted-foreground">{product.category?.name ?? "NerdLingoLab"}</p>
-        <h1 className="mt-3 text-3xl font-bold tracking-normal">{product.title}</h1>
-        {product.shortDescription ? (
-          <p className="mt-4 text-muted-foreground">{product.shortDescription}</p>
-        ) : null}
-        <div className="mt-6 whitespace-pre-line text-sm leading-7 text-muted-foreground">
-          {product.description}
-        </div>
-        <ProductPurchasePanel
-          imageUrl={primaryImage}
+    <main className="min-h-screen bg-[#f6f7f8]">
+      <div className="mx-auto w-full max-w-[1360px] px-5 py-8">
+        <nav className="mb-7 text-sm text-[#677279]" aria-label="Breadcrumb">
+          <Link href="/">Pagina inicial</Link>
+          <span className="mx-2">›</span>
+          <Link href="/produtos">Todos os produtos</Link>
+          <span className="mx-2">›</span>
+          <span>{product.title}</span>
+        </nav>
+
+        <ProductDetailShell
+          description={product.description}
+          images={images}
+          primaryImage={primaryImage}
           productId={product.id}
           productSlug={product.slug}
           productTitle={product.title}
           variants={variants}
         />
-        <div className="mt-6">
-          <ShopTrustStrip />
-        </div>
-      </section>
-      <ProductRecommendations products={recommendedProducts} />
+
+        <ProductRecommendations products={recommendedProducts} />
+      </div>
     </main>
   );
+}
+
+function getVariantImageUrl(optionValues: unknown): string | null {
+  if (!optionValues || typeof optionValues !== "object" || Array.isArray(optionValues)) {
+    return null;
+  }
+
+  const imageUrl = (optionValues as Record<string, unknown>)._imageUrl;
+
+  return typeof imageUrl === "string" && imageUrl.length > 0 ? imageUrl : null;
 }

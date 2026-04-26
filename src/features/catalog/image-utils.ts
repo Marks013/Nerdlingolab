@@ -3,7 +3,19 @@ export function getImageUrls(value: unknown): string[] {
     return [];
   }
 
-  return value.filter((item): item is string => typeof item === "string" && item.length > 0);
+  return value
+    .map((item) => {
+      if (typeof item === "string") {
+        return item;
+      }
+
+      if (item && typeof item === "object" && "url" in item && typeof item.url === "string") {
+        return item.url;
+      }
+
+      return null;
+    })
+    .filter((item): item is string => Boolean(item));
 }
 
 export function getPrimaryImageUrl(value: unknown): string | null {

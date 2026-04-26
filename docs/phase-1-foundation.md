@@ -2,9 +2,9 @@
 
 ## Referencias usadas
 
-- Tema Shopify anexado: paleta principal `#ff6902`, acento de checkout `#00badb`, neutros `#000000`, `#ffffff`, `#677279`, logos em `assets/header_logo.webp` e `assets/logo.webp`.
-- Tema Shopify anexado: modulos existentes de cashback/Joy em `sections/joy-loyalty-page.liquid`, `snippets/joy-loyalty-header-points.liquid`, `snippets/joy-loyalty-mini-cart.liquid` e documentacao `assets/CASHBACK-ARCHITECTURE.md`.
-- Joy Loyalty Program: pontos por compra, formas de resgate, cupons, referrals, VIP tiers, pagina de fidelidade, ajustes manuais, historico completo de atividade e suporte a timeline auditavel.
+- Tema tema legado anexado: paleta principal `#ff6902`, acento de checkout `#00badb`, neutros `#000000`, `#ffffff`, `#677279`, logos em `assets/header_logo.webp` e `assets/logo.webp`.
+- Tema tema legado anexado: modulos existentes de cashback/provedor legado de fidelidade em `sections/provedor-legado-fidelidade-loyalty-page.liquid`, `snippets/provedor-legado-fidelidade-loyalty-header-points.liquid`, `snippets/provedor-legado-fidelidade-loyalty-mini-cart.liquid` e documentacao `assets/CASHBACK-ARCHITECTURE.md`.
+- programa legado de fidelidade: pontos por compra, formas de resgate, cupons, referrals, VIP tiers, pagina de fidelidade, ajustes manuais, historico completo de atividade e suporte a timeline auditavel.
 
 ## Infraestrutura
 
@@ -20,7 +20,7 @@
 - Pedidos possuem snapshots de cliente/produto/endereco para preservar historico mesmo se o catalogo mudar.
 - Mercado Pago fica preparado com campos de preference/payment id e `WebhookEvent` idempotente por provider + external event id.
 - Cupons possuem validade, limite global, limite por cliente e historico em `CouponRedemption`.
-- Fidelidade replica o comportamento central do Joy com `LoyaltyPoints` como saldo agregado e `LoyaltyLedger` como livro-razao auditavel.
+- Fidelidade replica o comportamento central do provedor legado de fidelidade com `LoyaltyPoints` como saldo agregado e `LoyaltyLedger` como livro-razao auditavel.
 
 ## Seed
 

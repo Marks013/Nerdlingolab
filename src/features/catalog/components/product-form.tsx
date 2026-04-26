@@ -1,4 +1,4 @@
-import { ProductStatus, type Category } from "@prisma/client";
+import { ProductStatus, type Category } from "@/generated/prisma/client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,20 +10,21 @@ import { formatCurrency } from "@/lib/format";
 import type { ProductListItem } from "@/lib/catalog/queries";
 
 interface ProductFormProps {
+  action: (formData: FormData) => Promise<void>;
   categories: Category[];
   product?: ProductListItem;
-  action: (formData: FormData) => Promise<void>;
 }
 
 export function ProductForm({ categories, product, action }: ProductFormProps): React.ReactElement {
   const variant = product?.variants[0];
   const imageUrls = getImageUrls(product?.images).join("\n");
+  const variantRows = product ? formatVariantRows(product) : "";
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>{product ? "Editar produto" : "Novo produto"}</CardTitle>
-        <CardDescription>Dados centrais do catálogo e estoque inicial.</CardDescription>
+        <CardDescription>Dados centrais do catálogo, variações e estoque.</CardDescription>
       </CardHeader>
       <CardContent>
         <form action={action} className="grid gap-4 lg:grid-cols-2">
@@ -66,11 +67,11 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
             />
           </label>
           <label className="grid gap-2 text-sm font-medium">
-            SKU
+            SKU base
             <Input defaultValue={variant?.sku ?? ""} name="sku" required />
           </label>
           <label className="grid gap-2 text-sm font-medium">
-            Estoque
+            Estoque base
             <Input defaultValue={variant?.stockQuantity ?? 0} min={0} name="stockQuantity" type="number" />
           </label>
           <label className="grid gap-2 text-sm font-medium lg:col-span-2">
@@ -84,6 +85,15 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
               <option value={ProductStatus.ACTIVE}>Ativo</option>
               <option value={ProductStatus.ARCHIVED}>Arquivado</option>
             </select>
+          </label>
+          <label className="grid gap-2 text-sm font-medium lg:col-span-2">
+            Variações
+            <Textarea
+              defaultValue={variantRows}
+              name="variants"
+              placeholder="Título | SKU | preço | estoque | preço comparativo | código de barras | peso em g | ativo | Cor=Azul;Tamanho=M"
+              rows={5}
+            />
           </label>
           <label className="grid gap-2 text-sm font-medium lg:col-span-2">
             Descrição curta
@@ -105,4 +115,34 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
       </CardContent>
     </Card>
   );
+}
+
+function formatVariantRows(product: ProductListItem): string {
+  return product.variants
+    .map((variant) => {
+      const optionValues = formatOptionValues(variant.optionValues);
+
+      return [
+        variant.title,
+        variant.sku,
+        formatCurrency(variant.priceCents),
+        String(variant.stockQuantity),
+        variant.compareAtPriceCents ? formatCurrency(variant.compareAtPriceCents) : "",
+        variant.barcode ?? "",
+        variant.weightGrams ? String(variant.weightGrams) : "",
+        variant.isActive ? "ativo" : "inativo",
+        optionValues
+      ].join(" | ");
+    })
+    .join("\n");
+}
+
+function formatOptionValues(value: unknown): string {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return "";
+  }
+
+  return Object.entries(value as Record<string, unknown>)
+    .map(([optionName, optionValue]) => `${optionName}=${String(optionValue)}`)
+    .join(";");
 }

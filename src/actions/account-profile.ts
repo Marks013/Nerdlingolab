@@ -38,6 +38,7 @@ export async function updateCustomerProfile(formData: FormData): Promise<void> {
 
   revalidatePath("/conta");
   revalidatePath("/checkout");
+  redirect("/conta");
 }
 
 async function requireCurrentUserId(): Promise<string> {

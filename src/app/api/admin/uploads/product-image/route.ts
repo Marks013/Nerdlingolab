@@ -1,11 +1,16 @@
 import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { isAdminSession } from "@/lib/admin";
 import { rateLimitRequest } from "@/lib/security/rate-limit";
 import { assertSameOriginRequest } from "@/lib/security/request";
 import { ensureProductImageBucket, getProductImagePublicUrl, minioClient, productImageBucketName } from "@/lib/storage";
 import { buildProductImageObjectName, validateProductImage, validateProductImageBytes } from "@/lib/uploads/product-image";
+
+const uploadSchema = z.object({
+  file: z.custom<File>((value) => value instanceof File)
+});
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
@@ -25,11 +30,15 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
 
     const formData = await request.formData();
-    const file = formData.get("file");
+    const parsedUpload = uploadSchema.safeParse({
+      file: formData.get("file")
+    });
 
-    if (!(file instanceof File)) {
+    if (!parsedUpload.success) {
       return NextResponse.json({ message: "Envie uma imagem." }, { status: 400 });
     }
+
+    const file = parsedUpload.data.file;
 
     validateProductImage(file);
     await ensureProductImageBucket();

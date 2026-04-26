@@ -19,6 +19,7 @@ export default async function AdminReportsPage({
   const filters = parseReportFilters(await searchParams);
   const annualReport = await getAdminAnnualReport(filters);
   const csvHref = `/api/admin/reports/annual.csv?inicio=${annualReport.filters.startDate}&fim=${annualReport.filters.endDate}`;
+  const pdfHref = `/api/admin/reports/annual.pdf?inicio=${annualReport.filters.startDate}&fim=${annualReport.filters.endDate}`;
 
   const reportCards = [
     {
@@ -62,7 +63,7 @@ export default async function AdminReportsPage({
           </h1>
         </div>
 
-        <form action="/admin/relatorios" className="grid gap-3 rounded-md border bg-card p-4 md:grid-cols-[1fr_1fr_auto_auto]">
+        <form action="/admin/relatorios" className="grid gap-3 rounded-md border bg-card p-4 md:grid-cols-[1fr_1fr_auto_auto_auto]">
           <label className="grid gap-2 text-sm font-medium">
             Início
             <input
@@ -89,6 +90,11 @@ export default async function AdminReportsPage({
           <div className="flex items-end">
             <Button asChild className="w-full" variant="outline">
               <Link href={csvHref}>Exportar CSV</Link>
+            </Button>
+          </div>
+          <div className="flex items-end">
+            <Button asChild className="w-full" variant="outline">
+              <Link href={pdfHref}>Exportar PDF</Link>
             </Button>
           </div>
         </form>

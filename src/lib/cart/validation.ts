@@ -1,4 +1,4 @@
-import { ProductStatus } from "@prisma/client";
+import { ProductStatus } from "@/generated/prisma/client";
 
 import { getPrimaryImageUrl } from "@/features/catalog/image-utils";
 import type {
@@ -131,7 +131,11 @@ function buildEmptyCartResponse(request: CartValidationRequest): CartValidationR
       requestedPoints: request.loyaltyPointsToRedeem ?? 0,
       redeemedPoints: 0,
       discountCents: 0,
-      isAvailable: false
+      isAvailable: false,
+      maxRedeemablePoints: 0,
+      minRedeemPoints: 0,
+      redeemCentsPerPoint: 1,
+      message: null
     }
   };
 }

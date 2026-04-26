@@ -1,5 +1,6 @@
 "use client";
 
+import { Heart, MessageCircle, Minus, Plus, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
@@ -7,29 +8,37 @@ import { ShippingEstimator } from "@/features/shipping/components/shipping-estim
 import { formatCurrency } from "@/lib/format";
 
 export interface ProductVariantOption {
-  id: string;
-  title: string;
-  priceCents: number;
-  compareAtPriceCents: number | null;
   availableStock: number;
+  compareAtPriceCents: number | null;
+  id: string;
+  imageUrl?: string | null;
+  optionValues: unknown;
+  priceCents: number;
+  title: string;
 }
 
 interface ProductPurchasePanelProps {
   imageUrl: string | null;
+  onVariantSelect?: (variantId: string) => void;
   productId: string;
   productSlug: string;
   productTitle: string;
+  selectedVariantId?: string;
   variants: ProductVariantOption[];
 }
 
 export function ProductPurchasePanel({
   imageUrl,
+  onVariantSelect,
   productId,
   productSlug,
   productTitle,
+  selectedVariantId: controlledSelectedVariantId,
   variants
 }: ProductPurchasePanelProps): React.ReactElement | null {
-  const [selectedVariantId, setSelectedVariantId] = useState(variants[0]?.id ?? "");
+  const [localSelectedVariantId, setLocalSelectedVariantId] = useState(variants[0]?.id ?? "");
+  const [quantity, setQuantity] = useState(1);
+  const selectedVariantId = controlledSelectedVariantId ?? localSelectedVariantId;
   const selectedVariant = useMemo(
     () => variants.find((variant) => variant.id === selectedVariantId) ?? variants[0],
     [selectedVariantId, variants]
@@ -39,83 +48,284 @@ export function ProductPurchasePanel({
     return null;
   }
 
-  const hasMultipleVariants = variants.length > 1;
   const hasCompareAtPrice =
     selectedVariant.compareAtPriceCents !== null &&
     selectedVariant.compareAtPriceCents > selectedVariant.priceCents;
+  const pixPriceCents = Math.round(selectedVariant.priceCents * 0.9);
+  const handleVariantSelect = (variantId: string) => {
+    setLocalSelectedVariantId(variantId);
+    onVariantSelect?.(variantId);
+  };
 
   return (
-    <div>
-      <div className="mt-4 flex flex-wrap items-baseline gap-3">
-        <p aria-label="Valor selecionado" className="text-2xl font-semibold text-primary">
+    <div className="mt-7 border-t pt-7">
+      <VariantSelector
+        selectedVariantId={selectedVariant.id}
+        variants={variants}
+        onSelect={handleVariantSelect}
+      />
+
+      <div className="mt-8">
+        <p aria-label="Valor selecionado" className="text-4xl font-black text-primary">
           {formatCurrency(selectedVariant.priceCents)}
         </p>
         {hasCompareAtPrice ? (
-          <p className="text-sm text-muted-foreground line-through">
+          <p className="mt-1 text-sm text-[#677279] line-through">
             {formatCurrency(selectedVariant.compareAtPriceCents ?? selectedVariant.priceCents)}
           </p>
         ) : null}
+        <p className="mt-2 text-sm text-[#677279]">
+          ou até 12x de {formatCurrency(Math.ceil(selectedVariant.priceCents / 10))}
+        </p>
+        <div className="mt-4 rounded-lg border bg-white p-4 shadow-sm">
+          <p className="text-lg font-black text-[#1c1c1c]">
+            {formatCurrency(pixPriceCents)} <span className="text-sm font-medium text-[#677279]">no pix</span>
+          </p>
+          <p className="text-sm text-[#677279]">Pague com pix e economize {formatCurrency(selectedVariant.priceCents - pixPriceCents)}</p>
+        </div>
       </div>
 
-      {hasMultipleVariants ? (
-        <fieldset className="mt-6">
-          <legend className="text-sm font-medium">Escolha a opção</legend>
-          <div className="mt-3 grid gap-2">
-            {variants.map((variant) => {
-              const isSelected = variant.id === selectedVariant.id;
+      <div className="mt-7 flex items-center gap-4">
+        <span className="text-sm font-bold text-[#677279]">Quantidade</span>
+        <div className="inline-flex h-10 overflow-hidden rounded-lg border">
+          <button className="flex w-11 items-center justify-center bg-white" onClick={() => setQuantity(Math.max(1, quantity - 1))} type="button">
+            <Minus className="h-4 w-4" />
+          </button>
+          <span className="flex w-12 items-center justify-center border-x bg-white text-sm font-bold">{quantity}</span>
+          <button className="flex w-11 items-center justify-center bg-white" onClick={() => setQuantity(Math.min(selectedVariant.availableStock, quantity + 1))} type="button">
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-7 grid gap-3 sm:grid-cols-2">
+        <AddToCartButton
+          availableStock={selectedVariant.availableStock}
+          item={{
+            productId,
+            variantId: selectedVariant.id,
+            slug: productSlug,
+            title: productTitle,
+            variantTitle: selectedVariant.title,
+            imageUrl,
+            unitPriceCents: selectedVariant.priceCents,
+            quantity
+          }}
+          key={`${selectedVariant.id}-${quantity}`}
+        />
+        <a
+          className="inline-flex h-12 items-center justify-center rounded-lg bg-[#b85415] px-4 text-sm font-black text-white shadow-sm transition hover:bg-[#a14912]"
+          href="/checkout"
+        >
+          <Zap className="mr-2 h-4 w-4" />
+          Comprar Agora
+        </a>
+      </div>
+
+      <a
+        className="mt-5 inline-flex h-12 w-full items-center justify-center rounded-lg border border-[#9ee8c1] bg-[#f2fff8] px-4 text-sm font-black text-[#168a4d]"
+        href="https://wa.me/5544991362488"
+      >
+        <MessageCircle className="mr-2 h-5 w-5" />
+        Comprar pelo whatsapp
+      </a>
+
+      <button
+        className="mt-5 inline-flex h-12 w-full items-center justify-center rounded-lg border border-black bg-white px-4 text-sm text-red-600"
+        type="button"
+      >
+        <Heart className="mr-2 h-5 w-5 fill-black text-black" />
+        Adicionar à lista de desejos
+      </button>
+
+      <p className="mt-6 text-sm font-bold text-[#677279]">
+        Falta R$ 99,90 para o frete grátis
+      </p>
+      <ShippingEstimator subtotalCents={selectedVariant.priceCents * quantity} />
+    </div>
+  );
+}
+
+function VariantSelector({
+  onSelect,
+  selectedVariantId,
+  variants
+}: {
+  onSelect: (variantId: string) => void;
+  selectedVariantId: string;
+  variants: ProductVariantOption[];
+}): React.ReactElement {
+  const hasStructuredOptions = variants.some((variant) => getVariantColor(variant) || getVariantSize(variant));
+  const selectedVariant = variants.find((variant) => variant.id === selectedVariantId) ?? variants[0];
+
+  if (hasStructuredOptions && selectedVariant) {
+    const selectedColor = getVariantColor(selectedVariant);
+    const colors = unique(variants.map(getVariantColor).filter((color): color is string => Boolean(color)));
+    const visibleSizes = selectedColor
+      ? variants.filter((variant) => getVariantColor(variant) === selectedColor)
+      : variants;
+
+    return (
+      <fieldset>
+        {colors.length > 0 ? (
+          <div>
+            <legend className="text-base font-semibold text-black">Cor: {selectedColor}</legend>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {colors.map((color) => {
+                const colorVariant = variants.find((variant) => getVariantColor(variant) === color && variant.availableStock > 0)
+                  ?? variants.find((variant) => getVariantColor(variant) === color);
+                const isSelected = color === selectedColor;
+                const isUnavailable = !colorVariant || colorVariant.availableStock <= 0;
+
+                return (
+                  <button
+                    aria-pressed={isSelected}
+                    className={[
+                      "inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 text-sm font-bold transition",
+                      isSelected ? "border-primary bg-[#fff7f2] text-primary" : "border-[#d9e0e4] bg-white text-[#344049]",
+                      isUnavailable ? "cursor-not-allowed opacity-50" : "hover:border-primary"
+                    ].join(" ")}
+                    disabled={!colorVariant || isUnavailable}
+                    key={color}
+                    onClick={() => colorVariant && onSelect(colorVariant.id)}
+                    type="button"
+                  >
+                    <span
+                      className="h-4 w-4 rounded-full border border-black/15"
+                      style={{ backgroundColor: getColorSwatch(color) }}
+                    />
+                    {formatOptionName(color)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
+        <div className={colors.length > 0 ? "mt-5" : ""}>
+          <p className="text-base font-semibold text-black">Tamanho</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {visibleSizes.map((variant) => {
+              const size = getVariantSize(variant) ?? variant.title;
+              const isSelected = variant.id === selectedVariantId;
               const isUnavailable = variant.availableStock <= 0;
 
               return (
-                <label
-                  className="flex cursor-pointer items-start justify-between gap-3 rounded-md border bg-card p-3 text-sm transition has-[:checked]:border-primary has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-55"
+                <button
+                  aria-pressed={isSelected}
+                  className={[
+                    "inline-flex min-h-10 min-w-12 items-center justify-center rounded-lg border px-3 text-sm font-bold transition",
+                    isSelected ? "border-primary bg-[#fff7f2] text-primary" : "border-[#d9e0e4] bg-white text-[#344049]",
+                    isUnavailable ? "cursor-not-allowed opacity-50" : "hover:border-primary"
+                  ].join(" ")}
+                  disabled={isUnavailable}
                   key={variant.id}
+                  onClick={() => onSelect(variant.id)}
+                  type="button"
                 >
-                  <span className="flex items-start gap-3">
-                    <input
-                      checked={isSelected}
-                      className="mt-1"
-                      disabled={isUnavailable}
-                      name="productVariant"
-                      onChange={() => setSelectedVariantId(variant.id)}
-                      type="radio"
-                    />
-                    <span>
-                      <span className="block font-medium">{variant.title}</span>
-                      <span className="mt-1 block text-muted-foreground">
-                        {isUnavailable ? "Indisponível" : `${variant.availableStock} unidade(s) disponíveis`}
-                      </span>
-                    </span>
-                  </span>
-                  <span className="font-medium">{formatCurrency(variant.priceCents)}</span>
-                </label>
+                  {formatOptionName(size)}
+                </button>
               );
             })}
           </div>
-        </fieldset>
-      ) : (
-        <p className="mt-3 text-sm text-muted-foreground">
-          {selectedVariant.availableStock > 0
-            ? `${selectedVariant.availableStock} unidade(s) disponíveis`
-            : "Indisponível"}
-        </p>
-      )}
+        </div>
+      </fieldset>
+    );
+  }
 
-      <AddToCartButton
-        availableStock={selectedVariant.availableStock}
-        item={{
-          productId,
-          variantId: selectedVariant.id,
-          slug: productSlug,
-          title: productTitle,
-          variantTitle: selectedVariant.title,
-          imageUrl,
-          unitPriceCents: selectedVariant.priceCents,
-          quantity: 1
-        }}
-        key={selectedVariant.id}
-      />
+  return (
+    <fieldset>
+      <legend className="text-base text-black">Opção:</legend>
+      <div className="mt-3 flex flex-wrap gap-3">
+        {variants.map((variant) => {
+          const isSelected = variant.id === selectedVariantId;
+          const isUnavailable = variant.availableStock <= 0;
 
-      <ShippingEstimator subtotalCents={selectedVariant.priceCents} />
-    </div>
+          return (
+            <label
+              className={isUnavailable ? "cursor-not-allowed" : "cursor-pointer"}
+              key={variant.id}
+            >
+              <input
+                checked={isSelected}
+                className="mr-2 h-4 w-4 accent-primary"
+                disabled={isUnavailable}
+                name="variantId"
+                onChange={() => onSelect(variant.id)}
+                type="radio"
+                value={variant.id}
+              />
+              <span
+                className={[
+                  "inline-flex min-h-12 items-center rounded-lg border px-4 text-sm font-medium transition",
+                  isSelected ? "border-primary bg-[#fff7f2] text-primary" : "border-[#e8e8e8] bg-white text-[#677279]",
+                  isUnavailable ? "cursor-not-allowed opacity-50" : "hover:border-primary"
+                ].join(" ")}
+              >
+                {formatVariantLabel(variant)}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
   );
+}
+
+function formatVariantLabel(variant: ProductVariantOption): string {
+  if (!variant.optionValues || typeof variant.optionValues !== "object" || Array.isArray(variant.optionValues)) {
+    return variant.title;
+  }
+
+  const values = Object.values(variant.optionValues as Record<string, unknown>)
+    .filter((value, index) => !Object.keys(variant.optionValues as Record<string, unknown>)[index].startsWith("_"))
+    .map((value) => String(value))
+    .filter(Boolean);
+
+  return values.length > 0 ? values.join(" / ") : variant.title;
+}
+
+function getVariantColor(variant: ProductVariantOption): string | null {
+  return getOptionValue(variant, "Cor") ?? getOptionValue(variant, "Color");
+}
+
+function getVariantSize(variant: ProductVariantOption): string | null {
+  return getOptionValue(variant, "Tamanho") ?? getOptionValue(variant, "Size");
+}
+
+function getOptionValue(variant: ProductVariantOption, key: string): string | null {
+  if (!variant.optionValues || typeof variant.optionValues !== "object" || Array.isArray(variant.optionValues)) {
+    return null;
+  }
+
+  const value = (variant.optionValues as Record<string, unknown>)[key];
+
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function unique(values: string[]): string[] {
+  return [...new Set(values)];
+}
+
+function formatOptionName(value: string): string {
+  return value.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function getColorSwatch(color: string): string {
+  const normalizedColor = color.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const colorMap: Record<string, string> = {
+    amarelo: "#f5c542",
+    azul: "#2563eb",
+    bege: "#d8b98c",
+    branco: "#ffffff",
+    cinza: "#9ca3af",
+    creme: "#f3e6c8",
+    preto: "#111827",
+    rosa: "#f472b6",
+    roxo: "#7c3aed",
+    verde: "#16a34a",
+    vermelho: "#dc2626"
+  };
+
+  return colorMap[normalizedColor] ?? "#d9e0e4";
 }

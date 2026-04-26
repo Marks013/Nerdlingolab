@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   },
   description: "E-commerce NerdLingoLab com programa de fidelidade, cupons e checkout seguro.",
   applicationName: "NerdLingoLab",
+  icons: {
+    icon: "/brand-assets/FAVICON_NERDLINGOLAB.webp"
+  },
   metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000")
 };
 
@@ -19,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>): React.ReactElement {
   return (
-    <html className="dark" lang="pt-BR" suppressHydrationWarning>
+    <html className="light" lang="pt-BR" suppressHydrationWarning>
       <head>
         <Script src="/theme-init.js" strategy="beforeInteractive" />
       </head>

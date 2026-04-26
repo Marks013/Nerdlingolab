@@ -10,7 +10,9 @@ import type {
   Shipment,
   ShipmentEvent,
   User
-} from "@prisma/client";
+} from "@/generated/prisma/client";
+import { OrderStatus, PaymentStatus } from "@/generated/prisma/client";
+import type { OrderWhereInput } from "@/generated/prisma/models/Order";
 
 import { prisma } from "@/lib/prisma";
 
@@ -50,8 +52,52 @@ export type CustomerAccountSummary = {
 
 export type CustomerSavedAddress = CustomerAddress;
 
-export async function getAdminOrders(): Promise<AdminOrderListItem[]> {
+export const adminOrderStatuses = Object.values(OrderStatus);
+export const adminPaymentStatuses = Object.values(PaymentStatus);
+
+export interface AdminOrderFilters {
+  endDate?: string;
+  orderStatus?: OrderStatus;
+  paymentStatus?: PaymentStatus;
+  query?: string;
+  startDate?: string;
+}
+
+export function resolveAdminOrderFilters(filters: Partial<AdminOrderFilters> = {}): AdminOrderFilters {
+  const query = filters.query?.trim().slice(0, 120) || undefined;
+  const orderStatus = filters.orderStatus && adminOrderStatuses.includes(filters.orderStatus)
+    ? filters.orderStatus
+    : undefined;
+  const paymentStatus = filters.paymentStatus && adminPaymentStatuses.includes(filters.paymentStatus)
+    ? filters.paymentStatus
+    : undefined;
+  const startDate = isDateInput(filters.startDate) ? filters.startDate : undefined;
+  const endDate = isDateInput(filters.endDate) ? filters.endDate : undefined;
+
+  if (startDate && endDate && parseDateInput(startDate) > parseDateInput(endDate)) {
+    return {
+      endDate: startDate,
+      orderStatus,
+      paymentStatus,
+      query,
+      startDate: endDate
+    };
+  }
+
+  return {
+    endDate,
+    orderStatus,
+    paymentStatus,
+    query,
+    startDate
+  };
+}
+
+export async function getAdminOrders(filters: Partial<AdminOrderFilters> = {}): Promise<AdminOrderListItem[]> {
+  const resolvedFilters = resolveAdminOrderFilters(filters);
+
   return prisma.order.findMany({
+    where: buildAdminOrderWhere(resolvedFilters),
     include: {
       user: {
         select: {
@@ -194,4 +240,57 @@ export async function getCustomerOrderById({
       }
     }
   });
+}
+
+function buildAdminOrderWhere(filters: AdminOrderFilters): OrderWhereInput {
+  const conditions: OrderWhereInput[] = [];
+
+  if (filters.query) {
+    conditions.push({
+      OR: [
+        { orderNumber: { contains: filters.query, mode: "insensitive" } },
+        { email: { contains: filters.query, mode: "insensitive" } },
+        { user: { email: { contains: filters.query, mode: "insensitive" } } },
+        { user: { name: { contains: filters.query, mode: "insensitive" } } }
+      ]
+    });
+  }
+
+  if (filters.orderStatus) {
+    conditions.push({ status: filters.orderStatus });
+  }
+
+  if (filters.paymentStatus) {
+    conditions.push({ paymentStatus: filters.paymentStatus });
+  }
+
+  if (filters.startDate || filters.endDate) {
+    conditions.push({
+      createdAt: {
+        gte: filters.startDate ? parseDateInput(filters.startDate) : undefined,
+        lt: filters.endDate ? addDays(parseDateInput(filters.endDate), 1) : undefined
+      }
+    });
+  }
+
+  return conditions.length > 0 ? { AND: conditions } : {};
+}
+
+function addDays(date: Date, days: number): Date {
+  const nextDate = new Date(date);
+  nextDate.setUTCDate(nextDate.getUTCDate() + days);
+
+  return nextDate;
+}
+
+function isDateInput(value: string | undefined): value is string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  return parseDateInput(value).toISOString().slice(0, 10) === value;
+}
+
+function parseDateInput(value: string): Date {
+  return new Date(`${value}T00:00:00.000Z`);
 }

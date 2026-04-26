@@ -12,6 +12,11 @@ const nextConfig = {
         hostname: process.env.MINIO_ENDPOINT ?? "localhost",
         port: process.env.MINIO_PORT ?? "9000",
         pathname: `/${process.env.MINIO_BUCKET ?? "product-images"}/**`
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.shopify.com",
+        pathname: "/**"
       }
     ]
   },
@@ -23,7 +28,7 @@ const nextConfig = {
         permanent: false
       },
       {
-        source: "/loyalty",
+        source: "/recompensas",
         destination: "/programa-de-fidelidade",
         permanent: true
       }

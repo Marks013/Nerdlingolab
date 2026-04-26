@@ -1,4 +1,4 @@
-import { CouponType } from "@prisma/client";
+import { CouponType } from "@/generated/prisma/client";
 import { z } from "zod";
 
 import { parseCurrencyToCents } from "@/lib/format";
@@ -12,7 +12,8 @@ export const couponFormSchema = z.object({
   usageLimit: z.coerce.number().int().positive().optional(),
   perCustomerLimit: z.coerce.number().int().positive().optional(),
   expiresAt: z.string().trim().optional(),
-  isActive: z.boolean().default(true)
+  isActive: z.boolean().default(true),
+  isPublic: z.boolean().default(true)
 });
 
 export type CouponFormInput = z.infer<typeof couponFormSchema>;
@@ -27,6 +28,7 @@ export function normalizeCouponInput(input: CouponFormInput): {
   perCustomerLimit?: number;
   expiresAt?: Date;
   isActive: boolean;
+  isPublic: boolean;
 } {
   return {
     code: input.code.toUpperCase(),
@@ -37,7 +39,8 @@ export function normalizeCouponInput(input: CouponFormInput): {
     usageLimit: input.usageLimit,
     perCustomerLimit: input.perCustomerLimit,
     expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
-    isActive: input.isActive
+    isActive: input.isActive,
+    isPublic: input.isPublic
   };
 }
 

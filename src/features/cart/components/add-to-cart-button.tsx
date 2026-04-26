@@ -5,12 +5,12 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import type { CartItem } from "@/features/cart/types";
 import { useCartStore } from "@/features/cart/cart-store";
+import type { CartItem } from "@/features/cart/types";
 
 interface AddToCartButtonProps {
-  item: CartItem;
   availableStock: number;
+  item: CartItem;
 }
 
 export function AddToCartButton({ item, availableStock }: AddToCartButtonProps): React.ReactElement {
@@ -20,7 +20,7 @@ export function AddToCartButton({ item, availableStock }: AddToCartButtonProps):
 
   if (wasAdded) {
     return (
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+      <div className="flex flex-col gap-3 sm:flex-row">
         <Button asChild size="lg">
           <Link href="/carrinho">Ver carrinho</Link>
         </Button>
@@ -40,7 +40,7 @@ export function AddToCartButton({ item, availableStock }: AddToCartButtonProps):
 
   return (
     <Button
-      className="mt-8 w-full sm:w-fit"
+      className="h-12 w-full border border-[#d8d8d8] bg-white text-black hover:bg-[#f7f7f7]"
       disabled={isUnavailable}
       onClick={() => {
         addItem(item);

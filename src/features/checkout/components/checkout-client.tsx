@@ -58,7 +58,9 @@ function fieldsFromAddress(address?: CheckoutSavedAddress): AddressFields {
 
 export function CheckoutClient({ savedAddresses = [] }: CheckoutClientProps): React.ReactElement {
   const { items, couponCode, loyaltyPointsToRedeem, shippingOptionId, shippingPostalCode, clearCart, getValidationPayload } = useCartStore();
-  const defaultAddress = savedAddresses.find((address) => address.isDefault) ?? savedAddresses[0];
+  const draftAddress = readDraftCheckoutAddress();
+  const addressOptions = savedAddresses.length > 0 ? savedAddresses : draftAddress ? [draftAddress] : [];
+  const defaultAddress = addressOptions.find((address) => address.isDefault) ?? addressOptions[0];
   const [selectedAddressId, setSelectedAddressId] = useState(defaultAddress?.id ?? "");
   const [addressFields, setAddressFields] = useState<AddressFields>(fieldsFromAddress(defaultAddress));
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,7 +73,7 @@ export function CheckoutClient({ savedAddresses = [] }: CheckoutClientProps): Re
   function selectSavedAddress(addressId: string): void {
     setSelectedAddressId(addressId);
 
-    const address = savedAddresses.find((savedAddress) => savedAddress.id === addressId);
+    const address = addressOptions.find((savedAddress) => savedAddress.id === addressId);
     setAddressFields(fieldsFromAddress(address));
   }
 
@@ -179,11 +181,11 @@ export function CheckoutClient({ savedAddresses = [] }: CheckoutClientProps): Re
       </CardHeader>
       <CardContent>
         <form action={handleSubmit} className="grid gap-4 md:grid-cols-2">
-          {savedAddresses.length > 0 ? (
+          {addressOptions.length > 0 ? (
             <fieldset className="grid gap-3 md:col-span-2">
               <legend className="text-sm font-medium">Endereço salvo</legend>
               <div className="grid gap-3">
-                {savedAddresses.map((address) => (
+                {addressOptions.map((address) => (
                   <label
                     className="flex cursor-pointer gap-3 rounded-md border p-3 text-sm"
                     key={address.id}
@@ -308,4 +310,39 @@ export function CheckoutClient({ savedAddresses = [] }: CheckoutClientProps): Re
       </CardContent>
     </Card>
   );
+}
+
+function readDraftCheckoutAddress(): CheckoutSavedAddress | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const draft = JSON.parse(
+      window.sessionStorage.getItem("nerdlingolab:draft-checkout-address") ??
+        window.localStorage.getItem("nerdlingolab:draft-checkout-address") ??
+        "null"
+    ) as Partial<CheckoutSavedAddress> | null;
+
+    if (!draft?.postalCode || !draft.street || !draft.number || !draft.district || !draft.city || !draft.state) {
+      return null;
+    }
+
+    return {
+      id: "draft-address",
+      label: draft.label ?? null,
+      recipient: draft.recipient ?? "Cliente",
+      postalCode: draft.postalCode,
+      street: draft.street,
+      number: draft.number,
+      complement: draft.complement ?? null,
+      district: draft.district,
+      city: draft.city,
+      state: draft.state,
+      country: "BR",
+      isDefault: true
+    };
+  } catch {
+    return null;
+  }
 }

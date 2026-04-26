@@ -3,13 +3,14 @@ import {
   OrderStatus,
   PaymentStatus,
   WebhookStatus
-} from "@prisma/client";
-import type { PrismaClient } from "@prisma/client";
+} from "@/generated/prisma/client";
+import type { PrismaClient } from "@/generated/prisma/client";
 
+import { sendOrderPaidEmail } from "@/lib/email/transactional";
 import { assertMercadoPagoConfigured, mercadoPagoPayment } from "@/lib/mercadopago";
 import { registerOrderCouponRedemption } from "@/lib/payments/order-coupon";
 import { decrementInventoryForOrder } from "@/lib/payments/order-inventory";
-import { registerOrderLoyaltyLedger } from "@/lib/payments/order-loyalty";
+import { registerOrderLoyaltyLedger } from "@/lib/payments/order-rewards";
 import { prisma } from "@/lib/prisma";
 
 interface ProcessMercadoPagoPaymentInput {
@@ -64,6 +65,8 @@ export async function processApprovedMercadoPagoPayment({
     return;
   }
 
+  let paidOrderId: string | null = null;
+
   await prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
       where: { id: payment.external_reference },
@@ -96,6 +99,18 @@ export async function processApprovedMercadoPagoPayment({
       return;
     }
 
+    if (!isPaymentAmountValid(payment, order.totalCents)) {
+      await tx.webhookEvent.update({
+        where: { id: webhookEventId },
+        data: {
+          status: WebhookStatus.FAILED,
+          processedAt: new Date(),
+          errorMessage: "Valor pago não confere com o total do pedido."
+        }
+      });
+      return;
+    }
+
     await tx.order.update({
       where: { id: order.id },
       data: {
@@ -111,6 +126,7 @@ export async function processApprovedMercadoPagoPayment({
     await decrementInventoryForOrder(tx, order);
     await registerOrderCouponRedemption(tx, order);
     await registerOrderLoyaltyLedger(tx, order);
+    paidOrderId = order.id;
 
     await tx.webhookEvent.update({
       where: { id: webhookEventId },
@@ -120,6 +136,23 @@ export async function processApprovedMercadoPagoPayment({
       }
     });
   });
+
+  if (paidOrderId) {
+    await sendOrderPaidEmail(paidOrderId);
+  }
+}
+
+function isPaymentAmountValid(
+  payment: MercadoPagoPaymentResponse,
+  expectedTotalCents: number
+): boolean {
+  if (typeof payment.transaction_amount !== "number") {
+    return false;
+  }
+
+  const paidCents = Math.round(payment.transaction_amount * 100);
+
+  return paidCents === expectedTotalCents;
 }
 
 async function markWebhookEvent(

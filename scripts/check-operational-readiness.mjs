@@ -13,24 +13,30 @@ const requiredFiles = [
   "prisma/schema.prisma",
   "prisma.config.ts",
   "scripts/audit-runtime-ui.mjs",
+  "scripts/audit-ecommerce-contracts.mjs",
   "src/proxy.ts",
   "src/app/api/health/route.ts",
   "src/app/api/health/ready/route.ts",
   "src/app/api/cart/validate/route.ts",
   "src/app/api/checkout/route.ts",
+  "src/app/(admin)/admin/(panel)/fidelidade/page.tsx",
+  "src/app/(shop)/conta/nerdcoins/page.tsx",
   "src/app/api/admin/reports/annual.csv/route.ts",
   "src/app/api/shipping/quote/route.ts",
   "src/app/api/webhooks/mercadopago/route.ts",
   "src/actions/account-addresses.ts",
   "src/actions/account-profile.ts",
+  "src/actions/loyalty.ts",
   "src/lib/account/profile-schema.ts",
   "src/lib/addresses/schema.ts",
   "src/lib/cart/validation.ts",
   "src/lib/checkout/create-checkout.ts",
+  "src/lib/loyalty/settings.ts",
+  "src/lib/inventory/reservations.ts",
   "src/lib/payments/mercadopago-webhook.ts",
   "src/lib/payments/order-coupon.ts",
   "src/lib/payments/order-inventory.ts",
-  "src/lib/payments/order-loyalty.ts",
+  "src/lib/payments/order-rewards.ts",
   "src/lib/shipping/mercado-envios.ts",
   "src/lib/shipping/quotes.ts",
   "playwright.config.ts",
@@ -41,11 +47,14 @@ const requiredFiles = [
 const requiredPackageScripts = [
   "validate:encoding",
   "audit:ui-runtime",
+  "audit:ecommerce",
   "validate:ui-copy",
   "validate:project",
   "prisma:generate",
   "db:migrate",
+  "db:bootstrap",
   "db:seed",
+  "import:shopify",
   "test:e2e",
   "check:operational"
 ];
@@ -72,6 +81,11 @@ const prismaContractSnippets = [
   ["cupons", "model Coupon"],
   ["resgates de cupom", "model CouponRedemption"],
   ["fidelidade", "model LoyaltyLedger"],
+  ["configuração de bônus de cadastro", "signupBonusPoints"],
+  ["configuração de bônus de aniversário", "birthdayBonusPoints"],
+  ["modelo de indicação", "model Referral"],
+  ["código de indicação", "model ReferralCode"],
+  ["rastreamento de lote expirado", "sourceLedgerId"],
   ["endereços salvos", "model CustomerAddress"],
   ["inventário", "model InventoryLedger"],
   ["webhooks", "model WebhookEvent"],
@@ -87,8 +101,9 @@ const criticalSourceContracts = [
     snippets: [
       ["build reproduzível", "RUN npm ci"],
       ["build Next", "RUN npm run build"],
-      ["migrações no start", "npx prisma migrate deploy"],
-      ["seed no start", "npx prisma db seed"],
+      ["runtime sem tarefas administrativas no start", "CMD [\"npm\", \"run\", \"start\"]"],
+      ["scripts de bootstrap no runtime", "COPY --chown=node:node --from=builder /app/scripts ./scripts"],
+      ["dados Shopify no runtime", "COPY --chown=node:node --from=builder /app/data ./data"],
       ["runtime sem root", "USER node"]
     ]
   },
@@ -96,16 +111,22 @@ const criticalSourceContracts = [
     filePath: "docker-compose.yml",
     snippets: [
       ["serviço da aplicação", "app:"],
+      ["bootstrap operacional", "setup:"],
+      ["bootstrap idempotente", "command: npm run db:bootstrap"],
       ["bucket MinIO", "minio-create-bucket:"],
       ["healthcheck readiness", "/api/health/ready"],
       ["host confiável Auth.js", "AUTH_TRUST_HOST"],
-      ["endpoint interno MinIO", "MINIO_ENDPOINT: minio"]
+      ["endpoint interno MinIO", "MINIO_ENDPOINT: minio"],
+      ["porta alternativa para proxy", "APP_HOST_PORT"],
+      ["CSV Shopify embarcado", "SHOPIFY_PRODUCTS_CSV"]
     ]
   },
   {
     filePath: "package.json",
     snippets: [
       ["auditoria runtime de UI", "\"audit:ui-runtime\""],
+      ["bootstrap de produção", "\"db:bootstrap\""],
+      ["import Shopify", "\"import:shopify\""],
       ["override PostCSS", "\"postcss\": \"$postcss\""],
       ["override UUID", "\"uuid\": \"14.0.0\""]
     ]
@@ -150,6 +171,8 @@ const criticalSourceContracts = [
     filePath: "src/lib/checkout/create-checkout.ts",
     snippets: [
       ["revalidação do carrinho", "validateCartItems({"],
+      ["reserva de estoque", "reserveInventoryForCheckout(tx, validatedCart.items)"],
+      ["liberação de reserva em falha", "releaseInventoryReservations(tx, reservationItems)"],
       ["endereço salvo por usuário", "resolveShippingAddress(input)"],
       ["endereço salvo pertence ao usuário", "userId: input.userId"],
       ["entrega obrigatória", "selectedShippingOption"],
@@ -203,6 +226,41 @@ const criticalSourceContracts = [
     ]
   },
   {
+    filePath: "src/actions/loyalty.ts",
+    snippets: [
+      ["configuração de bônus de cadastro", "signupBonusPoints"],
+      ["configuração de indicação", "referralInviterBonusPoints"],
+      ["aniversário idempotente", "loyalty:birthday:${today.year}:${user.id}"],
+      ["expiração idempotente", "loyalty:expire:${lot.id}"],
+      ["lote de origem da expiração", "sourceLedgerId: lot.id"],
+      ["revalidação de fidelidade", "revalidatePath(\"/admin/fidelidade\")"]
+    ]
+  },
+  {
+    filePath: "src/lib/loyalty/settings.ts",
+    snippets: [
+      ["progresso VIP", "getVipProgress"],
+      ["validade dos pontos", "getPointsExpirationDate"],
+      ["limiar VIP por gasto", "getTierSpendThreshold"]
+    ]
+  },
+  {
+    filePath: "src/lib/loyalty/referrals.ts",
+    snippets: [
+      ["normaliza código", "normalizeReferralCode"],
+      ["gera código único", "ensureReferralCode"],
+      ["monta link de cadastro", "buildReferralSignupUrl"]
+    ]
+  },
+  {
+    filePath: "src/lib/payments/order-rewards.ts",
+    snippets: [
+      ["recompensa indicação", "registerReferralReward"],
+      ["primeira compra aprovada", "approvedOrderCount !== 1"],
+      ["ledger idempotente da indicação", "loyalty:referral:inviter:${referral.id}"]
+    ]
+  },
+  {
     filePath: "src/app/api/checkout/route.ts",
     snippets: [
       ["rate limit", "rateLimitRequest(request"],
@@ -247,7 +305,7 @@ const criticalSourceContracts = [
     ]
   },
   {
-    filePath: "src/lib/payments/order-loyalty.ts",
+    filePath: "src/lib/payments/order-rewards.ts",
     snippets: [
       ["resgate idempotente", "idempotencyKey: `loyalty:redeem:${order.id}`"],
       ["ganho idempotente", "idempotencyKey: `loyalty:earn:${order.id}`"],

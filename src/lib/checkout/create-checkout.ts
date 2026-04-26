@@ -1,9 +1,14 @@
-import { OrderStatus, PaymentStatus, type Prisma } from "@prisma/client";
+import { OrderStatus, PaymentStatus, type Prisma } from "@/generated/prisma/client";
 
 import type { CheckoutRequestInput } from "@/features/checkout/schemas";
 import type { CustomerAddressInput } from "@/lib/addresses/schema";
 import { validateCartItems } from "@/lib/cart/validation";
+import { sendOrderCreatedEmail } from "@/lib/email/transactional";
 import { env } from "@/lib/env";
+import {
+  releaseInventoryReservations,
+  reserveInventoryForCheckout
+} from "@/lib/inventory/reservations";
 import { assertMercadoPagoConfigured, mercadoPagoPreference } from "@/lib/mercadopago";
 import { generateOrderNumber } from "@/lib/orders/number";
 import { prisma } from "@/lib/prisma";
@@ -74,53 +79,60 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Create
     throw new Error("Selecione uma opção de entrega antes do pagamento.");
   }
 
+  const selectedShippingOption = validatedCart.selectedShippingOption;
+
   if (!shouldUseLocalPaymentMock()) {
     assertMercadoPagoConfigured();
   }
 
-  const order = await prisma.order.create({
-    data: {
-      orderNumber: generateOrderNumber(),
-      userId: input.userId,
-      couponId: validatedCart.appliedCoupon?.id,
-      email: input.customer.email,
-      status: OrderStatus.PENDING_PAYMENT,
-      paymentStatus: PaymentStatus.PENDING,
-      subtotalCents: validatedCart.subtotalCents,
-      discountCents: validatedCart.couponDiscountCents,
-      loyaltyDiscountCents: validatedCart.loyaltyDiscountCents,
-      shippingCents: validatedCart.shippingCents,
-      shippingOptionId: validatedCart.selectedShippingOption.id,
-      shippingServiceName: validatedCart.selectedShippingOption.name,
-      shippingProvider: validatedCart.selectedShippingOption.provider,
-      shippingPostalCode: shippingAddress.postalCode,
-      shippingEstimatedBusinessDays: validatedCart.selectedShippingOption.estimatedBusinessDays,
-      taxCents: 0,
-      totalCents: validatedCart.totalCents,
-      loyaltyPointsRedeemed: validatedCart.loyalty.redeemedPoints,
-      shippingAddress: buildShippingAddressSnapshot(shippingAddress),
-      customerSnapshot: input.customer,
-      paymentIdempotencyKey: crypto.randomUUID(),
-      items: {
-        create: validatedCart.items.map((item) => ({
-          product: { connect: { id: item.productId } },
-          variant: item.variantId ? { connect: { id: item.variantId } } : undefined,
-          productTitle: item.title,
-          variantTitle: item.variantTitle,
-          sku: item.variantId,
-          quantity: item.quantity,
-          unitPriceCents: item.unitPriceCents,
-          totalCents: item.lineTotalCents,
-          productSnapshot: buildProductSnapshot(item)
-        }))
+  const order = await prisma.$transaction(async (tx) => {
+    await reserveInventoryForCheckout(tx, validatedCart.items);
+
+    return tx.order.create({
+      data: {
+        orderNumber: generateOrderNumber(),
+        userId: input.userId,
+        couponId: validatedCart.appliedCoupon?.id,
+        email: input.customer.email,
+        status: OrderStatus.PENDING_PAYMENT,
+        paymentStatus: PaymentStatus.PENDING,
+        subtotalCents: validatedCart.subtotalCents,
+        discountCents: validatedCart.couponDiscountCents,
+        loyaltyDiscountCents: validatedCart.loyaltyDiscountCents,
+        shippingCents: validatedCart.shippingCents,
+        shippingOptionId: selectedShippingOption.id,
+        shippingServiceName: selectedShippingOption.name,
+        shippingProvider: selectedShippingOption.provider,
+        shippingPostalCode: shippingAddress.postalCode,
+        shippingEstimatedBusinessDays: selectedShippingOption.estimatedBusinessDays,
+        taxCents: 0,
+        totalCents: validatedCart.totalCents,
+        loyaltyPointsRedeemed: validatedCart.loyalty.redeemedPoints,
+        shippingAddress: buildShippingAddressSnapshot(shippingAddress),
+        customerSnapshot: input.customer,
+        paymentIdempotencyKey: crypto.randomUUID(),
+        items: {
+          create: validatedCart.items.map((item) => ({
+            product: { connect: { id: item.productId } },
+            variant: item.variantId ? { connect: { id: item.variantId } } : undefined,
+            productTitle: item.title,
+            variantTitle: item.variantTitle,
+            sku: item.variantId,
+            quantity: item.quantity,
+            unitPriceCents: item.unitPriceCents,
+            totalCents: item.lineTotalCents,
+            productSnapshot: buildProductSnapshot(item)
+          }))
+        }
       }
-    }
+    });
   });
 
-  const preference = await createMercadoPagoPreference({
+  const preference = await createCheckoutPreferenceOrCancel({
+    input,
     orderId: order.id,
     orderNumber: order.orderNumber,
-    input,
+    reservationItems: validatedCart.items,
     shippingAddress,
     totalCents: validatedCart.totalCents
   });
@@ -132,12 +144,59 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Create
     }
   });
 
-  return {
+  const checkoutResult = {
     orderId: order.id,
     orderNumber: order.orderNumber,
     preferenceId: preference.id ?? null,
     checkoutUrl: preference.init_point ?? preference.sandbox_init_point ?? null
   };
+
+  await sendOrderCreatedEmail({
+    checkoutUrl: checkoutResult.checkoutUrl,
+    orderId: order.id
+  });
+
+  return checkoutResult;
+}
+
+async function createCheckoutPreferenceOrCancel({
+  input,
+  orderId,
+  orderNumber,
+  reservationItems,
+  shippingAddress,
+  totalCents
+}: {
+  input: CheckoutRequestInput;
+  orderId: string;
+  orderNumber: string;
+  reservationItems: Awaited<ReturnType<typeof validateCartItems>>["items"];
+  shippingAddress: CustomerAddressInput;
+  totalCents: number;
+}): Promise<MercadoPagoPreferenceResponse> {
+  try {
+    return await createMercadoPagoPreference({
+      orderId,
+      orderNumber,
+      input,
+      shippingAddress,
+      totalCents
+    });
+  } catch (error) {
+    await prisma.$transaction(async (tx) => {
+      await releaseInventoryReservations(tx, reservationItems);
+      await tx.order.update({
+        where: { id: orderId },
+        data: {
+          canceledAt: new Date(),
+          paymentStatus: PaymentStatus.CANCELED,
+          status: OrderStatus.CANCELED
+        }
+      });
+    });
+
+    throw error;
+  }
 }
 
 async function createMercadoPagoPreference({
@@ -230,5 +289,5 @@ async function resolveShippingAddress(input: CreateCheckoutInput): Promise<Custo
 }
 
 function shouldUseLocalPaymentMock(): boolean {
-  return process.env.NODE_ENV !== "production" && process.env.CHECKOUT_PAYMENT_MOCK === "true";
+  return process.env.CHECKOUT_PAYMENT_MOCK === "true" && process.env.NODE_ENV !== "production";
 }

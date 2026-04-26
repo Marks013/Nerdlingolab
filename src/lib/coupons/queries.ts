@@ -1,4 +1,4 @@
-import type { Coupon } from "@prisma/client";
+import type { Coupon } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/prisma";
 

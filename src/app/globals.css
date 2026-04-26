@@ -1,26 +1,25 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
 
 :root {
-  --background: 0 0% 100%;
+  --background: 0 0% 97%;
   --foreground: 0 0% 4%;
   --card: 0 0% 100%;
   --card-foreground: 0 0% 4%;
-  --primary: 25 96% 38%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 190 95% 27%;
+  --primary: 25 100% 50%;
+  --primary-foreground: 222 34% 6%;
+  --secondary: 271 92% 48%;
   --secondary-foreground: 0 0% 100%;
   --muted: 210 20% 96%;
   --muted-foreground: 202 8% 38%;
-  --accent: 190 95% 27%;
-  --accent-foreground: 0 0% 100%;
+  --accent: 25 100% 50%;
+  --accent-foreground: 222 34% 6%;
   --destructive: 0 84% 44%;
   --destructive-foreground: 0 0% 100%;
-  --border: 214 20% 90%;
-  --input: 214 20% 90%;
-  --ring: 25 96% 38%;
-  --radius: 0.75rem;
+  --border: 210 18% 89%;
+  --input: 210 18% 89%;
+  --ring: 25 100% 50%;
+  --radius: 1rem;
 }
 
 .dark {
@@ -51,6 +50,7 @@ body {
   min-height: 100vh;
   background: hsl(var(--background));
   color: hsl(var(--foreground));
+  font-family: Roboto, Arial, sans-serif;
   font-feature-settings: "kern";
   text-rendering: optimizeLegibility;
 }

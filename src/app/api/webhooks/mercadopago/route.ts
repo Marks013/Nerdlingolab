@@ -1,4 +1,4 @@
-import { WebhookProvider, type Prisma } from "@prisma/client";
+import { WebhookProvider, type Prisma } from "@/generated/prisma/client";
 import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 

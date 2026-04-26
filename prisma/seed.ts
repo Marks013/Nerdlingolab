@@ -1,11 +1,23 @@
 import "dotenv/config";
 
+import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
-import { PrismaClient, UserRole } from "@prisma/client";
+import { PrismaClient, UserRole } from "../src/generated/prisma/client";
 
-const prisma: PrismaClient = new PrismaClient();
+const adapter = new PrismaPg({
+  connectionString:
+    process.env.DATABASE_URL ??
+    "postgresql://nerdlingolab:nerdlingolab_dev_password@localhost:5432/nerdlingolab"
+});
+const prisma = new PrismaClient({ adapter });
 
 async function main(): Promise<void> {
+  await prisma.loyaltyProgramSettings.upsert({
+    where: { singletonKey: "default" },
+    create: { singletonKey: "default" },
+    update: {}
+  });
+
   const superadminName: string = process.env.SUPERADMIN_NAME ?? "NerdLingoLab Admin";
   const superadminEmail: string | undefined = process.env.SUPERADMIN_EMAIL;
   const superadminPassword: string | undefined = process.env.SUPERADMIN_PASSWORD;
@@ -18,15 +30,19 @@ async function main(): Promise<void> {
     where: { email: superadminEmail }
   });
 
+  const passwordHash: string = await bcrypt.hash(superadminPassword, 12);
+
   if (existingSuperadmin) {
     await prisma.user.update({
       where: { id: existingSuperadmin.id },
-      data: { role: UserRole.SUPERADMIN }
+      data: {
+        name: superadminName,
+        passwordHash,
+        role: UserRole.SUPERADMIN
+      }
     });
     return;
   }
-
-  const passwordHash: string = await bcrypt.hash(superadminPassword, 12);
 
   await prisma.user.create({
     data: {

@@ -1,4 +1,4 @@
-import { PaymentStatus } from "@prisma/client";
+import { PaymentStatus } from "@/generated/prisma/client";
 
 import { normalizeDisplayText } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";

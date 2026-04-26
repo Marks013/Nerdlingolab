@@ -2,6 +2,8 @@ FROM node:22-alpine AS base
 
 WORKDIR /app
 
+ENV NPM_CONFIG_UPDATE_NOTIFIER="false"
+
 RUN apk add --no-cache libc6-compat openssl
 
 FROM base AS deps
@@ -33,10 +35,13 @@ COPY --chown=node:node --from=builder /app/package.json ./package.json
 COPY --chown=node:node --from=builder /app/package-lock.json ./package-lock.json
 COPY --chown=node:node --from=builder /app/prisma ./prisma
 COPY --chown=node:node --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --chown=node:node --from=builder /app/src/generated ./src/generated
 COPY --chown=node:node --from=builder /app/public ./public
+COPY --chown=node:node --from=builder /app/scripts ./scripts
+COPY --chown=node:node --from=builder /app/data ./data
 
 USER node
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && npm run start"]
+CMD ["npm", "run", "start"]

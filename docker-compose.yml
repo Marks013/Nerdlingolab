@@ -1,5 +1,37 @@
 name: nerdlingolab-commerce
 
+x-app-environment: &app-environment
+  APP_URL: ${APP_URL:-http://localhost:3001}
+  AUTH_GOOGLE_ID: ${AUTH_GOOGLE_ID:-}
+  AUTH_GOOGLE_SECRET: ${AUTH_GOOGLE_SECRET:-}
+  AUTH_SECRET: ${AUTH_SECRET:-temporary-auth-secret-change-me-64-characters-minimum-000000000000}
+  AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-true}
+  CHECKOUT_PAYMENT_MOCK: ${CHECKOUT_PAYMENT_MOCK:-false}
+  DATABASE_URL: postgresql://${POSTGRES_USER:-nerdlingolab}:${POSTGRES_PASSWORD:-temporary-postgres-password-change-me}@postgres:5432/${POSTGRES_DB:-nerdlingolab}?schema=public
+  EMAIL_FROM: ${EMAIL_FROM:-NerdLingoLab <no-reply@nerdlingolab.local>}
+  MERCADO_ENVIOS_ACCESS_TOKEN: ${MERCADO_ENVIOS_ACCESS_TOKEN:-}
+  MERCADO_PAGO_ACCESS_TOKEN: ${MERCADO_PAGO_ACCESS_TOKEN:-}
+  MERCADO_PAGO_PUBLIC_KEY: ${MERCADO_PAGO_PUBLIC_KEY:-}
+  MERCADO_PAGO_WEBHOOK_SECRET: ${MERCADO_PAGO_WEBHOOK_SECRET:-}
+  MINIO_BUCKET: ${MINIO_BUCKET:-product-images}
+  MINIO_ENDPOINT: minio
+  MINIO_PORT: "9000"
+  MINIO_USE_SSL: "false"
+  NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+  RESEND_API_KEY: ${RESEND_API_KEY:-}
+  SUPPORT_EMAIL: ${SUPPORT_EMAIL:-nerdlingolab@gmail.com}
+  S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-nerdlingolab}
+  S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-temporary-minio-password-change-me}
+  SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN:-}
+  SENTRY_DSN: ${SENTRY_DSN:-}
+  SENTRY_ORG: ${SENTRY_ORG:-}
+  SENTRY_PROJECT: ${SENTRY_PROJECT:-}
+  SHOPIFY_IMPORT_DEFAULT_STOCK: ${SHOPIFY_IMPORT_DEFAULT_STOCK:-10}
+  SHOPIFY_PRODUCTS_CSV: ${SHOPIFY_PRODUCTS_CSV:-data/shopify/products_export_1.csv}
+  SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-admin@nerdlingolab.local}
+  SUPERADMIN_NAME: ${SUPERADMIN_NAME:-NerdLingoLab Admin}
+  SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-Temporary-admin-password-123!}
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -10,7 +42,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-nerdlingolab}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_HOST_PORT:-127.0.0.1:5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -30,8 +62,8 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER is required}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}
     ports:
-      - "${MINIO_API_PORT:-9000}:9000"
-      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+      - "${MINIO_API_HOST_PORT:-127.0.0.1:9000}:9000"
+      - "${MINIO_CONSOLE_HOST_PORT:-127.0.0.1:9001}:9001"
     volumes:
       - minio_data:/data
     healthcheck:
@@ -62,6 +94,22 @@ services:
     networks:
       - commerce
 
+  setup:
+    build:
+      context: .
+    command: npm run db:bootstrap
+    container_name: nerdlingolab-setup
+    depends_on:
+      minio-create-bucket:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    environment: *app-environment
+    profiles:
+      - setup
+    networks:
+      - commerce
+
   app:
     build:
       context: .
@@ -71,33 +119,7 @@ services:
         condition: service_completed_successfully
       postgres:
         condition: service_healthy
-    environment:
-      APP_URL: ${APP_URL:-http://localhost:3000}
-      AUTH_GOOGLE_ID: ${AUTH_GOOGLE_ID:-}
-      AUTH_GOOGLE_SECRET: ${AUTH_GOOGLE_SECRET:-}
-      AUTH_SECRET: ${AUTH_SECRET:-temporary-auth-secret-change-me-64-characters-minimum-000000000000}
-      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-true}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-nerdlingolab}:${POSTGRES_PASSWORD:-temporary-postgres-password-change-me}@postgres:5432/${POSTGRES_DB:-nerdlingolab}?schema=public
-      EMAIL_FROM: ${EMAIL_FROM:-NerdLingoLab <no-reply@nerdlingolab.local>}
-      MERCADO_ENVIOS_ACCESS_TOKEN: ${MERCADO_ENVIOS_ACCESS_TOKEN:-}
-      MERCADO_PAGO_ACCESS_TOKEN: ${MERCADO_PAGO_ACCESS_TOKEN:-}
-      MERCADO_PAGO_PUBLIC_KEY: ${MERCADO_PAGO_PUBLIC_KEY:-}
-      MERCADO_PAGO_WEBHOOK_SECRET: ${MERCADO_PAGO_WEBHOOK_SECRET:-}
-      MINIO_BUCKET: ${MINIO_BUCKET:-product-images}
-      MINIO_ENDPOINT: minio
-      MINIO_PORT: "9000"
-      MINIO_USE_SSL: "false"
-      NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
-      RESEND_API_KEY: ${RESEND_API_KEY:-}
-      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-nerdlingolab}
-      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-temporary-minio-password-change-me}
-      SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN:-}
-      SENTRY_DSN: ${SENTRY_DSN:-}
-      SENTRY_ORG: ${SENTRY_ORG:-}
-      SENTRY_PROJECT: ${SENTRY_PROJECT:-}
-      SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-admin@nerdlingolab.local}
-      SUPERADMIN_NAME: ${SUPERADMIN_NAME:-NerdLingoLab Admin}
-      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-Temporary-admin-password-123!}
+    environment: *app-environment
     healthcheck:
       test:
         - CMD-SHELL
@@ -107,7 +129,7 @@ services:
       start_period: 45s
       timeout: 5s
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - "${APP_HOST_PORT:-3001}:3000"
     restart: unless-stopped
     networks:
       - commerce

@@ -7,14 +7,13 @@ import {
   WebhookStatus,
   PaymentStatus,
   OrderStatus,
-  ShipmentStatus,
-  PrismaClient
-} from "@prisma/client";
+  ShipmentStatus
+} from "../../src/generated/prisma/client";
 import bcrypt from "bcryptjs";
 
+import { prisma } from "../../src/lib/prisma";
 import { processApprovedMercadoPagoPayment } from "../../src/lib/payments/mercadopago-webhook";
 
-const prisma = new PrismaClient();
 const adminEmail = "admin-e2e@nerdlingolab.test";
 const adminPassword = "NerdLingoLab#12345";
 
@@ -89,7 +88,8 @@ test("cria pedido pela loja e processa aprovação com banco real", async ({ pag
     payment: {
       id: `smoke-payment-${suffix}`,
       status: "approved",
-      external_reference: order.id
+      external_reference: order.id,
+      transaction_amount: order.totalCents / 100
     },
     paymentId: `smoke-payment-${suffix}`,
     webhookEventId: webhookEvent.id
@@ -123,7 +123,8 @@ test("cria pedido pela loja e processa aprovação com banco real", async ({ pag
     payment: {
       id: `smoke-payment-${suffix}`,
       status: "approved",
-      external_reference: order.id
+      external_reference: order.id,
+      transaction_amount: order.totalCents / 100
     },
     paymentId: `smoke-payment-${suffix}`,
     webhookEventId: webhookEvent.id

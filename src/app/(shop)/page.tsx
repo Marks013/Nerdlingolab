@@ -1,145 +1,162 @@
-import { Gift, Headphones, ShieldCheck, ShoppingBag, Sparkles, Truck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AutoCarousel } from "@/components/shop/auto-carousel";
+import { ShopTrustStrip } from "@/components/shop/shop-trust-strip";
+import { ProductCard } from "@/features/catalog/components/product-card";
 import { PublicOffersSection } from "@/features/offers/components/public-offers-section";
+import { getPublicProducts } from "@/lib/catalog/queries";
 import { getPublicOffers } from "@/lib/offers/queries";
 
 export const dynamic = "force-dynamic";
 
-const highlights = [
+const storefrontSections = [
+  { title: "Novidades", href: "/produtos?ordem=recentes" },
+  { title: "Nossos Produtos", href: "/produtos" },
+  { title: "Mais Vendidos", href: "/produtos?ordem=maior-valor" }
+];
+
+const heroBanners = [
   {
-    title: "Coleções nerd",
-    description: "Produtos selecionados para quem gosta de cultura geek, jogos e tecnologia.",
-    icon: ShoppingBag
+    alt: "Banner NerdLingoLab de camisetas e cultura pop",
+    desktop: "/brand-assets/BANNER_01_PC_-_NERDILONGLAB.webp",
+    mobile: "/brand-assets/BANNER_01_MOBI_-_NERDILONGLAB.webp"
   },
   {
-    title: "Nerdcoins",
-    description: "Pontos, benefícios e resgate no checkout com histórico completo.",
-    icon: Gift
+    alt: "Banner NerdLingoLab com novidades da loja",
+    desktop: "/brand-assets/BANNER_02_PC_-_NERDLONGLAB.webp",
+    mobile: "/brand-assets/BANNER_02_MOBI_-_NERDLONGOLAB.webp"
   },
   {
-    title: "Checkout seguro",
-    description: "Pagamento simples, rápido e protegido do carrinho à confirmação.",
-    icon: ShieldCheck
+    alt: "Banner NerdLingoLab de ofertas especiais",
+    desktop: "/brand-assets/BANNER_03_PC_-_NERDLINGOLAB.webp",
+    mobile: "/brand-assets/BANNER_03_MOBI_-_NERDLINGOLAB.webp"
+  },
+  {
+    alt: "Banner NerdLingoLab de temporada",
+    desktop: "/brand-assets/BANNER_04_PC_-_NERDLINGOLAB.webp",
+    mobile: "/brand-assets/BANNER_04_MOBI_-_NERDLINGOLAB.webp"
+  },
+  {
+    alt: "Banner NerdLingoLab institucional",
+    desktop: "/brand-assets/BANNER_05_PC_-_NERDLINGOLAB_II_1.webp",
+    mobile: "/brand-assets/BANNER_05_MOBI_-_NERDLINGOLAB_II_1.webp"
   }
 ];
 
-const serviceItems = [
+const brandPanels = [
   {
-    title: "Entrega acompanhada",
-    description: "Acompanhe o pedido do pagamento até a chegada.",
-    icon: Truck,
-    image: "/shopify/nerd-icon-support.webp"
+    alt: "Estampas mais vendidas da NerdLingoLab",
+    href: "/produtos?ordem=maior-valor",
+    src: "/brand-assets/ESTAMPAS_MAIS_VENDIDAS_-_NERDLINGOLAB.webp"
   },
   {
-    title: "Carrinho inteligente",
-    description: "Cupons, estoque e pontos recalculados antes do pagamento.",
-    icon: ShoppingBag,
-    image: "/shopify/nerd-icon-cart.webp"
+    alt: "Oferta de frete grátis da NerdLingoLab",
+    href: "/ofertas",
+    src: "/brand-assets/OFERTA_DE_FRETE_GRATIS_-_NERDLINGOLAB.webp"
   },
   {
-    title: "Conta com recompensas",
-    description: "Histórico de compras, endereços e benefícios em um só lugar.",
-    icon: Headphones,
-    image: "/shopify/nerd-icon-account.webp"
+    alt: "Sobre a loja NerdLingoLab",
+    href: "#sobre",
+    src: "/brand-assets/SOBRE_A_LOJA_-_NERDLINGOLAB.webp"
   }
 ];
 
 export default async function ShopHomePage(): Promise<React.ReactElement> {
-  const offers = await getPublicOffers();
+  const [offers, products] = await Promise.all([
+    getPublicOffers(),
+    getPublicProducts({ sort: "recentes" })
+  ]);
+  const featuredProducts = products.filter((product) => !product.compareAtPriceCents).slice(0, 10);
 
   return (
-    <main className="min-h-screen bg-background">
-      <section className="relative isolate overflow-hidden">
-        <Image
-          alt=""
-          className="object-cover object-center"
-          fill
-          loading="eager"
-          preload
+    <main className="min-h-screen bg-[#f6f7f8]">
+      <h1 className="sr-only">NerdLingoLab</h1>
+      <section className="overflow-hidden bg-primary">
+        <AutoCarousel
+          className="bg-primary"
+          items={heroBanners.map((banner) => ({ ...banner, href: "/produtos" }))}
           sizes="100vw"
-          src="/shopify/product-1.webp"
+          slideClassName="relative aspect-[2048/628] w-full"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/35" />
-        <div className="relative mx-auto flex min-h-[78vh] w-full max-w-6xl flex-col justify-center px-4 py-16 sm:px-6 lg:px-8">
-          <div className="max-w-2xl">
-            <Image
-              alt="NerdLingoLab"
-              className="mb-8 h-auto w-48"
-              height={120}
-              loading="eager"
-              preload
-              src="/shopify/logo.webp"
-              width={320}
-            />
-            <div className="mb-6 inline-flex items-center gap-2 rounded-md border bg-background/80 px-3 py-2 text-sm text-muted-foreground shadow-sm backdrop-blur">
-              <Sparkles className="h-4 w-4 text-primary" />
-              Loja geek com recompensas
-            </div>
-            <h1 className="text-4xl font-bold tracking-normal text-foreground sm:text-5xl">
-              Produtos geek com cupons, Nerdcoins e compra segura.
-            </h1>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
-              Uma experiência própria da NerdLingoLab para comprar colecionáveis,
-              acessórios e itens especiais em uma loja feita para fãs exigentes.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg">
-                <Link href="/produtos">Ver produtos</Link>
-              </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link href="/programa-de-fidelidade">Ver Nerdcoins</Link>
-              </Button>
-            </div>
+      </section>
+
+      <section className="bg-white px-5 py-5">
+        <div className="mx-auto flex w-full max-w-[1360px] flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-2xl font-black text-black">Produtos geek com cupons</h2>
+            <p className="mt-1 text-sm font-semibold text-[#677279]">Loja geek com recompensas e Carrinho inteligente</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link className="inline-flex h-10 items-center rounded-lg bg-primary px-5 text-sm font-black text-white" href="/produtos">
+              Ver produtos
+            </Link>
+            <Link className="inline-flex h-10 items-center rounded-lg border px-5 text-sm font-black text-primary" href="/programa-de-fidelidade">
+              Ver Nerdcoins
+            </Link>
           </div>
         </div>
       </section>
 
-      <PublicOffersSection coupons={offers.coupons} products={offers.products} />
-
-      <section className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid gap-4 md:grid-cols-3">
-          {highlights.map((item) => (
-            <Card key={item.title}>
-              <CardHeader>
-                <item.icon className="h-5 w-5 text-primary" />
-                <CardTitle>{item.title}</CardTitle>
-                <CardDescription>{item.description}</CardDescription>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-
-        <div className="mt-8 grid gap-4 lg:grid-cols-3">
-          {serviceItems.map((item) => (
-            <Card key={item.title} className="overflow-hidden">
-              <CardHeader className="flex flex-row items-start gap-4 space-y-0">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                  <Image alt="" className="h-9 w-9 object-contain" height={48} src={item.image} width={48} />
-                </div>
-                <div>
-                  <item.icon className="mb-3 h-5 w-5 text-secondary" />
-                  <CardTitle>{item.title}</CardTitle>
-                  <CardDescription>{item.description}</CardDescription>
-                </div>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-
-        <Card className="mt-8 border-primary/30 bg-primary/5">
-          <CardHeader>
-            <CardTitle>Fidelidade NerdLingoLab</CardTitle>
-            <CardDescription>
-              Ganhe pontos em compras elegíveis e acompanhe suas recompensas no programa
-              de fidelidade NerdLingoLab.
-            </CardDescription>
-          </CardHeader>
-        </Card>
+      <section className="mx-auto -mt-8 w-full max-w-[1360px] px-5">
+        <ShopTrustStrip />
       </section>
+
+      <div className="mx-auto w-full max-w-[1360px] px-5 py-12">
+        <section className="mb-14">
+          <AutoCarousel
+            className="rounded-lg bg-white shadow-sm"
+            items={brandPanels}
+            sizes="(min-width: 1024px) 560px, 100vw"
+            slideClassName="relative aspect-square w-full md:aspect-[16/7]"
+          />
+        </section>
+
+        {storefrontSections.map((section, sectionIndex) => (
+          <section className="mb-14" key={section.title}>
+            <div className="mb-7 flex items-end justify-between gap-4">
+              <h2 className="relative pb-3 text-3xl font-medium text-black after:absolute after:bottom-0 after:left-0 after:h-1 after:w-[120px] after:rounded-full after:bg-primary">
+                {section.title}
+              </h2>
+              <Link className="text-sm font-bold text-primary hover:underline" href={section.href}>
+                Ver todos
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
+              {featuredProducts.slice(sectionIndex, sectionIndex + 6).map((product, productIndex) => (
+                <ProductCard
+                  imagePriority={sectionIndex === 0 && productIndex < 4}
+                  key={`${section.title}-${product.id}`}
+                  product={product}
+                />
+              ))}
+            </div>
+          </section>
+        ))}
+
+        <PublicOffersSection coupons={offers.coupons} products={offers.products} />
+
+        <section id="sobre" className="grid gap-8 rounded-lg bg-white p-8 shadow-sm lg:grid-cols-[0.8fr_1.2fr]">
+          <div className="relative min-h-[260px] overflow-hidden rounded-lg bg-[#f7f7f7]">
+            <Image
+              alt="Mascote NerdLingoLab"
+              className="object-contain p-8"
+              fill
+              sizes="(min-width: 1024px) 40vw, 100vw"
+              src="/brand-assets/SIMBOLO_NERDLINGOLAB_TESTE.webp"
+            />
+          </div>
+          <div className="flex flex-col justify-center">
+            <h2 className="text-3xl font-black text-black">
+              Bem-vindo ao laboratório onde nerdice, idiomas e estilo se misturam!
+            </h2>
+            <p className="mt-5 text-base leading-7 text-[#677279]">
+              A NerdLingoLab une moda, cultura pop e universo dos idiomas em produtos criativos,
+              divertidos e cheios de personalidade.
+            </p>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }

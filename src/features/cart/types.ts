@@ -44,6 +44,10 @@ export interface LoyaltyRedemptionPreview {
   redeemedPoints: number;
   discountCents: number;
   isAvailable: boolean;
+  maxRedeemablePoints: number;
+  minRedeemPoints: number;
+  redeemCentsPerPoint: number;
+  message: string | null;
 }
 
 export interface ValidatedCartItem {

@@ -100,7 +100,7 @@ Validações executadas:
 
 - `npm run validate:project` passou.
 - `npx playwright test tests/e2e/public-flow.spec.ts -g "usa endereço salvo"` passou com 2 testes em Chromium desktop e mobile.
-- Inspeção Playwright local confirmou `/shopify/product-1.webp` como `loading="eager"` em home, catálogo e recomendações de produto.
+- Inspeção Playwright local confirmou `/brand-assets/ESTAMPAS_MAIS_VENDIDAS_-_NERDLINGOLAB.webp` como `loading="eager"` em home, catálogo e recomendações de produto.
 
 Próximas pendências objetivas:
 
@@ -204,7 +204,7 @@ Concluído nesta atualização:
 - Criado `src/lib/offers/queries.ts` para buscar cupons ativos e produtos promocionais com estoque.
 - Criado `src/features/offers/components/public-offers-section.tsx`.
 - A home agora exibe ofertas vindas do banco, com cupons ativos e produtos com valor promocional.
-- A seção não importa Liquid nem blocos fixos do tema Shopify; usa dados reais e o carrinho continua revalidando cupom, estoque e valores.
+- A seção não importa Liquid nem blocos fixos do tema legado; usa dados reais e o carrinho continua revalidando cupom, estoque e valores.
 - O E2E público cria cupom/produto reais, valida a seção de ofertas na home e limpa os dados ao final.
 
 Validações executadas:
@@ -265,12 +265,12 @@ Próximas pendências objetivas:
 - Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
 - Testar Mercado Envios com credencial e `shipment_id` reais.
 
-## Atualização mais recente - footer público Shopify
+## Atualização mais recente - footer público tema legado
 
 Concluído nesta atualização:
 
 - Criado `src/components/shop/shop-footer.tsx`.
-- O layout público agora exibe footer com barra colorida herdada do tema Shopify, links úteis, atendimento, pagamento seguro e entrega acompanhada.
+- O layout público agora exibe footer com barra colorida herdada do tema legado, links úteis, atendimento, pagamento seguro e entrega acompanhada.
 - O footer usa assets já migrados, sem importar Liquid, CSS ou JavaScript do tema.
 - E2E público ampliado para verificar o footer.
 
@@ -287,12 +287,12 @@ Próximas pendências objetivas:
 - Completar dados institucionais do footer quando CNPJ/endereço oficial forem definidos.
 - Testar Mercado Envios com credencial e `shipment_id` reais.
 
-## Atualização mais recente - inventário Shopify e catálogo visual
+## Atualização mais recente - inventário tema legado e catálogo visual
 
 Concluído nesta atualização:
 
-- Criado `docs/shopify-asset-inventory.md` com decisão arquivo a arquivo para assets do tema Shopify.
-- Criado `docs/shopify-liquid-react-map.md` com equivalência entre seções Liquid prioritárias e componentes/rotas Next.js.
+- Criado `docs/brand-asset-inventory.md` com decisão arquivo a arquivo para assets do tema legado.
+- Criado `docs/legacy-theme-react-map.md` com equivalência entre seções Liquid prioritárias e componentes/rotas Next.js.
 - Criado `src/components/shop/shop-trust-strip.tsx` usando assets reais de suporte, carrinho e Nerdcoins.
 - Catálogo e detalhe do produto agora mostram benefícios visuais de entrega acompanhada, carrinho seguro e Nerdcoins.
 - E2E público ampliado para cobrir os benefícios visuais do catálogo.
@@ -330,28 +330,28 @@ Pendências ainda reais:
 - Testar sincronização Mercado Envios com `MERCADO_ENVIOS_ACCESS_TOKEN` e `shipment_id` reais.
 - Integrar cotação oficial de frete apenas quando houver credencial/fluxo oficial aplicável para loja própria.
 
-## Atualização mais recente - fase 16 migração visual Shopify
+## Atualização mais recente - fase 16 migração visual tema legado
 
 Concluído nesta atualização:
 
-- Iniciada a migração visual controlada do tema Shopify para o Next.js.
-- Criado `docs/phase-16-shopify-visual-migration.md`.
-- Criada `public/shopify/` com assets reais selecionados do tema exportado.
+- Iniciada a migração visual controlada do tema legado para o Next.js.
+- Criado `docs/phase-16-storefront-visual-migration.md`.
+- Criada `public/brand-assets/` com assets reais selecionados do tema exportado.
 - Atualizados header e home para usar logo e imagem reais, sem importar Liquid.
-- Mantidos os guardrails do blueprint: Shopify como referência visual/comercial e SavePointFinance como referência de robustez técnica.
+- Mantidos os guardrails do blueprint: tema legado como referência visual/comercial e SavePointFinance como referência de robustez técnica.
 
-## Atualização anterior - alinhamento Shopify + SavePointFinance
+## Atualização anterior - alinhamento tema legado + SavePointFinance
 
 Concluído nesta atualização:
 
-- Criado `docs/shopify-savepoint-migration-blueprint.md` como regra de migração entre o tema Shopify exportado, o NerdLingoLab e as práticas do SavePointFinance.
-- Confirmado que o tema Shopify deve ser usado como referência visual, comercial e de conteúdo, não como código Liquid de produção.
+- Criado `docs/storefront-migration-blueprint.md` como regra de migração entre o tema legado exportado, o NerdLingoLab e as práticas do SavePointFinance.
+- Confirmado que o tema legado deve ser usado como referência visual, comercial e de conteúdo, não como código Liquid de produção.
 - Confirmado que o SavePointFinance deve ser usado como referência de engenharia: organização, validações, auditorias, modelagem Prisma, webhooks persistidos, smoke tests e disciplina operacional.
-- Definido que assets do Shopify só devem entrar em `public/` quando forem realmente usados, com nomes normalizados e sem scripts legados desnecessários.
+- Definido que assets do tema legado só devem entrar em `public/` quando forem realmente usados, com nomes normalizados e sem scripts legados desnecessários.
 
 Arquivos de referência obrigatória:
 
-- `docs/shopify-savepoint-migration-blueprint.md`
+- `docs/storefront-migration-blueprint.md`
 - `C:\Users\User\Desktop\theme_export__nerdlingolab-com-nerdlingolav-v11-9-5__24APR2026-1138am.zip`
 - `C:\Users\User\Desktop\SavePointFinance-reference`
 
@@ -380,19 +380,19 @@ Bloqueio externo atual:
 
 ## Pedido original
 
-Construir um e-commerce completo para substituir Shopify, usando Next.js App Router, TypeScript strict, PostgreSQL, Prisma, Auth.js, Tailwind, Shadcn/ui, Zustand, TanStack Query, MinIO, Resend, React Email, Sentry e Mercado Pago.
+Construir um e-commerce completo para substituir tema legado, usando Next.js App Router, TypeScript strict, PostgreSQL, Prisma, Auth.js, Tailwind, Shadcn/ui, Zustand, TanStack Query, MinIO, Resend, React Email, Sentry e Mercado Pago.
 
 O projeto deve ter rigor de sistema financeiro para pagamento, estoque, pedidos, cupons e fidelidade. A interface deve ficar em português do Brasil, com acentuação correta e sem textos técnicos como "backend", "frontend", "desenvolvimento" ou instruções para devs em cards/páginas.
 
-## Diretriz de migração Shopify + SavePointFinance
+## Diretriz de migração tema legado + SavePointFinance
 
-Este projeto substitui o tema Shopify do NerdLingoLab, mas não deve migrar Liquid para produção. O Shopify é a fonte de verdade para identidade visual, estrutura comercial, assets úteis, textos em PT-BR, comunicação de confiança, ofertas, cupons, fidelidade, cashback/nerdcoins, suporte e páginas institucionais.
+Este projeto substitui o tema legado do NerdLingoLab, mas não deve migrar Liquid para produção. O tema legado é a fonte de verdade para identidade visual, estrutura comercial, assets úteis, textos em PT-BR, comunicação de confiança, ofertas, cupons, fidelidade, cashback/nerdcoins, suporte e páginas institucionais.
 
 O SavePointFinance é a referência de robustez, não de domínio. Não copiar regras financeiras pessoais, categorias financeiras, assinaturas ou fluxos que não pertençam ao e-commerce. Reaproveitar o padrão de engenharia: separação de rotas públicas e protegidas, APIs por domínio, Prisma como contrato de dados, webhooks persistidos e idempotentes, auditorias operacionais, smoke tests, validação explícita de ambiente e admin auditável.
 
 Toda fase nova deve responder a três perguntas antes de implementar:
 
-- Qual comportamento do Shopify esta fase preserva ou melhora?
+- Qual comportamento do tema legado esta fase preserva ou melhora?
 - Qual prática de robustez do SavePointFinance esta fase aplica?
 - Qual validação comprova que checkout, pedidos, estoque, cupons, fidelidade ou webhooks não regrediram?
 
@@ -429,13 +429,13 @@ Toda fase nova deve responder a três perguntas antes de implementar:
 
 - `docs/encoding.md`: padrão UTF-8, NFC, sem BOM e sem mojibake.
 - `docs/ui-copy-policy.md`: bloqueia termos técnicos e textos sem acentuação na interface.
-- `docs/shopify-savepoint-migration-blueprint.md`: regras de migração Shopify -> NerdLingoLab usando SavePointFinance como referência de engenharia.
+- `docs/storefront-migration-blueprint.md`: regras de migração tema legado -> NerdLingoLab usando SavePointFinance como referência de engenharia.
 - `scripts/check-encoding.mjs`: valida encoding do projeto.
 - `scripts/check-ui-copy.mjs`: valida textos visíveis em `.tsx`.
 
 ## Inventário base da migração
 
-Tema Shopify exportado:
+Tema tema legado exportado:
 
 - 202 arquivos no ZIP.
 - `assets`: 37 arquivos, incluindo CSS/JS customizados, logos, imagens de produto, badges de app, cashback e integrações.
@@ -702,12 +702,12 @@ Estado do E2E no momento do handoff:
 - Testes de home, páginas públicas leves, proteção admin e health passaram em desktop e mobile.
 - Testes com banco real ainda dependem de Docker/Postgres/MinIO.
 
-## Fase 16 - Migração visual inicial do Shopify
+## Fase 16 - Migração visual inicial do tema legado
 
 Entregue:
 
-- `docs/phase-16-shopify-visual-migration.md`.
-- `public/shopify/` com assets selecionados do tema Shopify exportado.
+- `docs/phase-16-storefront-visual-migration.md`.
+- `public/brand-assets/` com assets selecionados do tema legado exportado.
 - Logos, imagem comercial, ícones de conta/carrinho/suporte/nerdcoins e badges de app extraídos do tema.
 - `src/components/shop/shop-header.tsx` usando o logo real do tema.
 - `src/app/(shop)/page.tsx` com hero visual usando imagem real do tema.
@@ -715,10 +715,10 @@ Entregue:
 
 Guardrails aplicados:
 
-- Shopify usado como referência visual e comercial, não como Liquid de produção.
+- tema legado usado como referência visual e comercial, não como Liquid de produção.
 - SavePointFinance usado apenas como referência de robustez técnica.
 - Nenhuma dependência nova foi adicionada.
-- Nenhum asset foi migrado em massa; apenas arquivos úteis e identificados foram copiados para `public/shopify/`.
+- Nenhum asset foi migrado em massa; apenas arquivos úteis e identificados foram copiados para `public/brand-assets/`.
 
 Pendências da fase:
 
@@ -811,7 +811,7 @@ Concluído nesta atualização:
 - Extraída função `processApprovedMercadoPagoPayment` para testar o processamento aprovado sem depender da API externa.
 - Prisma deixou de logar queries por padrão; logs detalhados agora exigem `DEBUG_PRISMA_QUERIES=true`.
 - Corrigida configuração Sentry: `src/instrumentation.ts` exporta `onRequestError`, e o client foi migrado para `src/instrumentation-client.ts` com `onRouterTransitionStart`.
-- Removidos do estado atual os diretórios brutos do tema Shopify herdados do remoto antigo: `assets/`, `config/`, `layout/`, `locales/`, `sections/`, `snippets/`, `templates/`.
+- Removidos do estado atual os diretórios brutos do tema legado herdados do remoto antigo: `assets/`, `config/`, `layout/`, `locales/`, `sections/`, `snippets/`, `templates/`.
 - Decisão do usuário: substituir completamente o repositório GitHub pelo projeto local atual; o remoto anterior estava desatualizado.
 
 Validações executadas:
@@ -904,8 +904,8 @@ Prioridade média:
 - Busca e filtros do catálogo.
 - Variações de produto mais completas.
 - Otimização de imagens.
-- Normalização final de assets migrados do Shopify.
-- Revisão de textos comerciais herdados do Shopify conforme `docs/ui-copy-policy.md`.
+- Normalização final de assets migrados do tema legado.
+- Revisão de textos comerciais herdados do tema legado conforme `docs/ui-copy-policy.md`.
 
 Migrações planejadas:
 
@@ -917,11 +917,11 @@ Migrações planejadas:
 ## Regras que o próximo chat deve manter
 
 - Atualizar `docs/phases-consolidated-handoff.md` sempre que concluir uma etapa ou descobrir uma pendência relevante.
-- Ler `docs/shopify-savepoint-migration-blueprint.md` antes de migrar visual, conteúdo, assets ou padrões operacionais.
-- Usar o Shopify como referência visual/comercial e o SavePointFinance como referência de robustez técnica.
+- Ler `docs/storefront-migration-blueprint.md` antes de migrar visual, conteúdo, assets ou padrões operacionais.
+- Usar o tema legado como referência visual/comercial e o SavePointFinance como referência de robustez técnica.
 - Não importar Liquid como código de produção.
 - Não copiar regras de negócio financeiras do SavePointFinance.
-- Não migrar todos os assets do Shopify de uma vez; mover somente assets usados para `public/`.
+- Não migrar todos os assets do tema legado de uma vez; mover somente assets usados para `public/`.
 - Não adicionar dependências novas sem necessidade real.
 - Não colocar termos técnicos ou instruções de desenvolvimento na interface.
 - Interface sempre em PT-BR com acentuação correta.
@@ -937,6 +937,6 @@ Migrações planejadas:
 
 ## Prompt recomendado para um chat novo
 
-Continue o projeto em `C:\Users\User\Desktop\NerdLingoLab` lendo primeiro `docs/phases-consolidated-handoff.md` e `docs/shopify-savepoint-migration-blueprint.md`. Não assuma contexto anterior. Siga as regras do projeto: Shopify como referência visual/comercial, SavePointFinance como referência de robustez técnica, interface em PT-BR com acentuação correta, sem termos técnicos visíveis na UI, validação server-side para dinheiro/estoque/fidelidade, e documentação técnica apenas em `docs/`.
+Continue o projeto em `C:\Users\User\Desktop\NerdLingoLab` lendo primeiro `docs/phases-consolidated-handoff.md` e `docs/storefront-migration-blueprint.md`. Não assuma contexto anterior. Siga as regras do projeto: tema legado como referência visual/comercial, SavePointFinance como referência de robustez técnica, interface em PT-BR com acentuação correta, sem termos técnicos visíveis na UI, validação server-side para dinheiro/estoque/fidelidade, e documentação técnica apenas em `docs/`.
 
-Primeira tarefa: avançar o fluxo completo com banco real. Com Docker ativo, rode `npm run validate:project`, `npm run check:operational`, `npm run build` e `npm run test:e2e`; depois implemente ou teste o caminho produto -> carrinho -> checkout -> pedido -> webhook aprovado -> estoque -> pontos -> painel. Em paralelo, inventarie assets Shopify úteis e expanda o mapeamento Liquid -> React para ofertas, coleção, produto, carrinho e fidelidade.
+Primeira tarefa: avançar o fluxo completo com banco real. Com Docker ativo, rode `npm run validate:project`, `npm run check:operational`, `npm run build` e `npm run test:e2e`; depois implemente ou teste o caminho produto -> carrinho -> checkout -> pedido -> webhook aprovado -> estoque -> pontos -> painel. Em paralelo, inventarie assets tema legado úteis e expanda o mapeamento Liquid -> React para ofertas, coleção, produto, carrinho e fidelidade.

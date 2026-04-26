@@ -1,6 +1,6 @@
 "use server";
 
-import { InventoryLedgerType, ProductStatus } from "@prisma/client";
+import { InventoryLedgerType, ProductStatus } from "@/generated/prisma/client";
 import * as Sentry from "@sentry/nextjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -74,14 +74,17 @@ export async function createProduct(formData: FormData): Promise<void> {
           publishedAt: productInput.status === ProductStatus.ACTIVE ? new Date() : null,
           categoryId: productInput.categoryId,
           variants: {
-            create: {
-              title: "Padrao",
-              sku: productInput.sku,
-              priceCents: productInput.priceCents,
-              compareAtPriceCents: productInput.compareAtPriceCents,
-              stockQuantity: productInput.stockQuantity,
-              isActive: true
-            }
+            create: productInput.variantsArray.map((variant) => ({
+              barcode: variant.barcode,
+              compareAtPriceCents: variant.compareAtPriceCents,
+              isActive: variant.isActive,
+              optionValues: variant.optionValues,
+              priceCents: variant.priceCents,
+              sku: variant.sku,
+              stockQuantity: variant.stockQuantity,
+              title: variant.title,
+              weightGrams: variant.weightGrams
+            }))
           }
         },
         include: {
@@ -89,15 +92,19 @@ export async function createProduct(formData: FormData): Promise<void> {
         }
       });
 
-      if (productInput.stockQuantity > 0) {
+      for (const variant of product.variants) {
+        if (variant.stockQuantity <= 0) {
+          continue;
+        }
+
         await tx.inventoryLedger.create({
           data: {
             productId: product.id,
-            variantId: product.variants[0]?.id,
+            variantId: variant.id,
             type: InventoryLedgerType.INITIAL,
-            quantityDelta: productInput.stockQuantity,
-            quantityAfter: productInput.stockQuantity,
-            reason: "Cadastro inicial de estoque"
+            quantityDelta: variant.stockQuantity,
+            quantityAfter: variant.stockQuantity,
+            reason: `Cadastro inicial de estoque (${variant.title})`
           }
         });
       }
@@ -128,10 +135,12 @@ export async function updateProduct(productId: string, formData: FormData): Prom
 
   try {
     await prisma.$transaction(async (tx) => {
-      const currentVariant = await tx.productVariant.findFirst({
+      const currentVariants = await tx.productVariant.findMany({
         where: { productId },
         orderBy: { createdAt: "asc" }
       });
+      const currentVariantBySku = new Map(currentVariants.map((variant) => [variant.sku, variant]));
+      const incomingSkus = new Set(productInput.variantsArray.map((variant) => variant.sku));
 
       await tx.product.update({
         where: { id: productId },
@@ -151,14 +160,53 @@ export async function updateProduct(productId: string, formData: FormData): Prom
         }
       });
 
-      if (currentVariant) {
-        await tx.productVariant.update({
-          where: { id: currentVariant.id },
+      for (const variant of productInput.variantsArray) {
+        const currentVariant = currentVariantBySku.get(variant.sku);
+
+        if (currentVariant) {
+          await tx.productVariant.update({
+            where: { id: currentVariant.id },
+            data: {
+              barcode: variant.barcode ?? null,
+              compareAtPriceCents: variant.compareAtPriceCents ?? null,
+              isActive: variant.isActive,
+              optionValues: variant.optionValues,
+              priceCents: variant.priceCents,
+              stockQuantity: variant.stockQuantity,
+              title: variant.title,
+              weightGrams: variant.weightGrams ?? null
+            }
+          });
+          continue;
+        }
+
+        await tx.productVariant.create({
           data: {
-            sku: productInput.sku,
-            priceCents: productInput.priceCents,
-            compareAtPriceCents: productInput.compareAtPriceCents ?? null,
-            stockQuantity: productInput.stockQuantity
+            barcode: variant.barcode,
+            compareAtPriceCents: variant.compareAtPriceCents,
+            isActive: variant.isActive,
+            optionValues: variant.optionValues,
+            priceCents: variant.priceCents,
+            productId,
+            sku: variant.sku,
+            stockQuantity: variant.stockQuantity,
+            title: variant.title,
+            weightGrams: variant.weightGrams
+          }
+        });
+      }
+
+      const variantsToDisable = currentVariants.filter((variant) => !incomingSkus.has(variant.sku));
+
+      if (variantsToDisable.length > 0) {
+        await tx.productVariant.updateMany({
+          where: {
+            id: {
+              in: variantsToDisable.map((variant) => variant.id)
+            }
+          },
+          data: {
+            isActive: false
           }
         });
       }
@@ -205,6 +253,7 @@ function formValuesToProductInput(formData: FormData): Record<string, FormDataEn
     compareAtPrice: formData.get("compareAtPrice"),
     sku: formData.get("sku"),
     stockQuantity: formData.get("stockQuantity"),
+    variants: formData.get("variants"),
     status: formData.get("status")
   };
 }

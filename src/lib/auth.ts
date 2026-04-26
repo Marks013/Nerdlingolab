@@ -1,5 +1,5 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/generated/prisma/client";
 import bcrypt from "bcryptjs";
 import NextAuth, { type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
@@ -71,7 +71,7 @@ export const authConfig = {
     strategy: "jwt"
   },
   pages: {
-    signIn: "/admin/login"
+    signIn: "/entrar"
   },
   providers,
   callbacks: {

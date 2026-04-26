@@ -1,4 +1,4 @@
-import { InventoryLedgerType } from "@prisma/client";
+import { InventoryLedgerType } from "@/generated/prisma/client";
 
 import type { PaidOrder, TransactionClient } from "@/lib/payments/mercadopago-webhook";
 
@@ -14,11 +14,17 @@ export async function decrementInventoryForOrder(
     const updateResult = await tx.productVariant.updateMany({
       where: {
         id: item.variantId,
+        reservedQuantity: {
+          gte: item.quantity
+        },
         stockQuantity: {
           gte: item.quantity
         }
       },
       data: {
+        reservedQuantity: {
+          decrement: item.quantity
+        },
         stockQuantity: {
           decrement: item.quantity
         }
@@ -26,7 +32,23 @@ export async function decrementInventoryForOrder(
     });
 
     if (updateResult.count !== 1) {
-      throw new Error(`Estoque insuficiente para o item ${item.id}.`);
+      const fallbackUpdateResult = await tx.productVariant.updateMany({
+        where: {
+          id: item.variantId,
+          stockQuantity: {
+            gte: item.quantity
+          }
+        },
+        data: {
+          stockQuantity: {
+            decrement: item.quantity
+          }
+        }
+      });
+
+      if (fallbackUpdateResult.count !== 1) {
+        throw new Error(`Estoque insuficiente para o item ${item.id}.`);
+      }
     }
 
     const updatedVariant = await tx.productVariant.findUniqueOrThrow({

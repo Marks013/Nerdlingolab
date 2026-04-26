@@ -14,7 +14,7 @@
 ## Decisoes
 
 - Cashback inicial: 5% do total pago, em pontos.
-- Tiers seguem o modelo Joy/NerdLingoLab: Genin 0-2, Chunin 3-9, Jonin 10-19, Hokage 20+ pedidos.
+- Tiers seguem o modelo provedor legado de fidelidade/NerdLingoLab: Genin 0-2, Chunin 3-9, Jonin 10-19, Hokage 20+ pedidos.
 - Estoque, cupom e fidelidade so sao efetivados apos pagamento aprovado.
 - Webhooks repetidos nao duplicam ledger, cupom ou estoque porque o pedido aprovado e ignorado nas repeticoes.
 

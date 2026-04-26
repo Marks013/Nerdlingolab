@@ -1,0 +1,202 @@
+import { prisma } from "@/lib/prisma";
+
+export interface StorefrontSlide {
+  alt: string;
+  desktop?: string;
+  href: string;
+  mobile?: string;
+  src?: string;
+}
+
+export interface StorefrontThemeView {
+  announcementText: string;
+  footerNotice: string;
+  heroSlides: StorefrontSlide[];
+  instagramUrl: string;
+  name: string;
+  newsletterDescription: string;
+  newsletterTitle: string;
+  promoSlides: StorefrontSlide[];
+  supportEmail: string;
+  whatsappLabel: string;
+}
+
+export const defaultThemeText = {
+  announcementText: "FRETE GRÁTIS em compras acima de R$99,90",
+  footerNotice: "Oferta exclusiva neste site oficial, sujeita a variação. Evite comprar produtos mais baratos ou de outras lojas, para evitar golpes.",
+  instagramUrl: "https://instagram.com/nerdlingolab",
+  newsletterDescription: "Inscreva-se para receber descontos exclusivos direto no seu e-mail!",
+  newsletterTitle: "Receba nossas promoções",
+  supportEmail: "nerdlingolab@gmail.com",
+  whatsappLabel: "(44) 99136-2488"
+};
+
+export const defaultHeroSlides: StorefrontSlide[] = [
+  {
+    alt: "Banner NerdLingoLab de camisetas e cultura pop",
+    desktop: "/brand-assets/BANNER_01_PC_-_NERDILONGLAB.webp",
+    href: "/produtos",
+    mobile: "/brand-assets/BANNER_01_MOBI_-_NERDILONGLAB.webp"
+  },
+  {
+    alt: "Banner NerdLingoLab com novidades da loja",
+    desktop: "/brand-assets/BANNER_02_PC_-_NERDLONGLAB.webp",
+    href: "/produtos?ordem=recentes",
+    mobile: "/brand-assets/BANNER_02_MOBI_-_NERDLONGOLAB.webp"
+  },
+  {
+    alt: "Banner NerdLingoLab de ofertas especiais",
+    desktop: "/brand-assets/BANNER_03_PC_-_NERDLINGOLAB.webp",
+    href: "/ofertas",
+    mobile: "/brand-assets/BANNER_03_MOBI_-_NERDLINGOLAB.webp"
+  },
+  {
+    alt: "Banner NerdLingoLab de temporada",
+    desktop: "/brand-assets/BANNER_04_PC_-_NERDLINGOLAB.webp",
+    href: "/produtos?categoria=temporada",
+    mobile: "/brand-assets/BANNER_04_MOBI_-_NERDLINGOLAB.webp"
+  },
+  {
+    alt: "Banner NerdLingoLab institucional",
+    desktop: "/brand-assets/BANNER_05_PC_-_NERDLINGOLAB_II_1.webp",
+    href: "/suporte",
+    mobile: "/brand-assets/BANNER_05_MOBI_-_NERDLINGOLAB_II_1.webp"
+  }
+];
+
+export const defaultPromoSlides: StorefrontSlide[] = [
+  {
+    alt: "Estampas mais vendidas da NerdLingoLab",
+    href: "/produtos?ordem=maior-valor",
+    src: "/brand-assets/ESTAMPAS_MAIS_VENDIDAS_-_NERDLINGOLAB.webp"
+  },
+  {
+    alt: "Oferta de frete grátis da NerdLingoLab",
+    href: "/ofertas",
+    src: "/brand-assets/OFERTA_DE_FRETE_GRATIS_-_NERDLINGOLAB.webp"
+  },
+  {
+    alt: "Sobre a loja NerdLingoLab",
+    href: "#sobre",
+    src: "/brand-assets/SOBRE_A_LOJA_-_NERDLINGOLAB.webp"
+  }
+];
+
+export async function getStorefrontTheme(): Promise<StorefrontThemeView> {
+  try {
+    const theme = await prisma.storefrontTheme.findUnique({
+      where: { singletonKey: "default" }
+    });
+
+    return {
+      announcementText: readLimitedText(theme?.announcementText, defaultThemeText.announcementText, 120),
+      footerNotice: readLimitedText(theme?.footerNotice, defaultThemeText.footerNotice, 320),
+      heroSlides: normalizeSlides(theme?.heroSlides, defaultHeroSlides),
+      instagramUrl: readUrl(theme?.instagramUrl, defaultThemeText.instagramUrl),
+      name: theme?.name ?? "Tema principal",
+      newsletterDescription: readLimitedText(
+        theme?.newsletterDescription,
+        defaultThemeText.newsletterDescription,
+        220
+      ),
+      newsletterTitle: readLimitedText(theme?.newsletterTitle, defaultThemeText.newsletterTitle, 80),
+      promoSlides: normalizeSlides(theme?.promoSlides, defaultPromoSlides),
+      supportEmail: readLimitedText(theme?.supportEmail, defaultThemeText.supportEmail, 120),
+      whatsappLabel: readLimitedText(theme?.whatsappLabel, defaultThemeText.whatsappLabel, 80)
+    };
+  } catch {
+    return getDefaultStorefrontTheme();
+  }
+}
+
+export function getDefaultStorefrontTheme(): StorefrontThemeView {
+  return {
+    ...defaultThemeText,
+    heroSlides: defaultHeroSlides,
+    name: "Tema principal",
+    promoSlides: defaultPromoSlides
+  };
+}
+
+export function normalizeSlides(value: unknown, fallback: StorefrontSlide[]): StorefrontSlide[] {
+  if (!Array.isArray(value)) {
+    return fallback;
+  }
+
+  const slides = value
+    .map((item) => normalizeSlide(item))
+    .filter((item): item is StorefrontSlide => Boolean(item));
+
+  return slides.length > 0 ? slides : fallback;
+}
+
+function normalizeSlide(value: unknown): StorefrontSlide | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const slide = value as Record<string, unknown>;
+  const alt = readSlideText(slide.alt);
+  const href = readSlideHref(slide.href);
+  const desktop = readAssetPath(slide.desktop);
+  const mobile = readAssetPath(slide.mobile);
+  const src = readAssetPath(slide.src);
+
+  if (!alt || !href || (!src && !desktop && !mobile)) {
+    return null;
+  }
+
+  return {
+    alt,
+    href,
+    ...(desktop ? { desktop } : {}),
+    ...(mobile ? { mobile } : {}),
+    ...(src ? { src } : {})
+  };
+}
+
+function readSlideText(value: unknown): string | undefined {
+  const text = typeof value === "string" ? value.trim() : "";
+
+  return text.length > 0 && text.length <= 160 ? text : undefined;
+}
+
+function readSlideHref(value: unknown): string {
+  const href = typeof value === "string" ? value.trim() : "";
+
+  if (href.startsWith("/") || href.startsWith("https://") || href.startsWith("http://")) {
+    return href;
+  }
+
+  return "/produtos";
+}
+
+function readAssetPath(value: unknown): string | undefined {
+  const assetPath = typeof value === "string" ? value.trim() : "";
+
+  if (!assetPath) {
+    return undefined;
+  }
+
+  if (assetPath.startsWith("/") || assetPath.startsWith("https://") || assetPath.startsWith("http://")) {
+    return assetPath;
+  }
+
+  return undefined;
+}
+
+function readLimitedText(value: unknown, fallback: string, maxLength: number): string {
+  const text = typeof value === "string" ? value.trim() : "";
+
+  return text.length > 0 && text.length <= maxLength ? text : fallback;
+}
+
+function readUrl(value: unknown, fallback: string): string {
+  const url = typeof value === "string" ? value.trim() : "";
+
+  if (url.startsWith("/") || url.startsWith("https://") || url.startsWith("http://")) {
+    return url;
+  }
+
+  return fallback;
+}

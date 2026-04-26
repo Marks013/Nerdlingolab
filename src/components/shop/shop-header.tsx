@@ -16,11 +16,15 @@ const categoryLinks = [
   { href: "/produtos?categoria=action-figures", label: "Action Figures", icon: ShoppingBag, color: "bg-[#5724b8]" }
 ];
 
-export function ShopHeader(): React.ReactElement {
+export function ShopHeader({
+  announcementText = "FRETE GRÁTIS em compras acima de R$99,90"
+}: {
+  announcementText?: string;
+}): React.ReactElement {
   return (
     <header className="relative z-40 bg-[#ff6902] text-white">
       <div className="flex h-11 items-center justify-center px-4 text-sm font-bold">
-        FRETE GRÁTIS em compras acima de R$99,90
+        {announcementText}
       </div>
 
       <div className="bg-[#f6f7f8] text-[#677279]">

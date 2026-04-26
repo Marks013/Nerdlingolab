@@ -1,9 +1,11 @@
-import { Boxes, CircleDollarSign, Gift, ShoppingCart } from "lucide-react";
+import Link from "next/link";
+import { AlertTriangle, Boxes, CircleDollarSign, Gift, Headphones, MailCheck, ShoppingCart, TicketPercent } from "lucide-react";
 
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { getAdminDashboardMetrics } from "@/lib/dashboard/queries";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +30,7 @@ export default async function AdminDashboardPage(): Promise<React.ReactElement> 
     {
       label: "Produtos ativos",
       value: String(dashboardMetrics.activeProductsCount),
-      detail: "Na vitrine",
+      detail: `${dashboardMetrics.lowStockVariants.length} variantes em atenção`,
       icon: Boxes
     },
     {
@@ -36,6 +38,30 @@ export default async function AdminDashboardPage(): Promise<React.ReactElement> 
       value: String(dashboardMetrics.loyaltyPointsIssued),
       detail: `${dashboardMetrics.loyaltyPointsIssuedYear} em ${dashboardMetrics.currentYear}`,
       icon: Gift
+    },
+    {
+      label: "Suporte aberto",
+      value: String(dashboardMetrics.openSupportTicketsCount),
+      detail: "Tickets abertos ou em andamento",
+      icon: Headphones
+    },
+    {
+      label: "Pedidos pendentes",
+      value: String(dashboardMetrics.pendingOrdersCount),
+      detail: "Aguardando pagamento",
+      icon: AlertTriangle
+    },
+    {
+      label: "Cupons públicos",
+      value: String(dashboardMetrics.publicCouponsCount),
+      detail: "Visíveis na página de cupons",
+      icon: TicketPercent
+    },
+    {
+      label: "Newsletter",
+      value: String(dashboardMetrics.newsletterActiveCount),
+      detail: "Inscritos ativos",
+      icon: MailCheck
     }
   ];
 
@@ -56,7 +82,7 @@ export default async function AdminDashboardPage(): Promise<React.ReactElement> 
           </CardHeader>
         </Card>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {metrics.map((metric) => (
             <Card key={metric.label}>
               <CardHeader>
@@ -67,6 +93,67 @@ export default async function AdminDashboardPage(): Promise<React.ReactElement> 
               </CardHeader>
             </Card>
           ))}
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+          <Card>
+            <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+              <div>
+                <CardTitle>Pedidos recentes</CardTitle>
+                <CardDescription>Status financeiro e total dos últimos pedidos.</CardDescription>
+              </div>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/admin/pedidos">Ver pedidos</Link>
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="divide-y rounded-lg border">
+                {dashboardMetrics.recentOrders.map((order) => (
+                  <div className="grid gap-2 p-3 text-sm md:grid-cols-[120px_minmax(0,1fr)_130px_150px]" key={order.id}>
+                    <Link className="font-mono font-semibold text-primary" href={`/admin/pedidos/${order.id}`}>
+                      {order.orderNumber}
+                    </Link>
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{order.email}</p>
+                      <p className="text-muted-foreground">{formatDateTime(order.createdAt)}</p>
+                    </div>
+                    <p>{order.paymentStatus}</p>
+                    <p className="font-semibold">{formatCurrency(order.totalCents)}</p>
+                  </div>
+                ))}
+                {dashboardMetrics.recentOrders.length === 0 ? (
+                  <p className="p-3 text-sm text-muted-foreground">Nenhum pedido criado ainda.</p>
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Estoque em atenção</CardTitle>
+              <CardDescription>Variantes ativas com 5 unidades ou menos.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="divide-y rounded-lg border">
+                {dashboardMetrics.lowStockVariants.map((variant) => (
+                  <div className="grid gap-1 p-3 text-sm" key={variant.sku}>
+                    <Link className="font-semibold text-primary" href={`/produtos/${variant.product.slug}`}>
+                      {variant.product.title}
+                    </Link>
+                    <p className="text-muted-foreground">
+                      {variant.title} · SKU {variant.sku}
+                    </p>
+                    <p className={variant.stockQuantity === 0 ? "font-semibold text-destructive" : "font-semibold"}>
+                      {variant.stockQuantity} unidades
+                    </p>
+                  </div>
+                ))}
+                {dashboardMetrics.lowStockVariants.length === 0 ? (
+                  <p className="p-3 text-sm text-muted-foreground">Nenhuma variante crítica no momento.</p>
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </main>

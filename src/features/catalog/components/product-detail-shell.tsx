@@ -1,9 +1,9 @@
 "use client";
 
-import { Star } from "lucide-react";
 import Image from "next/image";
 import { useMemo, useState } from "react";
 
+import { FavoriteButton } from "@/features/catalog/components/favorite-button";
 import {
   ProductPurchasePanel,
   type ProductVariantOption
@@ -28,8 +28,11 @@ export function ProductDetailShell({
   productTitle,
   variants
 }: ProductDetailShellProps): React.ReactElement {
-  const [selectedVariantId, setSelectedVariantId] = useState(variants[0]?.id ?? "");
-  const [selectedImageUrl, setSelectedImageUrl] = useState(primaryImage ?? images[0] ?? null);
+  const initialVariant = getInitialVariant(variants);
+  const [selectedVariantId, setSelectedVariantId] = useState(initialVariant?.id ?? "");
+  const [selectedImageUrl, setSelectedImageUrl] = useState(
+    getVariantDisplayImage(initialVariant, variants) ?? primaryImage ?? images[0] ?? null
+  );
   const selectedVariant = variants.find((variant) => variant.id === selectedVariantId) ?? variants[0];
   const activeImageUrl = selectedImageUrl ?? selectedVariant?.imageUrl ?? primaryImage;
   const galleryImages = useMemo(
@@ -42,9 +45,7 @@ export function ProductDetailShell({
 
     setSelectedVariantId(variantId);
 
-    if (nextVariant?.imageUrl) {
-      setSelectedImageUrl(nextVariant.imageUrl);
-    }
+    setSelectedImageUrl(getVariantDisplayImage(nextVariant, variants) ?? primaryImage ?? images[0] ?? null);
   }
 
   return (
@@ -88,8 +89,16 @@ export function ProductDetailShell({
                   src={activeImageUrl}
                 />
               ) : null}
-              <span className="absolute right-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-[#1c1c1c] shadow-sm">
-                <Star className="h-5 w-5" />
+              <span className="absolute right-4 top-4">
+                <FavoriteButton
+                  product={{
+                    id: productId,
+                    imageUrl: activeImageUrl,
+                    priceCents: selectedVariant?.priceCents ?? 0,
+                    slug: productSlug,
+                    title: productTitle
+                  }}
+                />
               </span>
             </div>
           </div>
@@ -123,4 +132,59 @@ export function ProductDetailShell({
 
 function unique(values: Array<string | null | undefined>): string[] {
   return [...new Set(values.filter((value): value is string => Boolean(value)))];
+}
+
+function getInitialVariant(variants: ProductVariantOption[]): ProductVariantOption | undefined {
+  return (
+    variants.find((variant) => variant.availableStock > 0 && Boolean(getVariantDisplayImage(variant, variants))) ??
+    variants.find((variant) => variant.availableStock > 0) ??
+    variants[0]
+  );
+}
+
+function getVariantDisplayImage(
+  variant: ProductVariantOption | undefined,
+  variants: ProductVariantOption[]
+): string | null {
+  if (!variant) {
+    return null;
+  }
+
+  if (variant.imageUrl) {
+    return variant.imageUrl;
+  }
+
+  const color = getVariantColor(variant);
+
+  if (!color) {
+    return null;
+  }
+
+  return variants.find((candidate) => candidate.imageUrl && getVariantColor(candidate) === color)?.imageUrl ?? null;
+}
+
+function getVariantColor(variant: ProductVariantOption): string | null {
+  return getOptionValue(variant, "Cor") ?? getOptionValue(variant, "Color");
+}
+
+function getOptionValue(variant: ProductVariantOption, key: string): string | null {
+  if (!variant.optionValues || typeof variant.optionValues !== "object" || Array.isArray(variant.optionValues)) {
+    return null;
+  }
+
+  const targetKey = normalizeOptionKey(key);
+  const entry = Object.entries(variant.optionValues as Record<string, unknown>).find(
+    ([optionKey]) => normalizeOptionKey(optionKey) === targetKey
+  );
+  const value = entry?.[1];
+
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function normalizeOptionKey(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
 }

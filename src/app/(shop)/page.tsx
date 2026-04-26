@@ -7,6 +7,7 @@ import { ProductCard } from "@/features/catalog/components/product-card";
 import { PublicOffersSection } from "@/features/offers/components/public-offers-section";
 import { getPublicProducts } from "@/lib/catalog/queries";
 import { getPublicOffers } from "@/lib/offers/queries";
+import { getStorefrontTheme } from "@/lib/theme/storefront";
 
 export const dynamic = "force-dynamic";
 
@@ -16,56 +17,11 @@ const storefrontSections = [
   { title: "Mais Vendidos", href: "/produtos?ordem=maior-valor" }
 ];
 
-const heroBanners = [
-  {
-    alt: "Banner NerdLingoLab de camisetas e cultura pop",
-    desktop: "/brand-assets/BANNER_01_PC_-_NERDILONGLAB.webp",
-    mobile: "/brand-assets/BANNER_01_MOBI_-_NERDILONGLAB.webp"
-  },
-  {
-    alt: "Banner NerdLingoLab com novidades da loja",
-    desktop: "/brand-assets/BANNER_02_PC_-_NERDLONGLAB.webp",
-    mobile: "/brand-assets/BANNER_02_MOBI_-_NERDLONGOLAB.webp"
-  },
-  {
-    alt: "Banner NerdLingoLab de ofertas especiais",
-    desktop: "/brand-assets/BANNER_03_PC_-_NERDLINGOLAB.webp",
-    mobile: "/brand-assets/BANNER_03_MOBI_-_NERDLINGOLAB.webp"
-  },
-  {
-    alt: "Banner NerdLingoLab de temporada",
-    desktop: "/brand-assets/BANNER_04_PC_-_NERDLINGOLAB.webp",
-    mobile: "/brand-assets/BANNER_04_MOBI_-_NERDLINGOLAB.webp"
-  },
-  {
-    alt: "Banner NerdLingoLab institucional",
-    desktop: "/brand-assets/BANNER_05_PC_-_NERDLINGOLAB_II_1.webp",
-    mobile: "/brand-assets/BANNER_05_MOBI_-_NERDLINGOLAB_II_1.webp"
-  }
-];
-
-const brandPanels = [
-  {
-    alt: "Estampas mais vendidas da NerdLingoLab",
-    href: "/produtos?ordem=maior-valor",
-    src: "/brand-assets/ESTAMPAS_MAIS_VENDIDAS_-_NERDLINGOLAB.webp"
-  },
-  {
-    alt: "Oferta de frete grátis da NerdLingoLab",
-    href: "/ofertas",
-    src: "/brand-assets/OFERTA_DE_FRETE_GRATIS_-_NERDLINGOLAB.webp"
-  },
-  {
-    alt: "Sobre a loja NerdLingoLab",
-    href: "#sobre",
-    src: "/brand-assets/SOBRE_A_LOJA_-_NERDLINGOLAB.webp"
-  }
-];
-
 export default async function ShopHomePage(): Promise<React.ReactElement> {
-  const [offers, products] = await Promise.all([
+  const [offers, products, theme] = await Promise.all([
     getPublicOffers(),
-    getPublicProducts({ sort: "recentes" })
+    getPublicProducts({ sort: "recentes" }),
+    getStorefrontTheme()
   ]);
   const featuredProducts = products.filter((product) => !product.compareAtPriceCents).slice(0, 10);
 
@@ -75,7 +31,7 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
       <section className="overflow-hidden bg-primary">
         <AutoCarousel
           className="bg-primary"
-          items={heroBanners.map((banner) => ({ ...banner, href: "/produtos" }))}
+          items={theme.heroSlides}
           sizes="100vw"
           slideClassName="relative aspect-[2048/628] w-full"
         />
@@ -106,7 +62,7 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
         <section className="mb-14">
           <AutoCarousel
             className="rounded-lg bg-white shadow-sm"
-            items={brandPanels}
+            items={theme.promoSlides}
             sizes="(min-width: 1024px) 560px, 100vw"
             slideClassName="relative aspect-square w-full md:aspect-[16/7]"
           />

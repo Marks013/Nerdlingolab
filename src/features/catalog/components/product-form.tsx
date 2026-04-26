@@ -91,9 +91,12 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
             <Textarea
               defaultValue={variantRows}
               name="variants"
-              placeholder="Título | SKU | preço | estoque | preço comparativo | código de barras | peso em g | ativo | Cor=Azul;Tamanho=M"
+              placeholder="Título | SKU | preço | estoque | preço comparativo | código de barras | peso em g | ativo | Cor=Azul;Tamanho=M;_imageUrl=/uploads/azul.webp"
               rows={5}
             />
+            <span className="text-xs text-muted-foreground">
+              Use _imageUrl em cada cor para trocar a foto automaticamente quando o cliente selecionar a variação.
+            </span>
           </label>
           <label className="grid gap-2 text-sm font-medium lg:col-span-2">
             Descrição curta

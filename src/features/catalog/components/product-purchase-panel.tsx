@@ -160,6 +160,7 @@ function VariantSelector({
 
   if (hasStructuredOptions && selectedVariant) {
     const selectedColor = getVariantColor(selectedVariant);
+    const selectedSize = getVariantSize(selectedVariant);
     const colors = unique(variants.map(getVariantColor).filter((color): color is string => Boolean(color)));
     const visibleSizes = selectedColor
       ? variants.filter((variant) => getVariantColor(variant) === selectedColor)
@@ -169,13 +170,14 @@ function VariantSelector({
       <fieldset>
         {colors.length > 0 ? (
           <div>
-            <legend className="text-base font-semibold text-black">Cor: {selectedColor}</legend>
+            <legend className="text-base font-semibold text-black">Cor: {selectedColor ?? "Selecione"}</legend>
             <div className="mt-3 flex flex-wrap gap-2">
               {colors.map((color) => {
-                const colorVariant = variants.find((variant) => getVariantColor(variant) === color && variant.availableStock > 0)
-                  ?? variants.find((variant) => getVariantColor(variant) === color);
+                const colorVariant = getBestVariantForColor(variants, color, selectedSize);
                 const isSelected = color === selectedColor;
-                const isUnavailable = !colorVariant || colorVariant.availableStock <= 0;
+                const isUnavailable = !variants.some(
+                  (variant) => getVariantColor(variant) === color && variant.availableStock > 0
+                );
 
                 return (
                   <button
@@ -298,13 +300,42 @@ function getOptionValue(variant: ProductVariantOption, key: string): string | nu
     return null;
   }
 
-  const value = (variant.optionValues as Record<string, unknown>)[key];
+  const targetKey = normalizeOptionKey(key);
+  const entry = Object.entries(variant.optionValues as Record<string, unknown>).find(
+    ([optionKey]) => normalizeOptionKey(optionKey) === targetKey
+  );
+  const value = entry?.[1];
 
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
+function getBestVariantForColor(
+  variants: ProductVariantOption[],
+  color: string,
+  preferredSize: string | null
+): ProductVariantOption | undefined {
+  const colorVariants = variants.filter((variant) => getVariantColor(variant) === color);
+
+  return (
+    colorVariants.find(
+      (variant) => preferredSize && getVariantSize(variant) === preferredSize && variant.availableStock > 0
+    ) ??
+    colorVariants.find((variant) => variant.availableStock > 0) ??
+    colorVariants.find((variant) => preferredSize && getVariantSize(variant) === preferredSize) ??
+    colorVariants[0]
+  );
+}
+
 function unique(values: string[]): string[] {
   return [...new Set(values)];
+}
+
+function normalizeOptionKey(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
 }
 
 function formatOptionName(value: string): string {

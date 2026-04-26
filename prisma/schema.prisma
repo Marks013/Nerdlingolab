@@ -297,6 +297,34 @@ model ProductVariant {
   @@index([productId, isActive])
 }
 
+model StorefrontTheme {
+  id                    String   @id @default(cuid())
+  singletonKey          String   @unique @default("default")
+  name                  String   @default("Tema principal")
+  announcementText      String   @default("FRETE GRÁTIS em compras acima de R$99,90")
+  supportEmail          String   @default("nerdlingolab@gmail.com")
+  whatsappLabel         String   @default("(44) 99136-2488")
+  instagramUrl          String   @default("https://instagram.com/nerdlingolab")
+  footerNotice          String   @default("Oferta exclusiva neste site oficial, sujeita a variação. Evite comprar produtos mais baratos ou de outras lojas, para evitar golpes.")
+  newsletterTitle       String   @default("Receba nossas promoções")
+  newsletterDescription String   @default("Inscreva-se para receber descontos exclusivos direto no seu e-mail!")
+  heroSlides            Json     @default("[]")
+  promoSlides           Json     @default("[]")
+  updatedAt             DateTime @updatedAt
+  createdAt             DateTime @default(now())
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  source    String   @default("footer")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, createdAt])
+}
+
 model InventoryLedger {
   id               String              @id @default(cuid())
   productId        String

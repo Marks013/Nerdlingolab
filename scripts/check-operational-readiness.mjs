@@ -20,7 +20,10 @@ const requiredFiles = [
   "src/app/api/cart/validate/route.ts",
   "src/app/api/checkout/route.ts",
   "src/app/(admin)/admin/(panel)/fidelidade/page.tsx",
+  "src/app/(admin)/admin/(panel)/tema/page.tsx",
   "src/app/(shop)/conta/nerdcoins/page.tsx",
+  "src/actions/newsletter.ts",
+  "src/app/(admin)/admin/(panel)/newsletter/page.tsx",
   "src/app/api/admin/reports/annual.csv/route.ts",
   "src/app/api/shipping/quote/route.ts",
   "src/app/api/webhooks/mercadopago/route.ts",
@@ -32,6 +35,9 @@ const requiredFiles = [
   "src/lib/cart/validation.ts",
   "src/lib/checkout/create-checkout.ts",
   "src/lib/loyalty/settings.ts",
+  "src/lib/theme/storefront.ts",
+  "src/features/newsletter/components/newsletter-form.tsx",
+  "src/lib/admin/newsletter.ts",
   "src/lib/inventory/reservations.ts",
   "src/lib/payments/mercadopago-webhook.ts",
   "src/lib/payments/order-coupon.ts",
@@ -85,6 +91,8 @@ const prismaContractSnippets = [
   ["configuração de bônus de aniversário", "birthdayBonusPoints"],
   ["modelo de indicação", "model Referral"],
   ["código de indicação", "model ReferralCode"],
+  ["tema editável da vitrine", "model StorefrontTheme"],
+  ["newsletter persistida", "model NewsletterSubscriber"],
   ["rastreamento de lote expirado", "sourceLedgerId"],
   ["endereços salvos", "model CustomerAddress"],
   ["inventário", "model InventoryLedger"],
@@ -239,11 +247,193 @@ const criticalSourceContracts = [
     ]
   },
   {
+    filePath: "src/lib/catalog/queries.ts",
+    snippets: [
+      ["filtros admin de produtos", "AdminProductFilters"],
+      ["busca por SKU no admin", "sku: { contains: query"],
+      ["filtro de status no admin", "status: filters.status"]
+    ]
+  },
+  {
+    filePath: "src/actions/catalog.ts",
+    snippets: [
+      ["sincroniza Shopify pelo script oficial", "\"import:shopify\""],
+      ["sincroniza Shopify no Windows", "\"npm.cmd\""]
+    ]
+  },
+  {
+    filePath: "src/app/(admin)/admin/(panel)/produtos/page.tsx",
+    snippets: [
+      ["admin produtos recebe filtros", "resolveAdminProductFilters"],
+      ["admin produtos carrega categorias", "getAdminCategories()"],
+      ["admin produtos aplica filtros", "getAdminProducts(filters)"]
+    ]
+  },
+  {
+    filePath: "src/features/catalog/components/product-form.tsx",
+    snippets: [
+      ["orienta imagem por variante", "_imageUrl=/uploads/azul.webp"]
+    ]
+  },
+  {
+    filePath: "src/app/(admin)/admin/(panel)/dashboard/page.tsx",
+    snippets: [
+      ["pedidos recentes no dashboard", "Pedidos recentes"],
+      ["estoque crítico no dashboard", "Estoque em atenção"],
+      ["suporte aberto no dashboard", "Suporte aberto"],
+      ["cupons públicos no dashboard", "Cupons públicos"]
+    ]
+  },
+  {
+    filePath: "src/lib/theme/storefront.ts",
+    snippets: [
+      ["fallback de slideshow principal", "defaultHeroSlides"],
+      ["fallback de slideshow secundário", "defaultPromoSlides"],
+      ["fallback de textos do tema", "defaultThemeText"],
+      ["tema no banco", "prisma.storefrontTheme.findUnique"],
+      ["fallback se migration ainda não rodou", "getDefaultStorefrontTheme"],
+      ["normalização de slides", "normalizeSlides"]
+    ]
+  },
+  {
+    filePath: "src/actions/storefront-theme.ts",
+    snippets: [
+      ["salva editor de tema", "updateStorefrontTheme"],
+      ["restaura padrão", "resetStorefrontTheme"],
+      ["tema singleton", "singletonKey: \"default\""],
+      ["salva textos do tema", "readThemeTextSettings"],
+      ["revalida home", "revalidatePath(\"/\")"]
+    ]
+  },
+  {
+    filePath: "src/actions/newsletter.ts",
+    snippets: [
+      ["validação de email newsletter", "newsletterSchema.safeParse"],
+      ["newsletter persistida", "newsletterSubscriber.upsert"],
+      ["admin muda status da newsletter", "setNewsletterSubscriberStatus"],
+      ["falha visível ao cliente", "Não foi possível confirmar sua inscrição agora."]
+    ]
+  },
+  {
+    filePath: "src/lib/admin/newsletter.ts",
+    snippets: [
+      ["dashboard de newsletter", "getAdminNewsletterDashboard"],
+      ["filtro por status", "filters.status === \"ativos\""],
+      ["filtro por email", "contains: filters.query"]
+    ]
+  },
+  {
+    filePath: "src/app/(admin)/admin/(panel)/newsletter/page.tsx",
+    snippets: [
+      ["painel de newsletter", "Newsletter"],
+      ["lista inscritos", "dashboard.subscribers.map"],
+      ["ativa e desativa inscritos", "setNewsletterSubscriberStatus"],
+      ["atalho para tema", "/admin/tema"]
+    ]
+  },
+  {
+    filePath: "src/components/admin/admin-shell.tsx",
+    snippets: [
+      ["menu newsletter", "/admin/newsletter"],
+      ["menu tema", "/admin/tema"]
+    ]
+  },
+  {
+    filePath: "src/lib/dashboard/queries.ts",
+    snippets: [
+      ["contagem newsletter", "newsletterSubscriber.count"],
+      ["métrica newsletter", "newsletterActiveCount"]
+    ]
+  },
+  {
+    filePath: "src/features/newsletter/components/newsletter-form.tsx",
+    snippets: [
+      ["server action no formulário", "subscribeNewsletter"],
+      ["feedback de newsletter", "state.message"],
+      ["botão bloqueia enviando", "status.pending"]
+    ]
+  },
+  {
+    filePath: "src/app/(shop)/layout.tsx",
+    snippets: [
+      ["layout dinâmico para tema no banco", "export const dynamic = \"force-dynamic\""],
+      ["layout carrega tema", "getStorefrontTheme"],
+      ["header configurável", "announcementText={theme.announcementText}"],
+      ["footer configurável", "theme={theme}"]
+    ]
+  },
+  {
+    filePath: "src/components/shop/shop-footer.tsx",
+    snippets: [
+      ["newsletter funcional", "NewsletterForm"],
+      ["email do tema", "theme.supportEmail"],
+      ["instagram do tema", "theme.instagramUrl"],
+      ["Norton visual", "NortonLogo"],
+      ["Reclame Aqui visual", "ReclameAquiLogo"],
+      ["Google seguro visual", "GoogleSafeLogo"],
+      ["Mastercard visual", "MastercardLogo"],
+      ["Visa visual", "VisaLogo"],
+      ["Pix visual", "PixLogo"]
+    ]
+  },
+  {
+    filePath: "src/app/(admin)/admin/(panel)/tema/page.tsx",
+    snippets: [
+      ["painel de tema", "Tema da vitrine"],
+      ["aviso do topo editável", "announcementText"],
+      ["rodapé editável", "footerNotice"],
+      ["slideshow principal editável", "group=\"hero\""],
+      ["slideshow secundário editável", "group=\"promo\""],
+      ["upload no editor de tema", "ThemeImageField"],
+      ["salva tema sem código", "updateStorefrontTheme"]
+    ]
+  },
+  {
+    filePath: "src/features/theme/components/theme-image-field.tsx",
+    snippets: [
+      ["usa upload admin existente", "/api/admin/uploads/product-image"],
+      ["falha de upload visível", "Não foi possível enviar a imagem do tema."],
+      ["controle acessível", "aria-label={`Enviar ${label}`"]
+    ]
+  },
+  {
+    filePath: "scripts/audit-runtime-ui.mjs",
+    snippets: [
+      ["audita admin newsletter", "\"/admin/newsletter\""],
+      ["audita admin tema", "\"/admin/tema\""],
+      ["audita admin suporte", "\"/admin/suporte\""]
+    ]
+  },
+  {
     filePath: "src/lib/loyalty/settings.ts",
     snippets: [
       ["progresso VIP", "getVipProgress"],
       ["validade dos pontos", "getPointsExpirationDate"],
       ["limiar VIP por gasto", "getTierSpendThreshold"]
+    ]
+  },
+  {
+    filePath: "src/features/catalog/components/product-detail-shell.tsx",
+    snippets: [
+      ["imagem inicial da variante", "getVariantDisplayImage(initialVariant"],
+      ["troca de variante atualiza foto", "setSelectedImageUrl(getVariantDisplayImage"],
+      ["imagem herdada por cor", "getVariantColor(candidate) === color"],
+      ["favorito funcional no detalhe", "FavoriteButton"]
+    ]
+  },
+  {
+    filePath: "src/features/catalog/components/product-purchase-panel.tsx",
+    snippets: [
+      ["cor preserva tamanho", "getBestVariantForColor"],
+      ["chaves de opção normalizadas", "normalizeOptionKey"]
+    ]
+  },
+  {
+    filePath: "src/features/catalog/components/product-table.tsx",
+    snippets: [
+      ["produtos importados visíveis no admin", "getPrimaryProductImage"],
+      ["sincroniza CSV Shopify", "syncShopifyProductsFromCsv"],
+      ["resumo de variantes", "totalVariants"]
     ]
   },
   {

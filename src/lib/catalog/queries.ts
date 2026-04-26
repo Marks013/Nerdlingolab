@@ -25,6 +25,12 @@ export interface PublicProductFilters {
   tags?: string[];
 }
 
+export interface AdminProductFilters {
+  categoryId?: string;
+  query?: string;
+  status?: ProductStatus;
+}
+
 export type ProductListItem = Product & {
   category: Category | null;
   variants: ProductVariant[];
@@ -36,12 +42,13 @@ export async function getAdminCategories(): Promise<Category[]> {
   });
 }
 
-export async function getAdminProducts(): Promise<ProductListItem[]> {
+export async function getAdminProducts(filters: AdminProductFilters = {}): Promise<ProductListItem[]> {
   return prisma.product.findMany({
     include: {
       category: true,
       variants: true
     },
+    where: getAdminProductWhere(filters),
     orderBy: { createdAt: "desc" }
   });
 }
@@ -260,6 +267,41 @@ function getPublicProductWhere(filters: PublicProductFilters = {}): ProductWhere
   }
 
   return { AND: conditions };
+}
+
+function getAdminProductWhere(filters: AdminProductFilters): ProductWhereInput {
+  const conditions: ProductWhereInput[] = [];
+  const query = filters.query?.trim();
+
+  if (filters.status) {
+    conditions.push({ status: filters.status });
+  }
+
+  if (filters.categoryId) {
+    conditions.push({ categoryId: filters.categoryId });
+  }
+
+  if (query) {
+    conditions.push({
+      OR: [
+        { title: { contains: query, mode: "insensitive" } },
+        { slug: { contains: query, mode: "insensitive" } },
+        { brand: { contains: query, mode: "insensitive" } },
+        {
+          variants: {
+            some: {
+              OR: [
+                { sku: { contains: query, mode: "insensitive" } },
+                { title: { contains: query, mode: "insensitive" } }
+              ]
+            }
+          }
+        }
+      ]
+    });
+  }
+
+  return conditions.length > 0 ? { AND: conditions } : {};
 }
 
 function getPublicProductOrderBy(sort: PublicProductSort = "recentes"): ProductOrderByWithRelationInput[] {

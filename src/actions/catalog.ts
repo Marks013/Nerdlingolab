@@ -2,8 +2,10 @@
 
 import { InventoryLedgerType, ProductStatus } from "@/generated/prisma/client";
 import * as Sentry from "@sentry/nextjs";
+import { execFile } from "node:child_process";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { promisify } from "node:util";
 
 import {
   categoryFormSchema,
@@ -13,6 +15,8 @@ import {
 } from "@/features/catalog/schemas";
 import { requireAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
+
+const execFileAsync = promisify(execFile);
 
 export async function createCategory(formData: FormData): Promise<void> {
   await requireAdmin();
@@ -237,6 +241,25 @@ export async function archiveProduct(productId: string): Promise<void> {
   }
 
   revalidateCatalogPaths();
+}
+
+export async function syncShopifyProductsFromCsv(): Promise<void> {
+  await requireAdmin();
+
+  try {
+    await execFileAsync(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "import:shopify"], {
+      cwd: process.cwd(),
+      env: process.env,
+      maxBuffer: 1024 * 1024 * 8,
+      timeout: 120_000
+    });
+  } catch (error) {
+    Sentry.captureException(error);
+    throw new Error("Não foi possível sincronizar o CSV da Shopify. Verifique DATABASE_URL e SHOPIFY_PRODUCTS_CSV.");
+  }
+
+  revalidateCatalogPaths();
+  revalidatePath("/admin/produtos");
 }
 
 function formValuesToProductInput(formData: FormData): Record<string, FormDataEntryValue | null> {

@@ -1,11 +1,16 @@
 import { ShopHeader } from "@/components/shop/shop-header";
 import { ShopFooter } from "@/components/shop/shop-footer";
+import { getStorefrontTheme } from "@/lib/theme/storefront";
 
-export default function ShopLayout({
+export const dynamic = "force-dynamic";
+
+export default async function ShopLayout({
   children
 }: Readonly<{
   children: React.ReactNode;
-}>): React.ReactElement {
+}>): Promise<React.ReactElement> {
+  const theme = await getStorefrontTheme();
+
   return (
     <>
       <a
@@ -14,9 +19,9 @@ export default function ShopLayout({
       >
         Pular
       </a>
-      <ShopHeader />
+      <ShopHeader announcementText={theme.announcementText} />
       <div id="conteudo-principal">{children}</div>
-      <ShopFooter />
+      <ShopFooter theme={theme} />
     </>
   );
 }

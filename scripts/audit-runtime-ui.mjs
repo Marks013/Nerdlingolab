@@ -19,7 +19,10 @@ const adminPaths = [
   "/admin/cupons",
   "/admin/fidelidade",
   "/admin/pedidos",
-  "/admin/relatorios"
+  "/admin/relatorios",
+  "/admin/newsletter",
+  "/admin/suporte",
+  "/admin/tema"
 ];
 
 const projects = [

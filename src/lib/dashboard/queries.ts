@@ -1,4 +1,4 @@
-import { LoyaltyLedgerType, PaymentStatus, ProductStatus } from "@/generated/prisma/client";
+import { LoyaltyLedgerType, PaymentStatus, ProductStatus, SupportTicketStatus } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/prisma";
 
@@ -12,6 +12,25 @@ export interface AdminDashboardMetrics {
   activeProductsCount: number;
   loyaltyPointsIssued: number;
   loyaltyPointsIssuedYear: number;
+  lowStockVariants: Array<{
+    product: { slug: string; title: string };
+    sku: string;
+    stockQuantity: number;
+    title: string;
+  }>;
+  pendingOrdersCount: number;
+  publicCouponsCount: number;
+  newsletterActiveCount: number;
+  recentOrders: Array<{
+    createdAt: Date;
+    email: string;
+    id: string;
+    orderNumber: string;
+    paymentStatus: PaymentStatus;
+    status: string;
+    totalCents: number;
+  }>;
+  openSupportTicketsCount: number;
   currentYear: number;
 }
 
@@ -30,7 +49,13 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
     revenueYear,
     activeProductsCount,
     loyaltyEarned,
-    loyaltyEarnedYear
+    loyaltyEarnedYear,
+    pendingOrdersCount,
+    openSupportTicketsCount,
+    publicCouponsCount,
+    newsletterActiveCount,
+    lowStockVariants,
+    recentOrders
   ] = await Promise.all([
     prisma.order.count({
       where: { paymentStatus: PaymentStatus.APPROVED }
@@ -78,6 +103,58 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
         createdAt: { gte: yearStart }
       },
       _sum: { pointsDelta: true }
+    }),
+    prisma.order.count({
+      where: { paymentStatus: PaymentStatus.PENDING }
+    }),
+    prisma.supportTicket.count({
+      where: {
+        status: {
+          in: [SupportTicketStatus.OPEN, SupportTicketStatus.IN_PROGRESS]
+        }
+      }
+    }),
+    prisma.coupon.count({
+      where: {
+        isActive: true,
+        isPublic: true
+      }
+    }),
+    prisma.newsletterSubscriber.count({
+      where: { isActive: true }
+    }),
+    prisma.productVariant.findMany({
+      orderBy: { stockQuantity: "asc" },
+      select: {
+        product: {
+          select: {
+            slug: true,
+            title: true
+          }
+        },
+        sku: true,
+        stockQuantity: true,
+        title: true
+      },
+      take: 8,
+      where: {
+        isActive: true,
+        product: { status: ProductStatus.ACTIVE },
+        stockQuantity: { lte: 5 }
+      }
+    }),
+    prisma.order.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        createdAt: true,
+        email: true,
+        id: true,
+        orderNumber: true,
+        paymentStatus: true,
+        status: true,
+        totalCents: true
+      },
+      take: 8
     })
   ]);
 
@@ -91,6 +168,12 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
     activeProductsCount,
     loyaltyPointsIssued: loyaltyEarned._sum.pointsDelta ?? 0,
     loyaltyPointsIssuedYear: loyaltyEarnedYear._sum.pointsDelta ?? 0,
+    lowStockVariants,
+    newsletterActiveCount,
+    openSupportTicketsCount,
+    pendingOrdersCount,
+    publicCouponsCount,
+    recentOrders,
     currentYear
   };
 }

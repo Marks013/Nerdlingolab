@@ -57,8 +57,9 @@ export default async function LoyaltyPage(): Promise<React.ReactElement> {
     : null;
 
   return (
-    <main className="mx-auto min-h-screen max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
-      <h1 className="text-3xl font-bold tracking-normal">Programa de Fidelidade</h1>
+    <main className="geek-page min-h-screen px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-5xl">
+      <h1 className="geek-title text-3xl font-bold tracking-normal">Programa de Fidelidade</h1>
       <p className="mt-4 max-w-2xl text-muted-foreground">
         Acumule {settings.programName} em compras elegíveis, acompanhe seus benefícios e use
         recompensas em novos pedidos.
@@ -139,6 +140,7 @@ export default async function LoyaltyPage(): Promise<React.ReactElement> {
           </CardHeader>
         </Card>
       ) : null}
+      </div>
     </main>
   );
 }

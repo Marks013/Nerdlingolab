@@ -15,10 +15,10 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps):
   );
 
   return (
-    <main className="min-h-screen bg-[#f6f7f8] px-5 py-10">
+    <main className="geek-page min-h-screen px-5 py-10">
       <section className="flex min-h-[760px] items-center justify-center">
-        <div className="w-full max-w-[540px] rounded-lg bg-white p-8 shadow-sm sm:p-10">
-          <h1 className="text-center text-3xl font-black text-black">Criar conta</h1>
+        <div className="manga-panel w-full max-w-[540px] rounded-lg bg-white p-8 shadow-sm sm:p-10">
+          <h1 className="geek-title justify-center text-center text-3xl font-black text-black">Criar conta</h1>
           <p className="mt-4 text-center text-[#4f5d65]">
             Salve seus dados, acompanhe pedidos e use Nerdcoins.
           </p>
@@ -44,12 +44,27 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps):
               </label>
               <label className="grid gap-2 text-sm font-bold text-black">
                 CPF
-                <input className="h-12 rounded-lg border px-3 outline-none focus:border-primary" name="cpf" />
+                <input
+                  className="h-12 rounded-lg border px-3 outline-none focus:border-primary"
+                  inputMode="numeric"
+                  maxLength={14}
+                  name="cpf"
+                  placeholder="000.000.000-00"
+                  required
+                />
               </label>
             </div>
             <label className="grid gap-2 text-sm font-bold text-black">
+              Data de nascimento
+              <input className="h-12 rounded-lg border px-3 outline-none focus:border-primary" name="birthday" required type="date" />
+            </label>
+            <label className="grid gap-2 text-sm font-bold text-black">
               Senha
               <input className="h-12 rounded-lg border px-3 outline-none focus:border-primary" minLength={8} name="password" required type="password" />
+            </label>
+            <label className="grid gap-2 text-sm font-bold text-black">
+              Confirmar senha
+              <input className="h-12 rounded-lg border px-3 outline-none focus:border-primary" minLength={8} name="confirmPassword" required type="password" />
             </label>
             <Button className="h-12 bg-primary text-white" type="submit">Criar conta</Button>
           </form>

@@ -1,7 +1,13 @@
+"use client";
+
 import { Gift, Headphones, Menu, Search, ShoppingBag, ShoppingCart, Star, Tags, UserRound } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { SafeImage as Image } from "@/components/media/safe-image";
+import { useCartStore } from "@/features/cart/cart-store";
+
 const headerLinks = [
   { href: "/conta", label: "Conta", icon: UserRound },
   { href: "/carrinho", label: "Carrinho", icon: ShoppingCart },
@@ -21,9 +27,47 @@ export function ShopHeader({
 }: {
   announcementText?: string;
 }): React.ReactElement {
+  const router = useRouter();
+  const hydratedSearchRef = useRef(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const cartCount = useCartStore((state) => state.items.reduce((total, item) => total + item.quantity, 0));
+  const cartBadgeLabel = useMemo(() => (cartCount > 99 ? "99+" : String(cartCount)), [cartCount]);
+
+  useEffect(() => {
+    if (!hydratedSearchRef.current) {
+      hydratedSearchRef.current = true;
+      return;
+    }
+
+    const searchTimeoutId = window.setTimeout(() => {
+      const query = searchTerm.trim();
+      const currentPath = window.location.pathname;
+
+      if (!query) {
+        if (currentPath === "/produtos" && new URLSearchParams(window.location.search).has("busca")) {
+          router.replace("/produtos");
+        }
+        return;
+      }
+
+      const params = new URLSearchParams(currentPath === "/produtos" ? window.location.search : "");
+      params.set("busca", query);
+      params.delete("pagina");
+      router.push(`/produtos?${params.toString()}`);
+    }, 280);
+
+    return () => window.clearTimeout(searchTimeoutId);
+  }, [router, searchTerm]);
+
+  function submitSearch(event: React.FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+    const query = searchTerm.trim();
+    router.push(query ? `/produtos?busca=${encodeURIComponent(query)}` : "/produtos");
+  }
+
   return (
-    <header className="relative z-40 bg-[#ff6902] text-white">
-      <div className="flex h-11 items-center justify-center px-4 text-sm font-bold">
+    <header className="anime-header relative z-40 bg-[#ff6902] text-white">
+      <div className="flex h-11 items-center justify-center px-4 text-sm font-bold tracking-normal">
         {announcementText}
       </div>
 
@@ -40,25 +84,36 @@ export function ShopHeader({
             />
           </Link>
 
-          <form action="/produtos" className="mx-auto flex h-12 w-full max-w-[550px] items-center rounded-full border-2 border-primary bg-white px-4 shadow-sm">
+          <form
+            action="/produtos"
+            className="search-arcade mx-auto flex h-12 w-full max-w-[550px] items-center rounded-full border-2 border-primary bg-white px-4 shadow-sm"
+            onSubmit={submitSearch}
+          >
             <Search className="mr-3 h-5 w-5 text-[#1c1c1c]" />
             <input
               className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#9aa1a6]"
               maxLength={80}
               name="busca"
+              onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="Buscar produtos..."
               type="search"
+              value={searchTerm}
             />
           </form>
 
           <nav className="flex flex-wrap items-center justify-center gap-3 lg:justify-end">
             {headerLinks.map((link) => (
               <Link
-                className="inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="group relative inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 href={link.href}
                 key={link.label}
               >
                 <link.icon className="h-5 w-5 text-primary transition group-hover:scale-110" />
+                {link.href === "/carrinho" && cartCount > 0 ? (
+                  <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#111827] px-1 text-[10px] font-black leading-none text-white shadow-sm">
+                    {cartBadgeLabel}
+                  </span>
+                ) : null}
                 {link.label}
               </Link>
             ))}

@@ -70,9 +70,10 @@ export default async function AccountNerdcoinsPage(): Promise<React.ReactElement
   const referralUrl = buildReferralSignupUrl(process.env.APP_URL ?? "http://localhost:3000", referralCode);
 
   return (
-    <main className="mx-auto min-h-screen max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+    <main className="geek-page min-h-screen px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-5xl">
       <Link className="text-sm text-muted-foreground" href="/conta">Conta</Link>
-      <h1 className="mt-3 text-3xl font-bold tracking-normal">Meus Nerdcoins</h1>
+      <h1 className="geek-title mt-3 text-3xl font-bold tracking-normal">Meus Nerdcoins</h1>
       <p className="mt-2 max-w-2xl text-muted-foreground">
         Acompanhe saldo, histórico e converta pontos em cupons exclusivos da sua conta.
       </p>
@@ -222,6 +223,7 @@ export default async function AccountNerdcoinsPage(): Promise<React.ReactElement
           </CardContent>
         </Card>
       </section>
+      </div>
     </main>
   );
 }

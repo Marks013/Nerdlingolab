@@ -42,7 +42,7 @@ export default async function ProductPage({ params }: ProductPageProps): Promise
   });
 
   return (
-    <main className="min-h-screen bg-[#f6f7f8]">
+    <main className="geek-page min-h-screen">
       <div className="mx-auto w-full max-w-[1360px] px-5 py-8">
         <nav className="mb-7 text-sm text-[#677279]" aria-label="Breadcrumb">
           <Link href="/">Pagina inicial</Link>

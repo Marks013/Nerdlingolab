@@ -67,11 +67,30 @@ export async function validateLoyaltyRedemption({
     };
   }
 
-  const loyaltyPoints = await prisma.loyaltyPoints.findUnique({
-    where: { userId }
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      birthday: true,
+      cpf: true,
+      loyaltyPoints: true
+    }
   });
-  const availablePoints = loyaltyPoints?.balance ?? 0;
+  const availablePoints = user?.loyaltyPoints?.balance ?? 0;
   const settings = await getLoyaltyProgramSettings();
+
+  if (!user?.cpf || !user.birthday) {
+    return {
+      availablePoints,
+      requestedPoints,
+      redeemedPoints: 0,
+      discountCents: 0,
+      isAvailable: false,
+      maxRedeemablePoints: 0,
+      minRedeemPoints: settings.minRedeemPoints,
+      redeemCentsPerPoint: settings.redeemCentsPerPoint,
+      message: "Complete CPF e data de nascimento para usar Nerdcoins."
+    };
+  }
 
   if (!settings.isEnabled) {
     return {

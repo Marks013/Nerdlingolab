@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 import { customerProfileSchema } from "@/lib/account/profile-schema";
 import { auth } from "@/lib/auth";
+import { getCpfLookupValues, parseBirthdayInput } from "@/lib/identity/brazil";
 import { prisma } from "@/lib/prisma";
 
 export async function updateCustomerProfile(formData: FormData): Promise<void> {
@@ -22,17 +23,32 @@ export async function updateCustomerProfile(formData: FormData): Promise<void> {
   }
 
   try {
+    const cpfOwner = await prisma.user.findFirst({
+      where: {
+        cpf: { in: getCpfLookupValues(parsedProfile.data.cpf) },
+        NOT: { id: userId }
+      },
+      select: { id: true }
+    });
+
+    if (cpfOwner) {
+      throw new Error("CPF já vinculado a outra conta.");
+    }
+
     await prisma.user.update({
       where: { id: userId },
       data: {
         name: parsedProfile.data.name,
         phone: parsedProfile.data.phone,
         cpf: parsedProfile.data.cpf,
-        birthday: parsedProfile.data.birthday ? new Date(`${parsedProfile.data.birthday}T00:00:00.000Z`) : null
+        birthday: parseBirthdayInput(parsedProfile.data.birthday)
       }
     });
   } catch (error) {
     Sentry.captureException(error);
+    if (error instanceof Error && error.message === "CPF já vinculado a outra conta.") {
+      throw error;
+    }
     throw new Error("Não foi possível salvar seus dados pessoais.");
   }
 

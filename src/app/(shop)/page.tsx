@@ -38,11 +38,7 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
       </section>
 
       <section className="bg-white px-5 py-5">
-        <div className="mx-auto flex w-full max-w-[1360px] flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="text-2xl font-black text-black">Produtos geek com cupons</h2>
-            <p className="mt-1 text-sm font-semibold text-[#677279]">Loja geek com recompensas e Carrinho inteligente</p>
-          </div>
+        <div className="mx-auto flex w-full max-w-[1360px] justify-end">
           <div className="flex flex-wrap gap-3">
             <Link className="inline-flex h-10 items-center rounded-lg bg-primary px-5 text-sm font-black text-white" href="/produtos">
               Ver produtos

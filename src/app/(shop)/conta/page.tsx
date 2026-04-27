@@ -28,10 +28,10 @@ export default async function AccountPage({ searchParams }: AccountPageProps): P
   }
 
   return (
-    <main className="min-h-screen bg-[#f6f7f8] px-5 py-10">
+    <main className="geek-page min-h-screen px-5 py-10">
       <div className="mx-auto w-full max-w-[1360px]">
         <div className="mb-8">
-          <h1 className="text-3xl font-medium tracking-normal text-black">Minha conta</h1>
+          <h1 className="geek-title text-3xl font-medium tracking-normal text-black">Minha conta</h1>
           <p className="mt-3 text-[#677279]">Acompanhe pedidos e recompensas.</p>
         </div>
         <AccountOverview account={account} confirmedAddressLabel={confirmedAddressLabel} />
@@ -49,10 +49,10 @@ function normalizeSearchParam(value: string | string[] | undefined): string | un
 
 function AccountLoginPrompt(): React.ReactElement {
   return (
-    <main className="min-h-screen bg-[#f6f7f8] px-5 py-10">
+    <main className="geek-page min-h-screen px-5 py-10">
       <section className="flex min-h-[820px] items-center justify-center">
-        <div className="w-full max-w-[460px] rounded-lg bg-white p-8 text-center shadow-sm sm:p-10">
-          <h1 className="text-3xl font-black text-black">Entrar na conta</h1>
+        <div className="manga-panel w-full max-w-[460px] rounded-lg bg-white p-8 text-center shadow-sm sm:p-10">
+          <h1 className="geek-title justify-center text-3xl font-black text-black">Entrar na conta</h1>
           <p className="mt-4 text-[#4f5d65]">Acesse pedidos, endereços e Nerdcoins.</p>
           <form action={signInCustomerWithCredentials} className="mt-8 grid gap-5 text-left">
             <label className="grid gap-3 text-sm font-bold text-[#1c1c1c]">

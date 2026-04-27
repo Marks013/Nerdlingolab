@@ -136,7 +136,7 @@ export function ShopFooter({
             {paymentLogos.map((payment) => (
               <span
                 aria-label={payment.label}
-                className="inline-flex h-11 min-w-[70px] items-center justify-center rounded-md border border-[#d9e0e4] bg-white px-3 shadow-sm"
+                className="payment-badge inline-flex h-14 min-w-[96px] items-center justify-center overflow-hidden rounded-lg border border-[#d9e0e4] bg-white px-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
                 key={payment.label}
                 role="img"
                 title={payment.label}

@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCart } from "lucide-react";
+import { CheckCircle2, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -20,21 +20,12 @@ export function AddToCartButton({ item, availableStock }: AddToCartButtonProps):
 
   if (wasAdded) {
     return (
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Button asChild size="lg">
-          <Link href="/carrinho">Ver carrinho</Link>
-        </Button>
-        <Button
-          onClick={() => {
-            setWasAdded(false);
-          }}
-          size="lg"
-          type="button"
-          variant="outline"
-        >
-          Continuar comprando
-        </Button>
-      </div>
+      <Button asChild className="h-12 w-full bg-[#111827] font-black text-white hover:bg-[#1f2937]" size="lg">
+        <Link href="/carrinho">
+          <CheckCircle2 className="mr-2 h-4 w-4" />
+          Adicionado. Ver carrinho
+        </Link>
+      </Button>
     );
   }
 

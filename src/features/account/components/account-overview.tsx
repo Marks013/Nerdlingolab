@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { formatOrderStatus, formatPaymentStatus } from "@/features/orders/status-labels";
 import { formatCurrency, formatDateTime } from "@/lib/format";
+import { formatCpf } from "@/lib/identity/brazil";
 import type { CustomerAccountSummary } from "@/lib/orders/queries";
 
 interface AccountOverviewProps {
@@ -21,9 +22,31 @@ interface AccountOverviewProps {
   confirmedAddressLabel?: string;
 }
 
+type AddressDraft = {
+  city: string;
+  complement: string;
+  district: string;
+  number: string;
+  postalCode: string;
+  recipient: string;
+  state: string;
+  street: string;
+};
+
 export function AccountOverview({ account, confirmedAddressLabel }: AccountOverviewProps): React.ReactElement {
   const [displayName, setDisplayName] = useState(account.user.name ?? "Minha conta");
   const addresses = account.addresses;
+  const [postalCodeStatus, setPostalCodeStatus] = useState<string | null>(null);
+  const [addressDraft, setAddressDraft] = useState<AddressDraft>({
+    city: "",
+    complement: "",
+    district: "",
+    number: "",
+    postalCode: "",
+    recipient: "",
+    state: "",
+    street: ""
+  });
   const [draftAddressLabel, setDraftAddressLabel] = useState(() =>
     typeof window === "undefined" ? "" : window.sessionStorage.getItem("nerdlingolab:draft-address-label") ?? ""
   );
@@ -54,6 +77,52 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
     );
   }
 
+  function updateAddressDraft(field: keyof AddressDraft, value: string): void {
+    setAddressDraft((currentDraft) => ({ ...currentDraft, [field]: value }));
+  }
+
+  async function lookupPostalCode(value: string): Promise<void> {
+    const postalCode = value.replace(/\D/g, "").slice(0, 8);
+    updateAddressDraft("postalCode", postalCode);
+
+    if (postalCode.length !== 8) {
+      setPostalCodeStatus(null);
+      return;
+    }
+
+    setPostalCodeStatus("Buscando endereço...");
+
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${postalCode}/json/`);
+      const payload = await response.json() as {
+        bairro?: string;
+        complemento?: string;
+        erro?: boolean;
+        localidade?: string;
+        logradouro?: string;
+        uf?: string;
+      };
+
+      if (!response.ok || payload.erro) {
+        setPostalCodeStatus("CEP não encontrado. Preencha manualmente.");
+        return;
+      }
+
+      setAddressDraft((currentDraft) => ({
+        ...currentDraft,
+        city: payload.localidade ?? currentDraft.city,
+        complement: currentDraft.complement || payload.complemento || "",
+        district: payload.bairro ?? currentDraft.district,
+        postalCode,
+        state: payload.uf ?? currentDraft.state,
+        street: payload.logradouro ?? currentDraft.street
+      }));
+      setPostalCodeStatus("Endereço preenchido. Você pode editar qualquer campo.");
+    } catch {
+      setPostalCodeStatus("Não foi possível consultar o CEP agora. Preencha manualmente.");
+    }
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
       <div className="space-y-6">
@@ -79,7 +148,7 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
               </label>
               <label className="grid gap-2 text-sm font-medium">
                 CPF
-                <Input defaultValue={account.user.cpf ?? ""} name="cpf" />
+                <Input defaultValue={formatCpf(account.user.cpf)} inputMode="numeric" name="cpf" />
               </label>
               <label className="grid gap-2 text-sm font-medium">
                 Nascimento
@@ -170,38 +239,82 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
               </label>
               <label className="grid gap-2 text-sm font-medium">
                 Destinatário
-                <Input name="recipient" required />
+                <Input
+                  name="recipient"
+                  onChange={(event) => updateAddressDraft("recipient", event.target.value)}
+                  required
+                  value={addressDraft.recipient}
+                />
               </label>
               <label className="grid gap-2 text-sm font-medium">
                 CEP
-                <Input name="postalCode" required />
+                <Input
+                  autoComplete="postal-code"
+                  inputMode="numeric"
+                  maxLength={9}
+                  name="postalCode"
+                  onChange={(event) => void lookupPostalCode(event.target.value)}
+                  required
+                  value={addressDraft.postalCode}
+                />
+                {postalCodeStatus ? <span className="text-xs text-muted-foreground">{postalCodeStatus}</span> : null}
               </label>
               <label className="grid gap-2 text-sm font-medium">
                 Rua
-                <Input name="street" required />
+                <Input
+                  name="street"
+                  onChange={(event) => updateAddressDraft("street", event.target.value)}
+                  required
+                  value={addressDraft.street}
+                />
               </label>
               <div className="grid gap-3 sm:grid-cols-[120px_1fr]">
                 <label className="grid gap-2 text-sm font-medium">
                   Número
-                  <Input name="number" required />
+                  <Input
+                    name="number"
+                    onChange={(event) => updateAddressDraft("number", event.target.value)}
+                    required
+                    value={addressDraft.number}
+                  />
                 </label>
                 <label className="grid gap-2 text-sm font-medium">
                   Complemento
-                  <Input name="complement" />
+                  <Input
+                    name="complement"
+                    onChange={(event) => updateAddressDraft("complement", event.target.value)}
+                    value={addressDraft.complement}
+                  />
                 </label>
               </div>
               <label className="grid gap-2 text-sm font-medium">
                 Bairro
-                <Input name="district" required />
+                <Input
+                  name="district"
+                  onChange={(event) => updateAddressDraft("district", event.target.value)}
+                  required
+                  value={addressDraft.district}
+                />
               </label>
               <div className="grid gap-3 sm:grid-cols-[1fr_80px]">
                 <label className="grid gap-2 text-sm font-medium">
                   Cidade
-                  <Input name="city" required />
+                  <Input
+                    name="city"
+                    onChange={(event) => updateAddressDraft("city", event.target.value)}
+                    required
+                    value={addressDraft.city}
+                  />
                 </label>
                 <label className="grid gap-2 text-sm font-medium">
                   UF
-                  <Input maxLength={2} name="state" required />
+                  <Input
+                    maxLength={2}
+                    name="state"
+                    onChange={(event) => updateAddressDraft("state", event.target.value.toUpperCase())}
+                    required
+                    value={addressDraft.state}
+                  />
                 </label>
               </div>
               <label className="flex items-center gap-2 text-sm font-medium">

@@ -2,7 +2,11 @@ import { z } from "zod";
 
 export const customerAddressSchema = z.object({
   recipient: z.string().trim().min(2).max(120),
-  postalCode: z.string().trim().min(8).max(12),
+  postalCode: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/\D/g, ""))
+    .refine((value) => value.length === 8, "CEP inválido."),
   street: z.string().trim().min(2).max(160),
   number: z.string().trim().min(1).max(20),
   complement: z.string().trim().max(120).optional(),

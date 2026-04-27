@@ -49,9 +49,9 @@ export function ProductDetailShell({
   }
 
   return (
-    <>
-      <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-        <section className="rounded-lg bg-white p-4 shadow-sm sm:p-7">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)] lg:items-start">
+        <div className="grid gap-5">
+        <section className="manga-panel rounded-lg bg-white p-4 shadow-sm sm:p-7">
           <div className={galleryImages.length > 1 ? "grid gap-5 md:grid-cols-[72px_1fr]" : "grid gap-5"}>
             {galleryImages.length > 1 ? (
               <div className="grid grid-cols-5 gap-3 md:grid-cols-1 md:content-start md:gap-4">
@@ -104,7 +104,13 @@ export function ProductDetailShell({
           </div>
         </section>
 
-        <section className="rounded-lg bg-white p-5 shadow-sm sm:p-8">
+        <section className="manga-panel rounded-lg bg-white p-5 shadow-sm sm:p-8">
+          <h2 className="text-2xl font-medium text-black">Descrição</h2>
+          <div className="mt-5 whitespace-pre-line text-base leading-8 text-[#4f5d65]">{description}</div>
+        </section>
+        </div>
+
+        <section className="manga-panel rounded-lg bg-white p-5 shadow-sm sm:p-8 lg:sticky lg:top-5">
           <p className="text-sm text-[#4f5d65]">Novo | Produto disponível</p>
           <h1 className="mt-2 text-2xl font-medium leading-tight text-black sm:text-3xl">{productTitle}</h1>
           <p className="mt-4 inline-flex rounded bg-primary px-3 py-1 text-sm font-bold text-white">
@@ -122,11 +128,6 @@ export function ProductDetailShell({
         </section>
       </div>
 
-      <section className="mt-8 rounded-lg bg-white p-5 shadow-sm sm:p-8">
-        <h2 className="text-2xl font-medium text-black">Descrição</h2>
-        <div className="mt-6 whitespace-pre-line text-base leading-8 text-[#4f5d65]">{description}</div>
-      </section>
-    </>
   );
 }
 

@@ -7,6 +7,14 @@ import { z } from "zod";
 import { LoyaltyLedgerType, UserRole } from "@/generated/prisma/client";
 
 import { signIn, signOut } from "@/lib/auth";
+import {
+  getCpfLookupValues,
+  isValidBirthdayInput,
+  isValidCpf,
+  normalizeCpf,
+  normalizePhone,
+  parseBirthdayInput
+} from "@/lib/identity/brazil";
 import { getLoyaltyProgramSettings, getPointsExpirationDate } from "@/lib/loyalty/settings";
 import { ensureReferralCode, normalizeReferralCode } from "@/lib/loyalty/referrals";
 import { prisma } from "@/lib/prisma";
@@ -18,10 +26,19 @@ const credentialsFormSchema = z.object({
 });
 
 const registerCustomerSchema = credentialsFormSchema.extend({
-  cpf: z.string().trim().max(20).regex(/^[0-9.-]*$/).optional().transform((value) => value || null),
+  birthday: z.string().trim().refine((value) => isValidBirthdayInput(value), "Data de nascimento inválida."),
+  confirmPassword: z.string().min(8).max(128),
+  cpf: z
+    .string()
+    .trim()
+    .transform((value) => normalizeCpf(value))
+    .refine((value) => isValidCpf(value), "CPF inválido."),
   name: z.string().trim().min(2).max(80),
-  phone: z.string().trim().max(20).regex(/^[0-9()+\-\s]*$/).optional().transform((value) => value || null),
+  phone: z.string().trim().max(20).regex(/^[0-9()+\-\s]*$/).optional().transform((value) => normalizePhone(value)),
   referralCode: z.string().trim().max(40).optional().transform((value) => normalizeReferralCode(value ?? ""))
+}).refine((value) => value.password === value.confirmPassword, {
+  message: "As senhas não conferem.",
+  path: ["confirmPassword"]
 });
 
 export async function signInWithCredentials(formData: FormData): Promise<void> {
@@ -64,6 +81,8 @@ export async function signInCustomerWithCredentials(formData: FormData): Promise
 
 export async function registerCustomer(formData: FormData): Promise<void> {
   const parsedCustomer = registerCustomerSchema.safeParse({
+    birthday: formData.get("birthday"),
+    confirmPassword: formData.get("confirmPassword"),
     cpf: formData.get("cpf") || undefined,
     email: formData.get("email"),
     name: formData.get("name"),
@@ -76,14 +95,15 @@ export async function registerCustomer(formData: FormData): Promise<void> {
     redirect("/cadastro?error=invalid");
   }
 
-  const { cpf, email, name, password, phone, referralCode } = parsedCustomer.data;
+  const { birthday, cpf, email, name, password, phone, referralCode } = parsedCustomer.data;
   await enforceFormRateLimit("customer-register", email, 5);
+  await enforceFormRateLimit("customer-register-cpf", cpf, 3);
 
   const existingUser = await prisma.user.findFirst({
     where: {
       OR: [
         { email },
-        ...(cpf ? [{ cpf }] : [])
+        { cpf: { in: getCpfLookupValues(cpf) } }
       ]
     }
   });
@@ -95,20 +115,36 @@ export async function registerCustomer(formData: FormData): Promise<void> {
   const passwordHash = await bcrypt.hash(password, 12);
   const loyaltySettings = await getLoyaltyProgramSettings();
   const signupBonusPoints = loyaltySettings.isEnabled ? loyaltySettings.signupBonusPoints : 0;
-  const inviteeReferralBonusPoints = loyaltySettings.isEnabled && referralCode
-    ? loyaltySettings.referralInviteeBonusPoints
-    : 0;
-  const initialBalance = signupBonusPoints + inviteeReferralBonusPoints;
+  const initialBalance = signupBonusPoints;
 
   await prisma.$transaction(async (tx) => {
     const inviterCode = referralCode
       ? await tx.referralCode.findFirst({
-          select: { code: true, userId: true },
+          select: {
+            code: true,
+            user: {
+              select: {
+                cpf: true,
+                email: true,
+                phone: true
+              }
+            },
+            userId: true
+          },
           where: { code: referralCode, isActive: true }
         })
       : null;
+    const canRegisterReferral = Boolean(
+      inviterCode &&
+      inviterCode.user.cpf &&
+      inviterCode.user.cpf !== cpf &&
+      inviterCode.user.email !== email &&
+      (!phone || !inviterCode.user.phone || inviterCode.user.phone !== phone)
+    );
+
     const user = await tx.user.create({
       data: {
+        birthday: parseBirthdayInput(birthday),
         cpf,
         email,
         name,
@@ -140,31 +176,16 @@ export async function registerCustomer(formData: FormData): Promise<void> {
       });
     }
 
-    if (inviterCode && inviterCode.userId !== user.id) {
+    if (canRegisterReferral && inviterCode && inviterCode.userId !== user.id) {
       await tx.referral.create({
         data: {
           inviteeId: user.id,
-          inviteeRewardPoints: inviteeReferralBonusPoints,
+          inviteeRewardPoints: loyaltySettings.isEnabled ? loyaltySettings.referralInviteeBonusPoints : 0,
           inviterId: inviterCode.userId,
           inviterRewardPoints: loyaltySettings.referralInviterBonusPoints,
           referralCode: inviterCode.code
         }
       });
-
-      if (inviteeReferralBonusPoints > 0) {
-        await tx.loyaltyLedger.create({
-          data: {
-            balanceAfter: initialBalance,
-            customerNote: "Bonus por cadastro indicado",
-            expiresAt: getPointsExpirationDate(loyaltySettings),
-            idempotencyKey: `loyalty:referral:invitee:${user.id}`,
-            pointsDelta: inviteeReferralBonusPoints,
-            reason: "Bonus de indicacao recebida",
-            type: LoyaltyLedgerType.EARN,
-            userId: user.id
-          }
-        });
-      }
     }
   });
 
@@ -193,6 +214,12 @@ async function enforceFormRateLimit(name: string, email: string, limit: number):
       name
     })
   ) {
-    redirect(name === "admin-login" ? "/admin/login?error=too_many_attempts" : "/entrar?error=too_many_attempts");
+    redirect(
+      name.startsWith("admin")
+        ? "/admin/login?error=too_many_attempts"
+        : name.includes("register")
+          ? "/cadastro?error=too_many_attempts"
+          : "/entrar?error=too_many_attempts"
+    );
   }
 }

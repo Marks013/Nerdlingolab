@@ -4,11 +4,11 @@ import { SupportContactClient } from "@/features/support/components/support-cont
 
 export default function SupportPage(): React.ReactElement {
   return (
-    <main className="min-h-screen bg-[#f6f7f8]">
+    <main className="geek-page min-h-screen">
       <section className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-5 sm:py-10">
         <p className="mb-5 text-sm text-[#4f5d65]">Pagina inicial › Suporte</p>
         <div className="mx-auto max-w-3xl text-center">
-          <h1 className="text-3xl font-medium tracking-normal text-black sm:text-4xl">Entrar em contato</h1>
+          <h1 className="geek-title text-3xl font-medium tracking-normal text-black sm:text-4xl">Entrar em contato</h1>
           <p className="mt-4 text-base leading-7 text-[#4f5d65]">
             Tem alguma dúvida sobre nossos produtos geek? Estamos aqui para ajudar.
           </p>
@@ -30,7 +30,7 @@ export default function SupportPage(): React.ReactElement {
           </InfoCard>
         </div>
 
-        <section className="mt-6 rounded-lg bg-white p-5 shadow-sm sm:p-7">
+        <section className="manga-panel mt-6 rounded-lg bg-white p-5 shadow-sm sm:p-7">
           <h2 className="text-xl font-black text-black">Perguntas Frequentes</h2>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             <Faq title="Qual o prazo de entrega?">O prazo varia de 7 a 15 dias úteis dependendo da sua região.</Faq>
@@ -53,7 +53,7 @@ function InfoCard({
   title: string;
 }): React.ReactElement {
   return (
-    <div className="rounded-lg bg-white p-5 shadow-sm">
+    <div className="motion-lift rounded-lg bg-white p-5 shadow-sm">
       <Icon className="h-7 w-7 text-primary" />
       <h2 className="mt-4 font-black text-black">{title}</h2>
       <p className="mt-2 text-sm leading-6 text-[#4f5d65]">{children}</p>

@@ -20,6 +20,11 @@
   --input: 210 18% 89%;
   --ring: 25 100% 50%;
   --radius: 1rem;
+  --nl-ink: 222 34% 6%;
+  --nl-cyan: 188 88% 47%;
+  --nl-violet: 271 92% 48%;
+  --pointer-x: 50%;
+  --pointer-y: 0%;
 }
 
 .dark {
@@ -48,7 +53,11 @@
 
 body {
   min-height: 100vh;
-  background: hsl(var(--background));
+  background:
+    linear-gradient(90deg, hsl(var(--primary) / 0.045) 1px, transparent 1px),
+    linear-gradient(hsl(var(--secondary) / 0.035) 1px, transparent 1px),
+    hsl(var(--background));
+  background-size: 42px 42px, 42px 42px, auto;
   color: hsl(var(--foreground));
   font-family: Roboto, Arial, sans-serif;
   font-feature-settings: "kern";
@@ -71,4 +80,129 @@ textarea {
     radial-gradient(circle at top left, hsl(var(--primary) / 0.12), transparent 34rem),
     radial-gradient(circle at bottom right, hsl(var(--secondary) / 0.10), transparent 30rem),
     hsl(var(--background));
+}
+
+.geek-page {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, hsl(var(--primary) / 0.08) 1px, transparent 1px),
+    linear-gradient(hsl(var(--secondary) / 0.055) 1px, transparent 1px),
+    repeating-linear-gradient(135deg, transparent 0 18px, hsl(var(--primary) / 0.045) 18px 19px),
+    linear-gradient(135deg, #fffaf5 0%, #f7fafc 48%, #eefaff 100%);
+  background-size: 44px 44px, 44px 44px, auto, auto;
+}
+
+.geek-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(120deg, transparent 0 54%, hsl(var(--primary) / 0.12) 54% 55%, transparent 55%),
+    linear-gradient(60deg, transparent 0 63%, hsl(var(--nl-cyan) / 0.10) 63% 64%, transparent 64%);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 78%);
+}
+
+.anime-header {
+  box-shadow: 0 1px 0 hsl(var(--primary) / 0.36), 0 10px 28px hsl(var(--nl-ink) / 0.10);
+}
+
+.search-arcade {
+  position: relative;
+  overflow: hidden;
+}
+
+.search-arcade::after {
+  content: "";
+  position: absolute;
+  inset: auto 18px 7px 48px;
+  height: 2px;
+  background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--nl-cyan)), hsl(var(--secondary)));
+  opacity: 0;
+  transform: scaleX(0.6);
+  transform-origin: left;
+  transition: opacity 180ms ease, transform 220ms ease;
+}
+
+.search-arcade:focus-within::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.manga-panel,
+.geek-card {
+  border: 1px solid hsl(var(--primary) / 0.28);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.96), rgb(255 255 255 / 0.91)),
+    linear-gradient(135deg, hsl(var(--primary) / 0.11), transparent 34%, hsl(var(--nl-cyan) / 0.08));
+  box-shadow:
+    6px 6px 0 hsl(var(--primary) / 0.08),
+    0 14px 34px hsl(var(--nl-ink) / 0.08);
+}
+
+.geek-page .rounded-xl.border.bg-card,
+.geek-page .rounded-lg.bg-white,
+.geek-page .rounded-2xl.bg-white {
+  border: 1px solid hsl(var(--primary) / 0.26);
+  box-shadow:
+    5px 5px 0 hsl(var(--primary) / 0.07),
+    0 12px 30px hsl(var(--nl-ink) / 0.07);
+}
+
+.geek-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  color: hsl(var(--nl-ink));
+  letter-spacing: 0;
+}
+
+.geek-title::before {
+  content: "";
+  width: 0.75rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, hsl(var(--primary)), hsl(var(--nl-violet)));
+  box-shadow: 0 0 0 4px hsl(var(--primary) / 0.12);
+}
+
+.orange-divider {
+  border-top: 2px solid hsl(var(--primary) / 0.42);
+}
+
+.payment-badge svg {
+  display: block;
+  height: 2.25rem;
+  max-width: 5.5rem;
+}
+
+.nl-motion-ready .motion-lift {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.nl-motion-ready .motion-lift:hover {
+  transform: translateY(-3px);
+}
+
+.nl-tap {
+  animation: nl-tap 220ms ease-out;
+}
+
+@keyframes nl-tap {
+  0% { transform: scale(1); }
+  45% { transform: scale(0.975); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
 }

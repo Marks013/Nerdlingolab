@@ -424,11 +424,21 @@ export async function convertNerdcoinsToCoupon(formData: FormData): Promise<void
     });
   } catch (error) {
     Sentry.captureException(error);
-    throw new Error(error instanceof Error ? error.message : "Não foi possível converter Nerdcoins.");
+    throw new Error(getSafeNerdcoinsConversionMessage(error));
   }
 
   revalidatePath("/conta/nerdcoins");
   revalidatePath("/programa-de-fidelidade");
+}
+
+function getSafeNerdcoinsConversionMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : "";
+  const publicMessages = new Set([
+    "Quantidade abaixo do mínimo de resgate.",
+    "Saldo insuficiente."
+  ]);
+
+  return publicMessages.has(message) ? message : "Não foi possível converter Nerdcoins.";
 }
 
 function getSaoPauloDateParts(date: Date): { day: number; month: number; year: number } {

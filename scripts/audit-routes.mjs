@@ -5,6 +5,8 @@ const projectRoot = process.cwd();
 const routeRoot = join(projectRoot, "src", "app", "api");
 const failures = [];
 const mutatingMethodPattern = /export\s+async\s+function\s+(POST|PUT|PATCH|DELETE)\b/;
+const bodyReadPattern = /request\.(json|formData)\(\)/;
+const validationPattern = /safeParse|\.parse\(/;
 
 for (const filePath of walk(routeRoot)) {
   if (!filePath.endsWith("route.ts")) {
@@ -13,19 +15,28 @@ for (const filePath of walk(routeRoot)) {
 
   const source = readFileSync(filePath, "utf8");
   const relativePath = relative(projectRoot, filePath);
+  const isWebhookRoute = relativePath.includes("webhooks");
 
   if (mutatingMethodPattern.test(source)) {
-    if (!source.includes("rateLimitRequest(") && !relativePath.includes("webhooks")) {
+    if (!source.includes("rateLimitRequest(") && !isWebhookRoute) {
       failures.push(`${relativePath}: POST/PATCH/PUT/DELETE sem rateLimitRequest`);
     }
 
+    if (!source.includes("assertSameOriginRequest(") && !isWebhookRoute) {
+      failures.push(`${relativePath}: POST/PATCH/PUT/DELETE sem assertSameOriginRequest`);
+    }
+
     if (!source.includes("Sentry.captureException")) {
-      failures.push(`${relativePath}: mutação sem captura Sentry`);
+      failures.push(`${relativePath}: mutacao sem captura Sentry`);
     }
   }
 
+  if (bodyReadPattern.test(source) && !validationPattern.test(source)) {
+    failures.push(`${relativePath}: corpo da requisicao sem validacao estruturada`);
+  }
+
   if (/error instanceof Error \? error\.message/.test(source)) {
-    failures.push(`${relativePath}: resposta expõe mensagem interna de erro`);
+    failures.push(`${relativePath}: resposta expoe mensagem interna de erro`);
   }
 }
 

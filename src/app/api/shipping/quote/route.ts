@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { quoteShippingOptions } from "@/lib/shipping/quotes";
 import { rateLimitRequest } from "@/lib/security/rate-limit";
+import { assertSameOriginRequest } from "@/lib/security/request";
 
 const shippingQuoteSchema = z.object({
   itemCount: z.coerce.number().int().positive().max(99).default(1),
@@ -13,14 +14,15 @@ const shippingQuoteSchema = z.object({
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
+    const sameOriginError = assertSameOriginRequest(request);
     const rateLimitError = rateLimitRequest(request, {
       intervalMs: 60_000,
       limit: 60,
       name: "shipping-quote"
     });
 
-    if (rateLimitError) {
-      return rateLimitError;
+    if (sameOriginError ?? rateLimitError) {
+      return (sameOriginError ?? rateLimitError) as NextResponse;
     }
 
     const body: unknown = await request.json();

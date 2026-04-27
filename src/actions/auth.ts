@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
+import { z } from "zod";
 import { LoyaltyLedgerType, UserRole } from "@/generated/prisma/client";
 
 import { signIn, signOut } from "@/lib/auth";
@@ -11,56 +12,81 @@ import { ensureReferralCode, normalizeReferralCode } from "@/lib/loyalty/referra
 import { prisma } from "@/lib/prisma";
 import { isRateLimitedKey } from "@/lib/security/rate-limit";
 
-export async function signInWithCredentials(formData: FormData): Promise<void> {
-  const email = String(formData.get("email") ?? "");
-  const password = String(formData.get("password") ?? "");
-  const requestHeaders = await headers();
-  const forwardedFor = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const realIp = requestHeaders.get("x-real-ip")?.trim();
-  const userAgent = requestHeaders.get("user-agent")?.slice(0, 120) ?? "unknown";
-  const loginKey = `admin-login:${forwardedFor ?? realIp ?? "local"}:${userAgent}:${email.toLowerCase()}`;
+const credentialsFormSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(254),
+  password: z.string().min(8).max(128)
+});
 
-  if (
-    isRateLimitedKey(loginKey, {
-      intervalMs: 15 * 60 * 1000,
-      limit: 8,
-      name: "admin-login"
-    })
-  ) {
-    redirect("/admin/login?error=too_many_attempts");
+const registerCustomerSchema = credentialsFormSchema.extend({
+  cpf: z.string().trim().max(20).regex(/^[0-9.-]*$/).optional().transform((value) => value || null),
+  name: z.string().trim().min(2).max(80),
+  phone: z.string().trim().max(20).regex(/^[0-9()+\-\s]*$/).optional().transform((value) => value || null),
+  referralCode: z.string().trim().max(40).optional().transform((value) => normalizeReferralCode(value ?? ""))
+});
+
+export async function signInWithCredentials(formData: FormData): Promise<void> {
+  const parsedCredentials = credentialsFormSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password")
+  });
+
+  if (!parsedCredentials.success) {
+    redirect("/admin/login?error=invalid");
   }
 
+  await enforceFormRateLimit("admin-login", parsedCredentials.data.email, 8);
+
   await signIn("credentials", {
-    email,
-    password,
+    email: parsedCredentials.data.email,
+    password: parsedCredentials.data.password,
     redirectTo: "/admin/dashboard"
   });
 }
 
 export async function signInCustomerWithCredentials(formData: FormData): Promise<void> {
-  const email = String(formData.get("email") ?? "");
-  const password = String(formData.get("password") ?? "");
+  const parsedCredentials = credentialsFormSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password")
+  });
+
+  if (!parsedCredentials.success) {
+    redirect("/entrar?error=invalid");
+  }
+
+  await enforceFormRateLimit("customer-login", parsedCredentials.data.email, 10);
 
   await signIn("credentials", {
-    email,
-    password,
+    email: parsedCredentials.data.email,
+    password: parsedCredentials.data.password,
     redirectTo: "/conta"
   });
 }
 
 export async function registerCustomer(formData: FormData): Promise<void> {
-  const name = String(formData.get("name") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const password = String(formData.get("password") ?? "");
-  const phone = String(formData.get("phone") ?? "").trim() || null;
-  const cpf = String(formData.get("cpf") ?? "").trim() || null;
-  const referralCode = normalizeReferralCode(String(formData.get("referralCode") ?? ""));
+  const parsedCustomer = registerCustomerSchema.safeParse({
+    cpf: formData.get("cpf") || undefined,
+    email: formData.get("email"),
+    name: formData.get("name"),
+    password: formData.get("password"),
+    phone: formData.get("phone") || undefined,
+    referralCode: formData.get("referralCode") || undefined
+  });
 
-  if (!name || !email || password.length < 8) {
+  if (!parsedCustomer.success) {
     redirect("/cadastro?error=invalid");
   }
 
-  const existingUser = await prisma.user.findUnique({ where: { email } });
+  const { cpf, email, name, password, phone, referralCode } = parsedCustomer.data;
+  await enforceFormRateLimit("customer-register", email, 5);
+
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { email },
+        ...(cpf ? [{ cpf }] : [])
+      ]
+    }
+  });
 
   if (existingUser) {
     redirect("/cadastro?error=exists");
@@ -103,11 +129,11 @@ export async function registerCustomer(formData: FormData): Promise<void> {
       await tx.loyaltyLedger.create({
         data: {
           balanceAfter: signupBonusPoints,
-          customerNote: "Bônus de boas-vindas",
+          customerNote: "Bonus de boas-vindas",
           expiresAt: getPointsExpirationDate(loyaltySettings),
           idempotencyKey: `loyalty:signup:${user.id}`,
           pointsDelta: signupBonusPoints,
-          reason: "Bônus de cadastro",
+          reason: "Bonus de cadastro",
           type: LoyaltyLedgerType.EARN,
           userId: user.id
         }
@@ -129,11 +155,11 @@ export async function registerCustomer(formData: FormData): Promise<void> {
         await tx.loyaltyLedger.create({
           data: {
             balanceAfter: initialBalance,
-            customerNote: "Bônus por cadastro indicado",
+            customerNote: "Bonus por cadastro indicado",
             expiresAt: getPointsExpirationDate(loyaltySettings),
             idempotencyKey: `loyalty:referral:invitee:${user.id}`,
             pointsDelta: inviteeReferralBonusPoints,
-            reason: "Bônus de indicação recebida",
+            reason: "Bonus de indicacao recebida",
             type: LoyaltyLedgerType.EARN,
             userId: user.id
           }
@@ -151,4 +177,22 @@ export async function registerCustomer(formData: FormData): Promise<void> {
 
 export async function signOutFromAdmin(): Promise<void> {
   await signOut({ redirectTo: "/admin/login" });
+}
+
+async function enforceFormRateLimit(name: string, email: string, limit: number): Promise<void> {
+  const requestHeaders = await headers();
+  const forwardedFor = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const realIp = requestHeaders.get("x-real-ip")?.trim();
+  const userAgent = requestHeaders.get("user-agent")?.slice(0, 120) ?? "unknown";
+  const rateLimitKey = `${name}:${forwardedFor ?? realIp ?? "local"}:${userAgent}:${email}`;
+
+  if (
+    isRateLimitedKey(rateLimitKey, {
+      intervalMs: 15 * 60 * 1000,
+      limit,
+      name
+    })
+  ) {
+    redirect(name === "admin-login" ? "/admin/login?error=too_many_attempts" : "/entrar?error=too_many_attempts");
+  }
 }

@@ -7,10 +7,12 @@ export default async function OffersPage(): Promise<React.ReactElement> {
   const offers = await getPublicOffers();
 
   return (
-    <main className="min-h-screen bg-[#f6f7f8]">
+    <main className="geek-page min-h-screen">
       <section className="mx-auto w-full max-w-[1360px] px-5 py-10">
         <p className="mb-6 text-sm text-[#677279]">Pagina inicial › Ofertas</p>
-        <h1 className="mb-8 text-center text-4xl font-medium tracking-normal text-black">Produtos em oferta</h1>
+        <div className="mb-8 text-center">
+          <h1 className="geek-title text-4xl font-medium tracking-normal text-black">Produtos em oferta</h1>
+        </div>
         {offers.products.length > 0 ? (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
             {offers.products.map((product, productIndex) => (
@@ -18,7 +20,7 @@ export default async function OffersPage(): Promise<React.ReactElement> {
             ))}
           </div>
         ) : (
-          <div className="rounded-lg bg-white p-8 text-center text-lg font-black text-black shadow-sm">
+          <div className="manga-panel rounded-lg bg-white p-8 text-center text-lg font-semibold text-black shadow-sm">
             Nenhum produto em oferta no momento.
           </div>
         )}

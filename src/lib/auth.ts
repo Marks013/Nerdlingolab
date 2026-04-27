@@ -67,8 +67,12 @@ if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
 export const authConfig = {
   adapter: PrismaAdapter(prisma),
   session: {
+    maxAge: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 12,
     strategy: "jwt"
   },
+  trustHost: true,
+  useSecureCookies: process.env.NODE_ENV === "production",
   pages: {
     signIn: "/entrar"
   },

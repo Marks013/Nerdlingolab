@@ -9,7 +9,8 @@ import type {
 } from "@/features/cart/types";
 import { validateCoupon, validateLoyaltyRedemption } from "@/lib/cart/discounts";
 import { prisma } from "@/lib/prisma";
-import { selectShippingOption } from "@/lib/shipping/quotes";
+import { defaultFreeShippingThresholdCents, selectShippingOption } from "@/lib/shipping/quotes";
+import { getStorefrontTheme } from "@/lib/theme/storefront";
 
 export async function validateCartItems(
   request: CartValidationRequest
@@ -81,7 +82,9 @@ export async function validateCartItems(
     0,
     subtotalCents - couponPreview.discountCents - loyaltyPreview.discountCents
   );
+  const theme = await getStorefrontTheme();
   const shippingQuote = selectShippingOption({
+    freeShippingThresholdCents: theme.freeShippingThresholdCents,
     itemCount,
     postalCode: request.shippingPostalCode,
     selectedOptionId: request.shippingOptionId,
@@ -96,6 +99,7 @@ export async function validateCartItems(
     couponDiscountCents: couponPreview.discountCents,
     loyaltyDiscountCents: loyaltyPreview.discountCents,
     shippingCents,
+    freeShippingThresholdCents: theme.freeShippingThresholdCents,
     totalCents: totalCents + shippingCents,
     itemCount,
     appliedCoupon: couponPreview.coupon
@@ -120,6 +124,7 @@ function buildEmptyCartResponse(request: CartValidationRequest): CartValidationR
     couponDiscountCents: 0,
     loyaltyDiscountCents: 0,
     shippingCents: 0,
+    freeShippingThresholdCents: defaultFreeShippingThresholdCents,
     totalCents: 0,
     itemCount: 0,
     appliedCoupon: null,

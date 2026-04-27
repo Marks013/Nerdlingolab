@@ -1,11 +1,11 @@
 "use server";
 
 import * as Sentry from "@sentry/nextjs";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
 
 export interface NewsletterState {
   message: string | null;
@@ -13,7 +13,8 @@ export interface NewsletterState {
 }
 
 const newsletterSchema = z.object({
-  email: z.string().trim().email("Informe um e-mail válido.").max(160)
+  email: z.string().trim().toLowerCase().email("Informe um e-mail válido.").max(160),
+  website: z.string().trim().max(0).optional()
 });
 
 export async function subscribeNewsletter(
@@ -21,7 +22,8 @@ export async function subscribeNewsletter(
   formData: FormData
 ): Promise<NewsletterState> {
   const parsedInput = newsletterSchema.safeParse({
-    email: formData.get("email")
+    email: formData.get("email"),
+    website: formData.get("website") ?? undefined
   });
 
   if (!parsedInput.success) {
@@ -31,11 +33,13 @@ export async function subscribeNewsletter(
     };
   }
 
+  const email = parsedInput.data.email;
+
   try {
     await prisma.newsletterSubscriber.upsert({
-      where: { email: parsedInput.data.email.toLowerCase() },
+      where: { email },
       create: {
-        email: parsedInput.data.email.toLowerCase(),
+        email,
         source: "footer"
       },
       update: {
@@ -44,13 +48,25 @@ export async function subscribeNewsletter(
       }
     });
   } catch (error) {
-    Sentry.captureException(error);
+    Sentry.captureException(error, {
+      extra: {
+        emailDomain: email.split("@")[1] ?? null,
+        prismaCode: getPrismaErrorCode(error)
+      },
+      tags: {
+        feature: "newsletter",
+        operation: "subscribe"
+      }
+    });
 
     return {
-      message: "Não foi possível confirmar sua inscrição agora. Tente novamente em instantes.",
+      message: getNewsletterFailureMessage(error),
       ok: false
     };
   }
+
+  revalidatePath("/admin/newsletter");
+  revalidatePath("/admin/dashboard");
 
   return {
     message: "Inscrição confirmada.",
@@ -67,10 +83,56 @@ export async function setNewsletterSubscriberStatus(subscriberId: string, isActi
       data: { isActive }
     });
   } catch (error) {
-    Sentry.captureException(error);
+    Sentry.captureException(error, {
+      extra: {
+        subscriberId,
+        prismaCode: getPrismaErrorCode(error)
+      },
+      tags: {
+        feature: "newsletter",
+        operation: "set-status"
+      }
+    });
     throw new Error("Não foi possível atualizar o inscrito da newsletter.");
   }
 
   revalidatePath("/admin/newsletter");
   revalidatePath("/admin/dashboard");
+}
+
+function getNewsletterFailureMessage(error: unknown): string {
+  if (isMissingNewsletterStorage(error)) {
+    return "A newsletter está aguardando atualização do banco. Tente novamente em instantes.";
+  }
+
+  return "Não foi possível confirmar sua inscrição agora. Tente novamente em instantes.";
+}
+
+function isMissingNewsletterStorage(error: unknown): boolean {
+  const code = getPrismaErrorCode(error);
+  const message = getErrorMessage(error);
+
+  return (
+    code === "P2021" ||
+    code === "P2022" ||
+    message.includes("NewsletterSubscriber") ||
+    message.includes("newsletter_subscriber")
+  );
+}
+
+function getPrismaErrorCode(error: unknown): string | null {
+  if (typeof error === "object" && error !== null && "code" in error) {
+    const code = (error as { code?: unknown }).code;
+    return typeof code === "string" ? code : null;
+  }
+
+  return null;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return typeof error === "string" ? error : "";
 }

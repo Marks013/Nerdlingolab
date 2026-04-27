@@ -36,6 +36,11 @@ export default async function AdminThemePage(): Promise<React.ReactElement> {
             <div className="grid gap-3 md:grid-cols-2">
               <TextField defaultValue={theme.name} label="Nome do tema" name="name" />
               <TextField defaultValue={theme.announcementText} label="Aviso no topo" name="announcementText" />
+              <TextField
+                defaultValue={(theme.freeShippingThresholdCents / 100).toFixed(2).replace(".", ",")}
+                label="Valor mínimo para frete grátis"
+                name="freeShippingThresholdCents"
+              />
               <TextField defaultValue={theme.supportEmail} label="E-mail de atendimento" name="supportEmail" />
               <TextField defaultValue={theme.whatsappLabel} label="WhatsApp exibido" name="whatsappLabel" />
               <TextField defaultValue={theme.instagramUrl} label="Link do Instagram" name="instagramUrl" />

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingCart } from "lucide-react";
+import { ShieldCheck, ShoppingCart, TicketPercent, Truck } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { CartLineItem } from "@/features/cart/components/cart-line-item";
 import type { CartValidationResponse } from "@/features/cart/types";
 import { useCartStore } from "@/features/cart/cart-store";
+import { FreeShippingProgress } from "@/features/shipping/components/free-shipping-progress";
 import { formatCurrency } from "@/lib/format";
 import { parseFriendlyResponse } from "@/lib/http/friendly-response";
 
@@ -93,16 +94,21 @@ export function CartClient(): React.ReactElement {
   const couponDiscount = validatedCart?.couponDiscountCents ?? 0;
   const loyaltyDiscount = validatedCart?.loyaltyDiscountCents ?? 0;
   const shipping = validatedCart?.shippingCents ?? 0;
+  const freeShippingThresholdCents = validatedCart?.freeShippingThresholdCents ?? 9_990;
   const total = validatedCart?.totalCents ?? subtotal;
 
   if (!hasItems) {
     return (
       <section className="flex min-h-[620px] items-center justify-center">
-        <div className="flex min-h-[310px] w-full items-center justify-center rounded-2xl bg-white p-10 text-center shadow-sm">
+        <div className="manga-panel flex min-h-[330px] w-full items-center justify-center rounded-lg bg-white p-10 text-center shadow-sm">
           <div>
-            <ShoppingCart className="mx-auto h-16 w-16 stroke-[1.6] text-black" />
-            <h1 className="mt-8 text-xl font-black text-[#677279]">Carrinho</h1>
-            <p className="mt-2 text-sm text-[#677279]">Seu carrinho está vazio</p>
+            <span className="mx-auto inline-flex h-18 w-18 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <ShoppingCart className="h-10 w-10 stroke-[1.6]" />
+            </span>
+            <h1 className="mt-8 text-2xl font-black text-black">Seu carrinho está esperando uma missão.</h1>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#677279]">
+              Escolha seus produtos geek favoritos e acompanhe descontos, Nerdcoins e frete grátis em tempo real.
+            </p>
             <Button asChild className="mt-7 bg-primary px-9 font-black text-white hover:bg-primary/90">
               <Link href="/produtos">Veja nossos produtos</Link>
             </Button>
@@ -114,7 +120,17 @@ export function CartClient(): React.ReactElement {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-      <Card>
+      <section className="grid gap-5">
+        <div className="manga-panel rounded-lg bg-white p-5 shadow-sm">
+          <p className="text-sm font-black uppercase text-primary">Carrinho inteligente</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <CartPerk icon={Truck} label="Frete calculado" />
+            <CartPerk icon={TicketPercent} label="Cupons validados" />
+            <CartPerk icon={ShieldCheck} label="Checkout seguro" />
+          </div>
+        </div>
+
+      <Card className="manga-panel">
         <CardHeader>
           <CardTitle>Carrinho</CardTitle>
           <CardDescription>Revise os itens escolhidos antes de finalizar a compra.</CardDescription>
@@ -133,13 +149,19 @@ export function CartClient(): React.ReactElement {
           {cartMessage ? <p className="py-4 text-sm text-muted-foreground">{cartMessage}</p> : null}
         </CardContent>
       </Card>
+      </section>
 
-      <Card className="h-fit">
+      <Card className="manga-panel h-fit lg:sticky lg:top-5">
         <CardHeader>
           <CardTitle>Resumo</CardTitle>
           <CardDescription>{validatedCart?.itemCount ?? 0} item(ns)</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <FreeShippingProgress
+            subtotalCents={subtotal}
+            thresholdCents={freeShippingThresholdCents}
+          />
+
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="couponCode">
               Cupom
@@ -285,5 +307,20 @@ export function CartClient(): React.ReactElement {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function CartPerk({
+  icon: Icon,
+  label
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+}): React.ReactElement {
+  return (
+    <span className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-primary/15 bg-white px-3 text-sm font-black text-[#344049] shadow-sm">
+      <Icon className="h-4 w-4 text-primary" />
+      {label}
+    </span>
   );
 }

@@ -1,28 +1,90 @@
 # NerdLingoLab Commerce
 
-E-commerce Next.js para a NerdLingoLab, com vitrine em PT-BR, carrinho, checkout,
-admin, Mercado Pago, fidelidade, Postgres, MinIO e validações operacionais.
+E-commerce Next.js para a NerdLingoLab, com vitrine em PT-BR, carrinho, checkout, admin, Mercado Pago, fidelidade, Postgres, MinIO e validações operacionais.
+
+## Guia de comandos
+
+Se você está no servidor e não lembra qual comando usar, comece por aqui:
+
+[docs/server-command-guide.md](C:/Users/User/Desktop/NerdLingoLab/docs/server-command-guide.md)
+
+O guia cobre:
+
+- `git pull`, `git commit`, `git push` e diagnóstico de branch.
+- `docker compose up`, `logs`, `restart`, `ps` e rebuild.
+- Migrations do Prisma em desenvolvimento e produção.
+- Scripts atuais do `package.json`.
+- Sequência recomendada para atualizar o site no servidor.
 
 ## Setup local
 
 1. Copie `.env.example` para `.env` e preencha os valores locais.
-2. Suba os serviços:
+2. Instale as dependências:
 
 ```bash
-docker compose up -d
+npm ci
 ```
 
-3. Prepare banco e dados iniciais:
+3. Suba Postgres, MinIO e bucket local:
 
 ```bash
-npx prisma migrate dev --name init
-npm run db:seed
+docker compose up -d postgres minio minio-create-bucket
 ```
 
-4. Rode a aplicação:
+4. Prepare banco e dados iniciais:
+
+```bash
+npm run setup
+```
+
+5. Rode a aplicação:
 
 ```bash
 npm run dev
+```
+
+## Servidor com Docker
+
+Primeira instalação:
+
+```bash
+docker compose --profile setup run --rm setup
+docker compose up -d --build app
+```
+
+Atualização comum depois de baixar uma versão nova:
+
+```bash
+git pull origin main
+docker compose up -d --build
+docker compose run --rm setup npm run db:deploy
+docker compose restart app
+```
+
+Ver logs da aplicação:
+
+```bash
+docker compose logs -f app
+```
+
+## Prisma
+
+Criar migration em desenvolvimento:
+
+```bash
+npm run db:migrate
+```
+
+Aplicar migrations em produção/servidor:
+
+```bash
+npm run db:deploy
+```
+
+Gerar o client Prisma:
+
+```bash
+npm run prisma:generate
 ```
 
 ## Validação
@@ -35,3 +97,15 @@ npm run test:e2e
 ```
 
 Para E2E local no Windows, o Playwright usa `npm run dev:webpack`.
+
+## Scripts principais
+
+- `npm run dev`: roda o Next.js em desenvolvimento.
+- `npm run build`: gera client Prisma e build de produção.
+- `npm run start`: inicia a build de produção.
+- `npm run lint`: roda ESLint.
+- `npm run typecheck`: valida TypeScript.
+- `npm run db:deploy`: aplica migrations pendentes.
+- `npm run db:seed`: popula dados iniciais.
+- `npm run import:shopify`: importa produtos do CSV configurado.
+- `npm run validate:project`: roda validações e auditorias principais.

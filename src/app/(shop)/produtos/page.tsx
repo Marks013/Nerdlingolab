@@ -45,16 +45,18 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
       : `Mostrando 1 - ${products.length} de ${products.length} produtos`;
 
   return (
-    <main className="min-h-screen bg-[#f6f7f8]">
+    <main className="geek-page min-h-screen">
       <div className="mx-auto w-full max-w-[1360px] px-4 py-8 sm:px-5 sm:py-10">
         <div className="mb-8">
           <p className="mb-5 text-sm text-[#4f5d65]">Pagina inicial › Todos os produtos</p>
-          <h1 className="text-center text-3xl font-medium tracking-normal text-black sm:text-4xl">Produtos</h1>
+          <div className="text-center">
+            <h1 className="geek-title text-3xl font-medium tracking-normal text-black sm:text-4xl">Produtos</h1>
+          </div>
           <p className="mt-3 text-center text-sm font-semibold text-[#4f5d65]">Seleções especiais da NerdLingoLab</p>
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[260px_1fr]">
-          <aside className="rounded-lg bg-white p-4 shadow-sm sm:p-5 lg:sticky lg:top-5 lg:self-start">
+          <aside className="manga-panel rounded-lg bg-white p-4 shadow-sm sm:p-5 lg:sticky lg:top-5 lg:self-start">
             <div className="mb-5 flex items-center gap-2 text-lg font-black text-black">
               <SlidersHorizontal className="h-5 w-5 text-primary" />
               Filtros
@@ -154,7 +156,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
           </aside>
 
           <section>
-            <div className="mb-5 flex flex-col gap-4 rounded-lg bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
+            <div className="manga-panel mb-5 flex flex-col gap-4 rounded-lg bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
               <p className="text-sm font-medium text-[#4f5d65]">{resultLabel}</p>
 
               <div className="flex flex-wrap items-center gap-3">
@@ -213,7 +215,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
               ))}
             </div>
             {products.length === 0 ? (
-              <p className="rounded-lg bg-white p-6 text-sm text-[#4f5d65] shadow-sm">
+              <p className="manga-panel rounded-lg bg-white p-6 text-sm text-[#4f5d65] shadow-sm">
                 Nenhum produto encontrado com esses filtros.
               </p>
             ) : null}

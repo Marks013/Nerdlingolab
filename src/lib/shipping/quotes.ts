@@ -1,6 +1,7 @@
 import type { ShippingOption } from "@/features/cart/types";
 
 export interface ShippingQuoteInput {
+  freeShippingThresholdCents?: number;
   itemCount: number;
   postalCode?: string;
   subtotalCents: number;
@@ -11,7 +12,7 @@ export interface ShippingQuoteResult {
   selectedOption: ShippingOption | null;
 }
 
-const freeShippingThresholdCents = 29_900;
+export const defaultFreeShippingThresholdCents = 9_990;
 
 export function normalizePostalCode(postalCode?: string): string | null {
   const digits = postalCode?.replace(/\D/g, "") ?? "";
@@ -20,6 +21,7 @@ export function normalizePostalCode(postalCode?: string): string | null {
 }
 
 export function quoteShippingOptions({
+  freeShippingThresholdCents = defaultFreeShippingThresholdCents,
   itemCount,
   postalCode,
   subtotalCents

@@ -7,7 +7,8 @@ export async function getAdminCustomers() {
       _count: {
         select: {
           orders: true,
-          supportTickets: true
+          supportTickets: true,
+          addresses: true
         }
       },
       cpf: true,
@@ -16,7 +17,23 @@ export async function getAdminCustomers() {
       id: true,
       loyaltyPoints: true,
       name: true,
+      orders: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          createdAt: true,
+          orderNumber: true,
+          status: true,
+          totalCents: true
+        },
+        take: 1
+      },
       phone: true,
+      referralCode: {
+        select: {
+          code: true,
+          isActive: true
+        }
+      },
       role: true
     },
     take: 100

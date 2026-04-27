@@ -26,7 +26,7 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
   const featuredProducts = products.filter((product) => !product.compareAtPriceCents).slice(0, 10);
 
   return (
-    <main className="min-h-screen bg-[#f6f7f8]">
+    <main className="geek-page min-h-screen">
       <h1 className="sr-only">NerdLingoLab</h1>
       <section className="overflow-hidden bg-primary">
         <AutoCarousel
@@ -37,7 +37,7 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
         />
       </section>
 
-      <section className="bg-white px-5 py-5">
+      <section className="px-5 py-5">
         <div className="mx-auto flex w-full max-w-[1360px] justify-end">
           <div className="flex flex-wrap gap-3">
             <Link className="inline-flex h-10 items-center rounded-lg bg-primary px-5 text-sm font-black text-white" href="/produtos">
@@ -57,7 +57,7 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
       <div className="mx-auto w-full max-w-[1360px] px-5 py-12">
         <section className="mb-14">
           <AutoCarousel
-            className="rounded-lg bg-white shadow-sm"
+            className="manga-panel rounded-lg bg-white shadow-sm"
             items={theme.promoSlides}
             sizes="(min-width: 1024px) 560px, 100vw"
             slideClassName="relative aspect-square w-full md:aspect-[16/7]"
@@ -88,7 +88,7 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
 
         <PublicOffersSection coupons={offers.coupons} products={offers.products} />
 
-        <section id="sobre" className="grid gap-8 rounded-lg bg-white p-8 shadow-sm lg:grid-cols-[0.8fr_1.2fr]">
+        <section id="sobre" className="manga-panel grid gap-8 rounded-lg bg-white p-8 shadow-sm lg:grid-cols-[0.8fr_1.2fr]">
           <div className="relative min-h-[260px] overflow-hidden rounded-lg bg-[#f7f7f7]">
             <Image
               alt="Mascote NerdLingoLab"

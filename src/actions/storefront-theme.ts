@@ -120,6 +120,11 @@ function readText(formData: FormData, fieldName: string): string {
 function readThemeTextSettings(formData: FormData) {
   return {
     announcementText: readLimitedText(formData, "announcementText", defaultThemeText.announcementText, 120),
+    freeShippingThresholdCents: readMoneyCents(
+      formData,
+      "freeShippingThresholdCents",
+      defaultThemeText.freeShippingThresholdCents
+    ),
     footerNotice: readLimitedText(formData, "footerNotice", defaultThemeText.footerNotice, 320),
     instagramUrl: readUrl(formData, "instagramUrl", defaultThemeText.instagramUrl),
     newsletterDescription: readLimitedText(
@@ -142,6 +147,17 @@ function readLimitedText(formData: FormData, fieldName: string, fallback: string
 
 function readUrl(formData: FormData, fieldName: string, fallback: string): string {
   return normalizeLocalOrHttpUrl(readText(formData, fieldName)) ?? fallback;
+}
+
+function readMoneyCents(formData: FormData, fieldName: string, fallback: number): number {
+  const rawValue = readText(formData, fieldName).replace(/\./g, "").replace(",", ".");
+  const value = Number(rawValue);
+
+  if (!Number.isFinite(value) || value < 0 || value > 10_000) {
+    return fallback;
+  }
+
+  return Math.round(value * 100);
 }
 
 function toJson(slides: StorefrontSlide[]): Prisma.InputJsonValue {

@@ -200,6 +200,10 @@ export async function signOutFromAdmin(): Promise<void> {
   await signOut({ redirectTo: "/admin/login" });
 }
 
+export async function signOutFromCustomer(): Promise<void> {
+  await signOut({ redirectTo: "/" });
+}
+
 async function enforceFormRateLimit(name: string, email: string, limit: number): Promise<void> {
   const requestHeaders = await headers();
   const forwardedFor = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim();

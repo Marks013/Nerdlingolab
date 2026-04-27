@@ -5,6 +5,7 @@ import { z } from "zod";
 import { quoteShippingOptions } from "@/lib/shipping/quotes";
 import { rateLimitRequest } from "@/lib/security/rate-limit";
 import { assertSameOriginRequest } from "@/lib/security/request";
+import { getStorefrontTheme } from "@/lib/theme/storefront";
 
 const shippingQuoteSchema = z.object({
   itemCount: z.coerce.number().int().positive().max(99).default(1),
@@ -32,8 +33,14 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ message: "Informe um CEP válido." }, { status: 400 });
     }
 
+    const theme = await getStorefrontTheme();
+
     return NextResponse.json({
-      options: quoteShippingOptions(parsedBody.data)
+      freeShippingThresholdCents: theme.freeShippingThresholdCents,
+      options: quoteShippingOptions({
+        ...parsedBody.data,
+        freeShippingThresholdCents: theme.freeShippingThresholdCents
+      })
     });
   } catch (error) {
     Sentry.captureException(error);

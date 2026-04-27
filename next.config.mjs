@@ -10,6 +10,56 @@ const nextConfig = {
   images: {
     remotePatterns: getNextImageRemotePatterns()
   },
+  async headers() {
+    const securityHeaders = [
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" }
+    ];
+
+    return [
+      {
+        source: "/:path*",
+        headers: securityHeaders
+      },
+      {
+        source: "/brand-assets/:path*",
+        headers: [
+          ...securityHeaders,
+          { key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }
+        ]
+      },
+      {
+        source: "/admin/:path*",
+        headers: [
+          ...securityHeaders,
+          { key: "Cache-Control", value: "private, no-store" }
+        ]
+      },
+      {
+        source: "/conta/:path*",
+        headers: [
+          ...securityHeaders,
+          { key: "Cache-Control", value: "private, no-store" }
+        ]
+      },
+      {
+        source: "/checkout/:path*",
+        headers: [
+          ...securityHeaders,
+          { key: "Cache-Control", value: "private, no-store" }
+        ]
+      },
+      {
+        source: "/api/:path*",
+        headers: [
+          ...securityHeaders,
+          { key: "Cache-Control", value: "private, no-store" }
+        ]
+      }
+    ];
+  },
   async redirects() {
     return [
       {

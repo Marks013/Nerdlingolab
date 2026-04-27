@@ -9,6 +9,7 @@ import {
   setDefaultCustomerAddress
 } from "@/actions/account-addresses";
 import { updateCustomerProfile } from "@/actions/account-profile";
+import { signOutFromCustomer } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -131,7 +132,7 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
             <CardTitle>{displayName}</CardTitle>
             <CardDescription>{account.user.email}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <form action={updateCustomerProfile} className="grid gap-3">
               <label className="grid gap-2 text-sm font-medium">
                 Nome
@@ -155,6 +156,11 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
                 <Input defaultValue={formatBirthdayInput(account.user.birthday)} name="birthday" type="date" />
               </label>
               <Button type="submit">Salvar dados</Button>
+            </form>
+            <form action={signOutFromCustomer} className="orange-divider pt-4">
+              <Button className="w-full" type="submit" variant="outline">
+                Sair da conta
+              </Button>
             </form>
           </CardContent>
         </Card>

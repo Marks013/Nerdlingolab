@@ -8,6 +8,8 @@ import {
   getPublicProductBySlug,
   getPublicProductRecommendations
 } from "@/lib/catalog/queries";
+import { getProductBadges } from "@/lib/catalog/badges";
+import { getStorefrontTheme } from "@/lib/theme/storefront";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +42,8 @@ export default async function ProductPage({ params }: ProductPageProps): Promise
     categoryId: product.categoryId,
     productId: product.id
   });
+  const theme = await getStorefrontTheme();
+  const productBadges = getProductBadges(product);
 
   return (
     <main className="geek-page min-h-screen">
@@ -57,8 +61,10 @@ export default async function ProductPage({ params }: ProductPageProps): Promise
           images={images}
           primaryImage={primaryImage}
           productId={product.id}
+          productBadges={productBadges}
           productSlug={product.slug}
           productTitle={product.title}
+          freeShippingThresholdCents={theme.freeShippingThresholdCents}
           variants={variants}
         />
 

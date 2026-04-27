@@ -22,6 +22,11 @@ const institutional = [
 const paymentLogos = [
   { label: "Mastercard", Logo: MastercardLogo },
   { label: "Visa", Logo: VisaLogo },
+  { label: "Elo", Logo: EloLogo },
+  { label: "Hipercard", Logo: HipercardLogo },
+  { label: "American Express", Logo: AmexLogo },
+  { label: "Diners Club", Logo: DinersLogo },
+  { label: "Boleto", Logo: BoletoLogo },
   { label: "Pix", Logo: PixLogo }
 ];
 
@@ -117,7 +122,7 @@ export function ShopFooter({
       <section className="mx-auto grid w-full max-w-[1440px] gap-8 px-5 pb-10 sm:px-8 md:grid-cols-2 lg:px-10">
         <div>
           <h2 className="text-sm font-semibold">Segurança e Qualidade</h2>
-          <div className="mt-5 flex flex-wrap items-center gap-3">
+          <div className="mt-5 flex flex-wrap items-center gap-2">
             <SecurityLogoBadge href="https://safeweb.norton.com/" label="Norton Secured">
               <NortonLogo />
             </SecurityLogoBadge>
@@ -132,11 +137,11 @@ export function ShopFooter({
 
         <div>
           <h2 className="text-sm font-semibold">Nós aceitamos</h2>
-          <div className="mt-5 flex flex-wrap items-center gap-3">
+          <div className="mt-5 flex flex-wrap items-center gap-2">
             {paymentLogos.map((payment) => (
               <span
                 aria-label={payment.label}
-                className="payment-badge inline-flex h-14 min-w-[96px] items-center justify-center overflow-hidden rounded-lg border border-[#d9e0e4] bg-white px-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                className="payment-badge inline-flex h-9 min-w-[58px] items-center justify-center overflow-hidden rounded-md border border-[#d9e0e4] bg-white px-2 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
                 key={payment.label}
                 role="img"
                 title={payment.label}
@@ -187,6 +192,65 @@ function VisaLogo(): React.ReactElement {
         d="M36.1 8.2 28.8 24h-5.1L20.1 11.1c-.2-.8-.4-1.1-1.1-1.5-1.1-.6-2.8-1.1-4.4-1.4l.1-.5h8.2c1.1 0 2 .7 2.3 1.9l1.9 9.4 4.7-11.3h4.3Zm12.1 10.6c0-4.1-5.7-4.4-5.7-6.2 0-.6.6-1.2 1.8-1.3.6-.1 2.3-.1 4.3.8l.8-3.6c-1-.4-2.4-.8-4.1-.8-4.4 0-7.5 2.3-7.5 5.7 0 2.5 2.2 3.9 3.9 4.7 1.7.8 2.3 1.4 2.3 2.1 0 1.1-1.4 1.6-2.6 1.6-2.2 0-3.5-.6-4.5-1.1l-.8 3.7c1 .5 2.9.9 4.9 1 4.7 0 7.7-2.3 7.7-5.9Zm11.6 5.2h4.1L60.3 8.2h-3.8c-.9 0-1.6.5-1.9 1.3L47.7 24h4.7l1-2.8h5.7l.7 2.8Zm-5-6.2 2.4-6.6 1.4 6.6h-3.8ZM15.7 8.2 11.2 24H6.6L11 8.2h4.7Zm55.6 0L66.8 24h-4.6l4.4-15.8h4.7Z"
         fill="#1434cb"
       />
+    </svg>
+  );
+}
+
+function EloLogo(): React.ReactElement {
+  return <PaymentWordmark color="#111827" label="elo" />;
+}
+
+function HipercardLogo(): React.ReactElement {
+  return <PaymentWordmark color="#c51f32" label="Hipercard" />;
+}
+
+function AmexLogo(): React.ReactElement {
+  return <PaymentWordmark color="#0072ce" label="AMEX" />;
+}
+
+function DinersLogo(): React.ReactElement {
+  return (
+    <svg aria-hidden="true" className="h-6 w-12" viewBox="0 0 64 32">
+      <rect fill="#fff" height="32" rx="5" width="64" />
+      <rect fill="#0079be" height="22" rx="11" width="42" x="11" y="5" />
+      <circle cx="28" cy="16" fill="#fff" r="9" />
+      <path d="M28 8a8 8 0 0 1 0 16 8 8 0 0 0 0-16Z" fill="#0079be" />
+    </svg>
+  );
+}
+
+function BoletoLogo(): React.ReactElement {
+  return (
+    <svg aria-hidden="true" className="h-6 w-12" viewBox="0 0 64 32">
+      <rect fill="#fff" height="32" rx="5" width="64" />
+      <path d="M10 8h2v16h-2zm5 0h1v16h-1zm4 0h3v16h-3zm7 0h1v16h-1zm4 0h2v16h-2zm6 0h1v16h-1zm4 0h4v16h-4zm8 0h1v16h-1zm4 0h2v16h-2z" fill="#111827" />
+      <text fill="#111827" fontFamily="Arial, sans-serif" fontSize="7" fontWeight="700" x="9" y="30">Boleto</text>
+    </svg>
+  );
+}
+
+function PaymentWordmark({
+  color,
+  label
+}: {
+  color: string;
+  label: string;
+}): React.ReactElement {
+  return (
+    <svg aria-hidden="true" className="h-6 w-14" viewBox="0 0 72 32">
+      <rect fill="white" height="32" rx="5" width="72" />
+      <text
+        fill={color}
+        fontFamily="Arial, sans-serif"
+        fontSize={label.length > 6 ? 10 : 14}
+        fontStyle={label === "elo" ? "italic" : "normal"}
+        fontWeight="900"
+        textAnchor="middle"
+        x="36"
+        y="21"
+      >
+        {label}
+      </text>
     </svg>
   );
 }
@@ -242,7 +306,7 @@ function SecurityLogoBadge({
   return (
     <Link
       aria-label={label}
-      className="inline-flex h-12 min-w-[132px] items-center justify-center rounded-md border border-[#d9e0e4] bg-white px-3 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md"
+      className="inline-flex h-10 min-w-[104px] items-center justify-center rounded-md border border-[#d9e0e4] bg-white px-2 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md"
       href={href}
       title={label}
     >

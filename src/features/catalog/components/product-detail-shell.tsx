@@ -8,11 +8,14 @@ import {
   ProductPurchasePanel,
   type ProductVariantOption
 } from "@/features/catalog/components/product-purchase-panel";
+import { getProductBadgeClass, type ProductBadge } from "@/lib/catalog/badges";
 
 interface ProductDetailShellProps {
   description: string;
+  freeShippingThresholdCents: number;
   images: string[];
   primaryImage: string | null;
+  productBadges: ProductBadge[];
   productId: string;
   productSlug: string;
   productTitle: string;
@@ -21,8 +24,10 @@ interface ProductDetailShellProps {
 
 export function ProductDetailShell({
   description,
+  freeShippingThresholdCents,
   images,
   primaryImage,
+  productBadges,
   productId,
   productSlug,
   productTitle,
@@ -111,7 +116,16 @@ export function ProductDetailShell({
         </div>
 
         <section className="manga-panel rounded-lg bg-white p-5 shadow-sm sm:p-8 lg:sticky lg:top-5">
-          <p className="text-sm text-[#4f5d65]">Novo | Produto disponível</p>
+          <div className="flex flex-wrap gap-2">
+            {(productBadges.length > 0 ? productBadges : [{ label: "Produto disponível", tone: "orange" as const }]).map((badge) => (
+              <span
+                className={`inline-flex rounded-full px-3 py-1 text-xs font-black uppercase ${getProductBadgeClass(badge.tone)}`}
+                key={badge.label}
+              >
+                {badge.label}
+              </span>
+            ))}
+          </div>
           <h1 className="mt-2 text-2xl font-medium leading-tight text-black sm:text-3xl">{productTitle}</h1>
           <p className="mt-4 inline-flex rounded bg-primary px-3 py-1 text-sm font-bold text-white">
             Vendido e entregue pela Nerdlingolab©
@@ -122,6 +136,7 @@ export function ProductDetailShell({
             productId={productId}
             productSlug={productSlug}
             productTitle={productTitle}
+            freeShippingThresholdCents={freeShippingThresholdCents}
             selectedVariantId={selectedVariant?.id ?? selectedVariantId}
             variants={variants}
           />

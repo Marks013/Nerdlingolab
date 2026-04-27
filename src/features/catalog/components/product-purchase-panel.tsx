@@ -1,9 +1,10 @@
 "use client";
 
-import { Heart, MessageCircle, Minus, Plus, Zap } from "lucide-react";
+import { ChevronDown, CreditCard, Heart, MessageCircle, Minus, Plus, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
+import { FreeShippingProgress } from "@/features/shipping/components/free-shipping-progress";
 import { ShippingEstimator } from "@/features/shipping/components/shipping-estimator";
 import { formatCurrency } from "@/lib/format";
 
@@ -18,6 +19,7 @@ export interface ProductVariantOption {
 }
 
 interface ProductPurchasePanelProps {
+  freeShippingThresholdCents: number;
   imageUrl: string | null;
   onVariantSelect?: (variantId: string) => void;
   productId: string;
@@ -28,6 +30,7 @@ interface ProductPurchasePanelProps {
 }
 
 export function ProductPurchasePanel({
+  freeShippingThresholdCents,
   imageUrl,
   onVariantSelect,
   productId,
@@ -52,6 +55,7 @@ export function ProductPurchasePanel({
     selectedVariant.compareAtPriceCents !== null &&
     selectedVariant.compareAtPriceCents > selectedVariant.priceCents;
   const pixPriceCents = Math.round(selectedVariant.priceCents * 0.9);
+  const subtotalCents = selectedVariant.priceCents * quantity;
   const handleVariantSelect = (variantId: string) => {
     setLocalSelectedVariantId(variantId);
     onVariantSelect?.(variantId);
@@ -77,12 +81,7 @@ export function ProductPurchasePanel({
         <p className="mt-2 text-sm text-[#677279]">
           ou até 12x de {formatCurrency(Math.ceil(selectedVariant.priceCents / 10))}
         </p>
-        <div className="mt-4 rounded-lg border bg-white p-4 shadow-sm">
-          <p className="text-lg font-black text-[#1c1c1c]">
-            {formatCurrency(pixPriceCents)} <span className="text-sm font-medium text-[#677279]">no pix</span>
-          </p>
-          <p className="text-sm text-[#677279]">Pague com pix e economize {formatCurrency(selectedVariant.priceCents - pixPriceCents)}</p>
-        </div>
+        <PaymentInstallmentPanel priceCents={selectedVariant.priceCents} pixPriceCents={pixPriceCents} />
       </div>
 
       <div className="mt-7 flex items-center gap-4">
@@ -138,10 +137,76 @@ export function ProductPurchasePanel({
         Adicionar à lista de desejos
       </button>
 
-      <p className="mt-6 text-sm font-bold text-[#677279]">
-        Falta R$ 99,90 para o frete grátis
-      </p>
-      <ShippingEstimator subtotalCents={selectedVariant.priceCents * quantity} />
+      <FreeShippingProgress
+        className="mt-6"
+        subtotalCents={subtotalCents}
+        thresholdCents={freeShippingThresholdCents}
+      />
+      <ShippingEstimator
+        freeShippingThresholdCents={freeShippingThresholdCents}
+        subtotalCents={subtotalCents}
+      />
+    </div>
+  );
+}
+
+function PaymentInstallmentPanel({
+  pixPriceCents,
+  priceCents
+}: {
+  pixPriceCents: number;
+  priceCents: number;
+}): React.ReactElement {
+  const installments = Array.from({ length: 12 }, (_, index) => {
+    const installment = index + 1;
+
+    return {
+      installment,
+      valueCents: Math.ceil(priceCents / installment)
+    };
+  });
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-lg border border-primary/15 bg-white shadow-sm">
+      <details className="group">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+          <span className="flex min-w-0 items-center gap-2 text-sm font-black text-[#1c1c1c]">
+            <CreditCard className="h-4 w-4 text-primary" />
+            mais formas de pagamento
+          </span>
+          <span className="flex items-center gap-2 text-xs font-semibold text-[#677279]">
+            Parcelas
+            <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
+          </span>
+        </summary>
+        <div className="border-t border-primary/10 px-4 py-4">
+          <div className="flex flex-wrap gap-2">
+            {["Master", "Visa", "Elo", "Hipercard", "Amex", "Diners"].map((label) => (
+              <span
+                className="payment-badge inline-flex h-8 min-w-14 items-center justify-center rounded border bg-white px-2 text-[11px] font-black uppercase shadow-sm"
+                key={label}
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-[#4f5d65]">
+            {installments.map(({ installment, valueCents }) => (
+              <p key={installment}>
+                {installment}x de {formatCurrency(valueCents)}
+              </p>
+            ))}
+          </div>
+          <div className="mt-4 border-t pt-4">
+            <p className="text-lg font-black text-[#1c1c1c]">
+              {formatCurrency(pixPriceCents)} <span className="text-sm font-medium text-[#677279]">no pix</span>
+            </p>
+            <p className="text-sm text-[#677279]">
+              Pague com pix e economize {formatCurrency(priceCents - pixPriceCents)}
+            </p>
+          </div>
+        </div>
+      </details>
     </div>
   );
 }

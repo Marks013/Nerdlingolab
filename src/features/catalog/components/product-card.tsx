@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { SafeImage as Image } from "@/components/media/safe-image";
 import { getPrimaryImageUrl } from "@/features/catalog/image-utils";
+import { getProductBadgeClass, getProductBadges } from "@/lib/catalog/badges";
 import { formatCurrency } from "@/lib/format";
 import type { ProductListItem } from "@/lib/catalog/queries";
 
@@ -15,9 +16,10 @@ interface ProductCardProps {
 export function ProductCard({ imagePriority = false, product }: ProductCardProps): React.ReactElement {
   const imageUrl = getPrimaryImageUrl(product.images);
   const hasDiscount = Boolean(product.compareAtPriceCents && product.compareAtPriceCents > product.priceCents);
+  const badges = getProductBadges(product);
 
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-lg bg-white shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg">
+    <article className="manga-panel group relative flex h-full flex-col overflow-hidden rounded-lg bg-white shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg">
       <Link className="flex h-full flex-col" href={`/produtos/${product.slug}`}>
         <div className="relative aspect-[4/4.1] overflow-hidden bg-[#f7f7f7]">
           {imageUrl ? (
@@ -31,9 +33,15 @@ export function ProductCard({ imagePriority = false, product }: ProductCardProps
               src={imageUrl}
             />
           ) : null}
-          <span className="absolute left-3 top-3 inline-flex h-7 items-center rounded-full bg-[#237f34] px-3 text-[11px] font-black uppercase tracking-normal text-white shadow-sm sm:left-4">
-            {hasDiscount ? "Oferta" : "Novo"}
-          </span>
+          {badges.length > 0 ? (
+            <div className="absolute left-3 top-3 z-10 flex max-w-[calc(100%-4rem)] flex-wrap gap-1.5 sm:left-4">
+              {badges.slice(0, 2).map((badge) => (
+                <span className={`inline-flex h-7 items-center rounded-full px-3 text-[11px] font-black uppercase tracking-normal shadow-sm ${getProductBadgeClass(badge.tone)}`} key={badge.label}>
+                  {badge.label}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
         <div className="flex flex-1 flex-col px-4 py-4 sm:px-5 sm:py-5">
           <h3 className="line-clamp-2 min-h-[42px] text-sm font-black leading-snug text-black sm:text-base">

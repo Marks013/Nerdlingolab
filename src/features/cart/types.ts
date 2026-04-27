@@ -70,6 +70,7 @@ export interface CartValidationResponse {
   couponDiscountCents: number;
   loyaltyDiscountCents: number;
   shippingCents: number;
+  freeShippingThresholdCents: number;
   totalCents: number;
   itemCount: number;
   appliedCoupon: AppliedCoupon | null;

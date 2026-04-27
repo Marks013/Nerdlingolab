@@ -1,10 +1,11 @@
 "use client";
 
-import { Gift, Headphones, Menu, Search, ShoppingBag, ShoppingCart, Star, Tags, UserRound } from "lucide-react";
+import { Bot, ChevronDown, ChevronRight, Headphones, Menu, Search, ShoppingCart, Star, Tags, Ticket, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { signOutFromCustomer } from "@/actions/auth";
 import { SafeImage as Image } from "@/components/media/safe-image";
 import { useCartStore } from "@/features/cart/cart-store";
 
@@ -16,19 +17,36 @@ const headerLinks = [
 ];
 
 const categoryLinks = [
-  { href: "/cupons", label: "Cupons", icon: Gift, color: "bg-[#b45700]" },
-  { href: "/ofertas", label: "Ofertas", icon: Star, color: "bg-[#c72046]" },
-  { href: "/produtos?categoria=temporada", label: "Temporadas", icon: Tags, color: "bg-[#2f7f37]" },
-  { href: "/produtos?categoria=action-figures", label: "Action Figures", icon: ShoppingBag, color: "bg-[#5724b8]" }
+  { href: "/cupons", label: "Cupons", icon: Ticket, color: "bg-[#ffd13d]", iconColor: "text-[#221b00]" },
+  { href: "/ofertas", label: "Ofertas", icon: Star, color: "bg-[#ff4e70]", iconColor: "text-[#24000a]" },
+  { href: "/produtos?categoria=temporada", label: "Temporada", icon: Tags, color: "bg-[#3fc66a]", iconColor: "text-[#062411]" },
+  { href: "/produtos?categoria=action-figures", label: "Action Figures", icon: Bot, color: "bg-[#5522a8]", iconColor: "text-white" }
+];
+
+const drawerCategoryGroups = [
+  { href: "/produtos?ordem=recentes", label: "Novidades" },
+  { href: "/produtos?ordem=maior-valor", label: "Mais Vendidos" },
+  { href: "/ofertas", label: "Ofertas" },
+  { href: "/produtos?categoria=temporada", label: "Temporadas" }
+];
+
+const drawerCatalogLinks = [
+  { href: "/produtos?categoria=camisetas", label: "Camisetas" },
+  { href: "/produtos?categoria=anime", label: "Anime" },
+  { href: "/produtos?categoria=geek", label: "Geek" },
+  { href: "/produtos?categoria=oversized", label: "Oversized" }
 ];
 
 export function ShopHeader({
-  announcementText = "FRETE GRÁTIS em compras acima de R$99,90"
+  announcementText = "FRETE GRÁTIS em compras acima de R$99,90",
+  isAuthenticated = false
 }: {
   announcementText?: string;
+  isAuthenticated?: boolean;
 }): React.ReactElement {
   const router = useRouter();
   const hydratedSearchRef = useRef(false);
+  const [isCategoryDrawerOpen, setIsCategoryDrawerOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const cartCount = useCartStore((state) => state.items.reduce((total, item) => total + item.quantity, 0));
   const cartBadgeLabel = useMemo(() => (cartCount > 99 ? "99+" : String(cartCount)), [cartCount]);
@@ -117,25 +135,36 @@ export function ShopHeader({
                 {link.label}
               </Link>
             ))}
+            {isAuthenticated ? (
+              <form action={signOutFromCustomer}>
+                <button
+                  className="inline-flex h-10 items-center gap-2 rounded-md border border-primary/25 bg-white px-3 text-sm font-semibold text-primary transition duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  type="submit"
+                >
+                  Sair
+                </button>
+              </form>
+            ) : null}
           </nav>
         </div>
       </div>
 
       <div className="border-t border-white/20 bg-[#ff6902]">
         <div className="mx-auto flex min-h-[112px] w-full max-w-[1440px] flex-col items-stretch gap-5 px-4 py-4 sm:px-5 md:flex-row md:items-center">
-          <Link
+          <button
             className="inline-flex h-11 items-center justify-center gap-3 rounded-lg bg-white px-5 text-sm font-bold text-black shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-[#fff7ef] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white md:justify-start"
-            href="/produtos"
+            onClick={() => setIsCategoryDrawerOpen(true)}
+            type="button"
           >
             <Menu className="h-5 w-5" />
-            Categorias
-          </Link>
+            Todas as Categorias
+          </button>
 
           <nav className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-4 md:flex md:flex-wrap md:items-center md:justify-center md:gap-6">
             {categoryLinks.map((link) => (
               <Link className="group min-w-0 text-center text-sm font-bold text-white focus-visible:outline-none" href={link.href} key={link.label}>
-                <span className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full shadow-sm ring-1 ring-white/35 md:h-18 md:w-18 ${link.color} transition duration-200 group-hover:-translate-y-1 group-hover:scale-105 group-hover:shadow-lg group-focus-visible:ring-2 group-focus-visible:ring-white`}>
-                  <link.icon className="h-8 w-8 text-white transition duration-200 group-hover:rotate-[-6deg] group-hover:scale-110 md:h-9 md:w-9" />
+                <span className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full shadow-lg ring-2 ring-white/20 md:h-20 md:w-20 ${link.color} transition duration-200 group-hover:-translate-y-1 group-hover:scale-105 group-hover:shadow-xl group-focus-visible:ring-2 group-focus-visible:ring-white`}>
+                  <link.icon className={`h-9 w-9 ${link.iconColor} transition duration-200 group-hover:rotate-[-6deg] group-hover:scale-110 md:h-10 md:w-10`} />
                 </span>
                 <span className="mt-2 block leading-tight drop-shadow-sm">{link.label}</span>
               </Link>
@@ -143,6 +172,94 @@ export function ShopHeader({
           </nav>
         </div>
       </div>
+
+      <CategoryDrawer isOpen={isCategoryDrawerOpen} onClose={() => setIsCategoryDrawerOpen(false)} />
     </header>
+  );
+}
+
+function CategoryDrawer({
+  isOpen,
+  onClose
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}): React.ReactElement {
+  return (
+    <div
+      aria-hidden={!isOpen}
+      className={[
+        "fixed inset-0 z-50 transition",
+        isOpen ? "pointer-events-auto bg-black/45 opacity-100" : "pointer-events-none bg-black/0 opacity-0"
+      ].join(" ")}
+    >
+      <aside
+        aria-label="Todas as categorias"
+        className={[
+          "h-full w-[min(330px,92vw)] overflow-hidden bg-white text-[#1c1c1c] shadow-2xl transition-transform duration-300",
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        ].join(" ")}
+      >
+        <div className="flex h-16 items-center justify-between bg-primary px-5 text-white">
+          <span className="inline-flex items-center gap-2 text-base font-black">
+            <Menu className="h-5 w-5" />
+            Todas as Categorias
+          </span>
+          <button
+            aria-label="Fechar categorias"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-white/15"
+            onClick={onClose}
+            type="button"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <nav className="max-h-[calc(100vh-64px)] overflow-y-auto pb-5">
+          {drawerCategoryGroups.map((item) => (
+            <Link
+              className="flex min-h-14 items-center justify-between border-b px-6 text-sm font-bold transition hover:bg-[#fff7ef] hover:text-primary"
+              href={item.href}
+              key={item.label}
+              onClick={onClose}
+            >
+              {item.label}
+              <ChevronRight className="h-4 w-4 text-[#9aa1a6]" />
+            </Link>
+          ))}
+
+          <div className="border-b">
+            <div className="flex min-h-14 items-center justify-between px-6 text-sm font-bold">
+              Catálogo
+              <ChevronDown className="h-4 w-4 text-primary" />
+            </div>
+            <div className="bg-[#f7f7f7]">
+              {drawerCatalogLinks.map((item) => (
+                <Link
+                  className="flex min-h-12 items-center gap-3 border-t border-white px-10 text-sm text-[#4f5d65] transition hover:bg-white hover:text-primary"
+                  href={item.href}
+                  key={item.label}
+                  onClick={onClose}
+                >
+                  <ChevronRight className="h-3 w-3 text-[#c0c6ca]" />
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="sticky bottom-0 bg-white p-5">
+            <Link
+              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-black text-white shadow-md transition hover:bg-primary/90"
+              href="/produtos"
+              onClick={onClose}
+            >
+              <Menu className="h-4 w-4" />
+              Ver todas as coleções
+            </Link>
+          </div>
+        </nav>
+      </aside>
+    </div>
   );
 }

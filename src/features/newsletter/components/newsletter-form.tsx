@@ -17,6 +17,15 @@ export function NewsletterForm(): React.ReactElement {
     <form action={formAction} className="mt-6 grid gap-3">
       <label className="sr-only" htmlFor="footer-email">Newsletter</label>
       <input
+        aria-hidden="true"
+        autoComplete="off"
+        className="hidden"
+        id="footer-website"
+        name="website"
+        tabIndex={-1}
+        type="text"
+      />
+      <input
         className="h-12 rounded-lg border border-[#d7dde1] px-4 text-sm outline-none transition focus:border-primary"
         id="footer-email"
         maxLength={160}

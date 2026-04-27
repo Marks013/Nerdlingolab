@@ -175,8 +175,22 @@ textarea {
 
 .payment-badge svg {
   display: block;
-  height: 2.25rem;
-  max-width: 5.5rem;
+  height: 1.75rem;
+  max-width: 4.25rem;
+}
+
+.free-shipping-meter [role="progressbar"] {
+  position: relative;
+  overflow: hidden;
+}
+
+.free-shipping-meter [role="progressbar"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 0 35%, rgb(255 255 255 / 0.42) 45%, transparent 58%);
+  animation: nl-meter-shine 1.8s ease-in-out infinite;
+  transform: translateX(-100%);
 }
 
 .nl-motion-ready .motion-lift {
@@ -195,6 +209,12 @@ textarea {
   0% { transform: scale(1); }
   45% { transform: scale(0.975); }
   100% { transform: scale(1); }
+}
+
+@keyframes nl-meter-shine {
+  0% { transform: translateX(-100%); }
+  55% { transform: translateX(100%); }
+  100% { transform: translateX(100%); }
 }
 
 @media (prefers-reduced-motion: reduce) {

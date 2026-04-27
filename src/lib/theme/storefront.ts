@@ -12,6 +12,7 @@ export interface StorefrontSlide {
 
 export interface StorefrontThemeView {
   announcementText: string;
+  freeShippingThresholdCents: number;
   footerNotice: string;
   heroSlides: StorefrontSlide[];
   instagramUrl: string;
@@ -25,6 +26,7 @@ export interface StorefrontThemeView {
 
 export const defaultThemeText = {
   announcementText: "FRETE GRÁTIS em compras acima de R$99,90",
+  freeShippingThresholdCents: 9_990,
   footerNotice: "Oferta exclusiva neste site oficial, sujeita a variação. Evite comprar produtos mais baratos ou de outras lojas, para evitar golpes.",
   instagramUrl: "https://instagram.com/nerdlingolab",
   newsletterDescription: "Inscreva-se para receber descontos exclusivos direto no seu e-mail!",
@@ -92,6 +94,10 @@ export async function getStorefrontTheme(): Promise<StorefrontThemeView> {
 
     return {
       announcementText: readLimitedText(theme?.announcementText, defaultThemeText.announcementText, 120),
+      freeShippingThresholdCents: readMoneyCents(
+        theme?.freeShippingThresholdCents,
+        defaultThemeText.freeShippingThresholdCents
+      ),
       footerNotice: readLimitedText(theme?.footerNotice, defaultThemeText.footerNotice, 320),
       heroSlides: normalizeSlides(theme?.heroSlides, defaultHeroSlides),
       instagramUrl: readUrl(theme?.instagramUrl, defaultThemeText.instagramUrl),
@@ -175,6 +181,12 @@ function readLimitedText(value: unknown, fallback: string, maxLength: number): s
   const text = typeof value === "string" ? value.trim() : "";
 
   return text.length > 0 && text.length <= maxLength ? text : fallback;
+}
+
+function readMoneyCents(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 1_000_000
+    ? value
+    : fallback;
 }
 
 function readUrl(value: unknown, fallback: string): string {

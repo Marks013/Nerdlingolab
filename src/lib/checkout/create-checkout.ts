@@ -4,7 +4,6 @@ import type { CheckoutRequestInput } from "@/features/checkout/schemas";
 import type { CustomerAddressInput } from "@/lib/addresses/schema";
 import { validateCartItems } from "@/lib/cart/validation";
 import { sendOrderCreatedEmail } from "@/lib/email/transactional";
-import { env } from "@/lib/env";
 import {
   releaseInventoryReservations,
   reserveInventoryForCheckout
@@ -22,6 +21,8 @@ interface MercadoPagoPreferenceResponse {
   init_point?: string;
   sandbox_init_point?: string;
 }
+
+const appUrl = process.env.APP_URL ?? "http://localhost:3000";
 
 function buildProductSnapshot(item: Awaited<ReturnType<typeof validateCartItems>>["items"][number]): Prisma.InputJsonObject {
   return {
@@ -241,12 +242,12 @@ async function createMercadoPagoPreference({
         }
       },
       back_urls: {
-        success: `${env.APP_URL}/checkout/retorno?status=success`,
-        failure: `${env.APP_URL}/checkout/retorno?status=failure`,
-        pending: `${env.APP_URL}/checkout/retorno?status=pending`
+        success: `${appUrl}/checkout/retorno?status=success`,
+        failure: `${appUrl}/checkout/retorno?status=failure`,
+        pending: `${appUrl}/checkout/retorno?status=pending`
       },
       auto_return: "approved",
-      notification_url: `${env.APP_URL}/api/webhooks/mercadopago`,
+      notification_url: `${appUrl}/api/webhooks/mercadopago`,
       external_reference: orderId,
       statement_descriptor: "NERDLINGOLAB"
     }

@@ -7,10 +7,10 @@ import {
   OrderPaidEmail,
   type OrderEmailModel
 } from "@/emails/order-emails";
-import { env } from "@/lib/env";
 import { getAdminOrderById } from "@/lib/orders/queries";
 
-const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
+const emailFrom = process.env.EMAIL_FROM ?? "NerdLingoLab <no-reply@nerdlingolab.com>";
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export async function sendOrderCreatedEmail({
   checkoutUrl,
@@ -58,7 +58,7 @@ async function sendOrderEmail({
     const html = await buildHtml(emailOrder);
 
     await resend.emails.send({
-      from: env.EMAIL_FROM,
+      from: emailFrom,
       html,
       subject: `${subjectPrefix} · ${order.orderNumber}`,
       to: order.email

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { auth } from "@/lib/auth";
-import { env } from "@/lib/env";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { buildReferralSignupUrl, ensureReferralCode, getReferralStatusLabel } from "@/lib/loyalty/referrals";
 import {
@@ -68,7 +67,7 @@ export default async function AccountNerdcoinsPage(): Promise<React.ReactElement
     spendCents: loyaltyPoints.tierSpendCents,
     tier: loyaltyPoints.tier
   });
-  const referralUrl = buildReferralSignupUrl(env.APP_URL, referralCode);
+  const referralUrl = buildReferralSignupUrl(process.env.APP_URL ?? "http://localhost:3000", referralCode);
 
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-4 py-10 sm:px-6 lg:px-8">

@@ -1,7 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-import { env } from "@/lib/env";
-
 interface MercadoPagoSignatureParts {
   timestamp: string;
   signature: string;
@@ -48,7 +46,9 @@ function getManifestDataId(request: Request, payload: unknown): string | null {
 }
 
 export function verifyMercadoPagoWebhookSignature(request: Request, payload: unknown): boolean {
-  if (!env.MERCADO_PAGO_WEBHOOK_SECRET) {
+  const webhookSecret = process.env.MERCADO_PAGO_WEBHOOK_SECRET;
+
+  if (!webhookSecret) {
     return process.env.NODE_ENV !== "production";
   }
 
@@ -61,7 +61,7 @@ export function verifyMercadoPagoWebhookSignature(request: Request, payload: unk
   }
 
   const manifest = `id:${dataId};request-id:${requestId};ts:${signatureParts.timestamp};`;
-  const expectedSignature = createHmac("sha256", env.MERCADO_PAGO_WEBHOOK_SECRET)
+  const expectedSignature = createHmac("sha256", webhookSecret)
     .update(manifest)
     .digest("hex");
   const expectedBuffer = Buffer.from(expectedSignature, "hex");

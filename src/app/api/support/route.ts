@@ -62,7 +62,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     Sentry.captureException(error);
 
     return NextResponse.json(
-      { message: error instanceof Error ? error.message : "Não foi possível enviar sua mensagem agora." },
+      { message: "Nao foi possivel enviar sua mensagem agora." },
       { status: 503 }
     );
   }

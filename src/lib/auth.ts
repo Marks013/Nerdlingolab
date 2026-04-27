@@ -6,7 +6,6 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { z } from "zod";
 
-import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 
 const credentialsSchema = z.object({
@@ -56,11 +55,11 @@ const providers: NextAuthConfig["providers"] = [
   })
 ];
 
-if (env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET) {
+if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
   providers.push(
     Google({
-      clientId: env.AUTH_GOOGLE_ID,
-      clientSecret: env.AUTH_GOOGLE_SECRET
+      clientId: process.env.AUTH_GOOGLE_ID,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET
     })
   );
 }

@@ -1,8 +1,8 @@
 import { Archive, Pencil, Plus, RotateCw } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
 import { archiveProduct, syncShopifyProductsFromCsv } from "@/actions/catalog";
+import { SafeImage as Image } from "@/components/media/safe-image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProductStatus, type Category } from "@/generated/prisma/client";

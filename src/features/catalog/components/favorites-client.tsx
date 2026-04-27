@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 
+import { SafeImage as Image } from "@/components/media/safe-image";
 import { formatCurrency } from "@/lib/format";
 
 import { useFavorites } from "./favorite-button";

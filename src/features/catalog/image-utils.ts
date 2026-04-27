@@ -1,3 +1,5 @@
+import { normalizeImageUrl } from "@/lib/images";
+
 export function getImageUrls(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
@@ -15,6 +17,7 @@ export function getImageUrls(value: unknown): string[] {
 
       return null;
     })
+    .map((item) => normalizeImageUrl(item))
     .filter((item): item is string => Boolean(item));
 }
 

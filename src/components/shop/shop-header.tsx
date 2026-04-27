@@ -1,7 +1,7 @@
 import { Gift, Headphones, Menu, Search, ShoppingBag, ShoppingCart, Star, Tags, UserRound } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
+import { SafeImage as Image } from "@/components/media/safe-image";
 const headerLinks = [
   { href: "/conta", label: "Conta", icon: UserRound },
   { href: "/carrinho", label: "Carrinho", icon: ShoppingCart },

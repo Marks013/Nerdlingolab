@@ -1,10 +1,10 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { SafeImage as Image } from "@/components/media/safe-image";
 export interface AutoCarouselItem {
   alt: string;
   desktop?: string;

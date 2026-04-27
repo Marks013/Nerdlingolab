@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useMemo, useState } from "react";
 
+import { SafeImage as Image } from "@/components/media/safe-image";
 import { FavoriteButton } from "@/features/catalog/components/favorite-button";
 import {
   ProductPurchasePanel,

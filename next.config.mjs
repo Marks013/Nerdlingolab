@@ -1,24 +1,14 @@
 import { withSentryConfig } from "@sentry/nextjs";
 
+import { getNextImageRemotePatterns } from "./config/remote-image-patterns.mjs";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   output: "standalone",
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "**",
-        pathname: "/**"
-      },
-      {
-        protocol: process.env.MINIO_USE_SSL === "true" ? "https" : "http",
-        hostname: process.env.MINIO_ENDPOINT ?? "localhost",
-        port: process.env.MINIO_PORT ?? "9000",
-        pathname: `/${process.env.MINIO_BUCKET ?? "product-images"}/**`
-      }
-    ]
+    remotePatterns: getNextImageRemotePatterns()
   },
   async redirects() {
     return [

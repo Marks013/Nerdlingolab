@@ -1,6 +1,5 @@
-import Image from "next/image";
-
 import { resetStorefrontTheme, updateStorefrontTheme } from "@/actions/storefront-theme";
+import { SafeImage as Image } from "@/components/media/safe-image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

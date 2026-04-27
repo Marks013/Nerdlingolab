@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { normalizeImageUrl } from "@/lib/images";
+import { normalizeLocalOrHttpUrl } from "@/lib/urls";
 
 export interface StorefrontSlide {
   alt: string;
@@ -162,27 +164,11 @@ function readSlideText(value: unknown): string | undefined {
 }
 
 function readSlideHref(value: unknown): string {
-  const href = typeof value === "string" ? value.trim() : "";
-
-  if (href.startsWith("/") || href.startsWith("https://") || href.startsWith("http://")) {
-    return href;
-  }
-
-  return "/produtos";
+  return normalizeLocalOrHttpUrl(value) ?? "/produtos";
 }
 
 function readAssetPath(value: unknown): string | undefined {
-  const assetPath = typeof value === "string" ? value.trim() : "";
-
-  if (!assetPath) {
-    return undefined;
-  }
-
-  if (assetPath.startsWith("/") || assetPath.startsWith("https://") || assetPath.startsWith("http://")) {
-    return assetPath;
-  }
-
-  return undefined;
+  return normalizeImageUrl(value) ?? undefined;
 }
 
 function readLimitedText(value: unknown, fallback: string, maxLength: number): string {
@@ -192,11 +178,5 @@ function readLimitedText(value: unknown, fallback: string, maxLength: number): s
 }
 
 function readUrl(value: unknown, fallback: string): string {
-  const url = typeof value === "string" ? value.trim() : "";
-
-  if (url.startsWith("/") || url.startsWith("https://") || url.startsWith("http://")) {
-    return url;
-  }
-
-  return fallback;
+  return normalizeLocalOrHttpUrl(value) ?? fallback;
 }

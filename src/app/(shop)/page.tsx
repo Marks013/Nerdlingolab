@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { AutoCarousel } from "@/components/shop/auto-carousel";
+import { SafeImage as Image } from "@/components/media/safe-image";
 import { ShopTrustStrip } from "@/components/shop/shop-trust-strip";
 import { ProductCard } from "@/features/catalog/components/product-card";
 import { PublicOffersSection } from "@/features/offers/components/public-offers-section";

@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 
+import { SafeImage as Image } from "@/components/media/safe-image";
 import { getPrimaryImageUrl } from "@/features/catalog/image-utils";
 import { formatCurrency } from "@/lib/format";
 import type { ProductListItem } from "@/lib/catalog/queries";
@@ -14,7 +14,6 @@ interface ProductCardProps {
 
 export function ProductCard({ imagePriority = false, product }: ProductCardProps): React.ReactElement {
   const imageUrl = getPrimaryImageUrl(product.images);
-  const isRemoteImage = Boolean(imageUrl?.startsWith("http://") || imageUrl?.startsWith("https://"));
   const hasDiscount = Boolean(product.compareAtPriceCents && product.compareAtPriceCents > product.priceCents);
 
   return (
@@ -30,7 +29,6 @@ export function ProductCard({ imagePriority = false, product }: ProductCardProps
               preload={imagePriority}
               sizes="(min-width: 1280px) 16vw, (min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw"
               src={imageUrl}
-              unoptimized={isRemoteImage}
             />
           ) : null}
           <span className="absolute left-3 top-3 inline-flex h-7 items-center rounded-full bg-[#237f34] px-3 text-[11px] font-black uppercase tracking-normal text-white shadow-sm sm:left-4">

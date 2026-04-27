@@ -13,6 +13,7 @@ import {
   type StorefrontSlide
 } from "@/lib/theme/storefront";
 import { prisma } from "@/lib/prisma";
+import { normalizeLocalOrHttpUrl } from "@/lib/urls";
 
 const MAX_SLIDES = 8;
 
@@ -140,13 +141,7 @@ function readLimitedText(formData: FormData, fieldName: string, fallback: string
 }
 
 function readUrl(formData: FormData, fieldName: string, fallback: string): string {
-  const url = readText(formData, fieldName);
-
-  if (url.startsWith("/") || url.startsWith("https://") || url.startsWith("http://")) {
-    return url;
-  }
-
-  return fallback;
+  return normalizeLocalOrHttpUrl(readText(formData, fieldName)) ?? fallback;
 }
 
 function toJson(slides: StorefrontSlide[]): Prisma.InputJsonValue {

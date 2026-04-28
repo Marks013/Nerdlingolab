@@ -14,6 +14,7 @@ import {
   productFormSchema
 } from "@/features/catalog/schemas";
 import { requireAdmin } from "@/lib/admin";
+import { internalizeExternalMediaUrls } from "@/lib/media/import-external";
 import { deleteUnusedMediaAssets, syncMediaUsages } from "@/lib/media/assets";
 import { prisma } from "@/lib/prisma";
 
@@ -58,7 +59,7 @@ export async function createProduct(formData: FormData): Promise<void> {
     throw new Error(parsedInput.error.issues[0]?.message ?? "Produto invalido.");
   }
 
-  const productInput = normalizeProductInput(parsedInput.data);
+  const productInput = await internalizeProductInputImages(normalizeProductInput(parsedInput.data));
 
   let createdProductId = "";
 
@@ -143,7 +144,7 @@ export async function updateProduct(productId: string, formData: FormData): Prom
     throw new Error(parsedInput.error.issues[0]?.message ?? "Produto invalido.");
   }
 
-  const productInput = normalizeProductInput(parsedInput.data);
+  const productInput = await internalizeProductInputImages(normalizeProductInput(parsedInput.data));
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -338,4 +339,11 @@ function formValuesToProductInput(formData: FormData): Record<string, FormDataEn
 function revalidateCatalogPaths(): void {
   revalidatePath("/admin/produtos");
   revalidatePath("/produtos");
+}
+
+async function internalizeProductInputImages<T extends { imagesArray: string[] }>(productInput: T): Promise<T> {
+  return {
+    ...productInput,
+    imagesArray: await internalizeExternalMediaUrls(productInput.imagesArray, "PRODUCT")
+  };
 }

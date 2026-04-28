@@ -1,6 +1,8 @@
 import { getToken } from "next-auth/jwt";
 import { type NextRequest, NextResponse } from "next/server";
 
+import { shouldUseSecureAuthCookies } from "@/lib/auth-cookies";
+
 const adminRoles = new Set(["ADMIN", "SUPERADMIN"]);
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
@@ -14,7 +16,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
   const token = await getToken({
     req: request,
-    secret: process.env.AUTH_SECRET
+    secret: process.env.AUTH_SECRET,
+    secureCookie: shouldUseSecureAuthCookies()
   });
   const role = typeof token?.role === "string" ? token.role : null;
 

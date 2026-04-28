@@ -6,6 +6,7 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { z } from "zod";
 
+import { shouldUseSecureAuthCookies } from "@/lib/auth-cookies";
 import { prisma } from "@/lib/prisma";
 
 const credentialsSchema = z.object({
@@ -72,7 +73,7 @@ export const authConfig = {
     strategy: "jwt"
   },
   trustHost: true,
-  useSecureCookies: process.env.NODE_ENV === "production",
+  useSecureCookies: shouldUseSecureAuthCookies(),
   pages: {
     signIn: "/entrar"
   },

@@ -5,6 +5,7 @@ import * as Sentry from "@sentry/nextjs";
 import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/admin";
+import { internalizeExternalMediaUrl } from "@/lib/media/import-external";
 import { syncMediaUsages } from "@/lib/media/assets";
 import {
   defaultThemeText,
@@ -23,8 +24,8 @@ export async function updateStorefrontTheme(formData: FormData): Promise<void> {
 
   const name = readText(formData, "name") || "Tema principal";
   const textSettings = readThemeTextSettings(formData);
-  const heroSlides = readSlides(formData, "hero", defaultHeroSlides);
-  const promoSlides = readSlides(formData, "promo", defaultPromoSlides);
+  const heroSlides = await internalizeSlideImages(readSlides(formData, "hero", defaultHeroSlides));
+  const promoSlides = await internalizeSlideImages(readSlides(formData, "promo", defaultPromoSlides));
 
   try {
     await prisma.storefrontTheme.upsert({
@@ -228,6 +229,27 @@ async function syncStorefrontThemeMediaUsages(
 
 function extractSlideUrls(slides: StorefrontSlide[]): string[] {
   return slides.flatMap((slide) => [slide.desktop, slide.mobile, slide.src]).filter((url): url is string => Boolean(url));
+}
+
+async function internalizeSlideImages(slides: StorefrontSlide[]): Promise<StorefrontSlide[]> {
+  const nextSlides: StorefrontSlide[] = [];
+
+  for (const slide of slides) {
+    nextSlides.push({
+      ...slide,
+      ...(slide.desktop
+        ? { desktop: await internalizeExternalMediaUrl(slide.desktop, "STOREFRONT_THEME") }
+        : {}),
+      ...(slide.mobile
+        ? { mobile: await internalizeExternalMediaUrl(slide.mobile, "STOREFRONT_THEME") }
+        : {}),
+      ...(slide.src
+        ? { src: await internalizeExternalMediaUrl(slide.src, "STOREFRONT_THEME") }
+        : {})
+    });
+  }
+
+  return nextSlides;
 }
 
 async function saveThemeWithoutFreeShippingThreshold({

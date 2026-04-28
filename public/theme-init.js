@@ -1,13 +1,24 @@
 (function () {
   try {
-    var storedTheme = window.localStorage.getItem("nerdlingolab-theme");
-    var theme = storedTheme || "light";
+    var isAdminRoute = window.location.pathname.indexOf("/admin") === 0;
+    var legacyThemeKey = "nerdlingolab-theme";
+    var adminThemeKey = "nerdlingolab-admin-theme";
+    var legacyTheme = window.localStorage.getItem(legacyThemeKey);
+    var storedTheme = isAdminRoute ? window.localStorage.getItem(adminThemeKey) || legacyTheme : null;
+    var theme = storedTheme === "dark" ? "dark" : "light";
     var root = document.documentElement;
 
+    if (isAdminRoute && legacyTheme && !window.localStorage.getItem(adminThemeKey)) {
+      window.localStorage.setItem(adminThemeKey, theme);
+    }
+
+    window.localStorage.removeItem(legacyThemeKey);
+
     root.classList.toggle("light", theme === "light");
-    root.classList.toggle("dark", theme !== "light");
+    root.classList.toggle("dark", isAdminRoute && theme === "dark");
     root.dataset.theme = theme;
-    root.style.colorScheme = theme === "light" ? "light" : "dark";
+    root.dataset.themeScope = isAdminRoute ? "admin" : "shop";
+    root.style.colorScheme = isAdminRoute && theme === "dark" ? "dark" : "light";
 
     var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 

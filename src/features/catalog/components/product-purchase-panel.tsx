@@ -101,13 +101,25 @@ export function ProductPurchasePanel({
       </div>
 
       <div className="mt-7 flex items-center gap-4">
-        <span className="text-sm font-bold text-[#677279]">Quantidade</span>
-        <div className="inline-flex h-10 overflow-hidden rounded-lg border">
-          <button className="flex w-11 items-center justify-center bg-white" onClick={() => setQuantity(Math.max(1, quantity - 1))} type="button">
+        <span className="text-sm font-black text-[#3a2a1c]">Quantidade</span>
+        <div className="inline-flex h-11 overflow-hidden rounded-xl border-2 border-primary/70 bg-[#fff7ed] shadow-[0_8px_18px_rgba(255,102,0,0.16)]">
+          <button
+            className="flex w-12 items-center justify-center bg-[#fff0e3] text-primary transition hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
+            disabled={quantity <= 1}
+            onClick={() => setQuantity(Math.max(1, quantity - 1))}
+            type="button"
+          >
             <Minus className="h-4 w-4" />
           </button>
-          <span className="flex w-12 items-center justify-center border-x bg-white text-sm font-bold">{quantity}</span>
-          <button className="flex w-11 items-center justify-center bg-white" onClick={() => setQuantity(Math.min(selectedVariant.availableStock, quantity + 1))} type="button">
+          <span className="flex w-14 items-center justify-center border-x-2 border-primary/30 bg-white text-base font-black text-[#1c1c1c]">
+            {quantity}
+          </span>
+          <button
+            className="flex w-12 items-center justify-center bg-[#fff0e3] text-primary transition hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
+            disabled={quantity >= selectedVariant.availableStock}
+            onClick={() => setQuantity(Math.min(selectedVariant.availableStock, quantity + 1))}
+            type="button"
+          >
             <Plus className="h-4 w-4" />
           </button>
         </div>

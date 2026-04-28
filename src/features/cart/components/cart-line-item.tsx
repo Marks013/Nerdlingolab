@@ -49,25 +49,29 @@ export function CartLineItem({
         <p className="mt-1 text-xs text-muted-foreground">Estoque disponível: {item.availableStock}</p>
       </div>
       <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-end">
-        <div className="flex items-center gap-2">
+        <div className="inline-flex h-11 overflow-hidden rounded-xl border-2 border-primary/70 bg-[#fff7ed] shadow-[0_8px_18px_rgba(255,102,0,0.14)]">
           <Button
             aria-label={`Diminuir quantidade de ${item.title}`}
+            className="h-full w-11 rounded-none border-0 bg-[#fff0e3] text-primary shadow-none transition hover:bg-primary hover:text-white disabled:opacity-45"
             disabled={item.quantity <= 1}
             onClick={() => onQuantityChange(item.variantId, item.quantity - 1)}
             size="icon"
             type="button"
-            variant="outline"
+            variant="ghost"
           >
             <Minus className="h-4 w-4" />
           </Button>
-          <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
+          <span className="flex w-12 items-center justify-center border-x-2 border-primary/30 bg-white text-sm font-black text-[#1c1c1c]">
+            {item.quantity}
+          </span>
           <Button
             aria-label={`Aumentar quantidade de ${item.title}`}
+            className="h-full w-11 rounded-none border-0 bg-[#fff0e3] text-primary shadow-none transition hover:bg-primary hover:text-white disabled:opacity-45"
             disabled={item.quantity >= item.availableStock}
             onClick={() => onQuantityChange(item.variantId, item.quantity + 1)}
             size="icon"
             type="button"
-            variant="outline"
+            variant="ghost"
           >
             <Plus className="h-4 w-4" />
           </Button>

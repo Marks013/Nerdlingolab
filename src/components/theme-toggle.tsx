@@ -6,13 +6,19 @@ import { Button } from "@/components/ui/button";
 
 type ThemeMode = "dark" | "light";
 
+const adminThemeStorageKey = "nerdlingolab-admin-theme";
+const legacyThemeStorageKey = "nerdlingolab-theme";
+
 function applyTheme(themeMode: ThemeMode): void {
   const root = document.documentElement;
 
   root.classList.toggle("light", themeMode === "light");
   root.classList.toggle("dark", themeMode === "dark");
+  root.dataset.theme = themeMode;
+  root.dataset.themeScope = "admin";
   root.style.colorScheme = themeMode;
-  window.localStorage.setItem("nerdlingolab-theme", themeMode);
+  window.localStorage.setItem(adminThemeStorageKey, themeMode);
+  window.localStorage.removeItem(legacyThemeStorageKey);
 }
 
 interface ThemeToggleProps {

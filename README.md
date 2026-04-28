@@ -119,5 +119,5 @@ Para E2E local no Windows, o Playwright usa `npm run dev:webpack`.
 - `npm run db:seed`: popula dados iniciais.
 - `npm run import:shopify`: importa produtos do CSV configurado.
 - `npm run media:import-external`: aplica migrations pendentes, baixa imagens externas para o storage interno e troca as URLs no banco.
-- `npm run media:convert-webp`: aplica migrations pendentes, converte mídias internas JPG/PNG/GIF para WebP e atualiza produtos, slides e popups.
+- `npm run media:convert-webp`: aplica migrations pendentes, converte mídias internas JPG/JPEG/PNG/GIF para WebP e atualiza produtos, slides e popups.
 - `npm run validate:project`: roda validações e auditorias principais.

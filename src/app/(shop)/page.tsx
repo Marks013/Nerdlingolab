@@ -5,7 +5,12 @@ import { SafeImage as Image } from "@/components/media/safe-image";
 import { ShopTrustStrip } from "@/components/shop/shop-trust-strip";
 import { ProductCard } from "@/features/catalog/components/product-card";
 import { PublicOffersSection } from "@/features/offers/components/public-offers-section";
-import { getPublicBestSellingProducts, getPublicProducts, type ProductListItem } from "@/lib/catalog/queries";
+import {
+  getPublicBestSellingProducts,
+  getPublicNewProducts,
+  getPublicProducts,
+  type ProductListItem
+} from "@/lib/catalog/queries";
 import { getPublicOffers } from "@/lib/offers/queries";
 import { getStorefrontTheme } from "@/lib/theme/storefront";
 
@@ -14,15 +19,25 @@ export const dynamic = "force-dynamic";
 export default async function ShopHomePage(): Promise<React.ReactElement> {
   const [bestSellingProducts, newProducts, offers, products, theme] = await Promise.all([
     getPublicBestSellingProducts(6),
-    getPublicProducts({ sort: "recentes", tags: ["Novo"] }),
+    getPublicNewProducts(6),
     getPublicOffers(),
     getPublicProducts({ sort: "recentes" }),
     getStorefrontTheme()
   ]);
   const storefrontSections = [
-    { title: "Novidades", href: "/produtos?tag=Novo", products: newProducts.slice(0, 6) },
+    {
+      title: "Novidades",
+      href: "/produtos?ordem=recentes",
+      products: newProducts.slice(0, 6),
+      emptyMessage: "Nenhum produto entrou na regra de Novo dos últimos 30 dias."
+    },
     { title: "Nossos Produtos", href: "/produtos", products: products.slice(0, 6) },
-    { title: "Mais Vendidos", href: "/produtos", products: bestSellingProducts }
+    {
+      title: "Mais Vendidos",
+      href: "/produtos",
+      products: bestSellingProducts,
+      emptyMessage: "O ranking aparece assim que houver pedidos pagos com estes produtos."
+    }
   ];
 
   return (
@@ -37,7 +52,7 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
         />
       </section>
 
-      <section className="mx-auto -mt-4 w-full max-w-[1360px] px-5">
+      <section className="relative z-10 mx-auto mt-5 w-full max-w-[1360px] px-5">
         <ShopTrustStrip />
       </section>
 
@@ -56,6 +71,7 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
             href={section.href}
             imagePriority={sectionIndex === 0}
             key={section.title}
+            emptyMessage={section.emptyMessage}
             products={section.products}
             title={section.title}
           />
@@ -89,17 +105,19 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
 }
 
 function ProductShelf({
+  emptyMessage,
   href,
   imagePriority,
   products,
   title
 }: {
+  emptyMessage?: string;
   href: string;
   imagePriority?: boolean;
   products: ProductListItem[];
   title: string;
 }): React.ReactElement | null {
-  if (products.length === 0) {
+  if (products.length === 0 && !emptyMessage) {
     return null;
   }
 
@@ -113,15 +131,21 @@ function ProductShelf({
           Ver todos
         </Link>
       </div>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
-        {products.map((product, productIndex) => (
-          <ProductCard
-            imagePriority={Boolean(imagePriority && productIndex < 4)}
-            key={`${title}-${product.id}`}
-            product={product}
-          />
-        ))}
-      </div>
+      {products.length > 0 ? (
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
+          {products.map((product, productIndex) => (
+            <ProductCard
+              imagePriority={Boolean(imagePriority && productIndex < 4)}
+              key={`${title}-${product.id}`}
+              product={product}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="manga-panel rounded-lg bg-white p-5 text-sm font-semibold text-[#4f5d65] shadow-sm">
+          {emptyMessage}
+        </div>
+      )}
     </section>
   );
 }

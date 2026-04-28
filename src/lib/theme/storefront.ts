@@ -12,13 +12,17 @@ export interface StorefrontSlide {
 
 export interface StorefrontThemeView {
   announcementText: string;
+  cardInstallmentMonthlyRateBps: number;
   freeShippingThresholdCents: number;
   footerNotice: string;
   heroSlides: StorefrontSlide[];
   instagramUrl: string;
+  maxInstallments: number;
   name: string;
   newsletterDescription: string;
   newsletterTitle: string;
+  paymentFeeSource: "MANUAL" | "MERCADO_PAGO";
+  pixDiscountBps: number;
   promoSlides: StorefrontSlide[];
   supportEmail: string;
   whatsappLabel: string;
@@ -26,11 +30,15 @@ export interface StorefrontThemeView {
 
 export const defaultThemeText = {
   announcementText: "FRETE GRÁTIS em compras acima de R$99,90",
+  cardInstallmentMonthlyRateBps: 0,
   freeShippingThresholdCents: 9_990,
   footerNotice: "Oferta exclusiva neste site oficial, sujeita a variação. Evite comprar produtos mais baratos ou de outras lojas, para evitar golpes.",
   instagramUrl: "https://instagram.com/nerdlingolab",
+  maxInstallments: 12,
   newsletterDescription: "Inscreva-se para receber descontos exclusivos direto no seu e-mail!",
   newsletterTitle: "Receba nossas promoções",
+  paymentFeeSource: "MANUAL" as const,
+  pixDiscountBps: 1_000,
   supportEmail: "nerdlingolab@gmail.com",
   whatsappLabel: "(44) 99136-2488"
 };
@@ -84,6 +92,11 @@ export async function getStorefrontTheme(): Promise<StorefrontThemeView> {
 
     return {
       announcementText: readLimitedText(theme?.announcementText, defaultThemeText.announcementText, 120),
+      cardInstallmentMonthlyRateBps: readBps(
+        theme?.cardInstallmentMonthlyRateBps,
+        defaultThemeText.cardInstallmentMonthlyRateBps,
+        2_000
+      ),
       freeShippingThresholdCents: readMoneyCents(
         theme?.freeShippingThresholdCents,
         defaultThemeText.freeShippingThresholdCents
@@ -91,6 +104,7 @@ export async function getStorefrontTheme(): Promise<StorefrontThemeView> {
       footerNotice: readLimitedText(theme?.footerNotice, defaultThemeText.footerNotice, 320),
       heroSlides: normalizeSlides(theme?.heroSlides, defaultHeroSlides),
       instagramUrl: readUrl(theme?.instagramUrl, defaultThemeText.instagramUrl),
+      maxInstallments: readInteger(theme?.maxInstallments, defaultThemeText.maxInstallments, 1, 24),
       name: theme?.name ?? "Tema principal",
       newsletterDescription: readLimitedText(
         theme?.newsletterDescription,
@@ -98,6 +112,8 @@ export async function getStorefrontTheme(): Promise<StorefrontThemeView> {
         220
       ),
       newsletterTitle: readLimitedText(theme?.newsletterTitle, defaultThemeText.newsletterTitle, 80),
+      paymentFeeSource: readPaymentFeeSource(theme?.paymentFeeSource),
+      pixDiscountBps: readBps(theme?.pixDiscountBps, defaultThemeText.pixDiscountBps, 5_000),
       promoSlides: normalizeSlides(theme?.promoSlides, defaultPromoSlides),
       supportEmail: readLimitedText(theme?.supportEmail, defaultThemeText.supportEmail, 120),
       whatsappLabel: readLimitedText(theme?.whatsappLabel, defaultThemeText.whatsappLabel, 80)
@@ -177,6 +193,22 @@ function readMoneyCents(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 1_000_000
     ? value
     : fallback;
+}
+
+function readInteger(value: unknown, fallback: number, min: number, max: number): number {
+  return typeof value === "number" && Number.isInteger(value) && value >= min && value <= max
+    ? value
+    : fallback;
+}
+
+function readBps(value: unknown, fallback: number, max: number): number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= max
+    ? value
+    : fallback;
+}
+
+function readPaymentFeeSource(value: unknown): StorefrontThemeView["paymentFeeSource"] {
+  return value === "MERCADO_PAGO" ? "MERCADO_PAGO" : "MANUAL";
 }
 
 function readUrl(value: unknown, fallback: string): string {

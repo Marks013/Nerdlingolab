@@ -6,7 +6,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { Client } from "minio";
 
 import { Prisma, PrismaClient } from "../src/generated/prisma/client";
-import { convertImageToWebp } from "../src/lib/media/webp";
+import { convertImageToWebp } from "../src/lib/media/webp.js";
 
 const productImageBucketName = process.env.MINIO_BUCKET ?? "product-images";
 const minioPort = Number.parseInt(process.env.MINIO_PORT ?? "9000", 10);

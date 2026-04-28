@@ -46,8 +46,8 @@ export async function updateStorefrontTheme(formData: FormData): Promise<void> {
       }
     });
   } catch (error) {
-    if (isMissingFreeShippingColumn(error)) {
-      await saveThemeWithoutFreeShippingThreshold({
+    if (isMissingThemeColumn(error)) {
+      await saveThemeWithLegacyColumns({
         heroSlides,
         name,
         promoSlides,
@@ -89,8 +89,8 @@ export async function resetStorefrontTheme(): Promise<void> {
       }
     });
   } catch (error) {
-    if (isMissingFreeShippingColumn(error)) {
-      await saveThemeWithoutFreeShippingThreshold({
+    if (isMissingThemeColumn(error)) {
+      await saveThemeWithLegacyColumns({
         heroSlides: defaultHeroSlides,
         name: "Tema principal",
         promoSlides: defaultPromoSlides,
@@ -150,6 +150,12 @@ function readText(formData: FormData, fieldName: string): string {
 function readThemeTextSettings(formData: FormData) {
   return {
     announcementText: readLimitedText(formData, "announcementText", defaultThemeText.announcementText, 120),
+    cardInstallmentMonthlyRateBps: readPercentBps(
+      formData,
+      "cardInstallmentMonthlyRatePercent",
+      defaultThemeText.cardInstallmentMonthlyRateBps,
+      20
+    ),
     freeShippingThresholdCents: readMoneyCents(
       formData,
       "freeShippingThresholdCents",
@@ -164,6 +170,9 @@ function readThemeTextSettings(formData: FormData) {
       220
     ),
     newsletterTitle: readLimitedText(formData, "newsletterTitle", defaultThemeText.newsletterTitle, 80),
+    maxInstallments: readInteger(formData, "maxInstallments", defaultThemeText.maxInstallments, 1, 24),
+    paymentFeeSource: readPaymentFeeSource(formData),
+    pixDiscountBps: readPercentBps(formData, "pixDiscountPercent", defaultThemeText.pixDiscountBps, 50),
     supportEmail: readLimitedText(formData, "supportEmail", defaultThemeText.supportEmail, 120),
     whatsappLabel: readLimitedText(formData, "whatsappLabel", defaultThemeText.whatsappLabel, 80)
   };
@@ -188,6 +197,27 @@ function readMoneyCents(formData: FormData, fieldName: string, fallback: number)
   }
 
   return Math.round(value * 100);
+}
+
+function readInteger(formData: FormData, fieldName: string, fallback: number, min: number, max: number): number {
+  const value = Number.parseInt(readText(formData, fieldName), 10);
+
+  return Number.isInteger(value) && value >= min && value <= max ? value : fallback;
+}
+
+function readPercentBps(formData: FormData, fieldName: string, fallback: number, maxPercent: number): number {
+  const rawValue = readText(formData, fieldName).replace(",", ".");
+  const value = Number(rawValue);
+
+  if (!Number.isFinite(value) || value < 0 || value > maxPercent) {
+    return fallback;
+  }
+
+  return Math.round(value * 100);
+}
+
+function readPaymentFeeSource(formData: FormData): "MANUAL" | "MERCADO_PAGO" {
+  return readText(formData, "paymentFeeSource") === "MERCADO_PAGO" ? "MERCADO_PAGO" : "MANUAL";
 }
 
 function toJson(slides: StorefrontSlide[]): Prisma.InputJsonValue {
@@ -252,7 +282,7 @@ async function internalizeSlideImages(slides: StorefrontSlide[]): Promise<Storef
   return nextSlides;
 }
 
-async function saveThemeWithoutFreeShippingThreshold({
+async function saveThemeWithLegacyColumns({
   heroSlides,
   name,
   promoSlides,
@@ -261,11 +291,18 @@ async function saveThemeWithoutFreeShippingThreshold({
   heroSlides: StorefrontSlide[];
   name: string;
   promoSlides: StorefrontSlide[];
-  textSettings: typeof defaultThemeText;
+  textSettings: ReturnType<typeof readThemeTextSettings>;
 }): Promise<void> {
-  const { freeShippingThresholdCents: _freeShippingThresholdCents, ...legacyTextSettings } = textSettings;
+  const {
+    cardInstallmentMonthlyRateBps: _cardInstallmentMonthlyRateBps,
+    freeShippingThresholdCents: _freeShippingThresholdCents,
+    maxInstallments: _maxInstallments,
+    paymentFeeSource: _paymentFeeSource,
+    pixDiscountBps: _pixDiscountBps,
+    ...legacyTextSettings
+  } = textSettings;
 
-  Sentry.captureMessage("StorefrontTheme.freeShippingThresholdCents column is missing during theme save.", {
+  Sentry.captureMessage("StorefrontTheme has pending columns during theme save.", {
     level: "warning",
     tags: { feature: "storefront-theme", operation: "legacy-save" }
   });
@@ -289,11 +326,18 @@ async function saveThemeWithoutFreeShippingThreshold({
   });
 }
 
-function isMissingFreeShippingColumn(error: unknown): boolean {
+function isMissingThemeColumn(error: unknown): boolean {
   const code = typeof error === "object" && error !== null && "code" in error
     ? (error as { code?: unknown }).code
     : null;
   const message = error instanceof Error ? error.message : String(error ?? "");
 
-  return code === "P2022" || message.includes("freeShippingThresholdCents");
+  return (
+    code === "P2022" ||
+    message.includes("freeShippingThresholdCents") ||
+    message.includes("cardInstallmentMonthlyRateBps") ||
+    message.includes("maxInstallments") ||
+    message.includes("paymentFeeSource") ||
+    message.includes("pixDiscountBps")
+  );
 }

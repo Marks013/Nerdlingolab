@@ -9,11 +9,13 @@ import {
   type ProductVariantOption
 } from "@/features/catalog/components/product-purchase-panel";
 import { getProductBadgeClass, type ProductBadge } from "@/lib/catalog/badges";
+import type { PaymentTerms } from "@/lib/payments/installments";
 
 interface ProductDetailShellProps {
   description: string;
   freeShippingThresholdCents: number;
   images: string[];
+  paymentTerms: PaymentTerms;
   primaryImage: string | null;
   productBadges: ProductBadge[];
   productId: string;
@@ -26,6 +28,7 @@ export function ProductDetailShell({
   description,
   freeShippingThresholdCents,
   images,
+  paymentTerms,
   primaryImage,
   productBadges,
   productId,
@@ -137,6 +140,7 @@ export function ProductDetailShell({
             productSlug={productSlug}
             productTitle={productTitle}
             freeShippingThresholdCents={freeShippingThresholdCents}
+            paymentTerms={paymentTerms}
             selectedVariantId={selectedVariant?.id ?? selectedVariantId}
             variants={variants}
           />

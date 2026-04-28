@@ -283,6 +283,7 @@ docker compose restart app
 ```
 
 Os uploads novos e novas importações externas já são salvos em WebP automaticamente. Use a conversão em massa quando houver imagens antigas no storage com `image/jpeg`, `image/png` ou `image/gif`.
+O formato `image/jpeg` inclui arquivos `.jpg` e `.jpeg`.
 
 ## 10. Desenvolvimento local
 

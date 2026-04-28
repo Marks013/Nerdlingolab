@@ -168,6 +168,41 @@ export async function getPublicBestSellingProducts(take = 6): Promise<ProductLis
   }
 }
 
+export async function getPublicNewProducts(take = 6, now = new Date()): Promise<ProductListItem[]> {
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  try {
+    return await prisma.product.findMany({
+      where: {
+        AND: [
+          getPublicProductWhere(),
+          {
+            createdAt: {
+              gte: thirtyDaysAgo,
+              lte: now
+            }
+          }
+        ]
+      },
+      include: {
+        category: true,
+        variants: {
+          where: { isActive: true },
+          orderBy: { createdAt: "asc" }
+        }
+      },
+      orderBy: [{ createdAt: "desc" }, { publishedAt: "desc" }, { title: "asc" }],
+      take
+    });
+  } catch (error) {
+    if (shouldUseCatalogFallback(error)) {
+      return filterFallbackProducts({ sort: "recentes" }).slice(0, take);
+    }
+
+    throw error;
+  }
+}
+
 export async function getPublicProductBySlug(slug: string): Promise<ProductListItem | null> {
   try {
     return await prisma.product.findFirst({

@@ -3,9 +3,15 @@
 import { ChevronDown, CreditCard, Heart, MessageCircle, Minus, Plus, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { PaymentBadgeStrip } from "@/components/shop/payment-badges";
 import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
 import { ShippingEstimator } from "@/features/shipping/components/shipping-estimator";
 import { formatCurrency } from "@/lib/format";
+import {
+  calculateInstallments,
+  calculatePixPriceCents,
+  type PaymentTerms
+} from "@/lib/payments/installments";
 
 export interface ProductVariantOption {
   availableStock: number;
@@ -21,6 +27,7 @@ interface ProductPurchasePanelProps {
   freeShippingThresholdCents: number;
   imageUrl: string | null;
   onVariantSelect?: (variantId: string) => void;
+  paymentTerms: PaymentTerms;
   productId: string;
   productSlug: string;
   productTitle: string;
@@ -32,6 +39,7 @@ export function ProductPurchasePanel({
   freeShippingThresholdCents,
   imageUrl,
   onVariantSelect,
+  paymentTerms,
   productId,
   productSlug,
   productTitle,
@@ -53,7 +61,12 @@ export function ProductPurchasePanel({
   const hasCompareAtPrice =
     selectedVariant.compareAtPriceCents !== null &&
     selectedVariant.compareAtPriceCents > selectedVariant.priceCents;
-  const pixPriceCents = Math.round(selectedVariant.priceCents * 0.9);
+  const pixPriceCents = calculatePixPriceCents(selectedVariant.priceCents, paymentTerms.pixDiscountBps);
+  const installmentPreview = calculateInstallments({
+    maxInstallments: paymentTerms.maxInstallments,
+    monthlyRateBps: paymentTerms.cardInstallmentMonthlyRateBps,
+    priceCents: selectedVariant.priceCents
+  }).at(-1);
   const subtotalCents = selectedVariant.priceCents * quantity;
   const handleVariantSelect = (variantId: string) => {
     setLocalSelectedVariantId(variantId);
@@ -78,9 +91,13 @@ export function ProductPurchasePanel({
           </p>
         ) : null}
         <p className="mt-2 text-sm text-[#677279]">
-          ou até 12x de {formatCurrency(Math.ceil(selectedVariant.priceCents / 10))}
+          ou até {paymentTerms.maxInstallments}x de {formatCurrency(installmentPreview?.valueCents ?? selectedVariant.priceCents)}
         </p>
-        <PaymentInstallmentPanel priceCents={selectedVariant.priceCents} pixPriceCents={pixPriceCents} />
+        <PaymentInstallmentPanel
+          paymentTerms={paymentTerms}
+          priceCents={selectedVariant.priceCents}
+          pixPriceCents={pixPriceCents}
+        />
       </div>
 
       <div className="mt-7 flex items-center gap-4">
@@ -145,20 +162,21 @@ export function ProductPurchasePanel({
 }
 
 function PaymentInstallmentPanel({
+  paymentTerms,
   pixPriceCents,
   priceCents
 }: {
+  paymentTerms: PaymentTerms;
   pixPriceCents: number;
   priceCents: number;
 }): React.ReactElement {
-  const installments = Array.from({ length: 12 }, (_, index) => {
-    const installment = index + 1;
-
-    return {
-      installment,
-      valueCents: Math.ceil(priceCents / installment)
-    };
+  const installments = calculateInstallments({
+    maxInstallments: paymentTerms.maxInstallments,
+    monthlyRateBps: paymentTerms.cardInstallmentMonthlyRateBps,
+    priceCents
   });
+  const hasCardRate = paymentTerms.cardInstallmentMonthlyRateBps > 0;
+  const pixDiscountPercent = paymentTerms.pixDiscountBps / 100;
 
   return (
     <div className="mt-4 overflow-hidden rounded-lg border border-primary/15 bg-white shadow-sm">
@@ -174,29 +192,33 @@ function PaymentInstallmentPanel({
           </span>
         </summary>
         <div className="border-t border-primary/10 px-4 py-4">
-          <div className="flex flex-wrap gap-2">
-            {["Master", "Visa", "Elo", "Hipercard", "Amex", "Diners"].map((label) => (
-              <span
-                className="payment-badge inline-flex h-8 min-w-14 items-center justify-center rounded border bg-white px-2 text-[11px] font-black uppercase shadow-sm"
-                key={label}
-              >
-                {label}
-              </span>
-            ))}
-          </div>
+          <PaymentBadgeStrip compact />
           <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-[#4f5d65]">
-            {installments.map(({ installment, valueCents }) => (
+            {installments.map(({ installment, totalCents, valueCents }) => (
               <p key={installment}>
                 {installment}x de {formatCurrency(valueCents)}
+                {hasCardRate && installment > 1 ? (
+                  <span className="block text-xs text-[#677279]">total {formatCurrency(totalCents)}</span>
+                ) : null}
               </p>
             ))}
           </div>
+          {hasCardRate || paymentTerms.paymentFeeSource === "MERCADO_PAGO" ? (
+            <p className="mt-3 text-xs text-[#677279]">
+              Juros configurados no admin: {(paymentTerms.cardInstallmentMonthlyRateBps / 100).toLocaleString("pt-BR", {
+                maximumFractionDigits: 2,
+                minimumFractionDigits: 0
+              })}% ao mês
+              {paymentTerms.paymentFeeSource === "MERCADO_PAGO" ? " como referência do Mercado Pago." : "."}
+            </p>
+          ) : null}
           <div className="mt-4 border-t pt-4">
             <p className="text-lg font-black text-[#1c1c1c]">
               {formatCurrency(pixPriceCents)} <span className="text-sm font-medium text-[#677279]">no pix</span>
             </p>
             <p className="text-sm text-[#677279]">
               Pague com pix e economize {formatCurrency(priceCents - pixPriceCents)}
+              {pixDiscountPercent > 0 ? ` (${pixDiscountPercent.toLocaleString("pt-BR")}% de desconto)` : ""}
             </p>
           </div>
         </div>

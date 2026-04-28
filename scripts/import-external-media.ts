@@ -5,7 +5,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { Client } from "minio";
 
 import { Prisma, PrismaClient } from "../src/generated/prisma/client";
-import { convertImageToWebp } from "../src/lib/media/webp";
+import { convertImageToWebp } from "../src/lib/media/webp.js";
 
 const allowedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const maxBytes = 12 * 1024 * 1024;

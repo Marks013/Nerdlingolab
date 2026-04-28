@@ -65,6 +65,12 @@ export default async function ProductPage({ params }: ProductPageProps): Promise
           productSlug={product.slug}
           productTitle={product.title}
           freeShippingThresholdCents={theme.freeShippingThresholdCents}
+          paymentTerms={{
+            cardInstallmentMonthlyRateBps: theme.cardInstallmentMonthlyRateBps,
+            maxInstallments: theme.maxInstallments,
+            paymentFeeSource: theme.paymentFeeSource,
+            pixDiscountBps: theme.pixDiscountBps
+          }}
           variants={variants}
         />
 

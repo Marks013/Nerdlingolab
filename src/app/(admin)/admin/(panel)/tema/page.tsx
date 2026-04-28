@@ -41,6 +41,33 @@ export default async function AdminThemePage(): Promise<React.ReactElement> {
                 label="Valor mínimo para frete grátis"
                 name="freeShippingThresholdCents"
               />
+              <TextField
+                defaultValue={String(theme.maxInstallments)}
+                label="Máximo de parcelas"
+                name="maxInstallments"
+                type="number"
+              />
+              <TextField
+                defaultValue={(theme.cardInstallmentMonthlyRateBps / 100).toFixed(2).replace(".", ",")}
+                label="Juros mensal do cartão (%)"
+                name="cardInstallmentMonthlyRatePercent"
+              />
+              <TextField
+                defaultValue={(theme.pixDiscountBps / 100).toFixed(2).replace(".", ",")}
+                label="Desconto Pix (%)"
+                name="pixDiscountPercent"
+              />
+              <label className="grid gap-2 text-sm font-medium">
+                Fonte das taxas
+                <select
+                  className="h-10 rounded-md border bg-background px-3 text-sm"
+                  defaultValue={theme.paymentFeeSource}
+                  name="paymentFeeSource"
+                >
+                  <option value="MANUAL">Manual no admin</option>
+                  <option value="MERCADO_PAGO">Referência Mercado Pago</option>
+                </select>
+              </label>
               <TextField defaultValue={theme.supportEmail} label="E-mail de atendimento" name="supportEmail" />
               <TextField defaultValue={theme.whatsappLabel} label="WhatsApp exibido" name="whatsappLabel" />
               <TextField defaultValue={theme.instagramUrl} label="Link do Instagram" name="instagramUrl" />
@@ -146,16 +173,18 @@ function SlideEditor({
 function TextField({
   defaultValue,
   label,
-  name
+  name,
+  type = "text"
 }: {
   defaultValue?: string;
   label: string;
   name: string;
+  type?: string;
 }): React.ReactElement {
   return (
     <label className="grid gap-2 text-sm font-medium">
       {label}
-      <Input defaultValue={defaultValue ?? ""} name={name} />
+      <Input defaultValue={defaultValue ?? ""} name={name} type={type} />
     </label>
   );
 }

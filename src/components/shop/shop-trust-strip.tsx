@@ -8,7 +8,7 @@ const trustItems = [
   },
   {
     title: "Parcelamento",
-    description: "Em até 12x no cartão e Nerdcoins",
+    description: "Em até 12x no cartão",
     icon: CreditCard
   },
   {

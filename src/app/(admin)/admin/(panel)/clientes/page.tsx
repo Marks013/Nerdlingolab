@@ -1,11 +1,16 @@
-import { anonymizeCustomerAccount } from "@/actions/admin-customers";
+import { anonymizeCustomerAccount, sendCustomerPasswordReset } from "@/actions/admin-customers";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAdminCustomers } from "@/lib/admin/customers";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminCustomersPage(): Promise<React.ReactElement> {
+export default async function AdminCustomersPage({
+  searchParams
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<React.ReactElement> {
+  const resolvedSearchParams = await searchParams;
   const customers = await getAdminCustomers();
   const totalOrders = customers.reduce((total, customer) => total + customer._count.orders, 0);
   const totalNerdcoins = customers.reduce((total, customer) => total + (customer.loyaltyPoints?.balance ?? 0), 0);
@@ -16,6 +21,11 @@ export default async function AdminCustomersPage(): Promise<React.ReactElement> 
         <p className="text-sm text-muted-foreground">Relacionamento</p>
         <h1 className="text-3xl font-bold tracking-normal">Clientes cadastrados</h1>
       </div>
+      {readSearchParam(resolvedSearchParams?.reset) === "sent" ? (
+        <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">
+          Link de redefinição enviado para o cliente, se ele possuir senha cadastrada.
+        </p>
+      ) : null}
       <div className="mt-6 grid gap-4 md:grid-cols-3">
         <MetricCard label="Clientes" value={customers.length.toString()} />
         <MetricCard label="Pedidos vinculados" value={totalOrders.toString()} />
@@ -76,15 +86,26 @@ export default async function AdminCustomersPage(): Promise<React.ReactElement> 
                     <td className="py-3 pr-4">{formatDateTime(customer.createdAt)}</td>
                     <td className="py-3">
                       {customer.role === "CUSTOMER" ? (
-                        <form action={anonymizeCustomerAccount}>
-                          <input name="customerId" type="hidden" value={customer.id} />
-                          <button
-                            className="rounded-md border border-destructive/30 px-3 py-2 text-xs font-semibold text-destructive transition hover:bg-destructive hover:text-white"
-                            type="submit"
-                          >
-                            Remover conta
-                          </button>
-                        </form>
+                        <div className="grid gap-2">
+                          <form action={sendCustomerPasswordReset}>
+                            <input name="customerId" type="hidden" value={customer.id} />
+                            <button
+                              className="w-full rounded-md border border-primary/30 px-3 py-2 text-xs font-semibold text-primary transition hover:bg-primary hover:text-white"
+                              type="submit"
+                            >
+                              Resetar senha
+                            </button>
+                          </form>
+                          <form action={anonymizeCustomerAccount}>
+                            <input name="customerId" type="hidden" value={customer.id} />
+                            <button
+                              className="w-full rounded-md border border-destructive/30 px-3 py-2 text-xs font-semibold text-destructive transition hover:bg-destructive hover:text-white"
+                              type="submit"
+                            >
+                              Remover conta
+                            </button>
+                          </form>
+                        </div>
                       ) : (
                         <span className="text-xs text-muted-foreground">Protegido</span>
                       )}
@@ -98,6 +119,10 @@ export default async function AdminCustomersPage(): Promise<React.ReactElement> 
       </Card>
     </main>
   );
+}
+
+function readSearchParam(value: string | string[] | undefined): string | undefined {
+  return (Array.isArray(value) ? value[0] : value)?.trim() || undefined;
 }
 
 function MetricCard({

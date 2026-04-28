@@ -10,7 +10,7 @@ import { shouldUseSecureAuthCookies } from "@/lib/auth-cookies";
 import { prisma } from "@/lib/prisma";
 
 const credentialsSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().toLowerCase().email(),
   password: z.string().min(8)
 });
 

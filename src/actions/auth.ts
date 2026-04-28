@@ -17,12 +17,32 @@ import {
 } from "@/lib/identity/brazil";
 import { getLoyaltyProgramSettings, getPointsExpirationDate } from "@/lib/loyalty/settings";
 import { ensureReferralCode, normalizeReferralCode } from "@/lib/loyalty/referrals";
+import { sendPasswordResetEmail } from "@/lib/email/transactional";
+import {
+  createPasswordResetTokenForEmail,
+  getRequestBaseUrl,
+  resetPasswordWithToken
+} from "@/lib/password-reset";
 import { prisma } from "@/lib/prisma";
 import { isRateLimitedKey } from "@/lib/security/rate-limit";
 
 const credentialsFormSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
   password: z.string().min(8).max(128)
+});
+
+const forgotPasswordSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(254)
+});
+
+const resetPasswordSchema = z.object({
+  confirmPassword: z.string().min(8).max(128),
+  password: z.string().min(8).max(128),
+  token: z.string().min(32).max(256),
+  userId: z.string().min(8).max(80)
+}).refine((value) => value.password === value.confirmPassword, {
+  message: "As senhas não conferem.",
+  path: ["confirmPassword"]
 });
 
 const registerCustomerSchema = credentialsFormSchema.extend({
@@ -53,6 +73,12 @@ export async function signInWithCredentials(formData: FormData): Promise<void> {
 
   await enforceFormRateLimit("admin-login", parsedCredentials.data.email, 8);
 
+  const user = await validatePasswordCredentials(parsedCredentials.data.email, parsedCredentials.data.password);
+
+  if (!user || (user.role !== UserRole.ADMIN && user.role !== UserRole.SUPERADMIN)) {
+    redirect("/admin/login?error=invalid");
+  }
+
   await signIn("credentials", {
     email: parsedCredentials.data.email,
     password: parsedCredentials.data.password,
@@ -72,11 +98,64 @@ export async function signInCustomerWithCredentials(formData: FormData): Promise
 
   await enforceFormRateLimit("customer-login", parsedCredentials.data.email, 10);
 
+  const user = await validatePasswordCredentials(parsedCredentials.data.email, parsedCredentials.data.password);
+
+  if (!user) {
+    redirect("/entrar?error=invalid");
+  }
+
   await signIn("credentials", {
     email: parsedCredentials.data.email,
     password: parsedCredentials.data.password,
     redirectTo: "/conta"
   });
+}
+
+export async function requestPasswordReset(formData: FormData): Promise<void> {
+  const parsedInput = forgotPasswordSchema.safeParse({
+    email: formData.get("email")
+  });
+
+  if (!parsedInput.success) {
+    redirect("/recuperar-senha?status=sent");
+  }
+
+  await enforceFormRateLimit("password-reset", parsedInput.data.email, 4);
+
+  const resetToken = await createPasswordResetTokenForEmail(parsedInput.data.email);
+
+  if (resetToken) {
+    await sendPasswordResetEmail(resetToken, getRequestBaseUrl(await headers()));
+  }
+
+  redirect("/recuperar-senha?status=sent");
+}
+
+export async function resetCustomerPassword(formData: FormData): Promise<void> {
+  const parsedInput = resetPasswordSchema.safeParse({
+    confirmPassword: formData.get("confirmPassword"),
+    password: formData.get("password"),
+    token: formData.get("token"),
+    userId: formData.get("userId")
+  });
+
+  if (!parsedInput.success) {
+    redirect("/redefinir-senha?error=invalid");
+  }
+
+  await enforceFormRateLimit("password-reset-confirm", parsedInput.data.userId, 8);
+
+  const didReset = await resetPasswordWithToken({
+    password: parsedInput.data.password,
+    token: parsedInput.data.token,
+    userId: parsedInput.data.userId
+  });
+
+  if (!didReset) {
+    redirect("/redefinir-senha?error=expired");
+  }
+
+  redirect("/entrar?reset=success");
 }
 
 export async function registerCustomer(formData: FormData): Promise<void> {
@@ -226,4 +305,22 @@ async function enforceFormRateLimit(name: string, email: string, limit: number):
           : "/entrar?error=too_many_attempts"
     );
   }
+}
+
+async function validatePasswordCredentials(email: string, password: string): Promise<{ role: UserRole } | null> {
+  const user = await prisma.user.findUnique({
+    select: {
+      passwordHash: true,
+      role: true
+    },
+    where: { email }
+  });
+
+  if (!user?.passwordHash) {
+    return null;
+  }
+
+  const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+
+  return isPasswordValid ? { role: user.role } : null;
 }

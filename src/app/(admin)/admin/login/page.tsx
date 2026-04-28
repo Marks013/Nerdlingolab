@@ -1,4 +1,5 @@
 import { LockKeyhole } from "lucide-react";
+import Link from "next/link";
 
 import { signInWithCredentials } from "@/actions/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -55,6 +56,9 @@ export default async function AdminLoginPage({
               Entrar
             </Button>
             {loginMessage ? <p className="text-sm text-muted-foreground">{loginMessage}</p> : null}
+            <Link className="block text-center text-sm font-semibold text-primary underline" href="/recuperar-senha">
+              Esqueci minha senha
+            </Link>
           </form>
         </CardContent>
       </Card>

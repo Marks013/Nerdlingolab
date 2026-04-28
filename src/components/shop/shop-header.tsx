@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { signOutFromCustomer } from "@/actions/auth";
 import { SafeImage as Image } from "@/components/media/safe-image";
+import { LoginModal } from "@/features/auth/components/login-modal";
 import { useCartStore } from "@/features/cart/cart-store";
 
 const headerLinks = [
@@ -47,6 +48,7 @@ export function ShopHeader({
   const router = useRouter();
   const hydratedSearchRef = useRef(false);
   const [isCategoryDrawerOpen, setIsCategoryDrawerOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const cartCount = useCartStore((state) => state.items.reduce((total, item) => total + item.quantity, 0));
   const cartBadgeLabel = useMemo(() => (cartCount > 99 ? "99+" : String(cartCount)), [cartCount]);
@@ -120,21 +122,39 @@ export function ShopHeader({
           </form>
 
           <nav className="flex flex-wrap items-center justify-center gap-3 lg:justify-end">
-            {headerLinks.map((link) => (
-              <Link
-                className="group relative inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                href={link.href}
-                key={link.label}
-              >
-                <link.icon className="h-5 w-5 text-primary transition group-hover:scale-110" />
-                {link.href === "/carrinho" && cartCount > 0 ? (
-                  <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#111827] px-1 text-[10px] font-black leading-none text-white shadow-sm">
-                    {cartBadgeLabel}
-                  </span>
-                ) : null}
-                {link.label}
-              </Link>
-            ))}
+            {headerLinks.map((link) => {
+              const Icon = link.icon;
+
+              if (link.href === "/conta" && !isAuthenticated) {
+                return (
+                  <button
+                    className="group relative inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    key={link.label}
+                    onClick={() => setIsLoginModalOpen(true)}
+                    type="button"
+                  >
+                    <Icon className="h-5 w-5 text-primary transition group-hover:scale-110" />
+                    Login
+                  </button>
+                );
+              }
+
+              return (
+                <Link
+                  className="group relative inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  href={link.href}
+                  key={link.label}
+                >
+                  <Icon className="h-5 w-5 text-primary transition group-hover:scale-110" />
+                  {link.href === "/carrinho" && cartCount > 0 ? (
+                    <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#111827] px-1 text-[10px] font-black leading-none text-white shadow-sm">
+                      {cartBadgeLabel}
+                    </span>
+                  ) : null}
+                  {link.label}
+                </Link>
+              );
+            })}
             {isAuthenticated ? (
               <form action={signOutFromCustomer}>
                 <button
@@ -174,6 +194,7 @@ export function ShopHeader({
       </div>
 
       <CategoryDrawer isOpen={isCategoryDrawerOpen} onClose={() => setIsCategoryDrawerOpen(false)} />
+      <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
     </header>
   );
 }

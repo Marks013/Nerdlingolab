@@ -1,11 +1,15 @@
 "use server";
 
 import * as Sentry from "@sentry/nextjs";
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { UserRole } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/admin";
 import { auth } from "@/lib/auth";
+import { sendPasswordResetEmail } from "@/lib/email/transactional";
+import { createPasswordResetTokenForUserId, getRequestBaseUrl } from "@/lib/password-reset";
 import { prisma } from "@/lib/prisma";
 
 export async function anonymizeCustomerAccount(formData: FormData): Promise<void> {
@@ -83,4 +87,35 @@ export async function anonymizeCustomerAccount(formData: FormData): Promise<void
 
   revalidatePath("/admin/clientes");
   revalidatePath("/admin/dashboard");
+}
+
+export async function sendCustomerPasswordReset(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const customerId = formData.get("customerId");
+
+  if (typeof customerId !== "string" || customerId.length < 8) {
+    throw new Error("Cliente inválido.");
+  }
+
+  try {
+    const resetToken = await createPasswordResetTokenForUserId(customerId);
+
+    if (resetToken) {
+      await sendPasswordResetEmail(resetToken, getRequestBaseUrl(await headers()));
+    }
+  } catch (error) {
+    Sentry.captureException(error, {
+      extra: { customerId },
+      tags: {
+        feature: "admin-customers",
+        operation: "send-password-reset"
+      }
+    });
+
+    throw new Error("Não foi possível enviar a redefinição de senha.");
+  }
+
+  revalidatePath("/admin/clientes");
+  redirect("/admin/clientes?reset=sent");
 }

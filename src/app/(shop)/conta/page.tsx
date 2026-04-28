@@ -16,15 +16,19 @@ export default async function AccountPage({ searchParams }: AccountPageProps): P
   const session = await auth();
   const resolvedSearchParams = await searchParams;
   const confirmedAddressLabel = normalizeSearchParam(resolvedSearchParams?.endereco);
+  const loginMessage = getLoginMessage(
+    normalizeSearchParam(resolvedSearchParams?.error),
+    normalizeSearchParam(resolvedSearchParams?.reset)
+  );
 
   if (!session?.user?.id) {
-    return <AccountLoginPrompt />;
+    return <AccountLoginPrompt message={loginMessage} />;
   }
 
   const account = await getCustomerAccountSummary(session.user.id);
 
   if (!account) {
-    return <AccountLoginPrompt />;
+    return <AccountLoginPrompt message={loginMessage} />;
   }
 
   return (
@@ -47,7 +51,7 @@ function normalizeSearchParam(value: string | string[] | undefined): string | un
   return normalizedValue || undefined;
 }
 
-function AccountLoginPrompt(): React.ReactElement {
+function AccountLoginPrompt({ message }: { message?: string | null }): React.ReactElement {
   return (
     <main className="geek-page min-h-screen px-5 py-10">
       <section className="flex min-h-[820px] items-center justify-center">
@@ -66,8 +70,16 @@ function AccountLoginPrompt(): React.ReactElement {
             <Button className="h-14 w-full bg-black font-black text-white hover:bg-black/90" type="submit">
               Entrar
             </Button>
+            {message ? (
+              <p className="rounded-lg border border-primary/20 bg-primary/10 px-3 py-2 text-sm font-semibold text-black">
+                {message}
+              </p>
+            ) : null}
           </form>
           <div className="mt-6 grid gap-3 text-sm">
+            <p>
+              Esqueceu a senha? <Link className="font-bold underline" href="/recuperar-senha">Redefinir senha</Link>
+            </p>
             <p>
               Não tem conta? <Link className="font-bold underline" href="/cadastro">Criar conta</Link>
             </p>
@@ -79,4 +91,20 @@ function AccountLoginPrompt(): React.ReactElement {
       </section>
     </main>
   );
+}
+
+function getLoginMessage(error?: string, reset?: string): string | null {
+  if (reset === "success") {
+    return "Senha atualizada com sucesso. Entre com sua nova senha.";
+  }
+
+  if (error === "too_many_attempts") {
+    return "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
+  }
+
+  if (error) {
+    return "E-mail ou senha inválidos. Confira os dados e tente novamente.";
+  }
+
+  return null;
 }

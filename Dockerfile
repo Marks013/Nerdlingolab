@@ -1,7 +1,11 @@
+# syntax=docker/dockerfile:1.7
+
 FROM node:22-alpine AS base
 
 WORKDIR /app
 
+ENV NPM_CONFIG_AUDIT="false"
+ENV NPM_CONFIG_FUND="false"
 ENV NPM_CONFIG_UPDATE_NOTIFIER="false"
 
 RUN apk add --no-cache libc6-compat openssl
@@ -9,7 +13,7 @@ RUN apk add --no-cache libc6-compat openssl
 FROM base AS deps
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm npm ci --prefer-offline
 
 FROM base AS builder
 
@@ -22,6 +26,16 @@ COPY . .
 
 RUN npm run build
 
+FROM base AS setup
+
+ENV NEXT_TELEMETRY_DISABLED="1"
+ENV NODE_ENV="production"
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+USER node
+
 FROM base AS runner
 
 ENV HOSTNAME="0.0.0.0"
@@ -29,19 +43,14 @@ ENV NEXT_TELEMETRY_DISABLED="1"
 ENV NODE_ENV="production"
 ENV PORT="3000"
 
-COPY --chown=node:node --from=builder /app/.next ./.next
-COPY --chown=node:node --from=builder /app/node_modules ./node_modules
-COPY --chown=node:node --from=builder /app/package.json ./package.json
-COPY --chown=node:node --from=builder /app/package-lock.json ./package-lock.json
+COPY --chown=node:node --from=builder /app/.next/standalone ./
+COPY --chown=node:node --from=builder /app/.next/static ./.next/static
 COPY --chown=node:node --from=builder /app/prisma ./prisma
 COPY --chown=node:node --from=builder /app/prisma.config.ts ./prisma.config.ts
-COPY --chown=node:node --from=builder /app/src/generated ./src/generated
 COPY --chown=node:node --from=builder /app/public ./public
-COPY --chown=node:node --from=builder /app/scripts ./scripts
-COPY --chown=node:node --from=builder /app/data ./data
 
 USER node
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start"]
+CMD ["node", "server.js"]

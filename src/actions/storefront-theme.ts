@@ -203,20 +203,27 @@ async function syncStorefrontThemeMediaUsages(
   heroSlides: StorefrontSlide[],
   promoSlides: StorefrontSlide[]
 ): Promise<void> {
-  await Promise.all([
-    syncMediaUsages({
-      fieldName: "heroSlides",
-      ownerId: "default",
-      ownerType: "STOREFRONT_THEME",
-      urls: extractSlideUrls(heroSlides)
-    }),
-    syncMediaUsages({
-      fieldName: "promoSlides",
-      ownerId: "default",
-      ownerType: "STOREFRONT_THEME",
-      urls: extractSlideUrls(promoSlides)
-    })
-  ]);
+  try {
+    await Promise.all([
+      syncMediaUsages({
+        fieldName: "heroSlides",
+        ownerId: "default",
+        ownerType: "STOREFRONT_THEME",
+        urls: extractSlideUrls(heroSlides)
+      }),
+      syncMediaUsages({
+        fieldName: "promoSlides",
+        ownerId: "default",
+        ownerType: "STOREFRONT_THEME",
+        urls: extractSlideUrls(promoSlides)
+      })
+    ]);
+  } catch (error) {
+    Sentry.captureException(error, {
+      level: "warning",
+      tags: { feature: "storefront-theme", operation: "sync-media-usages" }
+    });
+  }
 }
 
 function extractSlideUrls(slides: StorefrontSlide[]): string[] {

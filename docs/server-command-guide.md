@@ -97,7 +97,7 @@ Sequência recomendada depois que um commit novo já está na `main`:
 ```bash
 git pull origin main
 docker compose up -d --build
-docker compose run --rm setup npm run db:deploy
+docker compose run --rm app npm run db:deploy
 docker compose restart app
 docker compose ps
 ```
@@ -333,7 +333,7 @@ npm run db:deploy
 Se estiver usando Docker no servidor:
 
 ```bash
-docker compose run --rm setup npm run db:deploy
+docker compose run --rm app npm run db:deploy
 docker compose restart app
 ```
 

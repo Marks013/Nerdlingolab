@@ -58,7 +58,7 @@ Atualização comum depois de baixar uma versão nova:
 ```bash
 git pull origin main
 docker compose up -d --build
-docker compose run --rm setup npm run db:deploy
+docker compose run --rm app npm run db:deploy
 docker compose restart app
 ```
 
@@ -85,7 +85,7 @@ npm run db:deploy
 No servidor com Docker:
 
 ```bash
-docker compose run --rm setup npm run db:deploy
+docker compose run --rm app npm run db:deploy
 docker compose restart app
 ```
 

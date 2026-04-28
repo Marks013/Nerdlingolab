@@ -3,9 +3,9 @@ import path from "node:path";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Client } from "minio";
+import sharp from "sharp";
 
 import { Prisma, PrismaClient } from "../src/generated/prisma/client";
-import { convertImageToWebp } from "../src/lib/media/webp.js";
 
 const allowedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const maxBytes = 12 * 1024 * 1024;
@@ -26,6 +26,7 @@ const prisma = new PrismaClient({
       "postgresql://nerdlingolab:nerdlingolab_dev_password@localhost:5432/nerdlingolab"
   })
 });
+const webpMimeType = "image/webp";
 
 async function main(): Promise<void> {
   await ensureProductImageBucket();
@@ -295,6 +296,33 @@ function extractSlideUrls(value: unknown): string[] {
 function getFileName(url: string, objectKey: string): string {
   const fileName = path.basename(new URL(url).pathname);
   return fileName || path.basename(objectKey);
+}
+
+async function convertImageToWebp(input: Buffer, fileName: string) {
+  const image = sharp(input, { animated: true, failOn: "none" }).rotate();
+  const metadata = await image.metadata();
+  const { data, info } = await image.webp({ effort: 5, quality: 84 }).toBuffer({ resolveWithObject: true });
+
+  return {
+    bytes: data,
+    fileName: withWebpExtension(fileName),
+    height: info.height ?? metadata.height ?? null,
+    mimeType: webpMimeType,
+    width: info.width ?? metadata.width ?? null
+  };
+}
+
+function withWebpExtension(fileName: string): string {
+  const parsedName = path.parse(fileName || "imagem");
+  const safeBaseName =
+    parsedName.name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9._-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || "imagem";
+
+  return `${safeBaseName}.webp`;
 }
 
 main()

@@ -85,7 +85,7 @@ export function ProductImageUploader({
         onSelect={(url) => setImageUrls((currentValue) => [currentValue, url].filter(Boolean).join("\n"))}
       />
       <p className="text-xs text-muted-foreground">
-        JPG, JPEG, PNG, GIF e WebP sÃ£o aceitos; o envio Ã© salvo automaticamente em WebP otimizado.
+        JPG, JPEG, PNG, GIF e WebP são aceitos; o envio é salvo automaticamente em WebP otimizado.
       </p>
       <label className="grid gap-2 text-sm font-medium">
         {label}

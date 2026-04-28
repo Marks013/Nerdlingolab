@@ -197,6 +197,9 @@ assertIncludes("src/components/shop/shop-footer.tsx", [
   ["selo Norton visual", "NortonLogo"],
   ["selo Reclame Aqui visual", "ReclameAquiLogo"],
   ["selo Google visual", "GoogleSafeLogo"],
+  ["faixa de pagamentos visual", "PaymentBadgeStrip"]
+]);
+assertIncludes("src/components/shop/payment-badges.tsx", [
   ["pagamento Mastercard visual", "MastercardLogo"],
   ["pagamento Visa visual", "VisaLogo"],
   ["pagamento Pix visual", "PixLogo"]

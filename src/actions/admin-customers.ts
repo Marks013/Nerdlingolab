@@ -4,6 +4,7 @@ import * as Sentry from "@sentry/nextjs";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 
 import { UserRole } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/admin";
@@ -12,15 +13,27 @@ import { sendPasswordResetEmail } from "@/lib/email/transactional";
 import { createPasswordResetTokenForUserId, getRequestBaseUrl } from "@/lib/password-reset";
 import { prisma } from "@/lib/prisma";
 
+const customerActionSchema = z.object({
+  customerId: z.string().trim().min(8).max(80)
+});
+
+function readCustomerId(formData: FormData): string {
+  const parsedAction = customerActionSchema.safeParse({
+    customerId: formData.get("customerId")
+  });
+
+  if (!parsedAction.success) {
+    throw new Error("Cliente inválido.");
+  }
+
+  return parsedAction.data.customerId;
+}
+
 export async function anonymizeCustomerAccount(formData: FormData): Promise<void> {
   await requireAdmin();
 
   const session = await auth();
-  const customerId = formData.get("customerId");
-
-  if (typeof customerId !== "string" || customerId.length < 8) {
-    throw new Error("Cliente inválido.");
-  }
+  const customerId = readCustomerId(formData);
 
   if (session?.user?.id === customerId) {
     throw new Error("Você não pode remover a própria conta pelo painel de clientes.");
@@ -92,11 +105,7 @@ export async function anonymizeCustomerAccount(formData: FormData): Promise<void
 export async function sendCustomerPasswordReset(formData: FormData): Promise<void> {
   await requireAdmin();
 
-  const customerId = formData.get("customerId");
-
-  if (typeof customerId !== "string" || customerId.length < 8) {
-    throw new Error("Cliente inválido.");
-  }
+  const customerId = readCustomerId(formData);
 
   try {
     const resetToken = await createPasswordResetTokenForUserId(customerId);

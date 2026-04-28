@@ -8,6 +8,7 @@ import type {
   ValidatedCartItem
 } from "@/features/cart/types";
 import { validateCoupon } from "@/lib/cart/discounts";
+import { calculateCouponValueCents, getLoyaltyProgramSettings } from "@/lib/loyalty/settings";
 import { prisma } from "@/lib/prisma";
 import { defaultFreeShippingThresholdCents, selectShippingOption } from "@/lib/shipping/quotes";
 import { getStorefrontTheme } from "@/lib/theme/storefront";
@@ -73,10 +74,16 @@ export async function validateCartItems(
     subtotalCents,
     userId: request.userId
   });
-  const totalCents = Math.max(
+  const discountedSubtotalCents = Math.max(
     0,
     subtotalCents - couponPreview.discountCents
   );
+  const loyaltyPreview = await validateLoyaltyRedemption({
+    requestedPoints: request.loyaltyPointsToRedeem ?? 0,
+    subtotalCents: discountedSubtotalCents,
+    userId: request.userId
+  });
+  const totalCents = Math.max(0, discountedSubtotalCents - loyaltyPreview.discountCents);
   const theme = await getStorefrontTheme();
   const shippingQuote = selectShippingOption({
     freeShippingThresholdCents: theme.freeShippingThresholdCents,
@@ -92,7 +99,7 @@ export async function validateCartItems(
     removedItems,
     subtotalCents,
     couponDiscountCents: couponPreview.discountCents,
-    loyaltyDiscountCents: 0,
+    loyaltyDiscountCents: loyaltyPreview.discountCents,
     shippingCents,
     freeShippingThresholdCents: theme.freeShippingThresholdCents,
     totalCents: totalCents + shippingCents,
@@ -107,7 +114,7 @@ export async function validateCartItems(
     selectedShippingOption: shippingQuote.selectedOption,
     shippingOptions: shippingQuote.options,
     couponMessage: couponPreview.message,
-    loyalty: buildCouponOnlyLoyaltyPreview()
+    loyalty: loyaltyPreview
   };
 }
 
@@ -141,6 +148,80 @@ function buildCouponOnlyLoyaltyPreview(): CartValidationResponse["loyalty"] {
     minRedeemPoints: 0,
     redeemCentsPerPoint: 1,
     message: "Nerdcoins agora viram cupons em /conta/nerdcoins."
+  };
+}
+
+async function validateLoyaltyRedemption({
+  requestedPoints,
+  subtotalCents,
+  userId
+}: {
+  requestedPoints: number;
+  subtotalCents: number;
+  userId?: string;
+}): Promise<CartValidationResponse["loyalty"]> {
+  const settings = await getLoyaltyProgramSettings();
+  const normalizedRequestedPoints = Math.max(0, Math.floor(requestedPoints));
+  const basePreview: CartValidationResponse["loyalty"] = {
+    availablePoints: 0,
+    requestedPoints: normalizedRequestedPoints,
+    redeemedPoints: 0,
+    discountCents: 0,
+    isAvailable: false,
+    maxRedeemablePoints: 0,
+    minRedeemPoints: settings.minRedeemPoints,
+    redeemCentsPerPoint: settings.redeemCentsPerPoint,
+    message: null
+  };
+
+  if (!settings.isEnabled) {
+    return { ...basePreview, message: "O programa de Nerdcoins está temporariamente indisponível." };
+  }
+
+  if (!userId) {
+    return { ...basePreview, message: "Entre na sua conta para resgatar Nerdcoins." };
+  }
+
+  const loyaltyPoints = await prisma.loyaltyPoints.findUnique({
+    where: { userId },
+    select: { balance: true }
+  });
+  const availablePoints = loyaltyPoints?.balance ?? 0;
+  const subtotalLimitedPoints = Math.floor(subtotalCents / Math.max(1, settings.redeemCentsPerPoint));
+  const configuredLimit = settings.maxRedeemPoints ?? Number.MAX_SAFE_INTEGER;
+  const maxRedeemablePoints = Math.max(0, Math.min(availablePoints, subtotalLimitedPoints, configuredLimit));
+  const isAvailable = maxRedeemablePoints >= settings.minRedeemPoints;
+
+  if (normalizedRequestedPoints === 0) {
+    return {
+      ...basePreview,
+      availablePoints,
+      isAvailable,
+      maxRedeemablePoints,
+      message: isAvailable ? null : "Você ainda não tem Nerdcoins suficientes para resgatar neste carrinho."
+    };
+  }
+
+  if (!isAvailable || normalizedRequestedPoints < settings.minRedeemPoints) {
+    return {
+      ...basePreview,
+      availablePoints,
+      isAvailable,
+      maxRedeemablePoints,
+      message: `O resgate mínimo é de ${settings.minRedeemPoints} Nerdcoins.`
+    };
+  }
+
+  const redeemedPoints = Math.min(normalizedRequestedPoints, maxRedeemablePoints);
+
+  return {
+    ...basePreview,
+    availablePoints,
+    redeemedPoints,
+    discountCents: calculateCouponValueCents(redeemedPoints, settings.redeemCentsPerPoint),
+    isAvailable,
+    maxRedeemablePoints,
+    message: redeemedPoints < normalizedRequestedPoints ? "Ajustamos o resgate ao limite disponível para este carrinho." : null
   };
 }
 

@@ -15,6 +15,7 @@ const cartValidationSchema = z.object({
     })
   ).min(1).max(60),
   couponCode: z.string().trim().max(64).optional(),
+  loyaltyPointsToRedeem: z.coerce.number().int().min(0).max(1_000_000).optional(),
   shippingOptionId: z.string().trim().max(64).optional(),
   shippingPostalCode: z.string().trim().max(12).optional()
 });

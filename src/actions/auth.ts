@@ -256,15 +256,41 @@ export async function registerCustomer(formData: FormData): Promise<void> {
     }
 
     if (canRegisterReferral && inviterCode && inviterCode.userId !== user.id) {
+      const inviteeBonusPoints = loyaltySettings.isEnabled ? loyaltySettings.referralInviteeBonusPoints : 0;
+
       await tx.referral.create({
         data: {
           inviteeId: user.id,
-          inviteeRewardPoints: loyaltySettings.isEnabled ? loyaltySettings.referralInviteeBonusPoints : 0,
+          inviteeRewardPoints: inviteeBonusPoints,
           inviterId: inviterCode.userId,
           inviterRewardPoints: loyaltySettings.referralInviterBonusPoints,
           referralCode: inviterCode.code
         }
       });
+
+      if (inviteeBonusPoints > 0) {
+        await tx.loyaltyPoints.update({
+          where: { userId: user.id },
+          data: {
+            balance: { increment: inviteeBonusPoints },
+            lifetimeEarned: { increment: inviteeBonusPoints }
+          }
+        });
+
+        await tx.loyaltyLedger.create({
+          data: {
+            balanceAfter: signupBonusPoints + inviteeBonusPoints,
+            customerNote: "Bonus por convite",
+            expiresAt: getPointsExpirationDate(loyaltySettings),
+            idempotencyKey: `loyalty:referral:invitee:${user.id}:${inviterCode.code}`,
+            metadata: { referralCode: inviterCode.code },
+            pointsDelta: inviteeBonusPoints,
+            reason: "Bonus de cadastro por convite",
+            type: LoyaltyLedgerType.EARN,
+            userId: user.id
+          }
+        });
+      }
     }
   });
 

@@ -371,6 +371,12 @@ const criticalSourceContracts = [
       ["Norton visual", "NortonLogo"],
       ["Reclame Aqui visual", "ReclameAquiLogo"],
       ["Google seguro visual", "GoogleSafeLogo"],
+      ["faixa de pagamentos visual", "PaymentBadgeStrip"]
+    ]
+  },
+  {
+    filePath: "src/components/shop/payment-badges.tsx",
+    snippets: [
       ["Mastercard visual", "MastercardLogo"],
       ["Visa visual", "VisaLogo"],
       ["Pix visual", "PixLogo"]

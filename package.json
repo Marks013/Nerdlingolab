@@ -18,7 +18,7 @@
     "audit:actions": "node scripts/audit-server-actions.mjs",
     "validate:contrast": "node scripts/check-contrast.mjs",
     "import:shopify": "tsx scripts/import-shopify-products.mjs",
-    "media:import-external": "tsx scripts/import-external-media.ts",
+    "media:import-external": "prisma migrate deploy && tsx scripts/import-external-media.ts",
     "db:bootstrap": "prisma migrate deploy && prisma db seed && npm run import:shopify",
     "audit:routes": "node scripts/audit-routes.mjs",
     "validate:project": "npm run validate:encoding && npm run validate:ui-copy && npm run validate:contrast && npm run audit:images && npm run audit:routes && npm run audit:actions && npm run audit:ecommerce && npm run lint && npm run typecheck",

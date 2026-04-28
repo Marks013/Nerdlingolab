@@ -259,13 +259,15 @@ Baixar imagens externas usadas em produtos, variações, slides e popups para o 
 npm run media:import-external
 ```
 
-Use este comando antes de encerrar Shopify/CDN/domínio antigo. Ele troca URLs externas por URLs internas do próprio site, no formato `/api/media/...`.
+Use este comando antes de encerrar Shopify/CDN/domínio antigo. Ele aplica migrations pendentes, baixa as imagens externas para o storage interno e troca URLs externas por URLs internas do próprio site, no formato `/api/media/...`.
 
 No Docker:
 
 ```bash
 docker compose run --rm app npm run media:import-external
 ```
+
+Se aparecer `The table public.MediaAsset does not exist`, rode novamente o comando acima depois de atualizar o código. O script agora executa `prisma migrate deploy` antes da importação.
 
 ## 10. Desenvolvimento local
 

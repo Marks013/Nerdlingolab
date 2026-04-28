@@ -269,6 +269,21 @@ docker compose run --rm app npm run media:import-external
 
 Se aparecer `The table public.MediaAsset does not exist`, rode novamente o comando acima depois de atualizar o código. O script agora executa `prisma migrate deploy` antes da importação.
 
+Converter imagens internas antigas de JPG/PNG/GIF para WebP e atualizar produtos, variações, slides e popups:
+
+```bash
+npm run media:convert-webp
+```
+
+No Docker:
+
+```bash
+docker compose run --rm app npm run media:convert-webp
+docker compose restart app
+```
+
+Os uploads novos e novas importações externas já são salvos em WebP automaticamente. Use a conversão em massa quando houver imagens antigas no storage com `image/jpeg`, `image/png` ou `image/gif`.
+
 ## 10. Desenvolvimento local
 
 Instalar dependências:

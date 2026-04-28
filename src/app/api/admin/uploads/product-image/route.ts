@@ -5,6 +5,7 @@ import { z } from "zod";
 import { isAdminSession } from "@/lib/admin";
 import { auth } from "@/lib/auth";
 import { createMediaAsset } from "@/lib/media/assets";
+import { convertImageToWebp } from "@/lib/media/webp";
 import { rateLimitRequest } from "@/lib/security/rate-limit";
 import { assertSameOriginRequest } from "@/lib/security/request";
 import { ensureProductImageBucket, getProductImagePublicUrl, minioClient, productImageBucketName } from "@/lib/storage";
@@ -48,21 +49,24 @@ export async function POST(request: Request): Promise<NextResponse> {
     const objectName = buildProductImageObjectName(file);
     const bytes = Buffer.from(await file.arrayBuffer());
     validateProductImageBytes(file, bytes);
+    const webpImage = await convertImageToWebp(bytes, file.name);
 
-    await minioClient.putObject(productImageBucketName, objectName, bytes, bytes.length, {
-      "Content-Type": file.type
+    await minioClient.putObject(productImageBucketName, objectName, webpImage.bytes, webpImage.bytes.length, {
+      "Content-Type": webpImage.mimeType
     });
     const session = await auth();
     const url = getProductImagePublicUrl(objectName);
     const asset = await createMediaAsset({
       bucket: productImageBucketName,
       createdById: session?.user?.id ?? null,
-      fileName: file.name,
-      mimeType: file.type,
+      fileName: webpImage.fileName,
+      height: webpImage.height,
+      mimeType: webpImage.mimeType,
       objectKey: objectName,
-      sizeBytes: bytes.length,
+      sizeBytes: webpImage.bytes.length,
       source: "UPLOAD",
-      url
+      url,
+      width: webpImage.width
     });
 
     return NextResponse.json({

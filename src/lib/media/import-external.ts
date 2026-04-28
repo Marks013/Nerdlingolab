@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 
 import { createMediaAsset } from "@/lib/media/assets";
+import { convertImageToWebp } from "@/lib/media/webp";
 import { ensureProductImageBucket, getProductImagePublicUrl, minioClient, productImageBucketName } from "@/lib/storage";
 
 const allowedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
@@ -43,21 +44,24 @@ export async function internalizeExternalMediaUrl(url: string, source = "EXTERNA
 
   await ensureProductImageBucket();
 
-  const objectKey = `imported/${new Date().toISOString().slice(0, 10).replace(/-/g, "/")}/${randomUUID()}.${getExtension(mimeType, normalizedUrl)}`;
+  const webpImage = await convertImageToWebp(bytes, getFileName(normalizedUrl, "imported.webp"));
+  const objectKey = `imported/${new Date().toISOString().slice(0, 10).replace(/-/g, "/")}/${randomUUID()}.webp`;
   const internalUrl = getProductImagePublicUrl(objectKey);
 
-  await minioClient.putObject(productImageBucketName, objectKey, bytes, bytes.length, {
-    "Content-Type": mimeType
+  await minioClient.putObject(productImageBucketName, objectKey, webpImage.bytes, webpImage.bytes.length, {
+    "Content-Type": webpImage.mimeType
   });
   await createMediaAsset({
     bucket: productImageBucketName,
-    fileName: getFileName(normalizedUrl, objectKey),
-    mimeType,
+    fileName: webpImage.fileName,
+    height: webpImage.height,
+    mimeType: webpImage.mimeType,
     objectKey,
     originalUrl: normalizedUrl,
-    sizeBytes: bytes.length,
+    sizeBytes: webpImage.bytes.length,
     source,
-    url: internalUrl
+    url: internalUrl,
+    width: webpImage.width
   });
 
   return internalUrl;
@@ -117,23 +121,6 @@ async function findExistingImportedAsset(originalUrl: string): Promise<{ url: st
     select: { url: true },
     where: { deletedAt: null, originalUrl }
   });
-}
-
-function getExtension(mimeType: string, url: string): string {
-  if (mimeType === "image/png") {
-    return "png";
-  }
-
-  if (mimeType === "image/webp") {
-    return "webp";
-  }
-
-  if (mimeType === "image/gif") {
-    return "gif";
-  }
-
-  const extension = path.extname(new URL(url).pathname).replace(".", "").toLowerCase();
-  return extension || "jpg";
 }
 
 function getFileName(url: string, objectKey: string): string {

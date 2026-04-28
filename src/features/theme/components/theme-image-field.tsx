@@ -86,6 +86,9 @@ export function ThemeImageField({ defaultValue = "", label, name }: ThemeImageFi
         />
       </div>
       <MediaLibraryPicker onSelect={setValue} />
+      <span className="text-xs text-muted-foreground">
+        O envio aceita JPG, PNG, GIF e WebP, mas salva a imagem final em WebP.
+      </span>
       {message ? <span className="text-xs text-destructive">{message}</span> : null}
     </label>
   );

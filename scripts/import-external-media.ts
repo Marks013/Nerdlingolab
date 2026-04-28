@@ -5,6 +5,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { Client } from "minio";
 
 import { Prisma, PrismaClient } from "../src/generated/prisma/client";
+import { convertImageToWebp } from "../src/lib/media/webp";
 
 const allowedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const maxBytes = 12 * 1024 * 1024;
@@ -198,24 +199,26 @@ async function importExternalUrl(url: string, importedUrlMap: Map<string, string
     throw new Error(`Imagem muito grande em ${normalizedUrl}`);
   }
 
-  const objectKey = `imported/${new Date().toISOString().slice(0, 10).replace(/-/g, "/")}/${randomUUID()}.${getExtension(mimeType, normalizedUrl)}`;
-  const fileName = getFileName(normalizedUrl, objectKey);
+  const webpImage = await convertImageToWebp(bytes, getFileName(normalizedUrl, "imported.webp"));
+  const objectKey = `imported/${new Date().toISOString().slice(0, 10).replace(/-/g, "/")}/${randomUUID()}.webp`;
 
-  await minioClient.putObject(productImageBucketName, objectKey, bytes, bytes.length, {
-    "Content-Type": mimeType
+  await minioClient.putObject(productImageBucketName, objectKey, webpImage.bytes, webpImage.bytes.length, {
+    "Content-Type": webpImage.mimeType
   });
 
   const internalUrl = getProductImagePublicUrl(objectKey);
 
   await createMediaAsset({
     bucket: productImageBucketName,
-    fileName,
-    mimeType,
+    fileName: webpImage.fileName,
+    height: webpImage.height,
+    mimeType: webpImage.mimeType,
     objectKey,
     originalUrl: normalizedUrl,
-    sizeBytes: bytes.length,
+    sizeBytes: webpImage.bytes.length,
     source: "EXTERNAL_IMPORT",
-    url: internalUrl
+    url: internalUrl,
+    width: webpImage.width
   });
 
   importedUrlMap.set(normalizedUrl, internalUrl);
@@ -289,23 +292,6 @@ function extractSlideUrls(value: unknown): string[] {
   });
 }
 
-function getExtension(mimeType: string, url: string): string {
-  if (mimeType === "image/png") {
-    return "png";
-  }
-
-  if (mimeType === "image/webp") {
-    return "webp";
-  }
-
-  if (mimeType === "image/gif") {
-    return "gif";
-  }
-
-  const extension = path.extname(new URL(url).pathname).replace(".", "").toLowerCase();
-  return extension || "jpg";
-}
-
 function getFileName(url: string, objectKey: string): string {
   const fileName = path.basename(new URL(url).pathname);
   return fileName || path.basename(objectKey);
@@ -333,12 +319,14 @@ function getProductImagePublicUrl(objectName: string): string {
 async function createMediaAsset(input: {
   bucket: string;
   fileName: string;
+  height?: number | null;
   mimeType: string;
   objectKey: string;
   originalUrl: string;
   sizeBytes: number;
   source: string;
   url: string;
+  width?: number | null;
 }): Promise<void> {
   await prisma.mediaAsset.upsert({
     where: { objectKey: input.objectKey },

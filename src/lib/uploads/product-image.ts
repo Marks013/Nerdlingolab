@@ -26,8 +26,7 @@ export function validateProductImageBytes(file: File, bytes: Buffer): void {
   }
 }
 
-export function buildProductImageObjectName(file: File): string {
-  const extension = getExtensionFromFile(file);
+export function buildProductImageObjectName(file: File, extension = "webp"): string {
   const now = new Date();
   const datePath = [
     now.getFullYear(),
@@ -36,20 +35,4 @@ export function buildProductImageObjectName(file: File): string {
   ].join("/");
 
   return `products/${datePath}/${crypto.randomUUID()}.${extension}`;
-}
-
-function getExtensionFromFile(file: File): string {
-  if (file.type === "image/png") {
-    return "png";
-  }
-
-  if (file.type === "image/webp") {
-    return "webp";
-  }
-
-  if (file.type === "image/gif") {
-    return "gif";
-  }
-
-  return "jpg";
 }

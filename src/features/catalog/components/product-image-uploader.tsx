@@ -84,6 +84,9 @@ export function ProductImageUploader({
       <MediaLibraryPicker
         onSelect={(url) => setImageUrls((currentValue) => [currentValue, url].filter(Boolean).join("\n"))}
       />
+      <p className="text-xs text-muted-foreground">
+        JPG, PNG, GIF e WebP sÃ£o aceitos; o envio Ã© salvo automaticamente em WebP otimizado.
+      </p>
       <label className="grid gap-2 text-sm font-medium">
         {label}
         <Textarea

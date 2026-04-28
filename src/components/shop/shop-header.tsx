@@ -3,7 +3,7 @@
 import { Bot, ChevronDown, ChevronRight, Headphones, Menu, Search, ShoppingCart, Star, Tags, Ticket, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 
 import { signOutFromCustomer } from "@/actions/auth";
 import { SafeImage as Image } from "@/components/media/safe-image";
@@ -40,10 +40,12 @@ const drawerCatalogLinks = [
 
 export function ShopHeader({
   announcementText = "FRETE GRÁTIS em compras acima de R$99,90",
-  isAuthenticated = false
+  isAuthenticated = false,
+  nerdcoinsBalance = null
 }: {
   announcementText?: string;
   isAuthenticated?: boolean;
+  nerdcoinsBalance?: number | null;
 }): React.ReactElement {
   const router = useRouter();
   const hydratedSearchRef = useRef(false);
@@ -140,19 +142,40 @@ export function ShopHeader({
               }
 
               return (
-                <Link
-                  className="group relative inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  href={link.href}
-                  key={link.label}
-                >
-                  <Icon className="h-5 w-5 text-primary transition group-hover:scale-110" />
-                  {link.href === "/carrinho" && cartCount > 0 ? (
-                    <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#111827] px-1 text-[10px] font-black leading-none text-white shadow-sm">
-                      {cartBadgeLabel}
-                    </span>
+                <Fragment key={link.label}>
+                  <Link
+                    className="group relative inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    href={link.href}
+                  >
+                    <Icon className="h-5 w-5 text-primary transition group-hover:scale-110" />
+                    {link.href === "/carrinho" && cartCount > 0 ? (
+                      <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#111827] px-1 text-[10px] font-black leading-none text-white shadow-sm">
+                        {cartBadgeLabel}
+                      </span>
+                    ) : null}
+                    {link.label}
+                  </Link>
+                  {link.href === "/favoritos" && isAuthenticated && nerdcoinsBalance !== null ? (
+                    <Link
+                      className="group relative inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      href="/conta/nerdcoins"
+                    >
+                      <span className="relative h-6 w-6 overflow-hidden rounded-md">
+                        <Image
+                          alt=""
+                          className="object-contain transition group-hover:scale-110"
+                          fill
+                          sizes="24px"
+                          src="/brand-assets/nerd-icon-nerdcoins.webp"
+                        />
+                      </span>
+                      NerdCoins
+                      <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[#111827] px-1.5 text-[10px] font-black leading-none text-white">
+                        {nerdcoinsBalance > 9999 ? "9999+" : nerdcoinsBalance}
+                      </span>
+                    </Link>
                   ) : null}
-                  {link.label}
-                </Link>
+                </Fragment>
               );
             })}
             {isAuthenticated ? (

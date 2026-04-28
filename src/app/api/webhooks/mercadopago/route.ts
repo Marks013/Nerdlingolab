@@ -1,4 +1,4 @@
-import { WebhookProvider, type Prisma } from "@/generated/prisma/client";
+import { WebhookProvider, WebhookStatus, type Prisma } from "@/generated/prisma/client";
 import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 
@@ -28,22 +28,32 @@ export async function POST(request: Request): Promise<NextResponse> {
     const jsonPayload = toJsonValue(payload);
     const externalEventId = getExternalEventId(payload);
 
-    const webhookEvent = await prisma.webhookEvent.upsert({
+    const webhookEventKey = {
+      provider: WebhookProvider.MERCADO_PAGO,
+      externalEventId
+    };
+    const existingWebhookEvent = await prisma.webhookEvent.findUnique({
       where: {
-        provider_externalEventId: {
-          provider: WebhookProvider.MERCADO_PAGO,
-          externalEventId
-        }
-      },
-      create: {
-        provider: WebhookProvider.MERCADO_PAGO,
-        externalEventId,
-        payload: jsonPayload
-      },
-      update: {
-        payload: jsonPayload
+        provider_externalEventId: webhookEventKey
       }
     });
+
+    if (existingWebhookEvent?.status === WebhookStatus.PROCESSED) {
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+
+    const webhookEvent = existingWebhookEvent
+      ? await prisma.webhookEvent.update({
+          where: { id: existingWebhookEvent.id },
+          data: { payload: jsonPayload }
+        })
+      : await prisma.webhookEvent.create({
+          data: {
+            provider: WebhookProvider.MERCADO_PAGO,
+            externalEventId,
+            payload: jsonPayload
+          }
+        });
     const paymentId = getPaymentId(payload);
 
     if (!paymentId) {

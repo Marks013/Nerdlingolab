@@ -5,10 +5,12 @@ import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { MediaLibraryPicker } from "@/features/media/components/media-library-picker";
 import { parseFriendlyResponse } from "@/lib/http/friendly-response";
 
 interface ProductImageUploaderProps {
-  defaultValue: string;
+  defaultValue?: string;
+  label?: string;
 }
 
 interface UploadResponse {
@@ -16,7 +18,10 @@ interface UploadResponse {
   message?: string;
 }
 
-export function ProductImageUploader({ defaultValue }: ProductImageUploaderProps): React.ReactElement {
+export function ProductImageUploader({
+  defaultValue = "",
+  label = "Imagens"
+}: ProductImageUploaderProps): React.ReactElement {
   const [imageUrls, setImageUrls] = useState(defaultValue);
   const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -76,8 +81,11 @@ export function ProductImageUploader({ defaultValue }: ProductImageUploaderProps
           type="file"
         />
       </div>
+      <MediaLibraryPicker
+        onSelect={(url) => setImageUrls((currentValue) => [currentValue, url].filter(Boolean).join("\n"))}
+      />
       <label className="grid gap-2 text-sm font-medium">
-        Imagens
+        {label}
         <Textarea
           name="imageUrls"
           onChange={(event) => setImageUrls(event.target.value)}

@@ -14,6 +14,7 @@ import {
   productFormSchema
 } from "@/features/catalog/schemas";
 import { requireAdmin } from "@/lib/admin";
+import { deleteUnusedMediaAssets, syncMediaUsages } from "@/lib/media/assets";
 import { prisma } from "@/lib/prisma";
 
 const execFileAsync = promisify(execFile);
@@ -117,6 +118,13 @@ export async function createProduct(formData: FormData): Promise<void> {
     });
 
     createdProductId = createdProduct.id;
+    await syncMediaUsages({
+      fieldName: "images",
+      ownerId: createdProduct.id,
+      ownerType: "PRODUCT",
+      productId: createdProduct.id,
+      urls: productInput.imagesArray
+    });
   } catch (error) {
     Sentry.captureException(error);
     throw new Error("Não foi possível criar o produto.");
@@ -214,6 +222,15 @@ export async function updateProduct(productId: string, formData: FormData): Prom
           }
         });
       }
+
+    });
+
+    await syncMediaUsages({
+      fieldName: "images",
+      ownerId: productId,
+      ownerType: "PRODUCT",
+      productId,
+      urls: productInput.imagesArray
     });
   } catch (error) {
     Sentry.captureException(error);
@@ -238,6 +255,43 @@ export async function archiveProduct(productId: string): Promise<void> {
   } catch (error) {
     Sentry.captureException(error);
     throw new Error("Não foi possível arquivar o produto.");
+  }
+
+  revalidateCatalogPaths();
+}
+
+export async function deleteProduct(productId: string): Promise<void> {
+  await requireAdmin();
+
+  try {
+    const product = await prisma.product.findUnique({
+      select: {
+        _count: {
+          select: { orderItems: true }
+        },
+        mediaUsages: {
+          select: { assetId: true }
+        }
+      },
+      where: { id: productId }
+    });
+
+    if (!product) {
+      return;
+    }
+
+    if (product._count.orderItems > 0) {
+      await archiveProduct(productId);
+      return;
+    }
+
+    const assetIds = product.mediaUsages.map((usage) => usage.assetId);
+
+    await prisma.product.delete({ where: { id: productId } });
+    await deleteUnusedMediaAssets(assetIds);
+  } catch (error) {
+    Sentry.captureException(error);
+    throw new Error("Não foi possível excluir o produto.");
   }
 
   revalidateCatalogPaths();

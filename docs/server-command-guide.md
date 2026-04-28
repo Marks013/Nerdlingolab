@@ -251,7 +251,23 @@ O arquivo padrão vem de `SHOPIFY_PRODUCTS_CSV`. No projeto, o padrão atual é:
 data/shopify/products_export_1.csv
 ```
 
-## 9. Desenvolvimento local
+## 9. Mídias e imagens
+
+Baixar imagens externas usadas em produtos, variações, slides e popups para o storage interno:
+
+```bash
+npm run media:import-external
+```
+
+Use este comando antes de encerrar Shopify/CDN/domínio antigo. Ele troca URLs externas por URLs internas do próprio site, no formato `/api/media/...`.
+
+No Docker:
+
+```bash
+docker compose run --rm app npm run media:import-external
+```
+
+## 10. Desenvolvimento local
 
 Instalar dependências:
 
@@ -277,7 +293,7 @@ Rodar o site local com Webpack, útil para Playwright no Windows:
 npm run dev:webpack
 ```
 
-## 10. Diagnóstico rápido
+## 11. Diagnóstico rápido
 
 Quando algo der errado, rode nesta ordem:
 
@@ -300,4 +316,7 @@ Se estiver usando Docker no servidor:
 
 ```bash
 docker compose run --rm setup npm run db:deploy
+docker compose restart app
 ```
+
+Exemplo comum: `P2021` ou `The table public.MarketingPopup does not exist` significa que o código novo subiu antes da migration correspondente. Rode o `db:deploy` acima e reinicie o `app`.

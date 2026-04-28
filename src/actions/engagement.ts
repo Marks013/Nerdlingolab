@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireAdmin } from "@/lib/admin";
+import { syncMediaUsages } from "@/lib/media/assets";
 import { prisma } from "@/lib/prisma";
 import { normalizeLocalOrHttpUrl } from "@/lib/urls";
 
@@ -87,12 +88,14 @@ export async function saveMarketingPopup(formData: FormData): Promise<void> {
 
   try {
     if (parsed.data.id) {
-      await prisma.marketingPopup.update({
+      const popup = await prisma.marketingPopup.update({
         where: { id: parsed.data.id },
         data
       });
+      await syncPopupMediaUsage(popup.id, popup.imageUrl);
     } else {
-      await prisma.marketingPopup.create({ data });
+      const popup = await prisma.marketingPopup.create({ data });
+      await syncPopupMediaUsage(popup.id, popup.imageUrl);
     }
   } catch (error) {
     Sentry.captureException(error, { tags: { feature: "engagement", operation: "save-popup" } });
@@ -101,6 +104,15 @@ export async function saveMarketingPopup(formData: FormData): Promise<void> {
 
   revalidatePath("/");
   revalidatePath("/admin/engajamento");
+}
+
+async function syncPopupMediaUsage(popupId: string, imageUrl: string | null): Promise<void> {
+  await syncMediaUsages({
+    fieldName: "imageUrl",
+    ownerId: popupId,
+    ownerType: "MARKETING_POPUP",
+    urls: imageUrl ? [imageUrl] : []
+  });
 }
 
 export async function deleteMarketingPopup(formData: FormData): Promise<void> {

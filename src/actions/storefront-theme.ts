@@ -5,6 +5,7 @@ import * as Sentry from "@sentry/nextjs";
 import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/admin";
+import { syncMediaUsages } from "@/lib/media/assets";
 import {
   defaultThemeText,
   defaultHeroSlides,
@@ -61,6 +62,8 @@ export async function updateStorefrontTheme(formData: FormData): Promise<void> {
 
   revalidatePath("/");
   revalidatePath("/admin/tema");
+
+  await syncStorefrontThemeMediaUsages(heroSlides, promoSlides);
 }
 
 export async function resetStorefrontTheme(): Promise<void> {
@@ -102,6 +105,8 @@ export async function resetStorefrontTheme(): Promise<void> {
 
   revalidatePath("/");
   revalidatePath("/admin/tema");
+
+  await syncStorefrontThemeMediaUsages(defaultHeroSlides, defaultPromoSlides);
 }
 
 function readSlides(formData: FormData, group: "hero" | "promo", fallback: StorefrontSlide[]): StorefrontSlide[] {
@@ -192,6 +197,30 @@ function toJson(slides: StorefrontSlide[]): Prisma.InputJsonValue {
     ...(slide.mobile ? { mobile: slide.mobile } : {}),
     ...(slide.src ? { src: slide.src } : {})
   })) as Prisma.InputJsonValue;
+}
+
+async function syncStorefrontThemeMediaUsages(
+  heroSlides: StorefrontSlide[],
+  promoSlides: StorefrontSlide[]
+): Promise<void> {
+  await Promise.all([
+    syncMediaUsages({
+      fieldName: "heroSlides",
+      ownerId: "default",
+      ownerType: "STOREFRONT_THEME",
+      urls: extractSlideUrls(heroSlides)
+    }),
+    syncMediaUsages({
+      fieldName: "promoSlides",
+      ownerId: "default",
+      ownerType: "STOREFRONT_THEME",
+      urls: extractSlideUrls(promoSlides)
+    })
+  ]);
+}
+
+function extractSlideUrls(slides: StorefrontSlide[]): string[] {
+  return slides.flatMap((slide) => [slide.desktop, slide.mobile, slide.src]).filter((url): url is string => Boolean(url));
 }
 
 async function saveThemeWithoutFreeShippingThreshold({

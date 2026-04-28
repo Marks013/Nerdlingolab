@@ -38,41 +38,41 @@ export const defaultThemeText = {
 export const defaultHeroSlides: StorefrontSlide[] = [
   {
     alt: "Banner NerdLingoLab de camisetas e cultura pop",
-    desktop: "https://nerdlingolab.com/cdn/shop/files/BANNER_01_PC_-_NERDLINGOLAB_II_1.webp?v=1774055688&width=1800",
+    desktop: "/brand-assets/BANNER_05_PC_-_NERDLINGOLAB_II_1.webp",
     href: "/produtos",
-    mobile: "https://nerdlingolab.com/cdn/shop/files/BANNER_01_MOBI_-_NERDLINGOLAB_II_1.webp?v=1774055688&width=900"
+    mobile: "/brand-assets/BANNER_05_MOBI_-_NERDLINGOLAB_II_1.webp"
   },
   {
     alt: "Banner NerdLingoLab com novidades da loja",
-    desktop: "https://nerdlingolab.com/cdn/shop/files/BANNER_03_PC_-_NERDLINGOLAB.webp?v=1774055689&width=1800",
+    desktop: "/brand-assets/BANNER_03_PC_-_NERDLINGOLAB.webp",
     href: "/produtos?ordem=recentes",
-    mobile: "https://nerdlingolab.com/cdn/shop/files/BANNER_03_MOBI_-_NERDLINGOLAB.webp?v=1774055689&width=900"
+    mobile: "/brand-assets/BANNER_03_MOBI_-_NERDLINGOLAB.webp"
   },
   {
     alt: "Banner NerdLingoLab de ofertas especiais",
-    desktop: "https://nerdlingolab.com/cdn/shop/files/BANNER_PC_NERDLINGOLAB_-_01.webp?v=1774055689&width=1800",
+    desktop: "/brand-assets/BANNER_01_PC_-_NERDILONGLAB.webp",
     href: "/ofertas",
-    mobile: "https://nerdlingolab.com/cdn/shop/files/BANNER_01_MOBI_-_NERDILONGLAB.webp?v=1774055689&width=900"
+    mobile: "/brand-assets/BANNER_01_MOBI_-_NERDILONGLAB.webp"
   },
   {
     alt: "Banner NerdLingoLab de temporada",
-    desktop: "https://nerdlingolab.com/cdn/shop/files/BANNER_02_PC_-_NERDLONGLAB.webp?v=1774055689&width=1800",
+    desktop: "/brand-assets/BANNER_02_PC_-_NERDLONGLAB.webp",
     href: "/produtos?categoria=temporada",
-    mobile: "https://nerdlingolab.com/cdn/shop/files/BANNER_02_MOBI_-_NERDLONGOLAB.webp?v=1774055689&width=900"
+    mobile: "/brand-assets/BANNER_02_MOBI_-_NERDLONGOLAB.webp"
   }
 ];
 
 export const defaultPromoSlides: StorefrontSlide[] = [
   {
     alt: "Banner NerdLingoLab de frete e campanha",
-    desktop: "https://nerdlingolab.com/cdn/shop/files/BANNER_04_PC_-_NERDLINGOLAB.webp?v=1774055689&width=1800",
+    desktop: "/brand-assets/BANNER_04_PC_-_NERDLINGOLAB.webp",
     href: "/ofertas",
-    mobile: "https://nerdlingolab.com/cdn/shop/files/BANNER_04_MOBI_-_NERDLINGOLAB.webp?v=1774055689&width=900"
+    mobile: "/brand-assets/BANNER_04_MOBI_-_NERDLINGOLAB.webp"
   },
   {
     alt: "Sobre a loja NerdLingoLab",
     href: "#sobre",
-    src: "https://nerdlingolab.com/cdn/shop/files/SOBRE_A_LOJA_-_NERDLINGOLAB.webp?v=1774055689&width=800"
+    src: "/brand-assets/SOBRE_A_LOJA_-_NERDLINGOLAB.webp"
   }
 ];
 

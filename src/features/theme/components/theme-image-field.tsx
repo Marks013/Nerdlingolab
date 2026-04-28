@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MediaLibraryPicker } from "@/features/media/components/media-library-picker";
 import { parseFriendlyResponse } from "@/lib/http/friendly-response";
 
 interface ThemeImageFieldProps {
@@ -84,6 +85,7 @@ export function ThemeImageField({ defaultValue = "", label, name }: ThemeImageFi
           type="file"
         />
       </div>
+      <MediaLibraryPicker onSelect={setValue} />
       {message ? <span className="text-xs text-destructive">{message}</span> : null}
     </label>
   );

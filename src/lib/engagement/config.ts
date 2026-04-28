@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { isPrismaMissingTableError } from "@/lib/prisma-errors";
 
 export interface PublicMarketingPopup {
   ctaHref: string | null;
@@ -49,24 +50,32 @@ export const defaultNotificationTemplates = [
 
 export async function getActiveMarketingPopup(): Promise<PublicMarketingPopup | null> {
   const now = new Date();
-  const popup = await prisma.marketingPopup.findFirst({
-    orderBy: [{ priority: "desc" }, { updatedAt: "desc" }],
-    where: {
-      isActive: true,
-      OR: [
-        { startsAt: null },
-        { startsAt: { lte: now } }
-      ],
-      AND: [
-        {
-          OR: [
-            { endsAt: null },
-            { endsAt: { gte: now } }
-          ]
-        }
-      ]
-    }
-  });
+  const popup = await prisma.marketingPopup
+    .findFirst({
+      orderBy: [{ priority: "desc" }, { updatedAt: "desc" }],
+      where: {
+        isActive: true,
+        OR: [
+          { startsAt: null },
+          { startsAt: { lte: now } }
+        ],
+        AND: [
+          {
+            OR: [
+              { endsAt: null },
+              { endsAt: { gte: now } }
+            ]
+          }
+        ]
+      }
+    })
+    .catch((error: unknown) => {
+      if (isPrismaMissingTableError(error, "MarketingPopup")) {
+        return null;
+      }
+
+      throw error;
+    });
 
   if (!popup) {
     return null;

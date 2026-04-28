@@ -23,7 +23,9 @@ export async function ensureProductImageBucket(): Promise<void> {
 }
 
 export function getProductImagePublicUrl(objectName: string): string {
-  const protocol = minioUseSsl ? "https" : "http";
+  return `/api/media/${objectName.split("/").map(encodeURIComponent).join("/")}`;
+}
 
-  return `${protocol}://${minioEndpoint}:${Number.isFinite(minioPort) ? minioPort : 9000}/${productImageBucketName}/${objectName}`;
+export async function removeProductImageObject(objectName: string): Promise<void> {
+  await minioClient.removeObject(productImageBucketName, objectName);
 }

@@ -14,6 +14,7 @@ O guia cobre:
 - `docker compose up`, `logs`, `restart`, `ps` e rebuild.
 - Migrations do Prisma em desenvolvimento e produção.
 - Scripts atuais do `package.json`.
+- Biblioteca de mídias e importação de imagens externas.
 - Sequência recomendada para atualizar o site no servidor.
 
 ## Setup local
@@ -81,6 +82,15 @@ Aplicar migrations em produção/servidor:
 npm run db:deploy
 ```
 
+No servidor com Docker:
+
+```bash
+docker compose run --rm setup npm run db:deploy
+docker compose restart app
+```
+
+Se aparecer `P2021` ou `The table public.MarketingPopup does not exist`, o banco está sem uma migration nova. Rode o deploy de migrations acima antes de testar login/admin.
+
 Gerar o client Prisma:
 
 ```bash
@@ -108,4 +118,5 @@ Para E2E local no Windows, o Playwright usa `npm run dev:webpack`.
 - `npm run db:deploy`: aplica migrations pendentes.
 - `npm run db:seed`: popula dados iniciais.
 - `npm run import:shopify`: importa produtos do CSV configurado.
+- `npm run media:import-external`: baixa imagens externas para o storage interno e troca as URLs no banco.
 - `npm run validate:project`: roda validações e auditorias principais.

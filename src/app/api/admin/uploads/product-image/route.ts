@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { isAdminSession } from "@/lib/admin";
+import { auth } from "@/lib/auth";
+import { createMediaAsset } from "@/lib/media/assets";
 import { rateLimitRequest } from "@/lib/security/rate-limit";
 import { assertSameOriginRequest } from "@/lib/security/request";
 import { ensureProductImageBucket, getProductImagePublicUrl, minioClient, productImageBucketName } from "@/lib/storage";
@@ -50,10 +52,23 @@ export async function POST(request: Request): Promise<NextResponse> {
     await minioClient.putObject(productImageBucketName, objectName, bytes, bytes.length, {
       "Content-Type": file.type
     });
+    const session = await auth();
+    const url = getProductImagePublicUrl(objectName);
+    const asset = await createMediaAsset({
+      bucket: productImageBucketName,
+      createdById: session?.user?.id ?? null,
+      fileName: file.name,
+      mimeType: file.type,
+      objectKey: objectName,
+      sizeBytes: bytes.length,
+      source: "UPLOAD",
+      url
+    });
 
     return NextResponse.json({
-      url: getProductImagePublicUrl(objectName),
-      objectName
+      assetId: asset.id,
+      objectName,
+      url
     });
   } catch (error) {
     Sentry.captureException(error);

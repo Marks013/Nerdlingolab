@@ -139,6 +139,7 @@ model User {
   addresses         CustomerAddress[]
   supportTickets    SupportTicket[]
   assignedCoupons   Coupon[] @relation("AssignedCoupons")
+  mediaAssets       MediaAsset[]
   referralCode      ReferralCode?
   referralsSent     Referral[] @relation("ReferralInviter")
   referralReceived  Referral?  @relation("ReferralInvitee")
@@ -269,6 +270,7 @@ model Product {
   variants        ProductVariant[]
   orderItems      OrderItem[]
   inventoryLedger InventoryLedger[]
+  mediaUsages     MediaAssetUsage[]
 
   @@index([status, publishedAt])
   @@index([categoryId])
@@ -313,6 +315,49 @@ model StorefrontTheme {
   promoSlides           Json     @default("[]")
   updatedAt             DateTime @updatedAt
   createdAt             DateTime @default(now())
+}
+
+model MediaAsset {
+  id          String    @id @default(cuid())
+  bucket      String
+  objectKey   String    @unique
+  url         String
+  originalUrl String?
+  fileName    String
+  mimeType    String
+  sizeBytes   Int
+  width       Int?
+  height      Int?
+  source      String    @default("UPLOAD")
+  altText     String?
+  createdById String?
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  createdBy User?             @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  usages    MediaAssetUsage[]
+
+  @@index([source, createdAt])
+  @@index([deletedAt])
+}
+
+model MediaAssetUsage {
+  id        String   @id @default(cuid())
+  assetId   String
+  productId String?
+  ownerType String
+  ownerId   String
+  fieldName String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  asset   MediaAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  product Product?   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([assetId, ownerType, ownerId, fieldName, sortOrder])
+  @@index([ownerType, ownerId])
+  @@index([productId])
 }
 
 model NewsletterSubscriber {

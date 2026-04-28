@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ThemeImageField } from "@/features/theme/components/theme-image-field";
 import { ensureNotificationTemplates } from "@/lib/engagement/config";
 import { prisma } from "@/lib/prisma";
 
@@ -140,7 +141,7 @@ function PopupForm({
       <div className="grid gap-3 md:grid-cols-2">
         <TextField defaultValue={popup?.ctaLabel ?? ""} label="Texto do botão" name="ctaLabel" />
         <TextField defaultValue={popup?.ctaHref ?? ""} label="Link do botão" name="ctaHref" />
-        <TextField defaultValue={popup?.imageUrl ?? ""} label="Imagem" name="imageUrl" />
+        <ThemeImageField defaultValue={popup?.imageUrl ?? ""} label="Imagem" name="imageUrl" />
         <TextField defaultValue={String(popup?.priority ?? 0)} label="Prioridade" name="priority" type="number" />
         <TextField defaultValue={String(popup?.triggerValue ?? 1200)} label="Atraso para aparecer (ms)" name="triggerValue" type="number" />
         <TextField defaultValue={String(popup?.frequencyHours ?? 24)} label="Repetir depois de (horas)" name="frequencyHours" type="number" />

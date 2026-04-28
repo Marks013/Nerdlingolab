@@ -1,7 +1,7 @@
-import { Archive, Pencil, Plus, RotateCw } from "lucide-react";
+import { Archive, Pencil, Plus, RotateCw, Trash2 } from "lucide-react";
 import Link from "next/link";
 
-import { archiveProduct, syncShopifyProductsFromCsv } from "@/actions/catalog";
+import { archiveProduct, deleteProduct, syncShopifyProductsFromCsv } from "@/actions/catalog";
 import { SafeImage as Image } from "@/components/media/safe-image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -119,6 +119,11 @@ export function ProductTable({ categories, filters, products }: ProductTableProp
                 <form action={archiveProduct.bind(null, product.id)}>
                   <Button size="icon" title="Arquivar" type="submit" variant="outline">
                     <Archive className="h-4 w-4" />
+                  </Button>
+                </form>
+                <form action={deleteProduct.bind(null, product.id)}>
+                  <Button size="icon" title="Excluir sem pedidos" type="submit" variant="outline">
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </form>
               </div>

@@ -1,27 +1,25 @@
 "use client";
 
-import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useCartStore } from "@/features/cart/cart-store";
 import { CartLineItem } from "@/features/cart/components/cart-line-item";
 import type { CartValidationResponse } from "@/features/cart/types";
-import { useCartStore } from "@/features/cart/cart-store";
 import { FreeShippingProgress } from "@/features/shipping/components/free-shipping-progress";
 import { formatCurrency } from "@/lib/format";
 import { parseFriendlyResponse } from "@/lib/http/friendly-response";
 
 export function CartClient(): React.ReactElement {
-  const { items, removeItem, setQuantity, clearCart, getValidationPayload } = useCartStore();
+  const { clearCart, getValidationPayload, items, removeItem, setQuantity } = useCartStore();
   const couponCode = useCartStore((state) => state.couponCode);
-  const loyaltyPointsToRedeem = useCartStore((state) => state.loyaltyPointsToRedeem);
   const shippingOptionId = useCartStore((state) => state.shippingOptionId);
   const shippingPostalCode = useCartStore((state) => state.shippingPostalCode);
   const setCouponCode = useCartStore((state) => state.setCouponCode);
-  const setLoyaltyPointsToRedeem = useCartStore((state) => state.setLoyaltyPointsToRedeem);
   const setShippingOption = useCartStore((state) => state.setShippingOption);
   const setShippingPostalCode = useCartStore((state) => state.setShippingPostalCode);
   const [validatedCart, setValidatedCart] = useState<CartValidationResponse | null>(null);
@@ -41,14 +39,12 @@ export function CartClient(): React.ReactElement {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        items: getValidationPayload(),
         couponCode,
-        loyaltyPointsToRedeem,
+        items: getValidationPayload(),
         shippingOptionId,
         shippingPostalCode: shippingPostalCodeRef.current
       })
     });
-
     const parsedResponse = await parseFriendlyResponse<CartValidationResponse>(
       response,
       "Não foi possível atualizar o carrinho."
@@ -70,29 +66,22 @@ export function CartClient(): React.ReactElement {
     if (shouldShowLoading) {
       setIsLoading(false);
     }
-  }, [
-    couponCode,
-    getValidationPayload,
-    loyaltyPointsToRedeem,
-    setShippingOption,
-    shippingOptionId,
-  ]);
+  }, [couponCode, getValidationPayload, setShippingOption, shippingOptionId]);
 
   useEffect(() => {
-    if (hasItems) {
-      const validationTimeoutId = window.setTimeout(() => {
-        void validateCart({ showLoading: false });
-      }, 0);
-
-      return () => window.clearTimeout(validationTimeoutId);
+    if (!hasItems) {
+      return undefined;
     }
 
-    return undefined;
+    const validationTimeoutId = window.setTimeout(() => {
+      void validateCart({ showLoading: false });
+    }, 0);
+
+    return () => window.clearTimeout(validationTimeoutId);
   }, [hasItems, items, validateCart]);
 
   const subtotal = useMemo(() => validatedCart?.subtotalCents ?? 0, [validatedCart]);
   const couponDiscount = validatedCart?.couponDiscountCents ?? 0;
-  const loyaltyDiscount = validatedCart?.loyaltyDiscountCents ?? 0;
   const shipping = validatedCart?.shippingCents ?? 0;
   const freeShippingThresholdCents = validatedCart?.freeShippingThresholdCents ?? 9_990;
   const total = validatedCart?.totalCents ?? subtotal;
@@ -107,7 +96,7 @@ export function CartClient(): React.ReactElement {
             </span>
             <h1 className="mt-8 text-2xl font-black text-black">Seu carrinho está esperando uma missão.</h1>
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#677279]">
-              Escolha seus produtos geek favoritos e acompanhe descontos, Nerdcoins e frete grátis em tempo real.
+              Escolha seus produtos favoritos e acompanhe descontos e frete grátis em tempo real.
             </p>
             <Button asChild className="mt-7 bg-primary px-9 font-black text-white hover:bg-primary/90">
               <Link href="/produtos">Veja nossos produtos</Link>
@@ -121,25 +110,25 @@ export function CartClient(): React.ReactElement {
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
       <section>
-      <Card className="manga-panel overflow-hidden">
-        <CardHeader>
-          <CardTitle>Carrinho</CardTitle>
-          <CardDescription>Revise os itens escolhidos antes de finalizar a compra.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {validatedCart?.items.map((item, itemIndex) => (
-            <CartLineItem
-              imagePriority={itemIndex === 0}
-              item={item}
-              key={item.variantId}
-              onQuantityChange={setQuantity}
-              onRemove={removeItem}
-            />
-          ))}
-          {isLoading ? <p className="py-4 text-sm text-muted-foreground">Validando carrinho...</p> : null}
-          {cartMessage ? <p className="py-4 text-sm text-muted-foreground">{cartMessage}</p> : null}
-        </CardContent>
-      </Card>
+        <Card className="manga-panel overflow-hidden">
+          <CardHeader>
+            <CardTitle>Carrinho</CardTitle>
+            <CardDescription>Revise os itens escolhidos antes de finalizar a compra.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {validatedCart?.items.map((item, itemIndex) => (
+              <CartLineItem
+                imagePriority={itemIndex === 0}
+                item={item}
+                key={item.variantId}
+                onQuantityChange={setQuantity}
+                onRemove={removeItem}
+              />
+            ))}
+            {isLoading ? <p className="py-4 text-sm text-muted-foreground">Validando carrinho...</p> : null}
+            {cartMessage ? <p className="py-4 text-sm text-muted-foreground">{cartMessage}</p> : null}
+          </CardContent>
+        </Card>
       </section>
 
       <Card className="manga-panel h-fit lg:sticky lg:top-5">
@@ -148,10 +137,7 @@ export function CartClient(): React.ReactElement {
           <CardDescription>{validatedCart?.itemCount ?? 0} item(ns)</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <FreeShippingProgress
-            subtotalCents={subtotal}
-            thresholdCents={freeShippingThresholdCents}
-          />
+          <FreeShippingProgress subtotalCents={subtotal} thresholdCents={freeShippingThresholdCents} />
 
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="couponCode">
@@ -199,10 +185,7 @@ export function CartClient(): React.ReactElement {
               <p className="text-sm font-medium">Entrega</p>
               <div className="grid gap-2">
                 {validatedCart.shippingOptions.map((option) => (
-                  <label
-                    className="flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm"
-                    key={option.id}
-                  >
+                  <label className="flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm" key={option.id}>
                     <input
                       checked={(validatedCart.selectedShippingOption?.id ?? "") === option.id}
                       className="mt-1"
@@ -226,41 +209,6 @@ export function CartClient(): React.ReactElement {
             </div>
           ) : null}
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="loyaltyPoints">
-              Pontos de fidelidade
-            </label>
-            <div className="flex gap-2">
-              <Input
-                id="loyaltyPoints"
-                max={validatedCart?.loyalty.maxRedeemablePoints ?? undefined}
-                min={0}
-                onChange={(event) => setLoyaltyPointsToRedeem(Number(event.target.value))}
-                placeholder="0"
-                type="number"
-                value={loyaltyPointsToRedeem}
-              />
-              <Button
-                disabled={!validatedCart?.loyalty.isAvailable || !validatedCart.loyalty.maxRedeemablePoints}
-                onClick={() => {
-                  setLoyaltyPointsToRedeem(validatedCart?.loyalty.maxRedeemablePoints ?? 0);
-                  window.setTimeout(() => void validateCart({ showLoading: false }), 0);
-                }}
-                type="button"
-                variant="outline"
-              >
-                Máximo
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Disponíveis: {validatedCart?.loyalty.availablePoints ?? 0} · mínimo: {validatedCart?.loyalty.minRedeemPoints ?? 0}
-              {validatedCart?.loyalty.maxRedeemablePoints ? ` · máximo neste carrinho: ${validatedCart.loyalty.maxRedeemablePoints}` : ""}
-            </p>
-            {validatedCart?.loyalty.message ? (
-              <p className="text-xs text-muted-foreground">{validatedCart.loyalty.message}</p>
-            ) : null}
-          </div>
-
           <div className="flex items-center justify-between text-sm">
             <span>Subtotal</span>
             <strong>{formatCurrency(subtotal)}</strong>
@@ -268,10 +216,6 @@ export function CartClient(): React.ReactElement {
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>Cupom</span>
             <span>-{formatCurrency(couponDiscount)}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>Pontos</span>
-            <span>-{formatCurrency(loyaltyDiscount)}</span>
           </div>
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>Frete</span>
@@ -286,9 +230,7 @@ export function CartClient(): React.ReactElement {
             asChild
             className="w-full"
           >
-            <Link
-              href={validatedCart?.items.length && validatedCart.selectedShippingOption ? "/checkout" : "/carrinho"}
-            >
+            <Link href={validatedCart?.items.length && validatedCart.selectedShippingOption ? "/checkout" : "/carrinho"}>
               Continuar para checkout
             </Link>
           </Button>

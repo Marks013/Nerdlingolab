@@ -57,7 +57,7 @@ function fieldsFromAddress(address?: CheckoutSavedAddress): AddressFields {
 }
 
 export function CheckoutClient({ savedAddresses = [] }: CheckoutClientProps): React.ReactElement {
-  const { items, couponCode, loyaltyPointsToRedeem, shippingOptionId, shippingPostalCode, clearCart, getValidationPayload } = useCartStore();
+  const { clearCart, couponCode, getValidationPayload, items, shippingOptionId, shippingPostalCode } = useCartStore();
   const draftAddress = readDraftCheckoutAddress();
   const addressOptions = savedAddresses.length > 0 ? savedAddresses : draftAddress ? [draftAddress] : [];
   const defaultAddress = addressOptions.find((address) => address.isDefault) ?? addressOptions[0];
@@ -95,7 +95,6 @@ export function CheckoutClient({ savedAddresses = [] }: CheckoutClientProps): Re
       body: JSON.stringify({
         items: getValidationPayload(),
         couponCode,
-        loyaltyPointsToRedeem,
         shippingOptionId,
         savedAddressId: selectedAddressId || undefined,
         customer: {

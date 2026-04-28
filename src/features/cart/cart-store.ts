@@ -8,14 +8,12 @@ import type { CartItem, CartValidationRequestItem } from "@/features/cart/types"
 interface CartState {
   items: CartItem[];
   couponCode: string;
-  loyaltyPointsToRedeem: number;
   shippingOptionId: string;
   shippingPostalCode: string;
   addItem: (item: CartItem) => void;
   removeItem: (variantId: string) => void;
   setQuantity: (variantId: string, quantity: number) => void;
   setCouponCode: (couponCode: string) => void;
-  setLoyaltyPointsToRedeem: (points: number) => void;
   setShippingOption: (optionId: string) => void;
   setShippingPostalCode: (postalCode: string) => void;
   clearCart: () => void;
@@ -27,7 +25,6 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       couponCode: "",
-      loyaltyPointsToRedeem: 0,
       shippingOptionId: "",
       shippingPostalCode: "",
       addItem: (item) => {
@@ -64,9 +61,6 @@ export const useCartStore = create<CartState>()(
       setCouponCode: (couponCode) => {
         set({ couponCode });
       },
-      setLoyaltyPointsToRedeem: (points) => {
-        set({ loyaltyPointsToRedeem: Math.max(0, Math.floor(points)) });
-      },
       setShippingOption: (optionId) => {
         set({ shippingOptionId: optionId });
       },
@@ -74,7 +68,7 @@ export const useCartStore = create<CartState>()(
         set({ shippingPostalCode: postalCode });
       },
       clearCart: () => {
-        set({ items: [], couponCode: "", loyaltyPointsToRedeem: 0, shippingOptionId: "", shippingPostalCode: "" });
+        set({ items: [], couponCode: "", shippingOptionId: "", shippingPostalCode: "" });
       },
       getValidationPayload: () =>
         get().items.map((item) => ({

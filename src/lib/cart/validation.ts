@@ -7,7 +7,7 @@ import type {
   CartValidationResponse,
   ValidatedCartItem
 } from "@/features/cart/types";
-import { validateCoupon, validateLoyaltyRedemption } from "@/lib/cart/discounts";
+import { validateCoupon } from "@/lib/cart/discounts";
 import { prisma } from "@/lib/prisma";
 import { defaultFreeShippingThresholdCents, selectShippingOption } from "@/lib/shipping/quotes";
 import { getStorefrontTheme } from "@/lib/theme/storefront";
@@ -73,14 +73,9 @@ export async function validateCartItems(
     subtotalCents,
     userId: request.userId
   });
-  const loyaltyPreview = await validateLoyaltyRedemption({
-    userId: request.userId,
-    requestedPoints: request.loyaltyPointsToRedeem ?? 0,
-    subtotalAfterCouponCents: Math.max(0, subtotalCents - couponPreview.discountCents)
-  });
   const totalCents = Math.max(
     0,
-    subtotalCents - couponPreview.discountCents - loyaltyPreview.discountCents
+    subtotalCents - couponPreview.discountCents
   );
   const theme = await getStorefrontTheme();
   const shippingQuote = selectShippingOption({
@@ -97,7 +92,7 @@ export async function validateCartItems(
     removedItems,
     subtotalCents,
     couponDiscountCents: couponPreview.discountCents,
-    loyaltyDiscountCents: loyaltyPreview.discountCents,
+    loyaltyDiscountCents: 0,
     shippingCents,
     freeShippingThresholdCents: theme.freeShippingThresholdCents,
     totalCents: totalCents + shippingCents,
@@ -112,7 +107,7 @@ export async function validateCartItems(
     selectedShippingOption: shippingQuote.selectedOption,
     shippingOptions: shippingQuote.options,
     couponMessage: couponPreview.message,
-    loyalty: loyaltyPreview
+    loyalty: buildCouponOnlyLoyaltyPreview()
   };
 }
 
@@ -131,17 +126,21 @@ function buildEmptyCartResponse(request: CartValidationRequest): CartValidationR
     selectedShippingOption: null,
     shippingOptions: [],
     couponMessage: request.couponCode ? "Adicione produtos antes de aplicar cupom." : null,
-    loyalty: {
-      availablePoints: 0,
-      requestedPoints: request.loyaltyPointsToRedeem ?? 0,
-      redeemedPoints: 0,
-      discountCents: 0,
-      isAvailable: false,
-      maxRedeemablePoints: 0,
-      minRedeemPoints: 0,
-      redeemCentsPerPoint: 1,
-      message: null
-    }
+    loyalty: buildCouponOnlyLoyaltyPreview()
+  };
+}
+
+function buildCouponOnlyLoyaltyPreview(): CartValidationResponse["loyalty"] {
+  return {
+    availablePoints: 0,
+    requestedPoints: 0,
+    redeemedPoints: 0,
+    discountCents: 0,
+    isAvailable: false,
+    maxRedeemablePoints: 0,
+    minRedeemPoints: 0,
+    redeemCentsPerPoint: 1,
+    message: "Nerdcoins agora viram cupons em /conta/nerdcoins."
   };
 }
 

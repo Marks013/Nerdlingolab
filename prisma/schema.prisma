@@ -326,6 +326,48 @@ model NewsletterSubscriber {
   @@index([isActive, createdAt])
 }
 
+model MarketingPopup {
+  id             String    @id @default(cuid())
+  title          String
+  description    String
+  eyebrow        String?
+  ctaLabel       String?
+  ctaHref        String?
+  imageUrl       String?
+  placement      String    @default("GLOBAL")
+  audience       String    @default("ALL")
+  triggerType    String    @default("DELAY")
+  triggerValue   Int       @default(1200)
+  frequencyHours Int       @default(24)
+  themeTone      String    @default("ORANGE")
+  priority       Int       @default(0)
+  isActive       Boolean   @default(false)
+  startsAt       DateTime?
+  endsAt         DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([isActive, placement, priority])
+  @@index([startsAt, endsAt])
+}
+
+model NotificationTemplate {
+  id            String   @id @default(cuid())
+  templateKey   String   @unique
+  name          String
+  channel       String   @default("EMAIL")
+  subject       String
+  previewText   String?
+  body          String
+  ctaLabel      String?
+  ctaHref       String?
+  isActive      Boolean  @default(true)
+  cooldownHours Int      @default(24)
+  metadata      Json     @default("{}")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 model InventoryLedger {
   id               String              @id @default(cuid())
   productId        String

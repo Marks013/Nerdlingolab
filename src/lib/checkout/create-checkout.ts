@@ -62,7 +62,6 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Create
   const validatedCart = await validateCartItems({
     items: input.items,
     couponCode: input.couponCode,
-    loyaltyPointsToRedeem: input.loyaltyPointsToRedeem,
     shippingOptionId: input.shippingOptionId,
     shippingPostalCode: shippingAddress.postalCode,
     userId: input.userId
@@ -99,7 +98,7 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Create
         paymentStatus: PaymentStatus.PENDING,
         subtotalCents: validatedCart.subtotalCents,
         discountCents: validatedCart.couponDiscountCents,
-        loyaltyDiscountCents: validatedCart.loyaltyDiscountCents,
+        loyaltyDiscountCents: 0,
         shippingCents: validatedCart.shippingCents,
         shippingOptionId: selectedShippingOption.id,
         shippingServiceName: selectedShippingOption.name,
@@ -108,7 +107,7 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Create
         shippingEstimatedBusinessDays: selectedShippingOption.estimatedBusinessDays,
         taxCents: 0,
         totalCents: validatedCart.totalCents,
-        loyaltyPointsRedeemed: validatedCart.loyalty.redeemedPoints,
+        loyaltyPointsRedeemed: 0,
         shippingAddress: buildShippingAddressSnapshot(shippingAddress),
         customerSnapshot: input.customer,
         paymentIdempotencyKey: crypto.randomUUID(),

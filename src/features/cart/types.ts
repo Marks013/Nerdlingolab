@@ -17,7 +17,6 @@ export interface CartValidationRequestItem {
 export interface CartValidationRequest {
   items: CartValidationRequestItem[];
   couponCode?: string;
-  loyaltyPointsToRedeem?: number;
   shippingOptionId?: string;
   shippingPostalCode?: string;
   userId?: string;

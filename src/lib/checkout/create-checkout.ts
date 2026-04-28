@@ -23,6 +23,9 @@ interface MercadoPagoPreferenceResponse {
 }
 
 const appUrl = process.env.APP_URL ?? "http://localhost:3000";
+const mercadoPagoWebhookUrl = process.env.MERCADO_PAGO_WEBHOOK_URL
+  ?? `${appUrl}/api/webhooks/mercadopago`;
+const mercadoPagoReturnUrlBase = process.env.MERCADO_PAGO_RETURN_URL_BASE ?? appUrl;
 
 function buildProductSnapshot(item: Awaited<ReturnType<typeof validateCartItems>>["items"][number]): Prisma.InputJsonObject {
   return {
@@ -241,12 +244,12 @@ async function createMercadoPagoPreference({
         }
       },
       back_urls: {
-        success: `${appUrl}/checkout/retorno?status=success`,
-        failure: `${appUrl}/checkout/retorno?status=failure`,
-        pending: `${appUrl}/checkout/retorno?status=pending`
+        success: `${mercadoPagoReturnUrlBase}/checkout/retorno?status=success`,
+        failure: `${mercadoPagoReturnUrlBase}/checkout/retorno?status=failure`,
+        pending: `${mercadoPagoReturnUrlBase}/checkout/retorno?status=pending`
       },
       auto_return: "approved",
-      notification_url: `${appUrl}/api/webhooks/mercadopago`,
+      notification_url: mercadoPagoWebhookUrl,
       external_reference: orderId,
       statement_descriptor: "NERDLINGOLAB"
     }

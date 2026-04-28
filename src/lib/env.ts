@@ -27,6 +27,8 @@ const serverEnvSchema = z.object({
   MERCADO_PAGO_ACCESS_TOKEN: z.string().optional(),
   MERCADO_PAGO_PUBLIC_KEY: z.string().optional(),
   MERCADO_PAGO_WEBHOOK_SECRET: z.string().optional(),
+  MERCADO_PAGO_WEBHOOK_URL: z.string().url().optional(),
+  MERCADO_PAGO_RETURN_URL_BASE: z.string().url().optional(),
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().default("NerdLingoLab <no-reply@nerdlingolab.com>"),
   SUPPORT_EMAIL: z.string().email().default("nerdlingolab@gmail.com"),

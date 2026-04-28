@@ -5,25 +5,25 @@ import { SafeImage as Image } from "@/components/media/safe-image";
 import { ShopTrustStrip } from "@/components/shop/shop-trust-strip";
 import { ProductCard } from "@/features/catalog/components/product-card";
 import { PublicOffersSection } from "@/features/offers/components/public-offers-section";
-import { getPublicProducts } from "@/lib/catalog/queries";
+import { getPublicBestSellingProducts, getPublicProducts, type ProductListItem } from "@/lib/catalog/queries";
 import { getPublicOffers } from "@/lib/offers/queries";
 import { getStorefrontTheme } from "@/lib/theme/storefront";
 
 export const dynamic = "force-dynamic";
 
-const storefrontSections = [
-  { title: "Novidades", href: "/produtos?ordem=recentes" },
-  { title: "Nossos Produtos", href: "/produtos" },
-  { title: "Mais Vendidos", href: "/produtos?ordem=maior-valor" }
-];
-
 export default async function ShopHomePage(): Promise<React.ReactElement> {
-  const [offers, products, theme] = await Promise.all([
+  const [bestSellingProducts, newProducts, offers, products, theme] = await Promise.all([
+    getPublicBestSellingProducts(6),
+    getPublicProducts({ sort: "recentes", tags: ["Novo"] }),
     getPublicOffers(),
     getPublicProducts({ sort: "recentes" }),
     getStorefrontTheme()
   ]);
-  const featuredProducts = products.filter((product) => !product.compareAtPriceCents).slice(0, 10);
+  const storefrontSections = [
+    { title: "Novidades", href: "/produtos?tag=Novo", products: newProducts.slice(0, 6) },
+    { title: "Nossos Produtos", href: "/produtos", products: products.slice(0, 6) },
+    { title: "Mais Vendidos", href: "/produtos", products: bestSellingProducts }
+  ];
 
   return (
     <main className="geek-page min-h-screen">
@@ -37,20 +37,7 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
         />
       </section>
 
-      <section className="px-5 py-5">
-        <div className="mx-auto flex w-full max-w-[1360px] justify-end">
-          <div className="flex flex-wrap gap-3">
-            <Link className="inline-flex h-10 items-center rounded-lg bg-primary px-5 text-sm font-black text-white" href="/produtos">
-              Ver produtos
-            </Link>
-            <Link className="inline-flex h-10 items-center rounded-lg border px-5 text-sm font-black text-primary" href="/programa-de-fidelidade">
-              Ver Nerdcoins
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto -mt-8 w-full max-w-[1360px] px-5">
+      <section className="mx-auto -mt-4 w-full max-w-[1360px] px-5">
         <ShopTrustStrip />
       </section>
 
@@ -65,25 +52,13 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
         </section>
 
         {storefrontSections.map((section, sectionIndex) => (
-          <section className="mb-14" key={section.title}>
-            <div className="mb-7 flex items-end justify-between gap-4">
-              <h2 className="relative pb-3 text-3xl font-medium text-black after:absolute after:bottom-0 after:left-0 after:h-1 after:w-[120px] after:rounded-full after:bg-primary">
-                {section.title}
-              </h2>
-              <Link className="text-sm font-bold text-primary hover:underline" href={section.href}>
-                Ver todos
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
-              {featuredProducts.slice(sectionIndex, sectionIndex + 6).map((product, productIndex) => (
-                <ProductCard
-                  imagePriority={sectionIndex === 0 && productIndex < 4}
-                  key={`${section.title}-${product.id}`}
-                  product={product}
-                />
-              ))}
-            </div>
-          </section>
+          <ProductShelf
+            href={section.href}
+            imagePriority={sectionIndex === 0}
+            key={section.title}
+            products={section.products}
+            title={section.title}
+          />
         ))}
 
         <PublicOffersSection coupons={offers.coupons} products={offers.products} />
@@ -110,5 +85,43 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
         </section>
       </div>
     </main>
+  );
+}
+
+function ProductShelf({
+  href,
+  imagePriority,
+  products,
+  title
+}: {
+  href: string;
+  imagePriority?: boolean;
+  products: ProductListItem[];
+  title: string;
+}): React.ReactElement | null {
+  if (products.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="mb-14" id={title === "Mais Vendidos" ? "mais-vendidos" : undefined}>
+      <div className="mb-7 flex items-end justify-between gap-4">
+        <h2 className="relative pb-3 text-3xl font-medium text-black after:absolute after:bottom-0 after:left-0 after:h-1 after:w-[120px] after:rounded-full after:bg-primary">
+          {title}
+        </h2>
+        <Link className="text-sm font-bold text-primary hover:underline" href={href}>
+          Ver todos
+        </Link>
+      </div>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
+        {products.map((product, productIndex) => (
+          <ProductCard
+            imagePriority={Boolean(imagePriority && productIndex < 4)}
+            key={`${title}-${product.id}`}
+            product={product}
+          />
+        ))}
+      </div>
+    </section>
   );
 }

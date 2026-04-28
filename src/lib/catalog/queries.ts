@@ -1,4 +1,11 @@
-import { ProductStatus, type Category, type Product, type ProductVariant } from "@/generated/prisma/client";
+import {
+  OrderStatus,
+  PaymentStatus,
+  ProductStatus,
+  type Category,
+  type Product,
+  type ProductVariant
+} from "@/generated/prisma/client";
 import type {
   ProductInclude,
   ProductOrderByWithRelationInput,
@@ -99,6 +106,62 @@ export async function getPublicProducts(filters: PublicProductFilters = {}): Pro
   } catch (error) {
     if (shouldUseCatalogFallback(error)) {
       return filterFallbackProducts(filters);
+    }
+
+    throw error;
+  }
+}
+
+export async function getPublicBestSellingProducts(take = 6): Promise<ProductListItem[]> {
+  try {
+    const rankedItems = await prisma.orderItem.groupBy({
+      by: ["productId"],
+      orderBy: {
+        _sum: {
+          quantity: "desc"
+        }
+      },
+      where: {
+        order: {
+          paymentStatus: PaymentStatus.APPROVED,
+          status: {
+            in: [OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED]
+          }
+        },
+        product: getPublicProductWhere()
+      },
+      _sum: {
+        quantity: true
+      },
+      take
+    });
+    const productIds = rankedItems.map((item) => item.productId);
+
+    if (productIds.length === 0) {
+      return [];
+    }
+
+    const products = await prisma.product.findMany({
+      where: {
+        id: { in: productIds },
+        ...getPublicProductWhere()
+      },
+      include: {
+        category: true,
+        variants: {
+          where: { isActive: true },
+          orderBy: { createdAt: "asc" }
+        }
+      }
+    });
+    const productById = new Map(products.map((product) => [product.id, product]));
+
+    return productIds
+      .map((productId) => productById.get(productId))
+      .filter((product): product is ProductListItem => Boolean(product));
+  } catch (error) {
+    if (shouldUseCatalogFallback(error)) {
+      return [];
     }
 
     throw error;

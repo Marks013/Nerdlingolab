@@ -6,7 +6,7 @@ import type { StorefrontThemeView } from "@/lib/theme/storefront";
 
 const categories = [
   { href: "/produtos", label: "Todos nossos produtos" },
-  { href: "/produtos?ordem=recentes", label: "Mais Vendidos" },
+  { href: "/#mais-vendidos", label: "Mais Vendidos" },
   { href: "/produtos?categoria=temporada", label: "Temporadas" },
   { href: "/produtos?categoria=action-figures", label: "Action Figures" }
 ];
@@ -141,7 +141,7 @@ export function ShopFooter({
             {paymentLogos.map((payment) => (
               <span
                 aria-label={payment.label}
-                className="payment-badge inline-flex h-9 min-w-[58px] items-center justify-center overflow-hidden rounded-md border border-[#d9e0e4] bg-white px-2 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                className="payment-badge inline-flex h-10 w-[76px] items-center justify-center overflow-hidden rounded-md border border-[#d9e0e4] bg-white px-2 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
                 key={payment.label}
                 role="img"
                 title={payment.label}
@@ -209,14 +209,7 @@ function AmexLogo(): React.ReactElement {
 }
 
 function DinersLogo(): React.ReactElement {
-  return (
-    <svg aria-hidden="true" className="h-6 w-12" viewBox="0 0 64 32">
-      <rect fill="#fff" height="32" rx="5" width="64" />
-      <rect fill="#0079be" height="22" rx="11" width="42" x="11" y="5" />
-      <circle cx="28" cy="16" fill="#fff" r="9" />
-      <path d="M28 8a8 8 0 0 1 0 16 8 8 0 0 0 0-16Z" fill="#0079be" />
-    </svg>
-  );
+  return <PaymentWordmark color="#0079be" label="Diners" />;
 }
 
 function BoletoLogo(): React.ReactElement {
@@ -257,16 +250,17 @@ function PaymentWordmark({
 
 function PixLogo(): React.ReactElement {
   return (
-    <svg aria-hidden="true" className="h-7 w-12" viewBox="0 0 64 40">
+    <svg aria-hidden="true" className="h-7 w-14" viewBox="0 0 72 40">
       <rect fill="white" height="40" rx="6" width="64" />
       <path
-        d="M32 7.2c2 0 3.9.8 5.3 2.2l7.5 7.5c1.7 1.7 1.7 4.5 0 6.2l-7.5 7.5a7.5 7.5 0 0 1-10.6 0l-7.5-7.5a4.4 4.4 0 0 1 0-6.2l7.5-7.5A7.5 7.5 0 0 1 32 7.2Z"
+        d="M26 7.2c2 0 3.9.8 5.3 2.2l7.5 7.5c1.7 1.7 1.7 4.5 0 6.2l-7.5 7.5a7.5 7.5 0 0 1-10.6 0l-7.5-7.5a4.4 4.4 0 0 1 0-6.2l7.5-7.5A7.5 7.5 0 0 1 26 7.2Z"
         fill="#32bcad"
       />
       <path
-        d="M24.8 17.1h3.4c.8 0 1.5.3 2.1.9l3 3c.4.4.9.4 1.3 0l3-3c.6-.6 1.3-.9 2.1-.9h3.5l-7.9-7.9a4.7 4.7 0 0 0-6.6 0l-7.9 7.9Zm18.4 5.8h-3.5c-.8 0-1.5-.3-2.1-.9l-3-3a.9.9 0 0 0-1.3 0l-3 3c-.6.6-1.3.9-2.1.9h-3.4l7.9 7.9a4.7 4.7 0 0 0 6.6 0l7.9-7.9Z"
+        d="M18.8 17.1h3.4c.8 0 1.5.3 2.1.9l3 3c.4.4.9.4 1.3 0l3-3c.6-.6 1.3-.9 2.1-.9h3.5l-7.9-7.9a4.7 4.7 0 0 0-6.6 0l-7.9 7.9Zm18.4 5.8h-3.5c-.8 0-1.5-.3-2.1-.9l-3-3a.9.9 0 0 0-1.3 0l-3 3c-.6.6-1.3.9-2.1.9h-3.4l7.9 7.9a4.7 4.7 0 0 0 6.6 0l7.9-7.9Z"
         fill="#fff"
       />
+      <text fill="#32bcad" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="900" x="45" y="24">Pix</text>
     </svg>
   );
 }

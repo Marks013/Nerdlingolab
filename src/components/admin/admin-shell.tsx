@@ -4,6 +4,7 @@ import Link from "next/link";
 import { signOutFromAdmin } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { cn } from "@/lib/utils";
 
 const adminLinks = [
   { href: "/admin/dashboard", label: "Painel", icon: LayoutDashboard },
@@ -52,12 +53,12 @@ export function AdminShell({ children }: AdminShellProps): React.ReactElement {
             <div className="grid gap-1" key={group.label}>
               <p className="px-2 text-[11px] font-bold uppercase text-muted-foreground">{group.label}</p>
               {group.links.map((link) => (
-                <Button asChild className="h-9 justify-start px-2 shadow-none" key={link.href} variant="ghost">
-                  <Link className="min-w-0" href={link.href}>
-                    <link.icon className="mr-2 h-4 w-4 shrink-0" />
-                    <span className="truncate">{link.label}</span>
-                  </Link>
-                </Button>
+                <AdminNavLink
+                  href={link.href}
+                  icon={link.icon}
+                  key={link.href}
+                  label={link.label}
+                />
               ))}
             </div>
           ))}
@@ -88,14 +89,40 @@ export function AdminShell({ children }: AdminShellProps): React.ReactElement {
           </div>
           <nav className="mt-3 flex gap-1 overflow-x-auto">
             {adminLinks.map((link) => (
-              <Button asChild key={link.href} size="sm" variant="ghost">
-                <Link href={link.href}>{link.label}</Link>
-              </Button>
+              <Link
+                className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg px-3 text-sm font-medium text-foreground transition hover:bg-muted"
+                href={link.href}
+                key={link.href}
+              >
+                {link.label}
+              </Link>
             ))}
           </nav>
         </header>
         {children}
       </div>
     </div>
+  );
+}
+
+function AdminNavLink({
+  href,
+  icon: Icon,
+  label
+}: {
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+}): React.ReactElement {
+  return (
+    <Link
+      className={cn(
+        "flex h-9 min-w-0 items-center rounded-lg px-2 text-sm font-medium text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      )}
+      href={href}
+    >
+      <Icon className="mr-2 h-4 w-4 shrink-0" />
+      <span className="truncate">{label}</span>
+    </Link>
   );
 }

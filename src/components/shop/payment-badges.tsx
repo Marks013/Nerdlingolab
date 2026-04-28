@@ -9,6 +9,8 @@ export const acceptedPaymentMethods = [
   { id: "pix", label: "Pix", Logo: PixLogo }
 ] as const;
 
+export const pixPaymentMethod = acceptedPaymentMethods.find((method) => method.id === "pix") ?? acceptedPaymentMethods[0];
+
 export function PaymentBadge({
   compact = false,
   method
@@ -31,10 +33,20 @@ export function PaymentBadge({
   );
 }
 
-export function PaymentBadgeStrip({ compact = false }: { compact?: boolean }): React.ReactElement {
+export function PaymentBadgeStrip({
+  compact = false,
+  includePix = true
+}: {
+  compact?: boolean;
+  includePix?: boolean;
+}): React.ReactElement {
+  const methods = includePix
+    ? acceptedPaymentMethods
+    : acceptedPaymentMethods.filter((method) => method.id !== "pix");
+
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {acceptedPaymentMethods.map((method) => (
+      {methods.map((method) => (
         <PaymentBadge compact={compact} key={method.id} method={method} />
       ))}
     </div>
@@ -98,16 +110,13 @@ function BoletoLogo({ compact = false }: { compact?: boolean }): React.ReactElem
 
 function PixLogo({ compact = false }: { compact?: boolean }): React.ReactElement {
   return (
-    <svg aria-hidden="true" className={compact ? "h-6 w-11" : "h-7 w-14"} viewBox="0 0 78 38">
-      <path
-        d="M22 6.5a6.2 6.2 0 0 1 4.4 1.8l5.7 5.7a2.8 2.8 0 0 0 4 0l2-2 4.1 4.1-2 2a8.6 8.6 0 0 1-12.2 0l-5.7-5.7a.5.5 0 0 0-.7 0l-8.7 8.7a.5.5 0 0 0 0 .7l8.7 8.7a.5.5 0 0 0 .7 0l3.2-3.2 4.1 4.1-3.2 3.2a6.2 6.2 0 0 1-8.8 0L8.8 25.8a6.3 6.3 0 0 1 0-8.8l8.8-8.7A6.2 6.2 0 0 1 22 6.5Z"
-        fill="#32bcad"
-      />
-      <path
-        d="m43 9.2 9.3 9.3a.8.8 0 0 1 0 1.1L43 28.9a6.2 6.2 0 0 1-8.8 0l-3.7-3.7 4.1-4.1 3.7 3.7a.5.5 0 0 0 .7 0l5.7-5.7L39 13.4a.5.5 0 0 0-.7 0l-2.1 2.1-4.1-4.1 2.1-2.1a6.2 6.2 0 0 1 8.8-.1Z"
-        fill="#32bcad"
-      />
-      <text fill="#32bcad" fontFamily="Arial, Helvetica, sans-serif" fontSize="12" fontWeight="900" x="55" y="23">
+    <svg aria-hidden="true" className={compact ? "h-6 w-12" : "h-7 w-14"} viewBox="0 0 84 40">
+      <g fill="none" stroke="#32bcad" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4">
+        <path d="M13 20 23 10a4 4 0 0 1 5.7 0l6 6a4.2 4.2 0 0 0 6 0l3.3-3.3" />
+        <path d="m44 27.3-3.3-3.3a4.2 4.2 0 0 0-6 0l-6 6a4 4 0 0 1-5.7 0L13 20" />
+        <path d="m44 12.7 6.2 6.2a1.6 1.6 0 0 1 0 2.2L44 27.3" />
+      </g>
+      <text fill="#32bcad" fontFamily="Arial, Helvetica, sans-serif" fontSize="12" fontWeight="900" x="56" y="24">
         Pix
       </text>
     </svg>

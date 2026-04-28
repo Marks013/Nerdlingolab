@@ -1,9 +1,9 @@
 "use client";
 
-import { ChevronDown, CreditCard, Heart, MessageCircle, Minus, Plus, Zap } from "lucide-react";
+import { BadgePercent, ChevronDown, CreditCard, Heart, MessageCircle, Minus, Plus, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { PaymentBadgeStrip } from "@/components/shop/payment-badges";
+import { PaymentBadge, PaymentBadgeStrip, pixPaymentMethod } from "@/components/shop/payment-badges";
 import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
 import { ShippingEstimator } from "@/features/shipping/components/shipping-estimator";
 import { formatCurrency } from "@/lib/format";
@@ -179,50 +179,65 @@ function PaymentInstallmentPanel({
   const pixDiscountPercent = paymentTerms.pixDiscountBps / 100;
 
   return (
-    <div className="mt-4 overflow-hidden rounded-lg border border-primary/15 bg-white shadow-sm">
-      <details className="group">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
-          <span className="flex min-w-0 items-center gap-2 text-sm font-black text-[#1c1c1c]">
-            <CreditCard className="h-4 w-4 text-primary" />
-            mais formas de pagamento
-          </span>
-          <span className="flex items-center gap-2 text-xs font-semibold text-[#677279]">
-            Parcelas
-            <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
-          </span>
-        </summary>
-        <div className="border-t border-primary/10 px-4 py-4">
-          <PaymentBadgeStrip compact />
-          <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-[#4f5d65]">
-            {installments.map(({ installment, totalCents, valueCents }) => (
-              <p key={installment}>
-                {installment}x de {formatCurrency(valueCents)}
-                {hasCardRate && installment > 1 ? (
-                  <span className="block text-xs text-[#677279]">total {formatCurrency(totalCents)}</span>
-                ) : null}
+    <div className="mt-4 space-y-3">
+      <div className="overflow-hidden rounded-lg border border-primary/15 bg-white shadow-sm">
+        <details className="group">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+            <span className="flex min-w-0 items-center gap-2 text-sm font-black text-[#1c1c1c]">
+              <CreditCard className="h-4 w-4 text-primary" />
+              mais formas de pagamento
+            </span>
+            <span className="flex items-center gap-2 text-xs font-semibold text-[#677279]">
+              Parcelas
+              <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
+            </span>
+          </summary>
+          <div className="border-t border-primary/10 px-4 py-4">
+            <PaymentBadgeStrip compact includePix={false} />
+            <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-[#4f5d65]">
+              {installments.map(({ installment, totalCents, valueCents }) => (
+                <p key={installment}>
+                  {installment}x de {formatCurrency(valueCents)}
+                  {hasCardRate && installment > 1 ? (
+                    <span className="block text-xs text-[#677279]">total {formatCurrency(totalCents)}</span>
+                  ) : null}
+                </p>
+              ))}
+            </div>
+            {hasCardRate || paymentTerms.paymentFeeSource === "MERCADO_PAGO" ? (
+              <p className="mt-3 text-xs text-[#677279]">
+                Juros configurados no admin: {(paymentTerms.cardInstallmentMonthlyRateBps / 100).toLocaleString("pt-BR", {
+                  maximumFractionDigits: 2,
+                  minimumFractionDigits: 0
+                })}% ao mês
+                {paymentTerms.paymentFeeSource === "MERCADO_PAGO" ? " como referência do Mercado Pago." : "."}
               </p>
-            ))}
+            ) : null}
           </div>
-          {hasCardRate || paymentTerms.paymentFeeSource === "MERCADO_PAGO" ? (
-            <p className="mt-3 text-xs text-[#677279]">
-              Juros configurados no admin: {(paymentTerms.cardInstallmentMonthlyRateBps / 100).toLocaleString("pt-BR", {
-                maximumFractionDigits: 2,
-                minimumFractionDigits: 0
-              })}% ao mês
-              {paymentTerms.paymentFeeSource === "MERCADO_PAGO" ? " como referência do Mercado Pago." : "."}
-            </p>
-          ) : null}
-          <div className="mt-4 border-t pt-4">
-            <p className="text-lg font-black text-[#1c1c1c]">
-              {formatCurrency(pixPriceCents)} <span className="text-sm font-medium text-[#677279]">no pix</span>
-            </p>
-            <p className="text-sm text-[#677279]">
-              Pague com pix e economize {formatCurrency(priceCents - pixPriceCents)}
-              {pixDiscountPercent > 0 ? ` (${pixDiscountPercent.toLocaleString("pt-BR")}% de desconto)` : ""}
+        </details>
+      </div>
+
+      <div className="rounded-xl border border-[#32bcad]/50 bg-gradient-to-r from-[#eafffb] via-white to-[#fff7ed] p-3 shadow-[0_12px_28px_rgba(50,188,173,0.16)]">
+        <div className="flex items-center gap-3">
+          <PaymentBadge compact method={pixPaymentMethod} />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xl font-black text-[#12312d]">
+                {formatCurrency(pixPriceCents)} <span className="text-sm font-bold text-[#278b7f]">no Pix</span>
+              </p>
+              {pixDiscountPercent > 0 ? (
+                <span className="inline-flex items-center rounded-full bg-[#32bcad] px-2.5 py-1 text-xs font-black text-white">
+                  <BadgePercent className="mr-1 h-3.5 w-3.5" />
+                  {pixDiscountPercent.toLocaleString("pt-BR")}% OFF
+                </span>
+              ) : null}
+            </div>
+            <p className="mt-1 text-sm font-semibold text-[#45615d]">
+              Pague com Pix e economize {formatCurrency(priceCents - pixPriceCents)}.
             </p>
           </div>
         </div>
-      </details>
+      </div>
     </div>
   );
 }

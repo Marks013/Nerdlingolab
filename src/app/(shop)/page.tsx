@@ -57,10 +57,10 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
       <div className="mx-auto w-full max-w-[1360px] px-5 py-12">
         <section className="mb-14">
           <AutoCarousel
-            className="manga-panel rounded-lg bg-white shadow-sm"
+            className="overflow-hidden rounded-lg bg-primary shadow-sm"
             items={theme.promoSlides}
-            sizes="(min-width: 1024px) 560px, 100vw"
-            slideClassName="relative aspect-square w-full md:aspect-[16/7]"
+            sizes="(min-width: 1024px) 1360px, 100vw"
+            slideClassName="relative aspect-[2048/628] w-full"
           />
         </section>
 

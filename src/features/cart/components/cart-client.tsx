@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShieldCheck, ShoppingCart, TicketPercent, Truck } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -120,17 +120,8 @@ export function CartClient(): React.ReactElement {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-      <section className="grid gap-5">
-        <div className="manga-panel rounded-lg bg-white p-5 shadow-sm">
-          <p className="text-sm font-black uppercase text-primary">Carrinho inteligente</p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
-            <CartPerk icon={Truck} label="Frete calculado" />
-            <CartPerk icon={TicketPercent} label="Cupons validados" />
-            <CartPerk icon={ShieldCheck} label="Checkout seguro" />
-          </div>
-        </div>
-
-      <Card className="manga-panel">
+      <section>
+      <Card className="manga-panel overflow-hidden">
         <CardHeader>
           <CardTitle>Carrinho</CardTitle>
           <CardDescription>Revise os itens escolhidos antes de finalizar a compra.</CardDescription>
@@ -307,20 +298,5 @@ export function CartClient(): React.ReactElement {
         </CardContent>
       </Card>
     </div>
-  );
-}
-
-function CartPerk({
-  icon: Icon,
-  label
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-}): React.ReactElement {
-  return (
-    <span className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-primary/15 bg-white px-3 text-sm font-black text-[#344049] shadow-sm">
-      <Icon className="h-4 w-4 text-primary" />
-      {label}
-    </span>
   );
 }

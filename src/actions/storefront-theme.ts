@@ -28,6 +28,7 @@ export async function updateStorefrontTheme(formData: FormData): Promise<void> {
   try {
     await prisma.storefrontTheme.upsert({
       where: { singletonKey: "default" },
+      select: { id: true },
       create: {
         heroSlides: toJson(heroSlides),
         name,
@@ -43,8 +44,19 @@ export async function updateStorefrontTheme(formData: FormData): Promise<void> {
       }
     });
   } catch (error) {
-    Sentry.captureException(error);
-    throw new Error("Não foi possível salvar o tema da vitrine.");
+    if (isMissingFreeShippingColumn(error)) {
+      await saveThemeWithoutFreeShippingThreshold({
+        heroSlides,
+        name,
+        promoSlides,
+        textSettings
+      });
+    } else {
+      Sentry.captureException(error, {
+        tags: { feature: "storefront-theme", operation: "update" }
+      });
+      throw new Error("Não foi possível salvar o tema da vitrine.");
+    }
   }
 
   revalidatePath("/");
@@ -57,6 +69,7 @@ export async function resetStorefrontTheme(): Promise<void> {
   try {
     await prisma.storefrontTheme.upsert({
       where: { singletonKey: "default" },
+      select: { id: true },
       create: {
         heroSlides: toJson(defaultHeroSlides),
         name: "Tema principal",
@@ -72,8 +85,19 @@ export async function resetStorefrontTheme(): Promise<void> {
       }
     });
   } catch (error) {
-    Sentry.captureException(error);
-    throw new Error("Não foi possível restaurar o tema padrão.");
+    if (isMissingFreeShippingColumn(error)) {
+      await saveThemeWithoutFreeShippingThreshold({
+        heroSlides: defaultHeroSlides,
+        name: "Tema principal",
+        promoSlides: defaultPromoSlides,
+        textSettings: defaultThemeText
+      });
+    } else {
+      Sentry.captureException(error, {
+        tags: { feature: "storefront-theme", operation: "reset" }
+      });
+      throw new Error("Não foi possível restaurar o tema padrão.");
+    }
   }
 
   revalidatePath("/");
@@ -168,4 +192,50 @@ function toJson(slides: StorefrontSlide[]): Prisma.InputJsonValue {
     ...(slide.mobile ? { mobile: slide.mobile } : {}),
     ...(slide.src ? { src: slide.src } : {})
   })) as Prisma.InputJsonValue;
+}
+
+async function saveThemeWithoutFreeShippingThreshold({
+  heroSlides,
+  name,
+  promoSlides,
+  textSettings
+}: {
+  heroSlides: StorefrontSlide[];
+  name: string;
+  promoSlides: StorefrontSlide[];
+  textSettings: typeof defaultThemeText;
+}): Promise<void> {
+  const { freeShippingThresholdCents: _freeShippingThresholdCents, ...legacyTextSettings } = textSettings;
+
+  Sentry.captureMessage("StorefrontTheme.freeShippingThresholdCents column is missing during theme save.", {
+    level: "warning",
+    tags: { feature: "storefront-theme", operation: "legacy-save" }
+  });
+
+  await prisma.storefrontTheme.upsert({
+    where: { singletonKey: "default" },
+    select: { id: true },
+    create: {
+      heroSlides: toJson(heroSlides),
+      name,
+      promoSlides: toJson(promoSlides),
+      singletonKey: "default",
+      ...legacyTextSettings
+    },
+    update: {
+      heroSlides: toJson(heroSlides),
+      name,
+      promoSlides: toJson(promoSlides),
+      ...legacyTextSettings
+    }
+  });
+}
+
+function isMissingFreeShippingColumn(error: unknown): boolean {
+  const code = typeof error === "object" && error !== null && "code" in error
+    ? (error as { code?: unknown }).code
+    : null;
+  const message = error instanceof Error ? error.message : String(error ?? "");
+
+  return code === "P2022" || message.includes("freeShippingThresholdCents");
 }

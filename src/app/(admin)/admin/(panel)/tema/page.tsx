@@ -66,8 +66,8 @@ export default async function AdminThemePage(): Promise<React.ReactElement> {
         />
 
         <SlideEditor
-          aspectClassName="aspect-square md:aspect-[16/7]"
-          description="Slideshow abaixo dos selos de confiança. Funciona como vitrine de campanhas e páginas."
+          aspectClassName="aspect-[2048/628]"
+          description="Slideshow secundário com o mesmo formato dos banners do site atual."
           group="promo"
           slides={theme.promoSlides}
           title="Slideshow secundário"

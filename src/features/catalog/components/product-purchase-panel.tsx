@@ -4,7 +4,6 @@ import { ChevronDown, CreditCard, Heart, MessageCircle, Minus, Plus, Zap } from 
 import { useMemo, useState } from "react";
 
 import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
-import { FreeShippingProgress } from "@/features/shipping/components/free-shipping-progress";
 import { ShippingEstimator } from "@/features/shipping/components/shipping-estimator";
 import { formatCurrency } from "@/lib/format";
 
@@ -137,11 +136,6 @@ export function ProductPurchasePanel({
         Adicionar à lista de desejos
       </button>
 
-      <FreeShippingProgress
-        className="mt-6"
-        subtotalCents={subtotalCents}
-        thresholdCents={freeShippingThresholdCents}
-      />
       <ShippingEstimator
         freeShippingThresholdCents={freeShippingThresholdCents}
         subtotalCents={subtotalCents}

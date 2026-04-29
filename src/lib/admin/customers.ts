@@ -93,8 +93,20 @@ export async function getAdminSupportTickets() {
       user: {
         select: {
           email: true,
+          id: true,
           name: true
         }
+      },
+      replies: {
+        include: {
+          adminUser: {
+            select: {
+              email: true,
+              name: true
+            }
+          }
+        },
+        orderBy: { createdAt: "asc" }
       }
     },
     orderBy: { createdAt: "desc" },

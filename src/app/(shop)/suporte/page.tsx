@@ -1,8 +1,11 @@
 import { Clock3, Headphones, Mail, MessageCircle, Share2, UsersRound } from "lucide-react";
 
 import { SupportContactClient } from "@/features/support/components/support-contact-client";
+import { auth } from "@/lib/auth";
 
-export default function SupportPage(): React.ReactElement {
+export default async function SupportPage(): Promise<React.ReactElement> {
+  const session = await auth();
+
   return (
     <main className="geek-page min-h-screen">
       <section className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-5 sm:py-10">
@@ -15,7 +18,7 @@ export default function SupportPage(): React.ReactElement {
         </div>
 
         <div className="mt-8">
-          <SupportContactClient />
+          <SupportContactClient initialEmail={session?.user?.email ?? ""} initialName={session?.user?.name ?? ""} />
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-4">

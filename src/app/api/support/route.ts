@@ -8,6 +8,49 @@ import { assertSameOriginRequest } from "@/lib/security/request";
 import { sendSupportEmail } from "@/lib/support/send-support-email";
 import { supportRequestSchema, supportSubjectLabels } from "@/lib/support/schema";
 
+export async function GET(): Promise<NextResponse> {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ tickets: [] });
+  }
+
+  const tickets = await prisma.supportTicket.findMany({
+    include: {
+      replies: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          createdAt: true,
+          deliveryStatus: true,
+          id: true,
+          message: true
+        }
+      }
+    },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    where: { userId: session.user.id }
+  });
+
+  return NextResponse.json({
+    tickets: tickets.map((ticket) => ({
+      createdAt: ticket.createdAt.toISOString(),
+      id: ticket.id,
+      message: ticket.message,
+      replies: ticket.replies.map((reply) => ({
+        createdAt: reply.createdAt.toISOString(),
+        deliveryStatus: reply.deliveryStatus,
+        id: reply.id,
+        message: reply.message
+      })),
+      status: ticket.status,
+      subjectLabel: ticket.subjectLabel,
+      ticketId: ticket.ticketId,
+      updatedAt: ticket.updatedAt.toISOString()
+    }))
+  });
+}
+
 export async function POST(request: Request): Promise<NextResponse> {
   try {
     const sameOriginError = assertSameOriginRequest(request);

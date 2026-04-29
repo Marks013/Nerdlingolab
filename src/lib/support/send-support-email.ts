@@ -35,6 +35,52 @@ export async function sendSupportEmail(input: SupportRequestInput): Promise<{ ti
   }
 }
 
+export interface SupportReplyEmailInput {
+  adminName: string;
+  contactEmail: string;
+  contactName: string;
+  originalMessage: string;
+  replyMessage: string;
+  subjectLabel: string;
+  ticketId: string;
+}
+
+export async function sendSupportReplyEmail(input: SupportReplyEmailInput): Promise<{
+  error?: string;
+  ok: boolean;
+  providerMessageId?: string;
+}> {
+  if (!resend) {
+    return {
+      error: "Envio de e-mail não configurado.",
+      ok: false
+    };
+  }
+
+  try {
+    const result = await resend.emails.send({
+      from: emailFrom,
+      html: buildReplyHtml(input),
+      replyTo: supportEmail,
+      subject: `[${input.ticketId}] Resposta do suporte NerdLingoLab`,
+      text: buildReplyText(input),
+      to: input.contactEmail
+    });
+
+    return {
+      ok: true,
+      providerMessageId: result.data?.id
+    };
+  } catch (error) {
+    Sentry.captureException(error);
+
+    return {
+      error: error instanceof Error ? error.message : "Falha ao enviar resposta por e-mail.",
+      ok: false
+    };
+  }
+}
+
 function buildTicketId(): string {
   return `NLL-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
 }
@@ -77,6 +123,33 @@ function buildSupportHtml({
       <p><strong>E-mail:</strong> ${escapeHtml(input.email)}</p>
       ${input.phone ? `<p><strong>Telefone:</strong> ${escapeHtml(input.phone)}</p>` : ""}
       <p style="white-space:pre-line;background:#f7f7f7;padding:16px;border-radius:8px">${escapeHtml(input.message)}</p>
+    </div>
+  `;
+}
+
+function buildReplyText(input: SupportReplyEmailInput): string {
+  return [
+    `Protocolo: ${input.ticketId}`,
+    `Assunto: ${input.subjectLabel}`,
+    `Resposta enviada por: ${input.adminName}`,
+    "",
+    input.replyMessage,
+    "",
+    "Mensagem original:",
+    input.originalMessage
+  ].join("\n");
+}
+
+function buildReplyHtml(input: SupportReplyEmailInput): string {
+  return `
+    <div style="font-family:Arial,sans-serif;color:#1c1c1c;line-height:1.5">
+      <h1 style="font-size:22px;margin:0 0 16px">Resposta do suporte NerdLingoLab</h1>
+      <p>Olá, ${escapeHtml(input.contactName)}.</p>
+      <p><strong>Protocolo:</strong> ${escapeHtml(input.ticketId)}</p>
+      <p><strong>Assunto:</strong> ${escapeHtml(input.subjectLabel)}</p>
+      <p style="white-space:pre-line;background:#f7f7f7;padding:16px;border-radius:8px">${escapeHtml(input.replyMessage)}</p>
+      <p style="font-size:13px;color:#58636b">Mensagem original:</p>
+      <p style="white-space:pre-line;border-left:3px solid #d9e0e4;padding-left:12px;color:#58636b">${escapeHtml(input.originalMessage)}</p>
     </div>
   `;
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { Send } from "lucide-react";
-import { useState } from "react";
+import { History, MessageCircle, Send } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import {
   supportSubjectLabels,
@@ -11,16 +11,81 @@ import {
 
 interface SupportHistoryItem {
   createdAt: string;
+  message?: string;
+  replies?: SupportReplyItem[];
+  status?: string;
   subject: string;
   ticketId: string;
 }
 
+interface SupportReplyItem {
+  createdAt: string;
+  deliveryStatus: string;
+  id: string;
+  message: string;
+}
+
+interface SupportHistoryResponse {
+  tickets: Array<{
+    createdAt: string;
+    message: string;
+    replies: SupportReplyItem[];
+    status: string;
+    subjectLabel: string;
+    ticketId: string;
+  }>;
+}
+
+interface SupportContactClientProps {
+  initialEmail?: string;
+  initialName?: string;
+}
+
 const storageKey = "nerdlingolab:support-history";
 
-export function SupportContactClient(): React.ReactElement {
+export function SupportContactClient({
+  initialEmail = "",
+  initialName = ""
+}: SupportContactClientProps): React.ReactElement {
   const [history, setHistory] = useState<SupportHistoryItem[]>(() => loadHistory());
   const [message, setMessage] = useState<string | null>(null);
   const [status, setStatus] = useState<"error" | "idle" | "sending" | "success">("idle");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadServerHistory(): Promise<void> {
+      try {
+        const response = await fetch("/api/support", { cache: "no-store" });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = await response.json() as SupportHistoryResponse;
+        const tickets = payload.tickets.map((ticket) => ({
+          createdAt: ticket.createdAt,
+          message: ticket.message,
+          replies: ticket.replies,
+          status: ticket.status,
+          subject: ticket.subjectLabel,
+          ticketId: ticket.ticketId
+        }));
+
+        if (isMounted && tickets.length > 0) {
+          setHistory(tickets);
+        }
+      } catch {
+        // Local protocol history remains available even when the account history cannot be loaded.
+      }
+    }
+
+    void loadServerHistory();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   async function submitSupport(formData: FormData): Promise<void> {
     setMessage(null);
@@ -49,6 +114,9 @@ export function SupportContactClient(): React.ReactElement {
       const nextHistory = [
         {
           createdAt: new Date().toISOString(),
+          message: payload.message,
+          replies: [],
+          status: "OPEN",
           subject: supportSubjectLabels[payload.subject],
           ticketId: responseBody.ticketId
         },
@@ -70,8 +138,8 @@ export function SupportContactClient(): React.ReactElement {
       <form action={submitSupport} className="rounded-lg bg-white p-5 shadow-sm sm:p-7">
         <h2 className="text-2xl font-black text-black">Envie sua mensagem</h2>
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <Field label="Seu Nome *" name="name" required />
-          <Field label="Seu Email *" name="email" required type="email" />
+          <Field defaultValue={initialName} label="Seu Nome *" name="name" required />
+          <Field defaultValue={initialEmail} label="Seu Email *" name="email" required type="email" />
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <Field label="Telefone (opcional)" name="phone" />
@@ -121,23 +189,45 @@ export function SupportContactClient(): React.ReactElement {
       </form>
 
       <aside className="rounded-lg bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-black text-black">Últimos abertos</h2>
+        <div className="flex items-center gap-2">
+          <History className="h-5 w-5 text-primary" />
+          <h2 className="text-lg font-black text-black">Histórico de suporte</h2>
+        </div>
         <p className="mt-2 text-sm leading-6 text-[#4f5d65]">
-          O histórico aparece somente quando o envio é confirmado.
+          Usuários logados veem conversas e respostas da equipe neste painel.
         </p>
         <div className="mt-5 grid gap-3">
           {history.length > 0 ? (
             history.map((item) => (
               <div className="rounded-lg border border-[#eeeeee] p-3" key={item.ticketId}>
-                <p className="text-sm font-black text-black">{item.ticketId}</p>
-                <p className="mt-1 text-sm text-[#4f5d65]">{item.subject}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-black text-black">{item.ticketId}</p>
+                    <p className="mt-1 text-sm text-[#4f5d65]">{item.subject}</p>
+                  </div>
+                  {item.status ? <span className="rounded-full border px-2 py-1 text-[11px] font-bold text-[#4f5d65]">{formatTicketStatus(item.status)}</span> : null}
+                </div>
                 <p className="mt-1 text-xs font-semibold text-[#677279]">
                   {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(item.createdAt))}
                 </p>
+                {item.message ? <p className="mt-3 line-clamp-3 text-sm leading-6 text-[#4f5d65]">{item.message}</p> : null}
+                {item.replies && item.replies.length > 0 ? (
+                  <div className="mt-3 grid gap-2">
+                    {item.replies.map((reply) => (
+                      <div className="rounded-lg bg-[#f7f7f7] p-3" key={reply.id}>
+                        <p className="flex items-center gap-2 text-xs font-black text-black">
+                          <MessageCircle className="h-3.5 w-3.5 text-primary" />
+                          Resposta da equipe
+                        </p>
+                        <p className="mt-1 whitespace-pre-line text-sm leading-6 text-[#4f5d65]">{reply.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             ))
           ) : (
-            <p className="text-sm leading-6 text-[#4f5d65]">Nenhum protocolo aberto neste navegador.</p>
+            <p className="text-sm leading-6 text-[#4f5d65]">Nenhum protocolo aberto ainda.</p>
           )}
         </div>
       </aside>
@@ -150,17 +240,23 @@ function loadHistory(): SupportHistoryItem[] {
     return [];
   }
 
-  const storedHistory = window.localStorage.getItem(storageKey);
+  try {
+    const storedHistory = window.localStorage.getItem(storageKey);
 
-  return storedHistory ? JSON.parse(storedHistory) as SupportHistoryItem[] : [];
+    return storedHistory ? JSON.parse(storedHistory) as SupportHistoryItem[] : [];
+  } catch {
+    return [];
+  }
 }
 
 function Field({
+  defaultValue,
   label,
   name,
   required = false,
   type = "text"
 }: {
+  defaultValue?: string;
   label: string;
   name: string;
   required?: boolean;
@@ -171,10 +267,22 @@ function Field({
       {label}
       <input
         className="h-11 rounded-lg border border-[#d9e0e4] bg-white px-3 text-sm text-black outline-none transition focus:border-primary"
+        defaultValue={defaultValue}
         name={name}
         required={required}
         type={type}
       />
     </label>
   );
+}
+
+function formatTicketStatus(status: string): string {
+  const labels: Record<string, string> = {
+    CLOSED: "Fechado",
+    IN_PROGRESS: "Em atendimento",
+    OPEN: "Aberto",
+    RESOLVED: "Resolvido"
+  };
+
+  return labels[status] ?? status;
 }

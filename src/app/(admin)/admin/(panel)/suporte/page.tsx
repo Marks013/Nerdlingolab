@@ -21,7 +21,8 @@ const statusLabels: Record<string, string> = {
 const deliveryLabels: Record<string, string> = {
   FAILED: "Falhou no e-mail",
   PENDING: "Pendente",
-  SENT: "E-mail enviado"
+  SENT: "E-mail enviado",
+  UNKNOWN: "Sem historico de entrega"
 };
 
 export default async function AdminSupportPage(): Promise<React.ReactElement> {
@@ -97,6 +98,7 @@ function TicketPanel({ ticket }: { ticket: AdminSupportTicket }): React.ReactEle
           <MessageBlock
             author={ticket.name}
             body={ticket.message}
+            deliveryStatus={ticket.emailDeliveryStatus}
             meta={`${ticket.email}${ticket.phone ? ` · ${ticket.phone}` : ""}`}
             time={ticket.createdAt}
             tone="customer"

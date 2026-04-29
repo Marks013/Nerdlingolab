@@ -10,16 +10,26 @@ const emailFrom = process.env.EMAIL_FROM ?? "NerdLingoLab <no-reply@nerdlingolab
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const supportEmail = process.env.SUPPORT_EMAIL ?? "nerdlingolab@gmail.com";
 
-export async function sendSupportEmail(input: SupportRequestInput): Promise<{ ticketId: string }> {
+export async function sendSupportEmail(input: SupportRequestInput): Promise<{
+  error?: string;
+  ok: boolean;
+  providerMessageId?: string;
+  ticketId: string;
+}> {
+  const ticketId = buildTicketId();
+
   if (!resend) {
-    throw new Error("O envio de suporte nao esta configurado.");
+    return {
+      error: "Envio de suporte nao configurado.",
+      ok: false,
+      ticketId
+    };
   }
 
-  const ticketId = buildTicketId();
   const subjectLabel = supportSubjectLabels[input.subject];
 
   try {
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: emailFrom,
       html: buildSupportHtml({ input, subjectLabel, ticketId }),
       replyTo: input.email,
@@ -28,10 +38,19 @@ export async function sendSupportEmail(input: SupportRequestInput): Promise<{ ti
       to: supportEmail
     });
 
-    return { ticketId };
+    return {
+      ok: true,
+      providerMessageId: result.data?.id,
+      ticketId
+    };
   } catch (error) {
     Sentry.captureException(error);
-    throw new Error("Nao foi possivel enviar sua mensagem agora. Tente novamente em alguns minutos.");
+
+    return {
+      error: error instanceof Error ? error.message : "Nao foi possivel enviar sua mensagem agora.",
+      ok: false,
+      ticketId
+    };
   }
 }
 

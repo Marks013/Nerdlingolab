@@ -86,9 +86,12 @@ export async function POST(request: Request): Promise<NextResponse> {
     await prisma.supportTicket.create({
       data: {
         email: parsedBody.data.email,
+        emailDeliveryStatus: result.ok ? "SENT" : "FAILED",
+        emailProviderError: result.error ?? null,
         message: parsedBody.data.message,
         name: parsedBody.data.name,
         phone: parsedBody.data.phone || null,
+        resendId: result.providerMessageId ?? null,
         subject: parsedBody.data.subject,
         subjectLabel: supportSubjectLabels[parsedBody.data.subject],
         ticketId: result.ticketId,
@@ -97,10 +100,13 @@ export async function POST(request: Request): Promise<NextResponse> {
     });
 
     return NextResponse.json({
-      message: "Mensagem enviada com sucesso.",
+      emailDeliveryStatus: result.ok ? "SENT" : "FAILED",
+      message: result.ok
+        ? "Mensagem enviada com sucesso."
+        : "Mensagem registrada. O aviso por e-mail esta pendente de configuracao.",
       subject: parsedBody.data.subject,
       ticketId: result.ticketId
-    });
+    }, { status: result.ok ? 200 : 202 });
   } catch (error) {
     Sentry.captureException(error);
 

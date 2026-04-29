@@ -125,7 +125,7 @@ export function SupportContactClient({
 
       setHistory(nextHistory);
       window.localStorage.setItem(storageKey, JSON.stringify(nextHistory));
-      setMessage(`Mensagem enviada. Protocolo ${responseBody.ticketId}.`);
+      setMessage(`${responseBody.message ?? "Mensagem registrada."} Protocolo ${responseBody.ticketId}.`);
       setStatus("success");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Não foi possível enviar sua mensagem agora.");

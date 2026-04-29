@@ -139,7 +139,7 @@ export default async function AdminMediaPage({ searchParams }: AdminMediaPagePro
                     </Link>
                   </Button>
                   <Button asChild size="sm" variant="outline">
-                    <Link href={`/admin/produtos?busca=${encodeURIComponent(asset.fileName)}`}>
+                    <Link href={getMediaProductHref(asset)} title="Ver produto vinculado">
                       <Search className="h-4 w-4" />
                     </Link>
                   </Button>
@@ -236,6 +236,16 @@ function UsageSummary({ asset }: { asset: MediaAssetWithUsages }): React.ReactEl
       </span>
     </div>
   );
+}
+
+function getMediaProductHref(asset: MediaAssetWithUsages): string {
+  const productUsage = asset.usages.find((usage) => usage.product?.id);
+
+  if (productUsage?.product?.id) {
+    return `/admin/produtos/${productUsage.product.id}/editar`;
+  }
+
+  return `/admin/produtos?busca=${encodeURIComponent(asset.url)}`;
 }
 
 function Metric({ title, value }: { title: string; value: string }): React.ReactElement {

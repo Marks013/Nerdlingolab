@@ -386,6 +386,20 @@ function getAdminProductWhere(filters: AdminProductFilters): ProductWhereInput {
         { slug: { contains: query, mode: "insensitive" } },
         { brand: { contains: query, mode: "insensitive" } },
         {
+          mediaUsages: {
+            some: {
+              asset: {
+                OR: [
+                  { fileName: { contains: query, mode: "insensitive" } },
+                  { objectKey: { contains: query, mode: "insensitive" } },
+                  { originalUrl: { contains: query, mode: "insensitive" } },
+                  { url: { contains: query, mode: "insensitive" } }
+                ]
+              }
+            }
+          }
+        },
+        {
           variants: {
             some: {
               OR: [

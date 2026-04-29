@@ -193,9 +193,48 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
           index === optionIndex ? { ...option, ...patch } : option
         );
 
-        return { ...variant, options };
+        return {
+          ...variant,
+          options,
+          title: buildVariantTitle(options, variant.title)
+        };
       })
     );
+  }
+
+  function updateVariantImageLink(variantId: string, imageUrl: string): void {
+    setVariants((current) => {
+      const sourceVariant = current.find((variant) => variant.id === variantId);
+
+      if (!sourceVariant) {
+        return current;
+      }
+
+      const sourceColor = getVariantOptionValue(sourceVariant, "Cor");
+      const sourceGender = getVariantOptionValue(sourceVariant, "Sexo");
+
+      return current.map((variant) => {
+        const sameColor = sourceColor && getVariantOptionValue(variant, "Cor") === sourceColor;
+        const sameGender = sourceGender
+          ? getVariantOptionValue(variant, "Sexo") === sourceGender
+          : true;
+
+        return variant.id === variantId || (sameColor && sameGender)
+          ? { ...variant, imageUrl }
+          : variant;
+      });
+    });
+  }
+
+  function addOptionValueToMatrix(optionName: "Cor" | "Tamanho" | "Sexo"): void {
+    const value = window.prompt(`Novo valor para ${optionName}`);
+    const normalizedValue = value?.trim();
+
+    if (!normalizedValue) {
+      return;
+    }
+
+    setVariants((current) => addMatrixOptionValue(current, optionName, normalizedValue));
   }
 
   function removeVariant(id: string): void {
@@ -375,6 +414,26 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
                 Adicionar variacao
               </Button>
             </div>
+            <div className="mt-4 grid gap-3 lg:grid-cols-3">
+              <OptionSummary
+                label="Cores"
+                values={getMatrixOptionValues(variants, "Cor")}
+                onAdd={() => addOptionValueToMatrix("Cor")}
+              />
+              <OptionSummary
+                label="Tamanhos"
+                values={getMatrixOptionValues(variants, "Tamanho")}
+                onAdd={() => addOptionValueToMatrix("Tamanho")}
+              />
+              <OptionSummary
+                label="Sexo"
+                values={getMatrixOptionValues(variants, "Sexo")}
+                onAdd={() => addOptionValueToMatrix("Sexo")}
+              />
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Ao vincular uma imagem, ela e aplicada nas variantes da mesma Cor + Sexo. Valores novos podem ser digitados ou criados pelos botoes acima.
+            </p>
             <div className="mt-4 overflow-x-auto rounded-lg border">
               <table className="min-w-[980px] w-full border-collapse text-sm">
                 <thead className="bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
@@ -429,7 +488,7 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
                                         <MediaLibraryPicker
                                           accept="image"
                                           buttonLabel="Vincular imagem"
-                                          onSelect={(url) => updateVariant(variant.id, { imageUrl: url })}
+                                          onSelect={(url) => updateVariantImageLink(variant.id, url)}
                                         />
                                         {variant.imageUrl ? (
                                           <Button onClick={() => updateVariant(variant.id, { imageUrl: "" })} type="button" variant="ghost">
@@ -679,6 +738,40 @@ function CompactOptionInput({
   );
 }
 
+function OptionSummary({
+  label,
+  onAdd,
+  values
+}: {
+  label: string;
+  onAdd: () => void;
+  values: string[];
+}): React.ReactElement {
+  return (
+    <div className="rounded-lg border bg-muted/20 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold">{label}</p>
+        <Button className="h-8 px-2" onClick={onAdd} type="button" variant="outline">
+          <Plus className="mr-1 h-3.5 w-3.5" />
+          Criar
+        </Button>
+      </div>
+      <div className="mt-3 flex min-h-8 flex-wrap gap-2">
+        {values.length > 0 ? values.map((value) => (
+          <span className="inline-flex items-center gap-1 rounded-md border bg-background px-2 py-1 text-xs" key={value}>
+            {label === "Cores" ? (
+              <span className="inline-flex size-3 rounded-full border" style={{ backgroundColor: getSwatchColor(value) }} />
+            ) : null}
+            {value}
+          </span>
+        )) : (
+          <span className="text-xs text-muted-foreground">Nenhum valor definido</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Field({ children, label }: { children: React.ReactNode; label: string }): React.ReactElement {
   return (
     <label className="grid gap-2 text-sm font-medium">
@@ -819,6 +912,110 @@ function groupVariantsByPrimaryOption(variants: VariantFormRow[]): Array<{ key: 
     label,
     variants: groupVariants
   }));
+}
+
+function getMatrixOptionValues(variants: VariantFormRow[], optionName: string): string[] {
+  return uniqueStrings(variants.map((variant) => getVariantOptionValue(variant, optionName)).filter(Boolean));
+}
+
+function addMatrixOptionValue(
+  variants: VariantFormRow[],
+  optionName: "Cor" | "Tamanho" | "Sexo",
+  value: string
+): VariantFormRow[] {
+  const colors = optionName === "Cor" ? [value] : getMatrixOptionValues(variants, "Cor");
+  const sizes = optionName === "Tamanho" ? [value] : getMatrixOptionValues(variants, "Tamanho");
+  const genders = optionName === "Sexo" ? [value] : getMatrixOptionValues(variants, "Sexo");
+  const safeColors = colors.length > 0 ? colors : [""];
+  const safeSizes = sizes.length > 0 ? sizes : [""];
+  const safeGenders = genders.length > 0 ? genders : [""];
+  const existingKeys = new Set(variants.map(getVariantCombinationKey));
+  const baseVariant = variants[0] ?? createVariantRow();
+  const nextVariants = [...variants];
+
+  for (const color of safeColors) {
+    for (const size of safeSizes) {
+      for (const gender of safeGenders) {
+        const options = fillOptions([
+          { name: "Cor", value: color },
+          { name: "Tamanho", value: size },
+          { name: "Sexo", value: gender }
+        ]);
+        const combinationKey = getOptionsCombinationKey(options);
+
+        if (existingKeys.has(combinationKey)) {
+          continue;
+        }
+
+        existingKeys.add(combinationKey);
+        nextVariants.push(createVariantRow({
+          compareAtPrice: baseVariant.compareAtPrice,
+          imageUrl: findReusableVariantImage(variants, color, gender),
+          isActive: true,
+          options,
+          price: baseVariant.price,
+          sku: buildGeneratedSku(baseVariant.sku, options, nextVariants.length + 1),
+          stockQuantity: "0",
+          title: buildVariantTitle(options, "Nova variacao"),
+          weightGrams: baseVariant.weightGrams
+        }));
+      }
+    }
+  }
+
+  return nextVariants;
+}
+
+function findReusableVariantImage(variants: VariantFormRow[], color: string, gender: string): string {
+  return variants.find((variant) => {
+    const sameColor = color && getVariantOptionValue(variant, "Cor") === color;
+    const sameGender = gender ? getVariantOptionValue(variant, "Sexo") === gender : true;
+
+    return sameColor && sameGender && variant.imageUrl;
+  })?.imageUrl ?? "";
+}
+
+function getVariantCombinationKey(variant: VariantFormRow): string {
+  return getOptionsCombinationKey(variant.options);
+}
+
+function getOptionsCombinationKey(options: VariantOptionRow[]): string {
+  return ["Cor", "Tamanho", "Sexo"]
+    .map((optionName) => {
+      const option = options.find((item) => normalizeOptionName(item.name) === normalizeOptionName(optionName));
+
+      return normalizeOptionName(option?.value ?? "");
+    })
+    .join("|");
+}
+
+function buildVariantTitle(options: VariantOptionRow[], fallback: string): string {
+  const title = options
+    .filter((option) => option.value.trim())
+    .map((option) => option.value.trim())
+    .join(" / ");
+
+  return title || fallback || "Padrao";
+}
+
+function buildGeneratedSku(baseSku: string, options: VariantOptionRow[], index: number): string {
+  const base = baseSku.trim() || "VAR";
+  const suffix = options
+    .map((option) => option.value)
+    .filter(Boolean)
+    .join("-")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toUpperCase()
+    .slice(0, 32);
+
+  return `${base}-${suffix || index}`.slice(0, 80);
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
 }
 
 function getVariantOptionValue(variant: VariantFormRow, name: string): string {

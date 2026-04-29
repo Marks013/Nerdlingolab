@@ -1,0 +1,1 @@
+ALTER TABLE "Product" ADD COLUMN "metafields" JSONB NOT NULL DEFAULT '{}';

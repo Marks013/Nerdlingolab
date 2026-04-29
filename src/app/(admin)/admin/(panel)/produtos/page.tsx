@@ -22,10 +22,6 @@ export default async function AdminProductsPage({
 
   return (
     <main className="mx-auto w-full max-w-7xl overflow-x-hidden px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-6">
-        <p className="text-sm text-muted-foreground">Catálogo</p>
-        <h1 className="text-3xl font-bold tracking-normal">Produtos</h1>
-      </div>
       <ProductTable categories={categories} filters={filters} products={products} />
     </main>
   );

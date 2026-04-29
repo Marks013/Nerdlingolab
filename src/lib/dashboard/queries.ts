@@ -14,7 +14,7 @@ export interface AdminDashboardMetrics {
   loyaltyPointsIssued: number;
   loyaltyPointsIssuedYear: number;
   lowStockVariants: Array<{
-    product: { slug: string; title: string };
+    product: { id: string; slug: string; title: string };
     sku: string;
     stockQuantity: number;
     title: string;
@@ -130,6 +130,7 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
         select: {
           product: {
             select: {
+              id: true,
               slug: true,
               title: true
             }

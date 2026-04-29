@@ -24,6 +24,7 @@ export const productFormSchema = z.object({
   categoryId: optionalStringSchema.optional(),
   brand: optionalStringSchema.optional(),
   tags: z.string().trim().optional(),
+  metafields: z.string().trim().optional(),
   imageUrls: z.string().trim().optional(),
   price: z.string().trim().min(1, "Informe o preço."),
   compareAtPrice: z.string().trim().optional(),
@@ -61,6 +62,7 @@ export function normalizeProductInput(input: ProductFormInput): ProductFormInput
   compareAtPriceCents?: number;
   tagsArray: string[];
   imagesArray: string[];
+  metafieldsObject: Record<string, string>;
   variantsArray: NormalizedProductVariantInput[];
 } {
   const compareAtPriceCents = input.compareAtPrice
@@ -74,6 +76,7 @@ export function normalizeProductInput(input: ProductFormInput): ProductFormInput
     compareAtPriceCents: compareAtPriceCents && compareAtPriceCents > 0 ? compareAtPriceCents : undefined,
     tagsArray: splitLinesOrCommas(input.tags),
     imagesArray: splitLinesOrCommas(input.imageUrls),
+    metafieldsObject: parseMetafields(input.metafields),
     variantsArray: parseProductVariants(input)
   };
 }
@@ -182,5 +185,29 @@ function parseOptionValues(value: string | undefined): Record<string, string> {
         return [name, optionValue ?? ""];
       })
       .filter(([name, optionValue]) => name && optionValue)
+  );
+}
+
+function parseMetafields(value: string | undefined): Record<string, string> {
+  if (!value) {
+    return {};
+  }
+
+  if (value.trim().startsWith("{")) {
+    const parsedValue = JSON.parse(value) as Record<string, unknown>;
+
+    return Object.fromEntries(
+      Object.entries(parsedValue)
+        .filter(([key, metafieldValue]) => key.trim() && metafieldValue !== null && metafieldValue !== undefined)
+        .map(([key, metafieldValue]) => [key.trim(), String(metafieldValue).trim()])
+        .filter(([, metafieldValue]) => metafieldValue.length > 0)
+    );
+  }
+
+  return Object.fromEntries(
+    splitLines(value)
+      .map((line) => line.split(/[:=]/))
+      .map(([key, ...rest]) => [key?.trim(), rest.join("=").trim()])
+      .filter(([key, metafieldValue]) => key && metafieldValue)
   );
 }

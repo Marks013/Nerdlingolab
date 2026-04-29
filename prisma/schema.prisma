@@ -258,6 +258,7 @@ model Product {
   brand                 String?
   tags                  String[]      @default([])
   images                Json          @default("[]")
+  metafields            Json          @default("{}")
   priceCents            Int
   compareAtPriceCents   Int?
   seoTitle              String?

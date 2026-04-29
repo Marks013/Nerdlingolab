@@ -30,7 +30,7 @@ export default async function EditProductPage({
 
   return (
     <main>
-      <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <ProductForm action={updateProduct.bind(null, product.id)} categories={categories} product={product} />
       </div>
     </main>

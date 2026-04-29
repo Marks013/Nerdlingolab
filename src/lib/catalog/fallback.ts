@@ -76,6 +76,7 @@ export const fallbackProducts: ProductListItem[] = fallbackTitles.map(([title, p
       "Arte japonesa, cultura pop e estilo geek se encontram nesta peça inspirada no catálogo original da NerdLingoLab.",
     id,
     images: [fallbackImages[index % fallbackImages.length] ?? fallbackImages[0]],
+    metafields: {},
     priceCents,
     publishedAt: fallbackDate,
     seoDescription: null,

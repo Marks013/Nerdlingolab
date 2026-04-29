@@ -19,48 +19,56 @@ export default async function AdminDashboardPage(): Promise<React.ReactElement> 
       label: "Pedidos pagos",
       value: String(dashboardMetrics.paidOrdersCount),
       detail: `${dashboardMetrics.paidOrdersTodayCount} hoje · ${dashboardMetrics.paidOrdersYearCount} em ${dashboardMetrics.currentYear}`,
+      href: "/admin/pedidos",
       icon: ShoppingCart
     },
     {
       label: "Receita",
       value: formatCurrency(dashboardMetrics.revenueCents),
       detail: `${formatCurrency(dashboardMetrics.revenueTodayCents)} hoje · ${formatCurrency(dashboardMetrics.revenueYearCents)} em ${dashboardMetrics.currentYear}`,
+      href: "/admin/relatorios",
       icon: CircleDollarSign
     },
     {
       label: "Produtos ativos",
       value: String(dashboardMetrics.activeProductsCount),
       detail: `${dashboardMetrics.lowStockVariants.length} variantes em atenção`,
+      href: "/admin/produtos",
       icon: Boxes
     },
     {
       label: "Pontos emitidos",
       value: String(dashboardMetrics.loyaltyPointsIssued),
       detail: `${dashboardMetrics.loyaltyPointsIssuedYear} em ${dashboardMetrics.currentYear}`,
+      href: "/admin/fidelidade",
       icon: Gift
     },
     {
       label: "Suporte aberto",
       value: String(dashboardMetrics.openSupportTicketsCount),
       detail: "Tickets abertos ou em andamento",
+      href: "/admin/suporte",
       icon: Headphones
     },
     {
       label: "Pedidos pendentes",
       value: String(dashboardMetrics.pendingOrdersCount),
       detail: "Aguardando pagamento",
+      href: "/admin/pedidos?status=PENDING_PAYMENT",
       icon: AlertTriangle
     },
     {
       label: "Cupons públicos",
       value: String(dashboardMetrics.publicCouponsCount),
       detail: "Visíveis na página de cupons",
+      href: "/admin/cupons",
       icon: TicketPercent
     },
     {
       label: "Newsletter",
       value: String(dashboardMetrics.newsletterActiveCount),
       detail: "Inscritos ativos",
+      href: "/admin/newsletter",
       icon: MailCheck
     }
   ];
@@ -84,14 +92,16 @@ export default async function AdminDashboardPage(): Promise<React.ReactElement> 
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {metrics.map((metric) => (
-            <Card key={metric.label}>
-              <CardHeader>
-                <metric.icon className="h-5 w-5 text-primary" />
-                <CardDescription>{metric.label}</CardDescription>
-                <CardTitle>{metric.value}</CardTitle>
-                <p className="text-sm text-muted-foreground">{metric.detail}</p>
-              </CardHeader>
-            </Card>
+            <Link className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href={metric.href} key={metric.label}>
+              <Card className="h-full transition hover:border-primary">
+                <CardHeader>
+                  <metric.icon className="h-5 w-5 text-primary" />
+                  <CardDescription>{metric.label}</CardDescription>
+                  <CardTitle>{metric.value}</CardTitle>
+                  <p className="text-sm text-muted-foreground">{metric.detail}</p>
+                </CardHeader>
+              </Card>
+            </Link>
           ))}
         </div>
 
@@ -137,7 +147,7 @@ export default async function AdminDashboardPage(): Promise<React.ReactElement> 
               <div className="divide-y rounded-lg border">
                 {dashboardMetrics.lowStockVariants.map((variant) => (
                   <div className="grid gap-1 p-3 text-sm" key={variant.sku}>
-                    <Link className="font-semibold text-primary" href={`/produtos/${variant.product.slug}`}>
+                    <Link className="font-semibold text-primary" href={`/admin/produtos/${variant.product.id}/editar`}>
                       {variant.product.title}
                     </Link>
                     <p className="text-muted-foreground">

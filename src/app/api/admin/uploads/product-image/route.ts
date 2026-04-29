@@ -9,11 +9,17 @@ import { convertImageToWebp } from "@/lib/media/webp";
 import { rateLimitRequest } from "@/lib/security/rate-limit";
 import { assertSameOriginRequest } from "@/lib/security/request";
 import { ensureProductImageBucket, getProductImagePublicUrl, minioClient, productImageBucketName } from "@/lib/storage";
-import { buildProductImageObjectName, validateProductImage, validateProductImageBytes } from "@/lib/uploads/product-image";
+import {
+  buildProductImageObjectName,
+  ProductImageValidationError,
+  validateProductImage,
+  validateProductImageBytes
+} from "@/lib/uploads/product-image";
 
 const uploadSchema = z.object({
   file: z.custom<File>((value) => value instanceof File)
 });
+const maxImageRequestBytes = 6 * 1024 * 1024;
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
@@ -30,6 +36,12 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     if (!(await isAdminSession())) {
       return NextResponse.json({ message: "Acesso não autorizado." }, { status: 401 });
+    }
+
+    const contentLength = Number(request.headers.get("content-length") ?? "0");
+
+    if (Number.isFinite(contentLength) && contentLength > maxImageRequestBytes) {
+      return NextResponse.json({ message: "A imagem deve ter até 5 MB." }, { status: 413 });
     }
 
     const formData = await request.formData();
@@ -75,6 +87,10 @@ export async function POST(request: Request): Promise<NextResponse> {
       url
     });
   } catch (error) {
+    if (error instanceof ProductImageValidationError) {
+      return NextResponse.json({ message: error.message }, { status: error.status });
+    }
+
     Sentry.captureException(error);
 
     return NextResponse.json(

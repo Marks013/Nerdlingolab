@@ -2,6 +2,7 @@ import { ProductStatus } from "@/generated/prisma/client";
 import { z } from "zod";
 
 import { parseCurrencyToCents, slugify } from "@/lib/format";
+import { sanitizeRichTextHtml } from "@/lib/security/html";
 
 const optionalStringSchema = z
   .string()
@@ -20,7 +21,7 @@ export const productFormSchema = z.object({
   title: z.string().trim().min(2, "Informe o título do produto."),
   slug: z.string().trim().optional(),
   shortDescription: optionalStringSchema.optional(),
-  description: z.string().trim().min(10, "Descreva melhor o produto."),
+  description: z.string().trim().min(10, "Descreva melhor o produto.").max(50_000, "A descricao esta muito longa."),
   categoryId: optionalStringSchema.optional(),
   brand: optionalStringSchema.optional(),
   tags: z.string().trim().optional(),
@@ -72,6 +73,7 @@ export function normalizeProductInput(input: ProductFormInput): ProductFormInput
   return {
     ...input,
     slug: input.slug ? slugify(input.slug) : slugify(input.title),
+    description: sanitizeRichTextHtml(input.description),
     priceCents: parseCurrencyToCents(input.price),
     compareAtPriceCents: compareAtPriceCents && compareAtPriceCents > 0 ? compareAtPriceCents : undefined,
     tagsArray: splitLinesOrCommas(input.tags),

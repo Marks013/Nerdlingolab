@@ -1,13 +1,23 @@
 const allowedImageTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const maxImageSizeBytes = 5 * 1024 * 1024;
 
+export class ProductImageValidationError extends Error {
+  status: number;
+
+  constructor(message: string, status = 400) {
+    super(message);
+    this.name = "ProductImageValidationError";
+    this.status = status;
+  }
+}
+
 export function validateProductImage(file: File): void {
   if (!allowedImageTypes.has(file.type)) {
-    throw new Error("Envie uma imagem JPG, PNG, WebP ou GIF.");
+    throw new ProductImageValidationError("Envie uma imagem JPG, PNG, WebP ou GIF.");
   }
 
   if (file.size > maxImageSizeBytes) {
-    throw new Error("A imagem deve ter até 5 MB.");
+    throw new ProductImageValidationError("A imagem deve ter até 5 MB.", 413);
   }
 }
 
@@ -22,7 +32,7 @@ export function validateProductImageBytes(file: File, bytes: Buffer): void {
   const isValidSignature = signature?.every((byte, index) => bytes[index] === byte) ?? false;
 
   if (!isValidSignature) {
-    throw new Error("O arquivo não parece ser uma imagem válida.");
+    throw new ProductImageValidationError("O arquivo não parece ser uma imagem válida.");
   }
 }
 

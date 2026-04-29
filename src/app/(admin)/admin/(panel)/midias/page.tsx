@@ -47,7 +47,7 @@ export default async function AdminMediaPage({ searchParams }: AdminMediaPagePro
             ))}
             <Button disabled={deletableAssetIds.length === 0} type="submit" variant="outline">
               <Trash2 className="mr-2 h-4 w-4" />
-              Excluir nao usadas
+              Excluir não usadas
             </Button>
           </form>
         </div>
@@ -85,7 +85,7 @@ export default async function AdminMediaPage({ searchParams }: AdminMediaPagePro
             <select className="h-10 rounded-md border bg-background px-3 text-sm" defaultValue={filters.usage ?? ""} name="uso">
               <option value="">Todos</option>
               <option value="used">Em uso</option>
-              <option value="unused">Nao usadas</option>
+              <option value="unused">Não usadas</option>
             </select>
           </label>
           <label className="grid gap-2 text-sm font-medium">
@@ -132,28 +132,31 @@ export default async function AdminMediaPage({ searchParams }: AdminMediaPagePro
                   <span>{asset.source} / {formatDateTime(asset.createdAt)}</span>
                   <UsageSummary asset={asset} />
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <Button asChild size="sm" variant="outline">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button asChild className="h-9" size="sm" variant="outline">
                     <Link href={asset.url} target="_blank">
-                      <ExternalLink className="h-4 w-4" />
+                      <ExternalLink className="mr-1 h-4 w-4" />
+                      Abrir
                     </Link>
                   </Button>
-                  <Button asChild size="sm" variant="outline">
+                  <Button asChild className="h-9" size="sm" variant="outline">
                     <Link href={getMediaProductHref(asset)} title="Ver produto vinculado">
-                      <Search className="h-4 w-4" />
+                      <Search className="mr-1 h-4 w-4" />
+                      Produto
                     </Link>
                   </Button>
-                  <form action={deleteMediaAssetAction}>
+                  <form action={deleteMediaAssetAction} className="col-span-2">
                     <input name="assetId" type="hidden" value={asset.id} />
                     <Button
-                      className="w-full border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      className="h-9 w-full border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:border-muted disabled:bg-muted disabled:text-muted-foreground"
                       disabled={asset.usages.length > 0}
                       size="sm"
                       title={asset.usages.length > 0 ? "Remova os vinculos antes de excluir" : "Excluir arquivo"}
                       type="submit"
                       variant="outline"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Excluir arquivo
                     </Button>
                   </form>
                 </div>

@@ -18,6 +18,7 @@ const allowedImageTypes = new Set(["image/jpeg", "image/png", "image/webp", "ima
 const allowedVideoTypes = new Set(["video/mp4", "video/webm", "video/ogg"]);
 const maxImageSizeBytes = 5 * 1024 * 1024;
 const maxVideoSizeBytes = 80 * 1024 * 1024;
+const maxUploadRequestBytes = maxVideoSizeBytes + 1024 * 1024;
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
@@ -34,6 +35,12 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     if (!(await isAdminSession())) {
       return NextResponse.json({ message: "Acesso nao autorizado." }, { status: 401 });
+    }
+
+    const contentLength = Number(request.headers.get("content-length") ?? "0");
+
+    if (Number.isFinite(contentLength) && contentLength > maxUploadRequestBytes) {
+      return NextResponse.json({ message: "A midia deve ter ate 80 MB." }, { status: 413 });
     }
 
     const formData = await request.formData();
@@ -60,6 +67,10 @@ export async function POST(request: Request): Promise<NextResponse> {
       url: asset.url
     });
   } catch (error) {
+    if (error instanceof MediaUploadValidationError) {
+      return NextResponse.json({ message: error.message }, { status: error.status });
+    }
+
     Sentry.captureException(error);
 
     return NextResponse.json(
@@ -114,7 +125,7 @@ async function uploadVideo(file: File, bytes: Buffer, userId: string | null) {
 function validateMedia(file: File, bytes: Buffer): void {
   if (allowedImageTypes.has(file.type)) {
     if (file.size > maxImageSizeBytes) {
-      throw new Error("A imagem deve ter ate 5 MB.");
+      throw new MediaUploadValidationError("A imagem deve ter ate 5 MB.", 413);
     }
 
     validateImageSignature(file.type, bytes);
@@ -123,14 +134,14 @@ function validateMedia(file: File, bytes: Buffer): void {
 
   if (allowedVideoTypes.has(file.type)) {
     if (file.size > maxVideoSizeBytes) {
-      throw new Error("O video deve ter ate 80 MB.");
+      throw new MediaUploadValidationError("O video deve ter ate 80 MB.", 413);
     }
 
     validateVideoSignature(file.type, bytes);
     return;
   }
 
-  throw new Error("Envie JPG, PNG, WebP, GIF, MP4, WebM ou OGG.");
+  throw new MediaUploadValidationError("Envie JPG, PNG, WebP, GIF, MP4, WebM ou OGG.");
 }
 
 function validateImageSignature(mimeType: string, bytes: Buffer): void {
@@ -143,7 +154,7 @@ function validateImageSignature(mimeType: string, bytes: Buffer): void {
   const signature = signatures[mimeType];
 
   if (!signature?.every((byte, index) => bytes[index] === byte)) {
-    throw new Error("Arquivo de imagem invalido.");
+    throw new MediaUploadValidationError("Arquivo de imagem invalido.");
   }
 }
 
@@ -153,7 +164,7 @@ function validateVideoSignature(mimeType: string, bytes: Buffer): void {
   const isOgg = mimeType === "video/ogg" && bytes.subarray(0, 4).toString("ascii") === "OggS";
 
   if (!isMp4 && !isWebm && !isOgg) {
-    throw new Error("Arquivo de video invalido.");
+    throw new MediaUploadValidationError("Arquivo de video invalido.");
   }
 }
 
@@ -184,4 +195,14 @@ function normalizeFileName(fileName: string, extension: string): string {
   const baseName = fileName.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9._-]+/g, "-").slice(0, 80) || "video";
 
   return `${baseName}.${extension}`;
+}
+
+class MediaUploadValidationError extends Error {
+  status: number;
+
+  constructor(message: string, status = 400) {
+    super(message);
+    this.name = "MediaUploadValidationError";
+    this.status = status;
+  }
 }

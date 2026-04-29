@@ -44,7 +44,7 @@ export function MediaUploadButton({
       body: formData,
       method: "POST"
     });
-    const parsedResponse = await parseFriendlyResponse<UploadResponse>(response, "Nao foi possivel enviar a midia.");
+    const parsedResponse = await parseFriendlyResponse<UploadResponse>(response, "Não foi possível enviar a mídia.");
 
     setIsUploading(false);
     event.target.value = "";

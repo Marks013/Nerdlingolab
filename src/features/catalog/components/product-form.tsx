@@ -19,7 +19,9 @@ import {
   Tags,
   Trash2,
   Type,
-  Video
+  Video,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -119,6 +121,7 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
   const [descriptionHtml, setDescriptionHtml] = useState(product?.description ?? "");
   const [descriptionMediaIntent, setDescriptionMediaIntent] = useState<"image" | "video" | null>(null);
   const [showHtmlSource, setShowHtmlSource] = useState(false);
+  const [expandedVariantGroups, setExpandedVariantGroups] = useState<Set<string>>(() => new Set());
   const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
   const descriptionEditorRef = useRef<HTMLDivElement>(null);
   const firstVariant = variants[0] ?? createVariantRow();
@@ -261,6 +264,28 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
     });
   }
 
+  function toggleVariantGroup(groupKey: string): void {
+    setExpandedVariantGroups((current) => {
+      const next = new Set(current);
+
+      if (next.has(groupKey)) {
+        next.delete(groupKey);
+      } else {
+        next.add(groupKey);
+      }
+
+      return next;
+    });
+  }
+
+  function expandAllVariantGroups(): void {
+    setExpandedVariantGroups(new Set(variantGroups.map((group) => group.key)));
+  }
+
+  function collapseAllVariantGroups(): void {
+    setExpandedVariantGroups(new Set());
+  }
+
   function updateMetafield(id: string, patch: Partial<MetafieldFormRow>): void {
     setMetafields((current) => current.map((field) => (field.id === id ? { ...field, ...patch } : field)));
   }
@@ -299,7 +324,7 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
 
       <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="text-sm text-muted-foreground">Catalogo / Produtos</p>
+          <p className="text-sm text-muted-foreground">Catálogo / Produtos</p>
           <h1 className="text-2xl font-bold tracking-normal">{product ? "Editar produto" : "Novo produto"}</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground text-pretty">
             Estruture conteudo, midia, organizacao, variacoes, estoque e metacampos em um fluxo visual.
@@ -308,8 +333,8 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
         <Button className="w-full sm:w-auto" type="submit">Salvar produto</Button>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="grid gap-5">
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="grid min-w-0 gap-5">
           <section className="rounded-lg border bg-background p-5">
             <SectionHeading icon={ClipboardList} title="Dados principais" />
             <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -326,14 +351,14 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
                 <Input defaultValue={product?.brand ?? ""} name="brand" />
               </label>
               <label className="grid gap-2 text-sm font-medium lg:col-span-2">
-                Descricao curta
+                Descrição curta
                 <Input defaultValue={product?.shortDescription ?? ""} name="shortDescription" />
               </label>
             </div>
           </section>
 
           <section className="rounded-lg border bg-background p-5">
-            <SectionHeading icon={Type} title="Descricao completa" />
+            <SectionHeading icon={Type} title="Descrição completa" />
             <div className="mt-4 overflow-hidden rounded-md border">
               <div className="flex flex-wrap items-center gap-1 border-b bg-muted/40 p-2">
                 <EditorButton label="Negrito" icon={Bold} onClick={() => runEditorCommand("bold")} />
@@ -404,15 +429,23 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
           <section className="rounded-lg border bg-background p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <SectionHeading icon={Layers3} title="Variacoes e estoque" />
-              <Button
-                className="w-full sm:w-auto"
-                onClick={() => setVariants((current) => [...current, createVariantRow({ title: `Variacao ${current.length + 1}` })])}
-                type="button"
-                variant="outline"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Adicionar variacao
-              </Button>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button className="w-full sm:w-auto" onClick={expandAllVariantGroups} type="button" variant="ghost">
+                  Expandir tudo
+                </Button>
+                <Button className="w-full sm:w-auto" onClick={collapseAllVariantGroups} type="button" variant="ghost">
+                  Recolher tudo
+                </Button>
+                <Button
+                  className="w-full sm:w-auto"
+                  onClick={() => setVariants((current) => [...current, createVariantRow({ title: `Variacao ${current.length + 1}` })])}
+                  type="button"
+                  variant="outline"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Adicionar variacao
+                </Button>
+              </div>
             </div>
             <div className="mt-4 grid gap-3 lg:grid-cols-3">
               <OptionSummary
@@ -435,17 +468,17 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
               Ao vincular uma imagem, ela e aplicada nas variantes da mesma Cor + Sexo. Valores novos podem ser digitados ou criados pelos botoes acima.
             </p>
             <div className="mt-4 overflow-x-auto rounded-lg border">
-              <table className="min-w-[980px] w-full border-collapse text-sm">
+              <table className="w-full min-w-[1120px] border-collapse text-sm">
                 <thead className="bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
                   <tr>
                     <th className="w-[330px] px-3 py-2">Variante</th>
                     <th className="w-[140px] px-3 py-2">Cor</th>
                     <th className="w-[120px] px-3 py-2">Tamanho</th>
                     <th className="w-[130px] px-3 py-2">Sexo</th>
-                    <th className="w-[130px] px-3 py-2">Preco</th>
+                    <th className="w-[130px] px-3 py-2">Preço</th>
                     <th className="w-[95px] px-3 py-2">Estoque</th>
                     <th className="w-[110px] px-3 py-2">Status</th>
-                    <th className="w-[120px] px-3 py-2 text-right">Acoes</th>
+                    <th className="w-[160px] px-3 py-2 text-right">Acoes</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -453,16 +486,28 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
                     <Fragment key={group.key}>
                       <tr className="bg-muted/25">
                         <td className="px-3 py-2 font-semibold" colSpan={8}>
-                          <div className="flex items-center gap-2">
-                            <span className="inline-flex size-4 rounded-full border" style={{ backgroundColor: getSwatchColor(group.label) }} />
-                            <span>{group.label}</span>
-                            <span className="text-xs font-normal text-muted-foreground">
+                          <button
+                            aria-expanded={expandedVariantGroups.has(group.key)}
+                            className="flex w-full items-center justify-between gap-3 rounded-md px-1 py-1 text-left transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            onClick={() => toggleVariantGroup(group.key)}
+                            type="button"
+                          >
+                            <span className="flex min-w-0 items-center gap-2">
+                              {expandedVariantGroups.has(group.key) ? (
+                                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                              )}
+                              <span className="inline-flex size-4 shrink-0 rounded-full border" style={{ backgroundColor: getSwatchColor(group.label) }} />
+                              <span className="truncate">{group.label}</span>
+                            </span>
+                            <span className="shrink-0 text-xs font-normal text-muted-foreground">
                               {group.variants.length} variante{group.variants.length === 1 ? "" : "s"}
                             </span>
-                          </div>
+                          </button>
                         </td>
                       </tr>
-                      {group.variants.map((variant) => (
+                      {expandedVariantGroups.has(group.key) ? group.variants.map((variant) => (
                         <tr className="align-top" key={variant.id}>
                           <td className="px-3 py-3">
                             <div className="flex gap-3">
@@ -473,7 +518,7 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
                                 <details className="rounded-md border bg-muted/20 p-2">
                                   <summary className="cursor-pointer text-xs font-semibold text-muted-foreground">Midia e campos avancados</summary>
                                   <div className="mt-3 grid gap-3 md:grid-cols-3">
-                                    <Field label="Preco comparativo">
+                                    <Field label="Preço comparativo">
                                       <Input value={variant.compareAtPrice} onChange={(event) => updateVariant(variant.id, { compareAtPrice: event.target.value })} />
                                     </Field>
                                     <Field label="Codigo de barras">
@@ -483,11 +528,11 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
                                       <Input min={0} type="number" value={variant.weightGrams} onChange={(event) => updateVariant(variant.id, { weightGrams: event.target.value })} />
                                     </Field>
                                     <div className="grid gap-2 md:col-span-3">
-                                      <Input readOnly value={variant.imageUrl} placeholder="Imagem vinculada pela biblioteca Midia" />
+                                      <VariantImagePreview imageUrl={variant.imageUrl} title={variant.title} />
                                       <div className="flex flex-wrap gap-2">
                                         <MediaLibraryPicker
                                           accept="image"
-                                          buttonLabel="Vincular imagem"
+                                          buttonLabel={variant.imageUrl ? "Trocar imagem" : "Vincular imagem"}
                                           onSelect={(url) => updateVariantImageLink(variant.id, url)}
                                         />
                                         {variant.imageUrl ? (
@@ -535,18 +580,20 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
                               </Button>
                               <Button
                                 aria-label="Remover variacao"
+                                className="h-9 border-destructive px-2 text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:border-muted-foreground/20 disabled:text-muted-foreground"
                                 disabled={variants.length === 1}
                                 onClick={() => removeVariant(variant.id)}
-                                size="icon"
+                                size="sm"
                                 type="button"
-                                variant="ghost"
+                                variant="outline"
                               >
-                                <Trash2 className="h-4 w-4 text-destructive" />
+                                <Trash2 className="mr-1 h-4 w-4" />
+                                Excluir
                               </Button>
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      )) : null}
                     </Fragment>
                   ))}
                 </tbody>
@@ -623,8 +670,16 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
                           <Textarea className="min-h-9 resize-y" value={field.value} onChange={(event) => updateMetafield(field.id, { value: event.target.value })} />
                         </td>
                         <td className="px-3 py-3">
-                          <Button aria-label="Remover metacampo" onClick={() => removeMetafield(field.id)} size="icon" type="button" variant="ghost">
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                          <Button
+                            aria-label="Remover metacampo"
+                            className="h-9 border-destructive px-2 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                            onClick={() => removeMetafield(field.id)}
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                          >
+                            <Trash2 className="mr-1 h-4 w-4" />
+                            Excluir
                           </Button>
                         </td>
                       </tr>
@@ -636,9 +691,9 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
           </section>
         </div>
 
-        <aside className="grid content-start gap-5">
+        <aside className="grid min-w-0 content-start gap-5 2xl:sticky 2xl:top-6">
           <section className="rounded-lg border bg-background p-5">
-            <SectionHeading icon={Boxes} title="Publicacao" />
+            <SectionHeading icon={Boxes} title="Publicação" />
             <label className="mt-4 grid gap-2 text-sm font-medium">
               Situacao
               <select className="h-10 rounded-md border bg-background px-3 text-sm" defaultValue={product?.status ?? "DRAFT"} name="status">
@@ -673,14 +728,14 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
           </section>
 
           <section className="rounded-lg border bg-background p-5">
-            <SectionHeading icon={Search} title="Precos base e SEO" />
+            <SectionHeading icon={Search} title="Preços base e SEO" />
             <div className="mt-4 grid gap-4">
               <label className="grid gap-2 text-sm font-medium">
-                Preco base
+                Preço base
                 <Input defaultValue={product ? formatCurrency(product.priceCents) : ""} name="price" required />
               </label>
               <label className="grid gap-2 text-sm font-medium">
-                Preco comparativo base
+                Preço comparativo base
                 <Input defaultValue={product?.compareAtPriceCents ? formatCurrency(product.compareAtPriceCents) : ""} name="compareAtPrice" />
               </label>
             </div>
@@ -702,6 +757,30 @@ function VariantThumbnail({ imageUrl, title }: { imageUrl: string; title: string
         </span>
       )}
     </div>
+  );
+}
+
+function VariantImagePreview({ imageUrl, title }: { imageUrl: string; title: string }): React.ReactElement {
+  if (!imageUrl) {
+    return (
+      <div className="grid min-h-28 place-items-center rounded-lg border border-dashed bg-muted/20 p-4 text-center text-sm text-muted-foreground">
+        Nenhuma imagem vinculada a essa combinação.
+      </div>
+    );
+  }
+
+  return (
+    <figure className="flex items-center gap-3 rounded-lg border bg-background p-2">
+      <div className="relative size-20 shrink-0 overflow-hidden rounded-md bg-muted">
+        <Image alt={title || "Imagem da variacao"} className="object-cover" fill sizes="80px" src={imageUrl} />
+      </div>
+      <figcaption className="min-w-0 text-sm">
+        <strong className="block truncate">Imagem vinculada</strong>
+        <span className="text-xs text-muted-foreground">
+          Sera aplicada nas variantes com a mesma cor e sexo.
+        </span>
+      </figcaption>
+    </figure>
   );
 }
 

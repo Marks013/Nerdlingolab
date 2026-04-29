@@ -244,7 +244,9 @@ assertIncludes("src/actions/catalog.ts", [
   ["sync Shopify funciona no Windows", "\"npm.cmd\""]
 ]);
 assertIncludes("src/features/catalog/components/product-form.tsx", [
-  ["admin orienta imagem por variante", "_imageUrl=/uploads/azul.webp"]
+  ["admin vincula imagem por variante via biblioteca", "updateVariantImageLink"],
+  ["admin orienta imagem por cor e sexo", "mesma Cor + Sexo"],
+  ["admin usa biblioteca de midia para variantes", "Vincular imagem"]
 ]);
 assertIncludes("scripts/audit-runtime-ui.mjs", [
   ["auditoria cobre newsletter admin", "\"/admin/newsletter\""],

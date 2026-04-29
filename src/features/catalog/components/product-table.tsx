@@ -30,7 +30,7 @@ export function ProductTable({ categories, filters, products }: ProductTableProp
     <div className="grid gap-5">
       <div className="flex flex-col gap-4 border-b pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">Catalogo</p>
+          <p className="text-sm text-muted-foreground">Catálogo</p>
           <h1 className="text-3xl font-bold tracking-normal">Produtos</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Gerencie produtos, colecoes, variacoes, midias, estoque e metacampos em uma area operacional.
@@ -113,7 +113,7 @@ export function ProductTable({ categories, filters, products }: ProductTableProp
           <span>Produto</span>
           <span>Status</span>
           <span>Estoque</span>
-          <span>Preco</span>
+          <span>Preço</span>
           <span className="text-right">Acoes</span>
         </div>
         <div className="divide-y">

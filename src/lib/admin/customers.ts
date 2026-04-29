@@ -17,15 +17,33 @@ export async function getAdminCustomers() {
       id: true,
       loyaltyPoints: true,
       name: true,
+      addresses: {
+        orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+        select: {
+          city: true,
+          district: true,
+          id: true,
+          isDefault: true,
+          label: true,
+          number: true,
+          postalCode: true,
+          recipient: true,
+          state: true,
+          street: true
+        },
+        take: 3
+      },
       orders: {
         orderBy: { createdAt: "desc" },
         select: {
           createdAt: true,
+          id: true,
           orderNumber: true,
+          paymentStatus: true,
           status: true,
           totalCents: true
         },
-        take: 1
+        take: 3
       },
       phone: true,
       referralCode: {
@@ -33,6 +51,35 @@ export async function getAdminCustomers() {
           code: true,
           isActive: true
         }
+      },
+      referralsSent: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          createdAt: true,
+          id: true,
+          invitee: { select: { email: true, name: true } },
+          status: true
+        },
+        take: 5
+      },
+      referralReceived: {
+        select: {
+          createdAt: true,
+          inviter: { select: { email: true, name: true } },
+          referralCode: true,
+          status: true
+        }
+      },
+      supportTickets: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          createdAt: true,
+          id: true,
+          status: true,
+          subjectLabel: true,
+          ticketId: true
+        },
+        take: 4
       },
       role: true
     },

@@ -124,12 +124,11 @@ export default async function AdminMediaPage({ searchParams }: AdminMediaPagePro
               </div>
               <div className="grid gap-3 p-4 text-xs text-muted-foreground">
                 <div className="min-w-0">
-                  <strong className="block truncate text-sm text-foreground">{asset.fileName}</strong>
-                  <span>{asset.mimeType} / {formatBytes(asset.sizeBytes)} / {asset.width ?? "-"}x{asset.height ?? "-"}</span>
+                  <strong className="block truncate text-sm text-foreground">{formatMediaTitle(asset.fileName)}</strong>
+                  <span>{formatMediaKind(asset.mimeType)} / {formatBytes(asset.sizeBytes)} / {asset.width ?? "-"}x{asset.height ?? "-"}</span>
                 </div>
-                <code className="overflow-x-auto rounded bg-muted px-2 py-1">{asset.url}</code>
                 <div className="grid gap-1">
-                  <span>{asset.source} / {formatDateTime(asset.createdAt)}</span>
+                  <span>{formatMediaSource(asset.source)} / {formatDateTime(asset.createdAt)}</span>
                   <UsageSummary asset={asset} />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -224,7 +223,7 @@ function UsageSummary({ asset }: { asset: MediaAssetWithUsages }): React.ReactEl
     return (
       <span className="inline-flex w-fit items-center gap-1 rounded-full border px-2 py-1 text-xs">
         <ImageIcon className="h-3.5 w-3.5" />
-        Sem vinculos ativos
+        Sem vínculos ativos
       </span>
     );
   }
@@ -235,7 +234,7 @@ function UsageSummary({ asset }: { asset: MediaAssetWithUsages }): React.ReactEl
         Em uso em {asset.usages.length} local{asset.usages.length === 1 ? "" : "is"}
       </span>
       <span className="line-clamp-2">
-        {asset.usages.map((usage) => usage.product?.title ?? `${usage.ownerType}/${usage.fieldName}`).join(", ")}
+        {asset.usages.map((usage) => usage.product?.title ?? "Uso interno").join(", ")}
       </span>
     </div>
   );
@@ -249,6 +248,31 @@ function getMediaProductHref(asset: MediaAssetWithUsages): string {
   }
 
   return `/admin/produtos?busca=${encodeURIComponent(asset.url)}`;
+}
+
+function formatMediaTitle(fileName: string): string {
+  return fileName
+    .replace(/\.[^.]+$/, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\b[a-f0-9]{8,}\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim() || "Mídia sem título";
+}
+
+function formatMediaKind(mimeType: string): string {
+  if (mimeType.startsWith("image/")) {
+    return "Imagem";
+  }
+
+  if (mimeType.startsWith("video/")) {
+    return "Vídeo";
+  }
+
+  return "Arquivo";
+}
+
+function formatMediaSource(source: string): string {
+  return source === "EXTERNAL_IMPORT" ? "Importada" : "Enviada";
 }
 
 function Metric({ title, value }: { title: string; value: string }): React.ReactElement {

@@ -6,6 +6,7 @@ import { execFile } from "node:child_process";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { promisify } from "node:util";
+import { z } from "zod";
 
 import {
   categoryFormSchema,
@@ -298,6 +299,38 @@ export async function deleteProduct(productId: string): Promise<void> {
   }
 
   revalidateCatalogPaths();
+}
+
+export async function assignProductToCategory(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const parsedInput = z.object({
+    categoryId: z.string().min(1),
+    productId: z.string().min(1)
+  }).parse({
+    categoryId: formData.get("categoryId"),
+    productId: formData.get("productId")
+  });
+
+  await prisma.product.update({
+    data: { categoryId: parsedInput.categoryId },
+    where: { id: parsedInput.productId }
+  });
+
+  revalidateCatalogPaths();
+  revalidatePath("/admin/categorias");
+}
+
+export async function removeProductFromCategory(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const productId = z.string().min(1).parse(formData.get("productId"));
+
+  await prisma.product.update({
+    data: { categoryId: null },
+    where: { id: productId }
+  });
+
+  revalidateCatalogPaths();
+  revalidatePath("/admin/categorias");
 }
 
 export async function syncShopifyProductsFromCsv(): Promise<void> {

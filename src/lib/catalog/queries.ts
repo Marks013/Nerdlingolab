@@ -43,8 +43,41 @@ export type ProductListItem = Product & {
   variants: ProductVariant[];
 };
 
+export type CategoryProductListItem = Product & {
+  variants: ProductVariant[];
+};
+
+export type AdminCategoryManagerItem = Category & {
+  _count: {
+    children: number;
+    products: number;
+  };
+  products: CategoryProductListItem[];
+};
+
 export async function getAdminCategories(): Promise<Category[]> {
   return prisma.category.findMany({
+    orderBy: [{ position: "asc" }, { name: "asc" }]
+  });
+}
+
+export async function getAdminCategoryManagerData(): Promise<AdminCategoryManagerItem[]> {
+  return prisma.category.findMany({
+    include: {
+      _count: {
+        select: {
+          children: true,
+          products: true
+        }
+      },
+      products: {
+        include: {
+          variants: true
+        },
+        orderBy: { title: "asc" },
+        take: 30
+      }
+    },
     orderBy: [{ position: "asc" }, { name: "asc" }]
   });
 }

@@ -38,12 +38,12 @@ export function ProductTable({ categories, filters, products }: ProductTableProp
         </div>
         <div className="flex flex-wrap gap-2">
           <form action={syncShopifyProductsFromCsv}>
-            <Button size="sm" type="submit" variant="outline">
+            <Button className="h-10 px-4" type="submit" variant="outline">
               <RotateCw className="mr-2 h-4 w-4" />
               Sincronizar CSV
             </Button>
           </form>
-          <Button asChild size="sm">
+          <Button asChild className="h-10 px-4">
             <Link href="/admin/produtos/novo">
               <Plus className="mr-2 h-4 w-4" />
               Novo produto
@@ -109,7 +109,7 @@ export function ProductTable({ categories, filters, products }: ProductTableProp
       ) : null}
 
       <div className="overflow-hidden rounded-lg border bg-background">
-        <div className="hidden grid-cols-[minmax(320px,1.4fr)_150px_130px_120px_150px] gap-4 border-b bg-muted/40 px-4 py-3 text-xs font-semibold uppercase text-muted-foreground lg:grid">
+        <div className="hidden grid-cols-[minmax(320px,1.4fr)_150px_130px_120px_260px] gap-4 border-b bg-muted/40 px-4 py-3 text-xs font-semibold uppercase text-muted-foreground lg:grid">
           <span>Produto</span>
           <span>Status</span>
           <span>Estoque</span>
@@ -135,7 +135,7 @@ function ProductRow({ product }: { product: ProductListItem }): React.ReactEleme
   const metafieldCount = getMetafieldCount(product.metafields);
 
   return (
-    <div className="grid gap-4 p-4 lg:grid-cols-[minmax(320px,1.4fr)_150px_130px_120px_150px] lg:items-center">
+      <div className="grid gap-4 p-4 lg:grid-cols-[minmax(320px,1.4fr)_150px_130px_120px_260px] lg:items-center">
       <div className="grid min-w-0 grid-cols-[72px_minmax(0,1fr)] gap-3">
         <div className="relative h-16 w-16 overflow-hidden rounded-md border bg-muted">
           {imageUrl ? <Image alt={product.title} className="object-cover" fill sizes="72px" src={imageUrl} /> : null}
@@ -156,20 +156,23 @@ function ProductRow({ product }: { product: ProductListItem }): React.ReactEleme
       <StatusBadge status={product.status} />
       <StockBadge availableStock={availableStock} />
       <p className="text-sm font-semibold">{formatCurrency(product.priceCents)}</p>
-      <div className="flex justify-end gap-2">
-        <Button asChild size="icon" variant="outline">
-          <Link href={`/admin/produtos/${product.id}/editar`} title="Editar">
-            <Pencil className="h-4 w-4" />
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button asChild className="h-10 px-3" variant="outline">
+          <Link href={`/admin/produtos/${product.id}/editar`}>
+            <Pencil className="mr-2 h-4 w-4" />
+            Editar
           </Link>
         </Button>
         <form action={archiveProduct.bind(null, product.id)}>
-          <Button size="icon" title="Arquivar" type="submit" variant="outline">
-            <Archive className="h-4 w-4" />
+          <Button className="h-10 px-3" type="submit" variant="outline">
+            <Archive className="mr-2 h-4 w-4" />
+            Arquivar
           </Button>
         </form>
         <form action={deleteProduct.bind(null, product.id)}>
-          <Button size="icon" title="Excluir sem pedidos" type="submit" variant="outline">
-            <Trash2 className="h-4 w-4" />
+          <Button className="h-10 border-destructive px-3 text-destructive hover:bg-destructive hover:text-destructive-foreground" type="submit" variant="outline">
+            <Trash2 className="mr-2 h-4 w-4" />
+            Excluir
           </Button>
         </form>
       </div>

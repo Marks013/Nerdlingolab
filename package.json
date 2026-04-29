@@ -18,7 +18,7 @@
     "audit:actions": "node scripts/audit-server-actions.mjs",
     "validate:contrast": "node scripts/check-contrast.mjs",
     "import:shopify": "tsx scripts/import-shopify-products.mjs",
-    "shopify:backfill-source-links": "tsx scripts/backfill-shopify-source-links.mjs",
+    "shopify:backfill-source-links": "prisma generate && tsx scripts/backfill-shopify-source-links.mjs",
     "media:import-external": "prisma migrate deploy && tsx scripts/import-external-media.ts",
     "media:convert-webp": "prisma migrate deploy && tsx scripts/convert-media-to-webp.ts",
     "db:bootstrap": "prisma migrate deploy && prisma db seed && npm run import:shopify",

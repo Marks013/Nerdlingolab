@@ -147,6 +147,7 @@ function normalizeProduct(handle, rows, columns) {
     ...rows.flatMap((row) => extractVariantTags(row, columns))
   ]);
   const categorySlug = inferCategorySlug(firstRow, columns, tags, title);
+  const originalProductUrl = getSourceProductUrl(firstRow, columns);
   const variants = normalizeVariants(handle, rows, columns, title);
   const activeVariants = variants.filter((variant) => variant.isActive && variant.priceCents > 0);
   const priceCents = Math.min(...activeVariants.map((variant) => variant.priceCents));
@@ -160,6 +161,7 @@ function normalizeProduct(handle, rows, columns) {
     description: description || title,
     images: unique(rows.flatMap((row) => [getCell(row, columns, "Image Src"), getCell(row, columns, "Variant Image")]).filter(Boolean))
       .map((url, index) => ({ alt: title, position: index + 1, url })),
+    metafields: originalProductUrl ? { "admin.originalProductUrl": originalProductUrl } : {},
     priceCents: Number.isFinite(priceCents) ? priceCents : 0,
     publishedAt: status === ProductStatus.ACTIVE ? new Date() : null,
     seoDescription: getCell(firstRow, columns, "SEO Description") || shortText(description, 155),
@@ -263,6 +265,7 @@ async function importProducts(products) {
         compareAtPriceCents: product.compareAtPriceCents,
         description: product.description,
         images: product.images,
+        metafields: product.metafields,
         priceCents: product.priceCents,
         publishedAt: product.publishedAt,
         seoDescription: product.seoDescription,
@@ -276,7 +279,13 @@ async function importProducts(products) {
 
       const savedProduct = existingProduct
         ? await tx.product.update({
-            data: productData,
+            data: {
+              ...productData,
+              metafields: {
+                ...normalizeMetafields(existingProduct.metafields),
+                ...product.metafields
+              }
+            },
             where: { id: existingProduct.id }
           })
         : await tx.product.create({
@@ -444,6 +453,33 @@ function readInteger(row, columns, name) {
 
 function getCell(row, columns, name) {
   return (row[columns[name]] ?? "").trim();
+}
+
+function getSourceProductUrl(row, columns) {
+  const linkColumn = Object.keys(columns).find((name) => name === "Link" || name.startsWith("Link ("));
+  const rawValue = linkColumn ? getCell(row, columns, linkColumn) : "";
+
+  return normalizeSourceUrl(rawValue);
+}
+
+function normalizeSourceUrl(value) {
+  const rawValue = String(value ?? "").trim();
+
+  if (!rawValue) {
+    return "";
+  }
+
+  try {
+    const url = new URL(rawValue.startsWith("//") ? `https:${rawValue}` : rawValue);
+
+    return ["http:", "https:"].includes(url.protocol) ? url.toString() : "";
+  } catch {
+    return rawValue;
+  }
+}
+
+function normalizeMetafields(value) {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
 }
 
 function splitTags(rawValue) {

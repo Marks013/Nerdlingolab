@@ -94,6 +94,17 @@ const optionValueSuggestions = [
   "Infantil"
 ];
 
+const metafieldNamespaceSuggestions = ["admin", "custom", "seo", "shipping", "supplier", "shopify"];
+const metafieldKeySuggestions = [
+  "originalProductUrl",
+  "supplierSku",
+  "supplierName",
+  "care",
+  "fabric",
+  "shippingDays",
+  "seoHidden"
+];
+
 const productStatusOptions = [
   { label: "Rascunho", value: "DRAFT" },
   { label: "Ativo", value: "ACTIVE" },
@@ -231,6 +242,16 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
       </datalist>
       <datalist id="product-variant-option-values">
         {optionValueSuggestions.map((option) => (
+          <option key={option} value={option} />
+        ))}
+      </datalist>
+      <datalist id="product-metafield-namespaces">
+        {metafieldNamespaceSuggestions.map((option) => (
+          <option key={option} value={option} />
+        ))}
+      </datalist>
+      <datalist id="product-metafield-keys">
+        {metafieldKeySuggestions.map((option) => (
           <option key={option} value={option} />
         ))}
       </datalist>
@@ -472,10 +493,23 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
               {metafields.map((field) => (
                 <div className="grid gap-3 rounded-lg border bg-muted/20 p-4 lg:grid-cols-[1fr_1fr_160px_2fr_auto]" key={field.id}>
                   <Field label="Namespace">
-                    <Input value={field.namespace} onChange={(event) => updateMetafield(field.id, { namespace: event.target.value })} placeholder="custom" />
+                    <Input
+                      list="product-metafield-namespaces"
+                      value={field.namespace}
+                      onChange={(event) => updateMetafield(field.id, { namespace: event.target.value })}
+                      placeholder="custom"
+                    />
                   </Field>
                   <Field label="Chave">
-                    <Input value={field.key} onChange={(event) => updateMetafield(field.id, { key: event.target.value })} placeholder="fabric" />
+                    <Input
+                      list="product-metafield-keys"
+                      value={field.key}
+                      onChange={(event) => updateMetafield(field.id, { key: event.target.value })}
+                      placeholder="fabric"
+                    />
+                    {field.namespace === "admin" ? (
+                      <span className="text-xs text-muted-foreground">Uso interno do admin.</span>
+                    ) : null}
                   </Field>
                   <Field label="Tipo">
                     <select

@@ -1,11 +1,11 @@
-import { ExternalLink, ImageIcon, Search, ShieldAlert, Trash2, UploadCloud } from "lucide-react";
+import { ExternalLink, ImageIcon, Search, ShieldAlert, Trash2, UploadCloud, Video } from "lucide-react";
 import Link from "next/link";
 
 import { bulkDeleteMediaAssetsAction, deleteMediaAssetAction } from "@/actions/media";
 import { SafeImage as Image } from "@/components/media/safe-image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ProductImageUploader } from "@/features/catalog/components/product-image-uploader";
+import { MediaUploadButton } from "@/features/media/components/media-upload-button";
 import { formatDateTime } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
@@ -62,10 +62,13 @@ export default async function AdminMediaPage({ searchParams }: AdminMediaPagePro
         <section className="rounded-lg border bg-background p-5">
           <div className="flex items-center gap-2">
             <UploadCloud className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-base font-semibold tracking-normal">Enviar imagem</h2>
+            <h2 className="text-base font-semibold tracking-normal">Enviar midia</h2>
           </div>
-          <div className="mt-4">
-            <ProductImageUploader label="Upload para biblioteca" />
+          <div className="mt-4 grid gap-2">
+            <MediaUploadButton accept="all" label="Enviar imagem ou video" />
+            <p className="text-xs text-muted-foreground">
+              Imagens sao convertidas para WebP. Videos MP4, WebM e OGG ficam centralizados na biblioteca.
+            </p>
           </div>
         </section>
 
@@ -105,13 +108,19 @@ export default async function AdminMediaPage({ searchParams }: AdminMediaPagePro
           {assets.map((asset) => (
             <article className="overflow-hidden rounded-lg border bg-background" key={asset.id}>
               <div className="relative aspect-square bg-muted">
-                <Image
-                  alt={asset.altText ?? asset.fileName}
-                  className="object-cover"
-                  fill
-                  sizes="(min-width: 1280px) 280px, 50vw"
-                  src={asset.url}
-                />
+                {asset.mimeType.startsWith("video/") ? (
+                  <div className="grid h-full place-items-center text-muted-foreground">
+                    <Video className="h-10 w-10" />
+                  </div>
+                ) : (
+                  <Image
+                    alt={asset.altText ?? asset.fileName}
+                    className="object-cover"
+                    fill
+                    sizes="(min-width: 1280px) 280px, 50vw"
+                    src={asset.url}
+                  />
+                )}
               </div>
               <div className="grid gap-3 p-4 text-xs text-muted-foreground">
                 <div className="min-w-0">

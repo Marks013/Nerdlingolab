@@ -23,7 +23,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
   if (!role || !adminRoles.has(role)) {
     const loginUrl = new URL("/admin/login", request.nextUrl);
-    loginUrl.searchParams.set("callbackUrl", pathname);
+    loginUrl.searchParams.set("callbackUrl", `${pathname}${request.nextUrl.search}`);
 
     return NextResponse.redirect(loginUrl);
   }

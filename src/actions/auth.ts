@@ -7,6 +7,7 @@ import { z } from "zod";
 import { LoyaltyLedgerType, UserRole } from "@/generated/prisma/client";
 
 import { signIn, signOut } from "@/lib/auth";
+import { sanitizeAdminCallbackUrl } from "@/lib/admin";
 import {
   getCpfLookupValues,
   isValidBirthdayInput,
@@ -29,6 +30,10 @@ import { isRateLimitedKey } from "@/lib/security/rate-limit";
 const credentialsFormSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
   password: z.string().min(8).max(128)
+});
+
+const adminCredentialsFormSchema = credentialsFormSchema.extend({
+  callbackUrl: z.string().trim().max(300).optional()
 });
 
 const forgotPasswordSchema = z.object({
@@ -62,7 +67,8 @@ const registerCustomerSchema = credentialsFormSchema.extend({
 });
 
 export async function signInWithCredentials(formData: FormData): Promise<void> {
-  const parsedCredentials = credentialsFormSchema.safeParse({
+  const parsedCredentials = adminCredentialsFormSchema.safeParse({
+    callbackUrl: formData.get("callbackUrl") || undefined,
     email: formData.get("email"),
     password: formData.get("password")
   });
@@ -82,7 +88,7 @@ export async function signInWithCredentials(formData: FormData): Promise<void> {
   await signIn("credentials", {
     email: parsedCredentials.data.email,
     password: parsedCredentials.data.password,
-    redirectTo: "/admin/dashboard"
+    redirectTo: sanitizeAdminCallbackUrl(parsedCredentials.data.callbackUrl)
   });
 }
 

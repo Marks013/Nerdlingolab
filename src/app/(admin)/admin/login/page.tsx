@@ -6,9 +6,11 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { sanitizeAdminCallbackUrl } from "@/lib/admin";
 
 interface AdminLoginPageProps {
   searchParams?: Promise<{
+    callbackUrl?: string;
     error?: string;
   }>;
 }
@@ -30,6 +32,7 @@ export default async function AdminLoginPage({
 }: AdminLoginPageProps): Promise<React.ReactElement> {
   const resolvedSearchParams = await searchParams;
   const loginMessage = getLoginMessage(resolvedSearchParams?.error);
+  const callbackUrl = sanitizeAdminCallbackUrl(resolvedSearchParams?.callbackUrl);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-muted px-4 py-12">
@@ -44,6 +47,7 @@ export default async function AdminLoginPage({
         </CardHeader>
         <CardContent>
           <form action={signInWithCredentials} className="space-y-4">
+            <input name="callbackUrl" type="hidden" value={callbackUrl} />
             <label className="grid gap-2 text-sm font-medium">
               E-mail
               <Input name="email" type="email" autoComplete="email" required />

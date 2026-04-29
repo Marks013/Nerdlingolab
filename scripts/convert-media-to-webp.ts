@@ -76,15 +76,21 @@ async function main(): Promise<void> {
 
 async function replaceMediaUrlEverywhere(oldUrl: string, nextUrl: string): Promise<void> {
   const products = await prisma.product.findMany({
-    select: { id: true, images: true }
+    select: { description: true, id: true, images: true }
   });
 
   for (const product of products) {
     const images = replaceJsonString(product.images, oldUrl, nextUrl);
+    const description = product.description.includes(oldUrl)
+      ? product.description.split(oldUrl).join(nextUrl)
+      : product.description;
 
-    if (images.changed) {
+    if (images.changed || description !== product.description) {
       await prisma.product.update({
-        data: { images: images.value as Prisma.InputJsonValue },
+        data: {
+          description,
+          images: images.value as Prisma.InputJsonValue
+        },
         where: { id: product.id }
       });
     }

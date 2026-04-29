@@ -125,7 +125,7 @@ export async function createProduct(formData: FormData): Promise<void> {
       ownerId: createdProduct.id,
       ownerType: "PRODUCT",
       productId: createdProduct.id,
-      urls: productInput.imagesArray
+      urls: collectProductMediaUrls(productInput)
     });
   } catch (error) {
     Sentry.captureException(error);
@@ -233,7 +233,7 @@ export async function updateProduct(productId: string, formData: FormData): Prom
       ownerId: productId,
       ownerType: "PRODUCT",
       productId,
-      urls: productInput.imagesArray
+      urls: collectProductMediaUrls(productInput)
     });
   } catch (error) {
     Sentry.captureException(error);
@@ -349,4 +349,26 @@ async function internalizeProductInputImages<T extends { imagesArray: string[] }
     ...productInput,
     imagesArray: await internalizeExternalMediaUrls(productInput.imagesArray, "PRODUCT")
   };
+}
+
+function collectProductMediaUrls(productInput: {
+  description: string;
+  imagesArray: string[];
+  variantsArray: Array<{ optionValues: Record<string, string> }>;
+}): string[] {
+  return Array.from(
+    new Set([
+      ...productInput.imagesArray,
+      ...extractHtmlMediaUrls(productInput.description),
+      ...productInput.variantsArray
+        .map((variant) => variant.optionValues._imageUrl)
+        .filter((url): url is string => Boolean(url))
+    ])
+  );
+}
+
+function extractHtmlMediaUrls(html: string): string[] {
+  return Array.from(html.matchAll(/\s(?:src|href)=["']([^"']+)["']/gi))
+    .map((match) => match[1]?.trim())
+    .filter((url): url is string => Boolean(url) && !url.startsWith("data:") && !url.startsWith("javascript:"));
 }

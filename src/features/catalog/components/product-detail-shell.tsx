@@ -114,7 +114,10 @@ export function ProductDetailShell({
 
         <section className="manga-panel rounded-lg bg-white p-5 shadow-sm sm:p-8">
           <h2 className="text-2xl font-medium text-black">Descrição</h2>
-          <div className="mt-5 whitespace-pre-line text-base leading-8 text-[#4f5d65]">{description}</div>
+          <div
+            className="mt-5 text-base leading-8 text-[#4f5d65] [&_a]:font-semibold [&_a]:text-primary [&_a]:underline [&_h2]:mb-3 [&_h2]:mt-6 [&_h2]:text-2xl [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:text-xl [&_h3]:font-semibold [&_iframe]:my-5 [&_iframe]:aspect-video [&_iframe]:w-full [&_iframe]:rounded-lg [&_img]:my-5 [&_img]:max-h-[620px] [&_img]:rounded-lg [&_img]:object-contain [&_ol]:ml-6 [&_ol]:list-decimal [&_p]:mb-4 [&_strong]:font-bold [&_ul]:ml-6 [&_ul]:list-disc [&_video]:my-5 [&_video]:w-full [&_video]:rounded-lg"
+            dangerouslySetInnerHTML={{ __html: sanitizeProductDescription(description) }}
+          />
         </section>
         </div>
 
@@ -207,4 +210,14 @@ function normalizeOptionKey(value: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toLowerCase();
+}
+
+function sanitizeProductDescription(value: string): string {
+  return value
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, "")
+    .replace(/\s+on\w+=(["']).*?\1/gi, "")
+    .replace(/\s+on\w+=\S+/gi, "")
+    .replace(/(href|src)=(["'])\s*javascript:[\s\S]*?\2/gi, '$1="#"')
+    .replace(/<iframe\b(?![^>]*(youtube\.com|youtu\.be|player\.vimeo\.com|vimeo\.com))[^>]*>[\s\S]*?<\/iframe>/gi, "");
 }

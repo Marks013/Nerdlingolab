@@ -39,17 +39,14 @@ async function main(): Promise<void> {
 
   for (const product of products) {
     const nextImages = await importUrlList(readImageUrls(product.images), importedUrlMap);
+    const nextDescription = await importHtmlMediaUrls(product.description, importedUrlMap);
 
     await prisma.product.update({
       where: { id: product.id },
-      data: { images: nextImages }
-    });
-    await syncMediaUsages({
-      fieldName: "images",
-      ownerId: product.id,
-      ownerType: "PRODUCT",
-      productId: product.id,
-      urls: nextImages
+      data: {
+        description: nextDescription,
+        images: nextImages
+      }
     });
 
     for (const variant of product.variants) {
@@ -66,6 +63,27 @@ async function main(): Promise<void> {
         data: { optionValues: optionValues as Prisma.InputJsonValue }
       });
     }
+
+    const refreshedVariants = await prisma.productVariant.findMany({
+      select: { optionValues: true },
+      where: { productId: product.id }
+    });
+
+    await syncMediaUsages({
+      fieldName: "images",
+      ownerId: product.id,
+      ownerType: "PRODUCT",
+      productId: product.id,
+      urls: Array.from(
+        new Set([
+          ...nextImages,
+          ...extractHtmlMediaUrls(nextDescription),
+          ...refreshedVariants
+            .map((variant) => normalizeRecord(variant.optionValues)._imageUrl)
+            .filter((url): url is string => typeof url === "string" && url.length > 0)
+        ])
+      )
+    });
   }
 
   const theme = await prisma.storefrontTheme.findUnique({ where: { singletonKey: "default" } });
@@ -128,6 +146,22 @@ async function importUrlList(urls: string[], importedUrlMap: Map<string, string>
   }
 
   return Array.from(new Set(nextUrls));
+}
+
+async function importHtmlMediaUrls(html: string, importedUrlMap: Map<string, string>): Promise<string> {
+  let nextHtml = html;
+  const urls = extractHtmlMediaUrls(html);
+
+  for (const url of urls) {
+    if (!shouldImportUrl(url)) {
+      continue;
+    }
+
+    const nextUrl = await importExternalUrl(url, importedUrlMap);
+    nextHtml = nextHtml.split(url).join(nextUrl);
+  }
+
+  return nextHtml;
 }
 
 async function importSlides(value: unknown, importedUrlMap: Map<string, string>): Promise<unknown> {
@@ -291,6 +325,12 @@ function extractSlideUrls(value: unknown): string[] {
     const record = slide as Record<string, unknown>;
     return [record.desktop, record.mobile, record.src].filter((url): url is string => typeof url === "string");
   });
+}
+
+function extractHtmlMediaUrls(html: string): string[] {
+  return Array.from(html.matchAll(/\s(?:src|href)=["']([^"']+)["']/gi))
+    .map((match) => match[1]?.trim())
+    .filter((url): url is string => Boolean(url) && !url.startsWith("data:") && !url.startsWith("javascript:"));
 }
 
 function getFileName(url: string, objectKey: string): string {

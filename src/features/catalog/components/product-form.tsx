@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { Fragment, useMemo, useRef, useState } from "react";
 import type { Category } from "@/generated/prisma/client";
 import {
   Bold,
@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SafeImage as Image } from "@/components/media/safe-image";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ProductImageUploader } from "@/features/catalog/components/product-image-uploader";
@@ -123,6 +124,7 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
   const firstVariant = variants[0] ?? createVariantRow();
   const totalStock = variants.reduce((sum, variant) => sum + (Number.parseInt(variant.stockQuantity, 10) || 0), 0);
   const activeVariants = variants.filter((variant) => variant.isActive).length;
+  const variantGroups = useMemo(() => groupVariantsByPrimaryOption(variants), [variants]);
   const variantsPayload = useMemo(() => serializeVariants(variants), [variants]);
   const metafieldsPayload = useMemo(() => serializeMetafields(metafields), [metafields]);
 
@@ -373,101 +375,123 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
                 Adicionar variacao
               </Button>
             </div>
-            <div className="mt-4 grid gap-4">
-              {variants.map((variant, index) => (
-                <div className="rounded-lg border bg-muted/20 p-4" key={variant.id}>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm font-semibold">Variacao {index + 1}</p>
-                      <p className="text-xs text-muted-foreground">Preco, estoque, SKU, midia e ate 3 opcoes de vitrine.</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <label className="flex items-center gap-2 text-sm">
-                        <input
-                          checked={variant.isActive}
-                          onChange={(event) => updateVariant(variant.id, { isActive: event.target.checked })}
-                          type="checkbox"
-                        />
-                        Ativa
-                      </label>
-                      <Button onClick={() => duplicateVariant(variant.id)} size="sm" type="button" variant="outline">
-                        Duplicar
-                      </Button>
-                      <Button
-                        aria-label="Remover variacao"
-                        disabled={variants.length === 1}
-                        onClick={() => removeVariant(variant.id)}
-                        size="icon"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                    <Field label="Nome">
-                      <Input value={variant.title} onChange={(event) => updateVariant(variant.id, { title: event.target.value })} required />
-                    </Field>
-                    <Field label="SKU">
-                      <Input value={variant.sku} onChange={(event) => updateVariant(variant.id, { sku: event.target.value })} required />
-                    </Field>
-                    <Field label="Preco">
-                      <Input value={variant.price} onChange={(event) => updateVariant(variant.id, { price: event.target.value })} required />
-                    </Field>
-                    <Field label="Estoque">
-                      <Input min={0} type="number" value={variant.stockQuantity} onChange={(event) => updateVariant(variant.id, { stockQuantity: event.target.value })} />
-                    </Field>
-                    <Field label="Preco comparativo">
-                      <Input value={variant.compareAtPrice} onChange={(event) => updateVariant(variant.id, { compareAtPrice: event.target.value })} />
-                    </Field>
-                    <Field label="Codigo de barras">
-                      <Input value={variant.barcode} onChange={(event) => updateVariant(variant.id, { barcode: event.target.value })} />
-                    </Field>
-                    <Field label="Peso (g)">
-                      <Input min={0} type="number" value={variant.weightGrams} onChange={(event) => updateVariant(variant.id, { weightGrams: event.target.value })} />
-                    </Field>
-                    <Field label="Imagem da variacao">
-                      <Input readOnly value={variant.imageUrl} placeholder="Selecione no modulo Midia" />
-                      <div className="grid gap-2">
-                        <MediaLibraryPicker
-                          accept="image"
-                          buttonLabel="Vincular imagem da Midia"
-                          onSelect={(url) => updateVariant(variant.id, { imageUrl: url })}
-                        />
-                        {variant.imageUrl ? (
-                          <Button onClick={() => updateVariant(variant.id, { imageUrl: "" })} type="button" variant="ghost">
-                            Limpar imagem
-                          </Button>
-                        ) : null}
-                      </div>
-                    </Field>
-                  </div>
-
-                  <div className="mt-4 grid gap-3 lg:grid-cols-3">
-                    {variant.options.map((option, optionIndex) => (
-                      <div className="grid gap-2 rounded-md border bg-background p-3" key={`${variant.id}-${optionIndex}`}>
-                        <span className="text-xs font-semibold text-muted-foreground">Opcao {optionIndex + 1}</span>
-                        <Input
-                          aria-label={`Nome da opcao ${optionIndex + 1}`}
-                          list="product-variant-option-names"
-                          placeholder="Cor"
-                          value={option.name}
-                          onChange={(event) => updateVariantOption(variant.id, optionIndex, { name: event.target.value })}
-                        />
-                        <Input
-                          aria-label={`Valor da opcao ${optionIndex + 1}`}
-                          list="product-variant-option-values"
-                          placeholder="Azul"
-                          value={option.value}
-                          onChange={(event) => updateVariantOption(variant.id, optionIndex, { value: event.target.value })}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+            <div className="mt-4 overflow-x-auto rounded-lg border">
+              <table className="min-w-[980px] w-full border-collapse text-sm">
+                <thead className="bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
+                  <tr>
+                    <th className="w-[330px] px-3 py-2">Variante</th>
+                    <th className="w-[140px] px-3 py-2">Cor</th>
+                    <th className="w-[120px] px-3 py-2">Tamanho</th>
+                    <th className="w-[130px] px-3 py-2">Sexo</th>
+                    <th className="w-[130px] px-3 py-2">Preco</th>
+                    <th className="w-[95px] px-3 py-2">Estoque</th>
+                    <th className="w-[110px] px-3 py-2">Status</th>
+                    <th className="w-[120px] px-3 py-2 text-right">Acoes</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {variantGroups.map((group) => (
+                    <Fragment key={group.key}>
+                      <tr className="bg-muted/25">
+                        <td className="px-3 py-2 font-semibold" colSpan={8}>
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex size-4 rounded-full border" style={{ backgroundColor: getSwatchColor(group.label) }} />
+                            <span>{group.label}</span>
+                            <span className="text-xs font-normal text-muted-foreground">
+                              {group.variants.length} variante{group.variants.length === 1 ? "" : "s"}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                      {group.variants.map((variant) => (
+                        <tr className="align-top" key={variant.id}>
+                          <td className="px-3 py-3">
+                            <div className="flex gap-3">
+                              <VariantThumbnail imageUrl={variant.imageUrl} title={variant.title} />
+                              <div className="grid min-w-0 flex-1 gap-2">
+                                <Input className="h-9" value={variant.title} onChange={(event) => updateVariant(variant.id, { title: event.target.value })} required />
+                                <Input className="h-9 font-mono text-xs" value={variant.sku} onChange={(event) => updateVariant(variant.id, { sku: event.target.value })} required />
+                                <details className="rounded-md border bg-muted/20 p-2">
+                                  <summary className="cursor-pointer text-xs font-semibold text-muted-foreground">Midia e campos avancados</summary>
+                                  <div className="mt-3 grid gap-3 md:grid-cols-3">
+                                    <Field label="Preco comparativo">
+                                      <Input value={variant.compareAtPrice} onChange={(event) => updateVariant(variant.id, { compareAtPrice: event.target.value })} />
+                                    </Field>
+                                    <Field label="Codigo de barras">
+                                      <Input value={variant.barcode} onChange={(event) => updateVariant(variant.id, { barcode: event.target.value })} />
+                                    </Field>
+                                    <Field label="Peso (g)">
+                                      <Input min={0} type="number" value={variant.weightGrams} onChange={(event) => updateVariant(variant.id, { weightGrams: event.target.value })} />
+                                    </Field>
+                                    <div className="grid gap-2 md:col-span-3">
+                                      <Input readOnly value={variant.imageUrl} placeholder="Imagem vinculada pela biblioteca Midia" />
+                                      <div className="flex flex-wrap gap-2">
+                                        <MediaLibraryPicker
+                                          accept="image"
+                                          buttonLabel="Vincular imagem"
+                                          onSelect={(url) => updateVariant(variant.id, { imageUrl: url })}
+                                        />
+                                        {variant.imageUrl ? (
+                                          <Button onClick={() => updateVariant(variant.id, { imageUrl: "" })} type="button" variant="ghost">
+                                            Limpar imagem
+                                          </Button>
+                                        ) : null}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </details>
+                              </div>
+                            </div>
+                          </td>
+                          {[0, 1, 2].map((optionIndex) => (
+                            <td className="px-3 py-3" key={`${variant.id}-${optionIndex}`}>
+                              <CompactOptionInput
+                                option={variant.options[optionIndex]}
+                                optionIndex={optionIndex}
+                                variantId={variant.id}
+                                onChange={updateVariantOption}
+                              />
+                            </td>
+                          ))}
+                          <td className="px-3 py-3">
+                            <Input className="h-9" value={variant.price} onChange={(event) => updateVariant(variant.id, { price: event.target.value })} required />
+                          </td>
+                          <td className="px-3 py-3">
+                            <Input className="h-9" min={0} type="number" value={variant.stockQuantity} onChange={(event) => updateVariant(variant.id, { stockQuantity: event.target.value })} />
+                          </td>
+                          <td className="px-3 py-3">
+                            <label className="flex items-center gap-2 text-sm">
+                              <input
+                                checked={variant.isActive}
+                                onChange={(event) => updateVariant(variant.id, { isActive: event.target.checked })}
+                                type="checkbox"
+                              />
+                              Ativa
+                            </label>
+                          </td>
+                          <td className="px-3 py-3">
+                            <div className="flex justify-end gap-1">
+                              <Button aria-label="Duplicar variacao" onClick={() => duplicateVariant(variant.id)} size="sm" type="button" variant="outline">
+                                Duplicar
+                              </Button>
+                              <Button
+                                aria-label="Remover variacao"
+                                disabled={variants.length === 1}
+                                onClick={() => removeVariant(variant.id)}
+                                size="icon"
+                                type="button"
+                                variant="ghost"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </section>
 
@@ -484,52 +508,71 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
                 Adicionar campo
               </Button>
             </div>
-            <div className="mt-4 grid gap-3">
+            <div className="mt-4 overflow-x-auto rounded-lg border">
               {metafields.length === 0 ? (
-                <div className="rounded-md border border-dashed p-5 text-sm text-muted-foreground">
+                <div className="p-5 text-sm text-muted-foreground">
                   Nenhum metacampo cadastrado. Adicione campos para especificacoes, filtros, SEO ou dados internos.
                 </div>
               ) : null}
-              {metafields.map((field) => (
-                <div className="grid gap-3 rounded-lg border bg-muted/20 p-4 lg:grid-cols-[1fr_1fr_160px_2fr_auto]" key={field.id}>
-                  <Field label="Namespace">
-                    <Input
-                      list="product-metafield-namespaces"
-                      value={field.namespace}
-                      onChange={(event) => updateMetafield(field.id, { namespace: event.target.value })}
-                      placeholder="custom"
-                    />
-                  </Field>
-                  <Field label="Chave">
-                    <Input
-                      list="product-metafield-keys"
-                      value={field.key}
-                      onChange={(event) => updateMetafield(field.id, { key: event.target.value })}
-                      placeholder="fabric"
-                    />
-                    {field.namespace === "admin" ? (
-                      <span className="text-xs text-muted-foreground">Uso interno do admin.</span>
-                    ) : null}
-                  </Field>
-                  <Field label="Tipo">
-                    <select
-                      className="h-10 rounded-md border bg-background px-3 text-sm"
-                      onChange={(event) => updateMetafield(field.id, { type: event.target.value })}
-                      value={field.type}
-                    >
-                      {metafieldTypes.map((type) => (
-                        <option key={type} value={type}>{type}</option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Valor">
-                    <Textarea className="min-h-10" value={field.value} onChange={(event) => updateMetafield(field.id, { value: event.target.value })} />
-                  </Field>
-                  <Button aria-label="Remover metacampo" className="self-end" onClick={() => removeMetafield(field.id)} size="icon" type="button" variant="ghost">
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              ))}
+              {metafields.length > 0 ? (
+                <table className="min-w-[860px] w-full border-collapse text-sm">
+                  <thead className="bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
+                    <tr>
+                      <th className="w-[150px] px-3 py-2">Namespace</th>
+                      <th className="w-[190px] px-3 py-2">Chave</th>
+                      <th className="w-[150px] px-3 py-2">Tipo</th>
+                      <th className="px-3 py-2">Valor</th>
+                      <th className="w-[54px] px-3 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {metafields.map((field) => (
+                      <tr className="align-top" key={field.id}>
+                        <td className="px-3 py-3">
+                          <Input
+                            className="h-9"
+                            list="product-metafield-namespaces"
+                            value={field.namespace}
+                            onChange={(event) => updateMetafield(field.id, { namespace: event.target.value })}
+                            placeholder="custom"
+                          />
+                          {field.namespace === "admin" ? (
+                            <span className="mt-1 block text-xs text-muted-foreground">Somente admin</span>
+                          ) : null}
+                        </td>
+                        <td className="px-3 py-3">
+                          <Input
+                            className="h-9"
+                            list="product-metafield-keys"
+                            value={field.key}
+                            onChange={(event) => updateMetafield(field.id, { key: event.target.value })}
+                            placeholder="fabric"
+                          />
+                        </td>
+                        <td className="px-3 py-3">
+                          <select
+                            className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+                            onChange={(event) => updateMetafield(field.id, { type: event.target.value })}
+                            value={field.type}
+                          >
+                            {metafieldTypes.map((type) => (
+                              <option key={type} value={type}>{type}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-3 py-3">
+                          <Textarea className="min-h-9 resize-y" value={field.value} onChange={(event) => updateMetafield(field.id, { value: event.target.value })} />
+                        </td>
+                        <td className="px-3 py-3">
+                          <Button aria-label="Remover metacampo" onClick={() => removeMetafield(field.id)} size="icon" type="button" variant="ghost">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : null}
             </div>
           </section>
         </div>
@@ -589,6 +632,53 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
   );
 }
 
+function VariantThumbnail({ imageUrl, title }: { imageUrl: string; title: string }): React.ReactElement {
+  return (
+    <div className="relative size-14 shrink-0 overflow-hidden rounded-md border bg-muted">
+      {imageUrl ? (
+        <Image alt={title || "Imagem da variacao"} className="object-cover" fill sizes="56px" src={imageUrl} />
+      ) : (
+        <span className="grid h-full place-items-center text-muted-foreground">
+          <ImageIcon className="h-5 w-5" />
+        </span>
+      )}
+    </div>
+  );
+}
+
+function CompactOptionInput({
+  onChange,
+  option,
+  optionIndex,
+  variantId
+}: {
+  onChange: (variantId: string, optionIndex: number, patch: Partial<VariantOptionRow>) => void;
+  option: VariantOptionRow;
+  optionIndex: number;
+  variantId: string;
+}): React.ReactElement {
+  return (
+    <div className="grid gap-2">
+      <Input
+        aria-label={`Nome da opcao ${optionIndex + 1}`}
+        className="h-8 text-xs"
+        list="product-variant-option-names"
+        placeholder={optionIndex === 0 ? "Cor" : optionIndex === 1 ? "Tamanho" : "Sexo"}
+        value={option.name}
+        onChange={(event) => onChange(variantId, optionIndex, { name: event.target.value })}
+      />
+      <Input
+        aria-label={`Valor da opcao ${optionIndex + 1}`}
+        className="h-9"
+        list="product-variant-option-values"
+        placeholder={optionIndex === 0 ? "Azul" : optionIndex === 1 ? "M" : "Unissex"}
+        value={option.value}
+        onChange={(event) => onChange(variantId, optionIndex, { value: event.target.value })}
+      />
+    </div>
+  );
+}
+
 function Field({ children, label }: { children: React.ReactNode; label: string }): React.ReactElement {
   return (
     <label className="grid gap-2 text-sm font-medium">
@@ -613,14 +703,14 @@ function EditorButton({
     <Button
       aria-label={label}
       aria-pressed={pressed}
-      className="size-9"
+      className="h-9 gap-1 px-2"
       onClick={onClick}
-      size="icon"
       title={label}
       type="button"
       variant={pressed ? "default" : "ghost"}
     >
       <Icon className="h-4 w-4" />
+      <span className="hidden text-xs sm:inline">{label}</span>
     </Button>
   );
 }
@@ -714,6 +804,55 @@ function getOptionValues(value: unknown): Record<string, string> {
       .filter(([, optionValue]) => optionValue !== null && optionValue !== undefined)
       .map(([name, optionValue]) => [name, String(optionValue)])
   );
+}
+
+function groupVariantsByPrimaryOption(variants: VariantFormRow[]): Array<{ key: string; label: string; variants: VariantFormRow[] }> {
+  const groups = new Map<string, VariantFormRow[]>();
+
+  for (const variant of variants) {
+    const label = getVariantOptionValue(variant, "Cor") || "Sem cor";
+    groups.set(label, [...(groups.get(label) ?? []), variant]);
+  }
+
+  return [...groups.entries()].map(([label, groupVariants]) => ({
+    key: label,
+    label,
+    variants: groupVariants
+  }));
+}
+
+function getVariantOptionValue(variant: VariantFormRow, name: string): string {
+  const target = normalizeOptionName(name);
+  const option = variant.options.find((item) => normalizeOptionName(item.name) === target);
+
+  return option?.value.trim() ?? "";
+}
+
+function normalizeOptionName(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function getSwatchColor(value: string): string {
+  const colors: Record<string, string> = {
+    amarelo: "#fde68a",
+    azul: "#1d70d6",
+    bege: "#e8d6ad",
+    branco: "#ffffff",
+    cinza: "#9ca3af",
+    creme: "#fff7d6",
+    marrom: "#8b5e34",
+    preto: "#111827",
+    rosa: "#f9a8d4",
+    roxo: "#7c3aed",
+    verde: "#22c55e",
+    vermelho: "#ef4444"
+  };
+
+  return colors[normalizeOptionName(value)] ?? "#e5e7eb";
 }
 
 function serializeVariants(variants: VariantFormRow[]): string {

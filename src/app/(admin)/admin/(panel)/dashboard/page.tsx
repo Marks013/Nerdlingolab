@@ -1,4 +1,4 @@
-import Link from "next/link";
+/* eslint-disable @next/next/no-html-link-for-pages */
 import { AlertTriangle, Boxes, CircleDollarSign, Gift, Headphones, MailCheck, ShoppingCart, TicketPercent } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -92,7 +92,7 @@ export default async function AdminDashboardPage(): Promise<React.ReactElement> 
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {metrics.map((metric) => (
-            <Link className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href={metric.href} key={metric.label}>
+            <a className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href={metric.href} key={metric.label}>
               <Card className="h-full transition hover:border-primary">
                 <CardHeader>
                   <metric.icon className="h-5 w-5 text-primary" />
@@ -101,7 +101,7 @@ export default async function AdminDashboardPage(): Promise<React.ReactElement> 
                   <p className="text-sm text-muted-foreground">{metric.detail}</p>
                 </CardHeader>
               </Card>
-            </Link>
+            </a>
           ))}
         </div>
 
@@ -113,16 +113,16 @@ export default async function AdminDashboardPage(): Promise<React.ReactElement> 
                 <CardDescription>Status financeiro e total dos últimos pedidos.</CardDescription>
               </div>
               <Button asChild variant="outline" size="sm">
-                <Link href="/admin/pedidos">Ver pedidos</Link>
+                <a href="/admin/pedidos">Ver pedidos</a>
               </Button>
             </CardHeader>
             <CardContent>
               <div className="divide-y rounded-lg border">
                 {dashboardMetrics.recentOrders.map((order) => (
                   <div className="grid gap-2 p-3 text-sm md:grid-cols-[120px_minmax(0,1fr)_130px_150px]" key={order.id}>
-                    <Link className="font-mono font-semibold text-primary" href={`/admin/pedidos/${order.id}`}>
+                    <a className="font-mono font-semibold text-primary" href={`/admin/pedidos/${order.id}`}>
                       {order.orderNumber}
-                    </Link>
+                    </a>
                     <div className="min-w-0">
                       <p className="truncate font-medium">{order.email}</p>
                       <p className="text-muted-foreground">{formatDateTime(order.createdAt)}</p>
@@ -147,9 +147,9 @@ export default async function AdminDashboardPage(): Promise<React.ReactElement> 
               <div className="divide-y rounded-lg border">
                 {dashboardMetrics.lowStockVariants.map((variant) => (
                   <div className="grid gap-1 p-3 text-sm" key={variant.sku}>
-                    <Link className="font-semibold text-primary" href={`/admin/produtos/${variant.product.id}/editar`}>
+                    <a className="font-semibold text-primary" href={`/admin/produtos/${variant.product.id}/editar`}>
                       {variant.product.title}
-                    </Link>
+                    </a>
                     <p className="text-muted-foreground">
                       {variant.title} · SKU {variant.sku}
                     </p>

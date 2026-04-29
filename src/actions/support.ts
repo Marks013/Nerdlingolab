@@ -70,7 +70,7 @@ export async function replySupportTicket(formData: FormData): Promise<void> {
       where: { id: reply.id }
     }),
     prisma.supportTicket.update({
-      data: { status: SupportTicketStatus.IN_PROGRESS },
+      data: { status: SupportTicketStatus.CLOSED },
       where: { id: ticket.id }
     })
   ]);

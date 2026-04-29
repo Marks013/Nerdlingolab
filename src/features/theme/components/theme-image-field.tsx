@@ -1,10 +1,10 @@
 "use client";
 
-import { ImagePlus } from "lucide-react";
+import { ImagePlus, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 
+import { SafeImage as Image } from "@/components/media/safe-image";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { MediaLibraryPicker } from "@/features/media/components/media-library-picker";
 import { parseFriendlyResponse } from "@/lib/http/friendly-response";
 
@@ -44,7 +44,7 @@ export function ThemeImageField({ defaultValue = "", label, name }: ThemeImageFi
     });
     const parsedResponse = await parseFriendlyResponse<UploadResponse>(
       response,
-      "Não foi possível enviar a imagem do tema."
+      "Nao foi possivel enviar a imagem do tema."
     );
 
     setIsUploading(false);
@@ -59,24 +59,38 @@ export function ThemeImageField({ defaultValue = "", label, name }: ThemeImageFi
   }
 
   return (
-    <label className="grid min-w-0 gap-2 text-sm font-medium">
-      {label}
-      <div className="flex min-w-0 gap-2">
-        <Input
-          className="min-w-0"
-          name={name}
-          onChange={(event) => setValue(event.target.value)}
-          value={value}
-        />
-        <Button
-          aria-label={`Enviar ${label}`}
-          disabled={isUploading}
-          onClick={() => fileInputRef.current?.click()}
-          type="button"
-          variant="outline"
-        >
-          <ImagePlus className="h-4 w-4" />
-        </Button>
+    <div className="grid min-w-0 gap-2 text-sm font-medium">
+      <span>{label}</span>
+      <input name={name} type="hidden" value={value} />
+      <div className="grid gap-3 rounded-lg border bg-muted/20 p-3">
+        <div className="relative aspect-[16/7] overflow-hidden rounded-md bg-muted">
+          {value ? (
+            <Image alt={label} className="object-cover" fill sizes="360px" src={value} />
+          ) : (
+            <div className="grid h-full place-items-center px-3 text-center text-xs text-muted-foreground">
+              Nenhuma imagem selecionada
+            </div>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            aria-label={`Enviar ${label}`}
+            disabled={isUploading}
+            onClick={() => fileInputRef.current?.click()}
+            type="button"
+            variant="outline"
+          >
+            <ImagePlus className="mr-2 h-4 w-4" />
+            {isUploading ? "Enviando" : "Upload"}
+          </Button>
+          <MediaLibraryPicker buttonLabel="Biblioteca" onSelect={setValue} />
+          {value ? (
+            <Button onClick={() => setValue("")} type="button" variant="outline">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Limpar
+            </Button>
+          ) : null}
+        </div>
         <input
           accept="image/jpeg,image/png,image/webp,image/gif"
           className="hidden"
@@ -84,12 +98,8 @@ export function ThemeImageField({ defaultValue = "", label, name }: ThemeImageFi
           ref={fileInputRef}
           type="file"
         />
+        {message ? <span className="text-xs text-destructive">{message}</span> : null}
       </div>
-      <MediaLibraryPicker onSelect={setValue} />
-      <span className="text-xs text-muted-foreground">
-        O envio aceita JPG, JPEG, PNG, GIF e WebP, mas salva a imagem final em WebP.
-      </span>
-      {message ? <span className="text-xs text-destructive">{message}</span> : null}
-    </label>
+    </div>
   );
 }

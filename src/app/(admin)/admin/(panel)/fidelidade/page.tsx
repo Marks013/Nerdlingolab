@@ -1,4 +1,5 @@
-import { Award, CalendarDays, Coins, Hourglass, Settings, TicketPercent, UserRoundPlus } from "lucide-react";
+import { Award, CalendarDays, Coins, Hourglass, Search, Settings, TicketPercent, UserRoundPlus } from "lucide-react";
+import Link from "next/link";
 
 import {
   adjustCustomerNerdcoins,
@@ -16,42 +17,53 @@ import { getReferralStatusLabel } from "@/lib/loyalty/referrals";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminLoyaltyPage(): Promise<React.ReactElement> {
-  const dashboard = await getAdminLoyaltyDashboard();
+type LoyaltyDashboard = Awaited<ReturnType<typeof getAdminLoyaltyDashboard>>;
+type LoyaltyCustomer = LoyaltyDashboard["customers"][number];
+
+export default async function AdminLoyaltyPage({
+  searchParams
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<React.ReactElement> {
+  const resolvedSearchParams = await searchParams;
+  const search = readSearchParam(resolvedSearchParams?.busca) ?? "";
+  const dashboard = await getAdminLoyaltyDashboard(search);
   const settings = dashboard.settings;
+  const routine = readSearchParam(resolvedSearchParams?.routine);
+  const routineCount = readSearchParam(resolvedSearchParams?.count) ?? "0";
 
   return (
     <main className="mx-auto w-full max-w-7xl overflow-x-hidden px-4 py-8 sm:px-6 lg:px-8">
       <div>
         <p className="text-sm text-muted-foreground">Relacionamento</p>
         <h1 className="text-3xl font-bold tracking-normal">Nerdcoins</h1>
+        <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+          Saldo, historico, cupons, indicacoes e rotinas administrativas do programa.
+        </p>
       </div>
+
+      {routine ? <SuccessMessage>{formatRoutineMessage(routine, routineCount)}</SuccessMessage> : null}
+      {readSearchParam(resolvedSearchParams?.adjust) === "saved" ? (
+        <SuccessMessage>Ajuste manual aplicado e registrado no ledger.</SuccessMessage>
+      ) : null}
 
       <section className="mt-6 grid gap-4 md:grid-cols-4">
         <MetricCard icon={Coins} label="Membros" value={dashboard.memberCount.toString()} />
         <MetricCard icon={Award} label="Pontos gerados" value={dashboard.pointsEarned.toString()} />
         <MetricCard icon={TicketPercent} label="Pontos usados" value={dashboard.pointsRedeemed.toString()} />
-        <MetricCard
-          icon={Settings}
-          label="Desconto concedido"
-          value={formatCurrency(dashboard.redeemedOrders._sum.loyaltyDiscountCents ?? 0)}
-        />
+        <MetricCard icon={Settings} label="Desconto concedido" value={formatCurrency(dashboard.redeemedOrders._sum.loyaltyDiscountCents ?? 0)} />
       </section>
-      <section className="mt-4 grid gap-4 md:grid-cols-2">
-        <MetricCard icon={Award} label="Indicações pendentes" value={dashboard.referralsPending.toString()} />
-        <MetricCard icon={Award} label="Indicações recompensadas" value={dashboard.referralsRewarded.toString()} />
-        <MetricCard
-          icon={UserRoundPlus}
-          label="Clientes sem código"
-          value={dashboard.customersWithoutReferralCode.toString()}
-        />
+      <section className="mt-4 grid gap-4 md:grid-cols-3">
+        <MetricCard icon={Award} label="Indicacoes pendentes" value={dashboard.referralsPending.toString()} />
+        <MetricCard icon={Award} label="Indicacoes recompensadas" value={dashboard.referralsRewarded.toString()} />
+        <MetricCard icon={UserRoundPlus} label="Clientes sem codigo" value={dashboard.customersWithoutReferralCode.toString()} />
       </section>
 
       <section className="mt-6 grid min-w-0 gap-6 2xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
         <Card className="min-w-0">
           <CardHeader>
-            <CardTitle>Configurações</CardTitle>
-            <CardDescription>Pontos, resgate, validade de cupons e níveis VIP.</CardDescription>
+            <CardTitle>Configuracoes</CardTitle>
+            <CardDescription>Pontos, resgate, validade de cupons e niveis VIP.</CardDescription>
           </CardHeader>
           <CardContent>
             <form action={updateLoyaltySettings} className="grid gap-4">
@@ -61,29 +73,29 @@ export default async function AdminLoyaltyPage(): Promise<React.ReactElement> {
               </label>
               <div className="grid gap-3 sm:grid-cols-2">
                 <NumberField defaultValue={settings.pointsPerReal} label="Pontos por R$ 1" name="pointsPerReal" />
-                <NumberField defaultValue={settings.signupBonusPoints} label="Bônus de cadastro" name="signupBonusPoints" />
-                <NumberField defaultValue={settings.birthdayBonusPoints} label="Bônus de aniversário" name="birthdayBonusPoints" />
-                <NumberField defaultValue={settings.referralInviterBonusPoints} label="Bônus para quem indica" name="referralInviterBonusPoints" />
-                <NumberField defaultValue={settings.referralInviteeBonusPoints} label="Bônus para convidado" name="referralInviteeBonusPoints" />
-                <NumberField defaultValue={settings.referralMinOrderCents} label="Pedido mínimo indicado" name="referralMinOrderCents" />
+                <NumberField defaultValue={settings.signupBonusPoints} label="Bonus de cadastro" name="signupBonusPoints" />
+                <NumberField defaultValue={settings.birthdayBonusPoints} label="Bonus de aniversario" name="birthdayBonusPoints" />
+                <NumberField defaultValue={settings.referralInviterBonusPoints} label="Bonus para quem indica" name="referralInviterBonusPoints" />
+                <NumberField defaultValue={settings.referralInviteeBonusPoints} label="Bonus para convidado" name="referralInviteeBonusPoints" />
+                <NumberField defaultValue={settings.referralMinOrderCents} label="Pedido minimo indicado" name="referralMinOrderCents" />
                 <NumberField defaultValue={settings.redeemCentsPerPoint} label="Centavos por ponto" name="redeemCentsPerPoint" />
-                <NumberField defaultValue={settings.minRedeemPoints} label="Mínimo de resgate" name="minRedeemPoints" />
-                <NumberField defaultValue={settings.maxRedeemPoints ?? ""} label="Máximo por resgate" name="maxRedeemPoints" />
+                <NumberField defaultValue={settings.minRedeemPoints} label="Minimo de resgate" name="minRedeemPoints" />
+                <NumberField defaultValue={settings.maxRedeemPoints ?? ""} label="Maximo por resgate" name="maxRedeemPoints" />
                 <NumberField defaultValue={settings.couponExpiresInDays} label="Validade do cupom" name="couponExpiresInDays" />
                 <NumberField defaultValue={settings.pointsExpireInDays ?? ""} label="Validade dos pontos" name="pointsExpireInDays" />
               </div>
               <div className="grid gap-3 rounded-lg border p-3">
-                <p className="text-sm font-semibold">Níveis VIP</p>
+                <p className="text-sm font-semibold">Niveis VIP</p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <NumberField defaultValue={settings.chuninOrderThreshold} label="Chunin pedidos" name="chuninOrderThreshold" />
                   <NumberField defaultValue={settings.chuninSpendThresholdCents} label="Chunin gasto em centavos" name="chuninSpendThresholdCents" />
-                  <NumberField defaultValue={settings.chuninMultiplier} label="Chunin bônus %" name="chuninMultiplier" />
+                  <NumberField defaultValue={settings.chuninMultiplier} label="Chunin bonus %" name="chuninMultiplier" />
                   <NumberField defaultValue={settings.joninOrderThreshold} label="Jonin pedidos" name="joninOrderThreshold" />
                   <NumberField defaultValue={settings.joninSpendThresholdCents} label="Jonin gasto em centavos" name="joninSpendThresholdCents" />
-                  <NumberField defaultValue={settings.joninMultiplier} label="Jonin bônus %" name="joninMultiplier" />
+                  <NumberField defaultValue={settings.joninMultiplier} label="Jonin bonus %" name="joninMultiplier" />
                   <NumberField defaultValue={settings.hokageOrderThreshold} label="Hokage pedidos" name="hokageOrderThreshold" />
                   <NumberField defaultValue={settings.hokageSpendThresholdCents} label="Hokage gasto em centavos" name="hokageSpendThresholdCents" />
-                  <NumberField defaultValue={settings.hokageMultiplier} label="Hokage bônus %" name="hokageMultiplier" />
+                  <NumberField defaultValue={settings.hokageMultiplier} label="Hokage bonus %" name="hokageMultiplier" />
                 </div>
               </div>
               <label className="flex items-center gap-2 text-sm">
@@ -92,7 +104,7 @@ export default async function AdminLoyaltyPage(): Promise<React.ReactElement> {
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input defaultChecked={settings.showPendingPoints} name="showPendingPoints" type="checkbox" />
-                Mostrar previsão de pontos
+                Mostrar previsao de pontos
               </label>
               <Button type="submit">Salvar fidelidade</Button>
             </form>
@@ -103,41 +115,26 @@ export default async function AdminLoyaltyPage(): Promise<React.ReactElement> {
           <Card className="min-w-0">
             <CardHeader>
               <CardTitle>Rotinas do programa</CardTitle>
-              <CardDescription>Processos idempotentes: repetir não duplica pontos nem cupons.</CardDescription>
+              <CardDescription>Processos idempotentes com retorno de conclusao no painel.</CardDescription>
             </CardHeader>
-            <CardContent className="grid min-w-0 gap-3 sm:grid-cols-2">
-              <form action={grantBirthdayNerdcoins} className="min-w-0">
-                <Button className="w-full min-w-0 justify-start gap-2 whitespace-normal text-left" type="submit" variant="outline">
-                  <CalendarDays className="h-4 w-4" />
-                  Aniversários de hoje
-                </Button>
-              </form>
-              <form action={expireEligibleNerdcoins} className="min-w-0">
-                <Button className="w-full min-w-0 justify-start gap-2 whitespace-normal text-left" type="submit" variant="outline">
-                  <Hourglass className="h-4 w-4" />
-                  Expirar pontos vencidos
-                </Button>
-              </form>
-              <form action={backfillReferralCodes} className="min-w-0">
-                <Button className="w-full min-w-0 justify-start gap-2 whitespace-normal text-left" type="submit" variant="outline">
-                  <UserRoundPlus className="h-4 w-4" />
-                  Gerar códigos de indicação faltantes
-                </Button>
-              </form>
+            <CardContent className="grid min-w-0 gap-3 sm:grid-cols-3">
+              <RoutineButton action={grantBirthdayNerdcoins} icon={CalendarDays} label="Aniversarios de hoje" />
+              <RoutineButton action={expireEligibleNerdcoins} icon={Hourglass} label="Expirar pontos vencidos" />
+              <RoutineButton action={backfillReferralCodes} icon={UserRoundPlus} label="Gerar codigos faltantes" />
             </CardContent>
           </Card>
 
           <Card className="min-w-0">
             <CardHeader>
               <CardTitle>Ajuste manual</CardTitle>
-              <CardDescription>Use apenas para correções, bonificações e atendimento.</CardDescription>
+              <CardDescription>Use apenas para correcoes, bonificacoes e atendimento.</CardDescription>
             </CardHeader>
             <CardContent>
               <form action={adjustCustomerNerdcoins} className="grid gap-3 md:grid-cols-[1fr_140px_1fr_auto]">
                 <select className="h-10 rounded-md border bg-background px-3 text-sm" name="userId" required>
                   {dashboard.customers.map((customer) => (
                     <option key={customer.id} value={customer.id}>
-                      {customer.name ?? customer.email}
+                      {customer.name ?? customer.email} - {customer.loyaltyPoints?.balance ?? 0} pts
                     </option>
                   ))}
                 </select>
@@ -150,94 +147,23 @@ export default async function AdminLoyaltyPage(): Promise<React.ReactElement> {
 
           <Card className="min-w-0">
             <CardHeader>
-              <CardTitle>Clientes</CardTitle>
-              <CardDescription>Saldo, nível, pedidos aprovados e gasto acumulado.</CardDescription>
+              <CardTitle>Clientes Nerdcoins</CardTitle>
+              <CardDescription>Pesquise por nome, e-mail ou codigo de indicacao e abra o historico individual.</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] text-left text-sm">
-                  <thead className="border-b text-muted-foreground">
-                    <tr>
-                      <th className="py-3 pr-4">Cliente</th>
-                      <th className="py-3 pr-4">Saldo</th>
-                      <th className="py-3 pr-4">Nível</th>
-                      <th className="py-3 pr-4">Pedidos</th>
-                      <th className="py-3">Gasto</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {dashboard.customers.map((customer) => (
-                      <tr key={customer.id}>
-                        <td className="py-3 pr-4">
-                          <p className="font-semibold">{customer.name ?? "Sem nome"}</p>
-                          <p className="text-muted-foreground">{customer.email}</p>
-                        </td>
-                        <td className="py-3 pr-4">{customer.loyaltyPoints?.balance ?? 0}</td>
-                        <td className="py-3 pr-4">{customer.loyaltyPoints?.tier ?? "GENIN"}</td>
-                        <td className="py-3 pr-4">{customer.orders.length}</td>
-                        <td className="py-3">
-                          {formatCurrency(customer.orders.reduce((sum, order) => sum + order.totalCents, 0))}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="min-w-0">
-            <CardHeader>
-              <CardTitle>Cupons Nerdcoins</CardTitle>
-              <CardDescription>Últimos cupons pessoais gerados por clientes.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="divide-y rounded-lg border">
-                {dashboard.generatedCoupons.map((coupon) => (
-                  <div className="grid gap-1 p-3 text-sm sm:grid-cols-[1fr_120px_140px]" key={coupon.id}>
-                    <div>
-                      <p className="font-mono font-semibold">{coupon.code}</p>
-                      <p className="text-muted-foreground">
-                        {coupon.assignedUser?.name ?? coupon.assignedUser?.email ?? "Cliente"}
-                      </p>
-                    </div>
-                    <p>{formatCurrency(coupon.value)}</p>
-                    <p className="text-muted-foreground">{coupon.usedCount > 0 ? "Usado" : formatDateTime(coupon.expiresAt)}</p>
-                  </div>
+            <CardContent className="grid gap-4">
+              <form className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+                <label className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input className="pl-9" defaultValue={search} name="busca" placeholder="Buscar usuario, e-mail ou codigo" />
+                </label>
+                <Button type="submit" variant="secondary">Pesquisar</Button>
+              </form>
+              <div className="grid gap-3">
+                {dashboard.customers.map((customer) => (
+                  <LoyaltyCustomerPanel customer={customer} key={customer.id} />
                 ))}
-                {dashboard.generatedCoupons.length === 0 ? (
-                  <p className="p-3 text-sm text-muted-foreground">Nenhum cupom pessoal gerado ainda.</p>
-                ) : null}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="min-w-0">
-            <CardHeader>
-              <CardTitle>Indicações recentes</CardTitle>
-              <CardDescription>Convites, pedidos qualificadores e status de recompensa.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="divide-y rounded-lg border">
-                {dashboard.recentReferrals.map((referral) => (
-                  <div className="grid gap-1 p-3 text-sm md:grid-cols-[1fr_140px_180px]" key={referral.id}>
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold">
-                        {referral.inviter.name ?? referral.inviter.email} indicou{" "}
-                        {referral.invitee.name ?? referral.invitee.email}
-                      </p>
-                      <p className="text-muted-foreground">
-                        {referral.qualifyingOrder
-                          ? `${referral.qualifyingOrder.orderNumber} · ${formatCurrency(referral.qualifyingOrder.totalCents)}`
-                          : "Aguardando primeiro pedido qualificado"}
-                      </p>
-                    </div>
-                    <p>{getReferralStatusLabel(referral.status)}</p>
-                    <p className="text-muted-foreground">{formatDateTime(referral.createdAt)}</p>
-                  </div>
-                ))}
-                {dashboard.recentReferrals.length === 0 ? (
-                  <p className="p-3 text-sm text-muted-foreground">Nenhuma indicação registrada ainda.</p>
+                {dashboard.customers.length === 0 ? (
+                  <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">Nenhum usuario encontrado.</p>
                 ) : null}
               </div>
             </CardContent>
@@ -245,29 +171,164 @@ export default async function AdminLoyaltyPage(): Promise<React.ReactElement> {
         </div>
       </section>
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Histórico recente</CardTitle>
-          <CardDescription>Ledger auditável de ganhos, resgates, ajustes e expirações.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="divide-y rounded-lg border">
-            {dashboard.recentActivity.map((entry) => (
-              <div className="grid gap-1 p-3 text-sm md:grid-cols-[1fr_120px_160px]" key={entry.id}>
-                <div>
-                  <p className="font-medium">{entry.user.name ?? entry.user.email}</p>
-                  <p className="text-muted-foreground">{entry.reason}</p>
+      <section className="mt-6 grid gap-6 xl:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Indicacoes recentes</CardTitle>
+            <CardDescription>Quem indicou quem, pedido qualificador e pontos de recompensa.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y rounded-lg border">
+              {dashboard.recentReferrals.map((referral) => (
+                <div className="grid gap-1 p-3 text-sm md:grid-cols-[1fr_150px_180px]" key={referral.id}>
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">
+                      {referral.inviter.name ?? referral.inviter.email} indicou {referral.invitee.name ?? referral.invitee.email}
+                    </p>
+                    <p className="text-muted-foreground">
+                      Ganhou {referral.inviterRewardPoints} pts / convidado {referral.inviteeRewardPoints} pts
+                    </p>
+                  </div>
+                  <p>{getReferralStatusLabel(referral.status)}</p>
+                  <p className="text-muted-foreground">{formatDateTime(referral.createdAt)}</p>
                 </div>
-                <p className={entry.pointsDelta >= 0 ? "text-emerald-700" : "text-destructive"}>
+              ))}
+              {dashboard.recentReferrals.length === 0 ? <EmptyRow>Nenhuma indicacao registrada ainda.</EmptyRow> : null}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Historico recente</CardTitle>
+            <CardDescription>Ledger auditavel de ganhos, resgates, ajustes e expiracoes.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y rounded-lg border">
+              {dashboard.recentActivity.map((entry) => (
+                <div className="grid gap-1 p-3 text-sm md:grid-cols-[1fr_120px_160px]" key={entry.id}>
+                  <div>
+                    <p className="font-medium">{entry.user.name ?? entry.user.email}</p>
+                    <p className="text-muted-foreground">{entry.reason}</p>
+                  </div>
+                  <p className={entry.pointsDelta >= 0 ? "text-emerald-700" : "text-destructive"}>
+                    {entry.pointsDelta > 0 ? "+" : ""}{entry.pointsDelta}
+                  </p>
+                  <p className="text-muted-foreground">{formatDateTime(entry.createdAt)}</p>
+                </div>
+              ))}
+              {dashboard.recentActivity.length === 0 ? <EmptyRow>Nenhum movimento ainda.</EmptyRow> : null}
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+    </main>
+  );
+}
+
+function LoyaltyCustomerPanel({ customer }: { customer: LoyaltyCustomer }): React.ReactElement {
+  const spentCents = customer.orders.reduce((sum, order) => sum + order.totalCents, 0);
+  const activeCoupons = customer.assignedCoupons.filter((coupon) => coupon.isActive && (!coupon.expiresAt || coupon.expiresAt > new Date()));
+  const usedCoupons = customer.assignedCoupons.filter((coupon) => coupon.usedCount > 0);
+  const expiredCoupons = customer.assignedCoupons.filter((coupon) => coupon.expiresAt && coupon.expiresAt <= new Date());
+
+  return (
+    <details className="rounded-lg border bg-background">
+      <summary className="grid cursor-pointer list-none gap-3 p-4 md:grid-cols-[minmax(0,1fr)_110px_110px_150px] md:items-center">
+        <div className="min-w-0">
+          <p className="truncate font-semibold">{customer.name ?? "Cliente sem nome"}</p>
+          <p className="truncate text-sm text-muted-foreground">{customer.email}</p>
+        </div>
+        <StatusPill>{customer.loyaltyPoints?.balance ?? 0} pts</StatusPill>
+        <StatusPill>{customer.loyaltyPoints?.tier ?? "GENIN"}</StatusPill>
+        <span className="text-sm text-muted-foreground md:text-right">{formatCurrency(spentCents)}</span>
+      </summary>
+      <div className="grid gap-4 border-t p-4 xl:grid-cols-3">
+        <Panel title="Resumo">
+          <Info label="Saldo atual" value={`${customer.loyaltyPoints?.balance ?? 0} pontos`} />
+          <Info label="Ganhos vitalicios" value={`${customer.loyaltyPoints?.lifetimeEarned ?? 0} pontos`} />
+          <Info label="Resgatados" value={`${customer.loyaltyPoints?.lifetimeRedeemed ?? 0} pontos`} />
+          <Info label="Expirados" value={`${customer.loyaltyPoints?.lifetimeExpired ?? 0} pontos`} />
+          <Info label="Codigo de indicacao" value={customer.referralCode?.code ?? "Nao gerado"} />
+        </Panel>
+
+        <Panel title="Cupons">
+          <Info label="Ativos" value={activeCoupons.length.toString()} />
+          <Info label="Usados" value={usedCoupons.length.toString()} />
+          <Info label="Expirados" value={expiredCoupons.length.toString()} />
+          {customer.assignedCoupons.slice(0, 5).map((coupon) => (
+            <div className="rounded-md border p-3 text-sm" key={coupon.id}>
+              <p className="font-mono font-semibold">{coupon.code}</p>
+              <p className="text-muted-foreground">
+                {formatCurrency(coupon.value)} / {coupon.usedCount > 0 ? "usado" : coupon.expiresAt ? `expira ${formatDateTime(coupon.expiresAt)}` : "sem validade"}
+              </p>
+              {coupon.redemptions.map((redemption) => (
+                <Link className="mt-1 block text-xs text-primary hover:underline" href={`/admin/pedidos/${redemption.order.id}`} key={redemption.order.id}>
+                  Usado no pedido {redemption.order.orderNumber}
+                </Link>
+              ))}
+            </div>
+          ))}
+          {customer.assignedCoupons.length === 0 ? <EmptyText>Nenhum cupom pessoal.</EmptyText> : null}
+        </Panel>
+
+        <Panel title="Indicacoes">
+          {customer.referralReceived ? (
+            <div className="rounded-md border p-3 text-sm">
+              <p className="font-semibold">Foi indicado por {customer.referralReceived.inviter.name ?? customer.referralReceived.inviter.email}</p>
+              <p className="text-muted-foreground">
+                {getReferralStatusLabel(customer.referralReceived.status)} / codigo {customer.referralReceived.referralCode}
+              </p>
+            </div>
+          ) : <EmptyText>Nao veio por indicacao.</EmptyText>}
+          {customer.referralsSent.map((referral) => (
+            <div className="rounded-md border p-3 text-sm" key={referral.id}>
+              <p className="font-semibold">Indicou {referral.invitee.name ?? referral.invitee.email}</p>
+              <p className="text-muted-foreground">
+                {getReferralStatusLabel(referral.status)} / +{referral.inviterRewardPoints} pts
+              </p>
+            </div>
+          ))}
+        </Panel>
+
+        <Panel title="Historico de pontos">
+          {customer.loyaltyLedger.map((entry) => (
+            <div className="rounded-md border p-3 text-sm" key={entry.id}>
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-semibold">{entry.reason}</p>
+                <p className={entry.pointsDelta >= 0 ? "font-semibold text-emerald-700" : "font-semibold text-destructive"}>
                   {entry.pointsDelta > 0 ? "+" : ""}{entry.pointsDelta}
                 </p>
-                <p className="text-muted-foreground">{formatDateTime(entry.createdAt)}</p>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </main>
+              <p className="text-xs text-muted-foreground">
+                Saldo apos movimento: {entry.balanceAfter} / {formatDateTime(entry.createdAt)}
+              </p>
+              {entry.customerNote ? <p className="mt-1 text-xs text-muted-foreground">{entry.customerNote}</p> : null}
+            </div>
+          ))}
+          {customer.loyaltyLedger.length === 0 ? <EmptyText>Nenhum movimento.</EmptyText> : null}
+        </Panel>
+      </div>
+    </details>
+  );
+}
+
+function RoutineButton({
+  action,
+  icon: Icon,
+  label
+}: {
+  action: () => Promise<void>;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+}): React.ReactElement {
+  return (
+    <form action={action} className="min-w-0">
+      <Button className="w-full min-w-0 justify-start gap-2 whitespace-normal text-left" type="submit" variant="outline">
+        <Icon className="h-4 w-4" />
+        {label}
+      </Button>
+    </form>
   );
 }
 
@@ -306,4 +367,56 @@ function NumberField({
       <Input defaultValue={defaultValue} min={0} name={name} type="number" />
     </label>
   );
+}
+
+function Panel({ children, title }: { children: React.ReactNode; title: string }): React.ReactElement {
+  return (
+    <section className="grid content-start gap-3 rounded-lg border bg-muted/20 p-4 xl:first:col-span-1 xl:last:col-span-3">
+      <h2 className="font-semibold">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function Info({ label, value }: { label: string; value: string }): React.ReactElement {
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase text-muted-foreground">{label}</p>
+      <p className="text-sm">{value}</p>
+    </div>
+  );
+}
+
+function StatusPill({ children }: { children: React.ReactNode }): React.ReactElement {
+  return <span className="w-fit rounded-full border px-3 py-1 text-xs font-semibold text-muted-foreground">{children}</span>;
+}
+
+function EmptyText({ children }: { children: React.ReactNode }): React.ReactElement {
+  return <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">{children}</p>;
+}
+
+function EmptyRow({ children }: { children: React.ReactNode }): React.ReactElement {
+  return <p className="p-3 text-sm text-muted-foreground">{children}</p>;
+}
+
+function SuccessMessage({ children }: { children: React.ReactNode }): React.ReactElement {
+  return (
+    <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">
+      {children}
+    </p>
+  );
+}
+
+function readSearchParam(value: string | string[] | undefined): string | undefined {
+  return (Array.isArray(value) ? value[0] : value)?.trim() || undefined;
+}
+
+function formatRoutineMessage(routine: string, count: string): string {
+  const labels: Record<string, string> = {
+    birthday: `Rotina de aniversarios concluida. ${count} credito(s) processado(s).`,
+    expire: `Rotina de expiracao concluida. ${count} lote(s) vencido(s) processado(s).`,
+    referrals: `Rotina de codigos de indicacao concluida. ${count} codigo(s) gerado(s).`
+  };
+
+  return labels[routine] ?? "Rotina concluida.";
 }

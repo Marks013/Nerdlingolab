@@ -119,6 +119,7 @@ export async function grantBirthdayNerdcoins(): Promise<void> {
 
     return user.birthday.getUTCDate() === today.day && user.birthday.getUTCMonth() + 1 === today.month;
   });
+  let processedCount = 0;
 
   try {
     for (const user of eligibleUsers) {
@@ -157,6 +158,7 @@ export async function grantBirthdayNerdcoins(): Promise<void> {
             userId: user.id
           }
         });
+        processedCount += 1;
       });
     }
   } catch (error) {
@@ -165,11 +167,13 @@ export async function grantBirthdayNerdcoins(): Promise<void> {
   }
 
   revalidatePath("/admin/fidelidade");
+  redirect(`/admin/fidelidade?routine=birthday&count=${processedCount}`);
 }
 
 export async function expireEligibleNerdcoins(): Promise<void> {
   await requireAdmin();
   const now = new Date();
+  let processedCount = 0;
 
   try {
     const usersWithExpiredLots = await prisma.user.findMany({
@@ -270,6 +274,7 @@ export async function expireEligibleNerdcoins(): Promise<void> {
               userId: user.id
             }
           });
+          processedCount += 1;
         }
       });
     }
@@ -280,10 +285,12 @@ export async function expireEligibleNerdcoins(): Promise<void> {
 
   revalidatePath("/admin/fidelidade");
   revalidatePath("/conta/nerdcoins");
+  redirect(`/admin/fidelidade?routine=expire&count=${processedCount}`);
 }
 
 export async function backfillReferralCodes(): Promise<void> {
   await requireAdmin();
+  let processedCount = 0;
 
   try {
     const customersWithoutCodes = await prisma.user.findMany({
@@ -297,6 +304,7 @@ export async function backfillReferralCodes(): Promise<void> {
 
     for (const customer of customersWithoutCodes) {
       await ensureReferralCode(customer.id);
+      processedCount += 1;
     }
   } catch (error) {
     Sentry.captureException(error);
@@ -304,6 +312,7 @@ export async function backfillReferralCodes(): Promise<void> {
   }
 
   revalidatePath("/admin/fidelidade");
+  redirect(`/admin/fidelidade?routine=referrals&count=${processedCount}`);
 }
 
 export async function adjustCustomerNerdcoins(formData: FormData): Promise<void> {
@@ -354,6 +363,7 @@ export async function adjustCustomerNerdcoins(formData: FormData): Promise<void>
 
   revalidatePath("/admin/fidelidade");
   revalidatePath("/admin/clientes");
+  redirect("/admin/fidelidade?adjust=saved");
 }
 
 export async function convertNerdcoinsToCoupon(formData: FormData): Promise<void> {

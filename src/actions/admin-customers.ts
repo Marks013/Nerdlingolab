@@ -17,6 +17,10 @@ const customerActionSchema = z.object({
   customerId: z.string().trim().min(8).max(80)
 });
 
+const customerNotesSchema = customerActionSchema.extend({
+  adminNotes: z.string().trim().max(2000)
+});
+
 function readCustomerId(formData: FormData): string {
   const parsedAction = customerActionSchema.safeParse({
     customerId: formData.get("customerId")
@@ -127,4 +131,39 @@ export async function sendCustomerPasswordReset(formData: FormData): Promise<voi
 
   revalidatePath("/admin/clientes");
   redirect("/admin/clientes?reset=sent");
+}
+
+export async function updateCustomerAdminNotes(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const parsedNotes = customerNotesSchema.safeParse({
+    adminNotes: formData.get("adminNotes"),
+    customerId: formData.get("customerId")
+  });
+
+  if (!parsedNotes.success) {
+    throw new Error("Revise as observacoes do cliente.");
+  }
+
+  try {
+    await prisma.user.update({
+      data: {
+        adminNotes: parsedNotes.data.adminNotes || null
+      },
+      where: { id: parsedNotes.data.customerId }
+    });
+  } catch (error) {
+    Sentry.captureException(error, {
+      extra: { customerId: parsedNotes.data.customerId },
+      tags: {
+        feature: "admin-customers",
+        operation: "update-notes"
+      }
+    });
+
+    throw new Error("Nao foi possivel salvar as observacoes.");
+  }
+
+  revalidatePath("/admin/clientes");
+  redirect("/admin/clientes?notes=saved");
 }

@@ -18,11 +18,11 @@ export default async function AdminThemePage(): Promise<React.ReactElement> {
           <p className="text-sm text-muted-foreground">Editor visual</p>
           <h1 className="text-3xl font-bold tracking-normal">Tema da vitrine</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Controle os slides da home sem alterar código. Use URLs do diretório public, MinIO/CDN ou links HTTPS.
+            Controle os slides da home sem alterar codigo. As imagens devem vir da biblioteca de midia ou de novo upload.
           </p>
         </div>
         <form action={resetStorefrontTheme}>
-          <Button variant="outline" type="submit">Restaurar padrão</Button>
+          <Button type="submit" variant="outline">Restaurar padrao</Button>
         </form>
       </div>
 
@@ -30,7 +30,7 @@ export default async function AdminThemePage(): Promise<React.ReactElement> {
         <Card>
           <CardHeader>
             <CardTitle>Identidade do tema</CardTitle>
-            <CardDescription>Nome interno para rastrear alterações no admin.</CardDescription>
+            <CardDescription>Nome interno para rastrear alteracoes no admin.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 md:grid-cols-2">
@@ -38,18 +38,18 @@ export default async function AdminThemePage(): Promise<React.ReactElement> {
               <TextField defaultValue={theme.announcementText} label="Aviso no topo" name="announcementText" />
               <TextField
                 defaultValue={(theme.freeShippingThresholdCents / 100).toFixed(2).replace(".", ",")}
-                label="Valor mínimo para frete grátis"
+                label="Valor minimo para frete gratis"
                 name="freeShippingThresholdCents"
               />
               <TextField
                 defaultValue={String(theme.maxInstallments)}
-                label="Máximo de parcelas"
+                label="Maximo de parcelas"
                 name="maxInstallments"
                 type="number"
               />
               <TextField
                 defaultValue={(theme.cardInstallmentMonthlyRateBps / 100).toFixed(2).replace(".", ",")}
-                label="Juros mensal do cartão (%)"
+                label="Juros mensal do cartao (%)"
                 name="cardInstallmentMonthlyRatePercent"
               />
               <TextField
@@ -65,19 +65,19 @@ export default async function AdminThemePage(): Promise<React.ReactElement> {
                   name="paymentFeeSource"
                 >
                   <option value="MANUAL">Manual no admin</option>
-                  <option value="MERCADO_PAGO">Referência Mercado Pago</option>
+                  <option value="MERCADO_PAGO">Referencia Mercado Pago</option>
                 </select>
               </label>
               <TextField defaultValue={theme.supportEmail} label="E-mail de atendimento" name="supportEmail" />
               <TextField defaultValue={theme.whatsappLabel} label="WhatsApp exibido" name="whatsappLabel" />
               <TextField defaultValue={theme.instagramUrl} label="Link do Instagram" name="instagramUrl" />
-              <TextField defaultValue={theme.newsletterTitle} label="Título da newsletter" name="newsletterTitle" />
+              <TextField defaultValue={theme.newsletterTitle} label="Titulo da newsletter" name="newsletterTitle" />
               <label className="grid gap-2 text-sm font-medium md:col-span-2">
                 Texto da newsletter
                 <Input defaultValue={theme.newsletterDescription} name="newsletterDescription" />
               </label>
               <label className="grid gap-2 text-sm font-medium md:col-span-2">
-                Aviso legal do rodapé
+                Aviso legal do rodape
                 <Input defaultValue={theme.footerNotice} name="footerNotice" />
               </label>
             </div>
@@ -86,7 +86,7 @@ export default async function AdminThemePage(): Promise<React.ReactElement> {
 
         <SlideEditor
           aspectClassName="aspect-[2048/628]"
-          description="Slideshow principal no topo da home, com imagem desktop e mobile."
+          description="Grupo principal no topo da home, com imagens separadas para desktop e mobile."
           group="hero"
           slides={theme.heroSlides}
           title="Slideshow principal"
@@ -94,10 +94,10 @@ export default async function AdminThemePage(): Promise<React.ReactElement> {
 
         <SlideEditor
           aspectClassName="aspect-[2048/628]"
-          description="Slideshow secundário com o mesmo formato dos banners do site atual."
+          description="Grupo secundario para campanhas e banners complementares."
           group="promo"
           slides={theme.promoSlides}
-          title="Slideshow secundário"
+          title="Slideshow secundario"
         />
 
         <div className="sticky bottom-4 z-20 flex justify-end">
@@ -131,39 +131,49 @@ function SlideEditor({
       </CardHeader>
       <CardContent className="grid gap-4">
         {rows.map((slide, index) => (
-          <div className="grid gap-4 rounded-lg border p-4 xl:grid-cols-[260px_minmax(0,1fr)]" key={`${group}-${index}`}>
-            <div className={`relative overflow-hidden rounded-lg bg-muted ${aspectClassName}`}>
-              {slide.desktop || slide.src || slide.mobile ? (
-                <Image
-                  alt={slide.alt || `Slide ${index + 1}`}
-                  className="object-cover"
-                  fill
-                  sizes="260px"
-                  src={slide.desktop ?? slide.src ?? slide.mobile ?? ""}
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
-                  Sem imagem
+          <details className="rounded-lg border bg-background" key={`${group}-${index}`} open={index === 0 && Boolean(slide.alt)}>
+            <summary className="grid cursor-pointer list-none gap-4 p-4 xl:grid-cols-[260px_minmax(0,1fr)] xl:items-center">
+              <div className={`relative overflow-hidden rounded-lg bg-muted ${aspectClassName}`}>
+                {slide.desktop || slide.src || slide.mobile ? (
+                  <Image
+                    alt={slide.alt || `Slide ${index + 1}`}
+                    className="object-cover"
+                    fill
+                    sizes="260px"
+                    src={slide.desktop ?? slide.src ?? slide.mobile ?? ""}
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
+                    Sem imagem
+                  </div>
+                )}
+              </div>
+              <div className="grid min-w-0 gap-2">
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="flex items-center gap-2 text-sm font-medium">
+                    <input defaultChecked={Boolean(slide.alt)} name={`${group}-${index}-enabled`} type="checkbox" />
+                    Slide {index + 1} ativo
+                  </label>
+                  <span className="rounded-full border px-2 py-1 text-xs text-muted-foreground">
+                    {slide.desktop && slide.mobile ? "Desktop + mobile" : "Imagem unica"}
+                  </span>
                 </div>
-              )}
-            </div>
-            <div className="grid min-w-0 gap-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <label className="flex items-center gap-2 text-sm font-medium">
-                  <input defaultChecked={Boolean(slide.alt)} name={`${group}-${index}-enabled`} type="checkbox" />
-                  Slide {index + 1} ativo
-                </label>
-                <span className="text-xs text-muted-foreground">{slide.href || "/produtos"}</span>
+                <p className="truncate text-sm font-semibold">{slide.alt || "Novo slide"}</p>
               </div>
-              <div className="grid gap-3 md:grid-cols-2">
-                <TextField defaultValue={slide.alt} label="Texto alternativo" name={`${group}-${index}-alt`} />
-                <TextField defaultValue={slide.href} label="Link do clique" name={`${group}-${index}-href`} />
-                <ThemeImageField defaultValue={slide.desktop} label="Imagem desktop" name={`${group}-${index}-desktop`} />
-                <ThemeImageField defaultValue={slide.mobile} label="Imagem mobile" name={`${group}-${index}-mobile`} />
-                <ThemeImageField defaultValue={slide.src} label="Imagem única" name={`${group}-${index}-src`} />
+            </summary>
+            <div className="grid gap-4 border-t p-4 xl:grid-cols-[260px_minmax(0,1fr)]">
+              <div className="hidden xl:block" />
+              <div className="grid min-w-0 gap-3">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <TextField defaultValue={slide.alt} label="Texto alternativo" name={`${group}-${index}-alt`} />
+                  <TextField defaultValue={slide.href} label="Destino do clique" name={`${group}-${index}-href`} />
+                  <ThemeImageField defaultValue={slide.desktop} label="Imagem desktop" name={`${group}-${index}-desktop`} />
+                  <ThemeImageField defaultValue={slide.mobile} label="Imagem mobile" name={`${group}-${index}-mobile`} />
+                  <ThemeImageField defaultValue={slide.src} label="Imagem unica" name={`${group}-${index}-src`} />
+                </div>
               </div>
             </div>
-          </div>
+          </details>
         ))}
       </CardContent>
     </Card>

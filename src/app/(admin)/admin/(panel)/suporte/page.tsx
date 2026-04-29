@@ -188,6 +188,25 @@ function TicketPanel({ ticket }: { ticket: AdminSupportTicket }): React.ReactEle
               <p className="mt-2 text-xs text-muted-foreground">Reabra o protocolo antes de responder.</p>
             ) : null}
           </form>
+
+          <div className="rounded-lg border p-4">
+            <h2 className="font-bold">Experiencia do cliente</h2>
+            <div className="mt-3 grid gap-2 text-sm">
+              <p>
+                <span className="text-muted-foreground">Avaliacao:</span>{" "}
+                {ticket.rating ? `${ticket.rating}/5` : "Ainda nao avaliado"}
+              </p>
+              {ticket.ratingComment ? (
+                <p className="whitespace-pre-line rounded-md bg-muted px-3 py-2 text-xs">{ticket.ratingComment}</p>
+              ) : null}
+              <p>
+                <span className="text-muted-foreground">Reaberturas:</span> {ticket.reopenCount ?? 0}
+              </p>
+              {ticket.reopenReason ? (
+                <p className="whitespace-pre-line rounded-md bg-muted px-3 py-2 text-xs">{ticket.reopenReason}</p>
+              ) : null}
+            </div>
+          </div>
         </aside>
       </div>
     </details>

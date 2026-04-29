@@ -37,12 +37,18 @@ export async function GET(): Promise<NextResponse> {
       createdAt: ticket.createdAt.toISOString(),
       id: ticket.id,
       message: ticket.message,
+      ratedAt: ticket.ratedAt?.toISOString() ?? null,
+      rating: ticket.rating,
+      ratingComment: ticket.ratingComment,
       replies: ticket.replies.map((reply) => ({
         createdAt: reply.createdAt.toISOString(),
         deliveryStatus: reply.deliveryStatus,
         id: reply.id,
         message: reply.message
       })),
+      reopenCount: ticket.reopenCount,
+      reopenReason: ticket.reopenReason,
+      reopenedAt: ticket.reopenedAt?.toISOString() ?? null,
       status: ticket.status,
       subjectLabel: ticket.subjectLabel,
       ticketId: ticket.ticketId,

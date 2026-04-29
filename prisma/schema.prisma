@@ -127,6 +127,7 @@ model User {
   cpf           String?   @unique
   phone         String?
   birthday      DateTime?
+  adminNotes    String?   @db.Text
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -163,6 +164,12 @@ model SupportTicket {
   resendId            String?
   emailDeliveryStatus String              @default("PENDING")
   emailProviderError  String?
+  rating              Int?
+  ratingComment       String?
+  ratedAt             DateTime?
+  reopenReason        String?
+  reopenedAt          DateTime?
+  reopenCount         Int                 @default(0)
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
@@ -170,6 +177,7 @@ model SupportTicket {
   replies SupportTicketReply[]
 
   @@index([status, createdAt])
+  @@index([rating, ratedAt])
   @@index([userId, createdAt])
 }
 

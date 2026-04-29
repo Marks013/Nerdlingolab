@@ -13,6 +13,7 @@ export async function getAdminCustomers() {
       },
       cpf: true,
       createdAt: true,
+      adminNotes: true,
       email: true,
       id: true,
       loyaltyPoints: true,
@@ -28,6 +29,7 @@ export async function getAdminCustomers() {
           number: true,
           postalCode: true,
           recipient: true,
+          complement: true,
           state: true,
           street: true
         },
@@ -43,7 +45,7 @@ export async function getAdminCustomers() {
           status: true,
           totalCents: true
         },
-        take: 3
+        take: 6
       },
       phone: true,
       referralCode: {

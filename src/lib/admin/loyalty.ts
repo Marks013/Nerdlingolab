@@ -3,7 +3,18 @@ import { LoyaltyLedgerType, PaymentStatus, ReferralStatus, UserRole } from "@/ge
 import { getLoyaltyProgramSettings } from "@/lib/loyalty/settings";
 import { prisma } from "@/lib/prisma";
 
-export async function getAdminLoyaltyDashboard() {
+export async function getAdminLoyaltyDashboard(search = "") {
+  const normalizedSearch = search.trim();
+  const customerWhere = normalizedSearch
+    ? {
+        role: UserRole.CUSTOMER,
+        OR: [
+          { email: { contains: normalizedSearch, mode: "insensitive" as const } },
+          { name: { contains: normalizedSearch, mode: "insensitive" as const } },
+          { referralCode: { is: { code: { contains: normalizedSearch, mode: "insensitive" as const } } } }
+        ]
+      }
+    : { role: UserRole.CUSTOMER };
   const [
     settings,
     totals,
@@ -24,16 +35,59 @@ export async function getAdminLoyaltyDashboard() {
       prisma.user.findMany({
         orderBy: { createdAt: "desc" },
         select: {
+          assignedCoupons: {
+            include: {
+              redemptions: {
+                select: {
+                  createdAt: true,
+                  discountCents: true,
+                  order: { select: { id: true, orderNumber: true } }
+                },
+                take: 5
+              }
+            },
+            orderBy: { createdAt: "desc" },
+            take: 8
+          },
           email: true,
           id: true,
+          loyaltyLedger: {
+            orderBy: { createdAt: "desc" },
+            select: {
+              balanceAfter: true,
+              createdAt: true,
+              customerNote: true,
+              id: true,
+              pointsDelta: true,
+              reason: true,
+              type: true
+            },
+            take: 8
+          },
           loyaltyPoints: true,
           name: true,
           orders: {
             select: { totalCents: true },
             where: { paymentStatus: PaymentStatus.APPROVED }
+          },
+          referralCode: { select: { code: true, isActive: true } },
+          referralReceived: {
+            include: {
+              inviter: { select: { email: true, name: true } },
+              qualifyingOrder: { select: { orderNumber: true, totalCents: true } }
+            }
+          },
+          referralsSent: {
+            include: {
+              invitee: { select: { email: true, name: true } },
+              qualifyingOrder: { select: { orderNumber: true, totalCents: true } }
+            },
+            orderBy: { createdAt: "desc" },
+            take: 8
           }
         },
-        take: 50
+        take: 80,
+        where: customerWhere
       }),
       prisma.loyaltyLedger.findMany({
         include: {

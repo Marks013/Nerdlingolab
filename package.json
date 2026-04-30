@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit --incremental false",
     "validate:encoding": "node scripts/check-encoding.mjs",
+    "validate:sentry": "node scripts/validate-sentry-config.mjs",
     "validate:ui-copy": "node scripts/check-ui-copy.mjs",
     "audit:ui-runtime": "node scripts/audit-runtime-ui.mjs",
     "audit:images": "node scripts/audit-image-sources.mjs",

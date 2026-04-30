@@ -4,43 +4,49 @@ import { z } from "zod";
 import { parseCurrencyToCents } from "@/lib/format";
 
 export const couponFormSchema = z.object({
-  code: z.string().trim().min(3, "Informe um código com pelo menos 3 caracteres."),
-  type: z.enum(CouponType),
-  value: z.string().trim().min(1, "Informe o valor do cupom."),
-  minSubtotal: z.string().trim().optional(),
-  maxDiscount: z.string().trim().optional(),
-  usageLimit: z.coerce.number().int().positive().optional(),
-  perCustomerLimit: z.coerce.number().int().positive().optional(),
+  assignedUserId: z.string().trim().optional(),
+  code: z.string().trim().min(3, "Informe um codigo com pelo menos 3 caracteres."),
   expiresAt: z.string().trim().optional(),
   isActive: z.boolean().default(true),
-  isPublic: z.boolean().default(true)
+  isPublic: z.boolean().default(true),
+  maxDiscount: z.string().trim().optional(),
+  minSubtotal: z.string().trim().optional(),
+  perCustomerLimit: z.coerce.number().int().positive().optional(),
+  startsAt: z.string().trim().optional(),
+  type: z.enum(CouponType),
+  usageLimit: z.coerce.number().int().positive().optional(),
+  value: z.string().trim().min(1, "Informe o valor do cupom.")
 });
 
 export type CouponFormInput = z.infer<typeof couponFormSchema>;
 
 export function normalizeCouponInput(input: CouponFormInput): {
+  assignedUserId?: string;
   code: string;
-  type: CouponType;
-  value: number;
-  minSubtotalCents?: number;
-  maxDiscountCents?: number;
-  usageLimit?: number;
-  perCustomerLimit?: number;
   expiresAt?: Date;
   isActive: boolean;
   isPublic: boolean;
+  maxDiscountCents?: number;
+  minSubtotalCents?: number;
+  perCustomerLimit?: number;
+  startsAt?: Date;
+  type: CouponType;
+  usageLimit?: number;
+  value: number;
 } {
   return {
+    assignedUserId: input.assignedUserId || undefined,
     code: input.code.toUpperCase(),
-    type: input.type,
-    value: normalizeCouponValue(input.type, input.value),
-    minSubtotalCents: input.minSubtotal ? parseCurrencyToCents(input.minSubtotal) : undefined,
-    maxDiscountCents: input.maxDiscount ? parseCurrencyToCents(input.maxDiscount) : undefined,
-    usageLimit: input.usageLimit,
-    perCustomerLimit: input.perCustomerLimit,
     expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
     isActive: input.isActive,
-    isPublic: input.isPublic
+    isPublic: input.isPublic,
+    maxDiscountCents: input.maxDiscount ? parseCurrencyToCents(input.maxDiscount) : undefined,
+    minSubtotalCents: input.minSubtotal ? parseCurrencyToCents(input.minSubtotal) : undefined,
+    perCustomerLimit: input.perCustomerLimit,
+    startsAt: input.startsAt ? new Date(input.startsAt) : undefined,
+    type: input.type,
+    usageLimit: input.usageLimit,
+    value: normalizeCouponValue(input.type, input.value)
   };
 }
 

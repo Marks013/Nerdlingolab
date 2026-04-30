@@ -1,4 +1,4 @@
-import { PaymentStatus } from "@/generated/prisma/client";
+import { OrderStatus, PaymentStatus } from "@/generated/prisma/client";
 
 import { normalizeDisplayText } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
@@ -14,19 +14,59 @@ export interface MonthlyReportItem {
   loyaltyPointsRedeemed: number;
 }
 
-export interface AnnualReportTotals {
+export interface AdminReportBreakdownItem {
+  label: string;
+  value: number;
+}
+
+export interface AdminReportCouponItem {
+  code: string;
+  discountCents: number;
+  ordersCount: number;
+}
+
+export interface AdminReportRecentOrder {
+  createdAt: Date;
+  id: string;
+  orderNumber: string;
+  paymentStatus: PaymentStatus;
+  status: OrderStatus;
+  totalCents: number;
+}
+
+export interface AdminReportTopProduct {
+  productId: string;
+  productTitle: string;
+  quantity: number;
   revenueCents: number;
-  paidOrdersCount: number;
+}
+
+export interface AnnualReportTotals {
+  averageTicketCents: number;
+  canceledOrdersCount: number;
   couponDiscountCents: number;
+  couponOrdersCount: number;
+  grossSubtotalCents: number;
   loyaltyDiscountCents: number;
   loyaltyPointsIssued: number;
   loyaltyPointsRedeemed: number;
+  newCustomersCount: number;
+  paidOrdersCount: number;
+  pendingPaymentCount: number;
+  productsSoldCount: number;
+  revenueCents: number;
+  shippingCents: number;
 }
 
 export interface AdminAnnualReport {
+  couponPerformance: AdminReportCouponItem[];
   currentYear: number;
   filters: AdminReportFilters;
   monthlyItems: MonthlyReportItem[];
+  orderStatusItems: AdminReportBreakdownItem[];
+  paymentStatusItems: AdminReportBreakdownItem[];
+  recentOrders: AdminReportRecentOrder[];
+  topProducts: AdminReportTopProduct[];
   totals: AnnualReportTotals;
 }
 
@@ -36,12 +76,21 @@ export interface AdminReportFilters {
 }
 
 interface ReportOrderSummary {
-  paidAt: Date | null;
-  totalCents: number;
+  coupon: { code: string } | null;
   discountCents: number;
+  items: Array<{
+    productId: string;
+    productTitle: string;
+    quantity: number;
+    totalCents: number;
+  }>;
   loyaltyDiscountCents: number;
   loyaltyPointsEarned: number;
   loyaltyPointsRedeemed: number;
+  paidAt: Date | null;
+  shippingCents: number;
+  subtotalCents: number;
+  totalCents: number;
 }
 
 function createEmptyMonthlyItems({ endDate, startDate }: AdminReportFilters): MonthlyReportItem[] {
@@ -56,37 +105,64 @@ function createEmptyMonthlyItems({ endDate, startDate }: AdminReportFilters): Mo
     const monthLabel = `${rawMonthLabel.charAt(0).toUpperCase()}${rawMonthLabel.slice(1)}/${monthDate.getUTCFullYear()}`;
 
     return {
-      monthIndex,
-      monthLabel: normalizeDisplayText(monthLabel),
-      revenueCents: 0,
-      paidOrdersCount: 0,
       couponDiscountCents: 0,
       loyaltyDiscountCents: 0,
       loyaltyPointsIssued: 0,
-      loyaltyPointsRedeemed: 0
+      loyaltyPointsRedeemed: 0,
+      monthIndex,
+      monthLabel: normalizeDisplayText(monthLabel),
+      paidOrdersCount: 0,
+      revenueCents: 0
     };
   });
 }
 
-function buildAnnualTotals(monthlyItems: MonthlyReportItem[]): AnnualReportTotals {
-  return monthlyItems.reduce<AnnualReportTotals>(
+function buildAnnualTotals(
+  monthlyItems: MonthlyReportItem[],
+  paidOrders: ReportOrderSummary[],
+  periodCounters: {
+    canceledOrdersCount: number;
+    newCustomersCount: number;
+    pendingPaymentCount: number;
+  }
+): AnnualReportTotals {
+  const baseTotals = monthlyItems.reduce(
     (totals, monthlyItem) => ({
-      revenueCents: totals.revenueCents + monthlyItem.revenueCents,
-      paidOrdersCount: totals.paidOrdersCount + monthlyItem.paidOrdersCount,
       couponDiscountCents: totals.couponDiscountCents + monthlyItem.couponDiscountCents,
       loyaltyDiscountCents: totals.loyaltyDiscountCents + monthlyItem.loyaltyDiscountCents,
       loyaltyPointsIssued: totals.loyaltyPointsIssued + monthlyItem.loyaltyPointsIssued,
-      loyaltyPointsRedeemed: totals.loyaltyPointsRedeemed + monthlyItem.loyaltyPointsRedeemed
+      loyaltyPointsRedeemed: totals.loyaltyPointsRedeemed + monthlyItem.loyaltyPointsRedeemed,
+      paidOrdersCount: totals.paidOrdersCount + monthlyItem.paidOrdersCount,
+      revenueCents: totals.revenueCents + monthlyItem.revenueCents
     }),
     {
-      revenueCents: 0,
-      paidOrdersCount: 0,
       couponDiscountCents: 0,
       loyaltyDiscountCents: 0,
       loyaltyPointsIssued: 0,
-      loyaltyPointsRedeemed: 0
+      loyaltyPointsRedeemed: 0,
+      paidOrdersCount: 0,
+      revenueCents: 0
     }
   );
+  const grossSubtotalCents = paidOrders.reduce((sum, order) => sum + order.subtotalCents, 0);
+  const productsSoldCount = paidOrders.reduce(
+    (sum, order) => sum + order.items.reduce((itemSum, item) => itemSum + item.quantity, 0),
+    0
+  );
+  const shippingCents = paidOrders.reduce((sum, order) => sum + order.shippingCents, 0);
+  const couponOrdersCount = paidOrders.filter((order) => order.discountCents > 0 || order.coupon).length;
+
+  return {
+    ...baseTotals,
+    averageTicketCents: baseTotals.paidOrdersCount > 0 ? Math.round(baseTotals.revenueCents / baseTotals.paidOrdersCount) : 0,
+    canceledOrdersCount: periodCounters.canceledOrdersCount,
+    couponOrdersCount,
+    grossSubtotalCents,
+    newCustomersCount: periodCounters.newCustomersCount,
+    pendingPaymentCount: periodCounters.pendingPaymentCount,
+    productsSoldCount,
+    shippingCents
+  };
 }
 
 export async function getAdminAnnualReport(filters?: Partial<AdminReportFilters>): Promise<AdminAnnualReport> {
@@ -97,24 +173,95 @@ export async function getAdminAnnualReport(filters?: Partial<AdminReportFilters>
   const endDate = addDays(parseDateInput(resolvedFilters.endDate), 1);
   const monthlyItems = createEmptyMonthlyItems(resolvedFilters);
 
-  const paidOrders: ReportOrderSummary[] = await prisma.order.findMany({
-    where: {
-      paymentStatus: PaymentStatus.APPROVED,
-      paidAt: {
-        gte: startDate,
-        lt: endDate
+  const [
+    paidOrders,
+    orderStatusGroups,
+    paymentStatusGroups,
+    pendingPaymentCount,
+    canceledOrdersCount,
+    newCustomersCount,
+    recentOrders
+  ] = await Promise.all([
+    prisma.order.findMany({
+      include: {
+        coupon: { select: { code: true } },
+        items: {
+          select: {
+            productId: true,
+            productTitle: true,
+            quantity: true,
+            totalCents: true
+          }
+        }
+      },
+      orderBy: { paidAt: "asc" },
+      where: {
+        paidAt: {
+          gte: startDate,
+          lt: endDate
+        },
+        paymentStatus: PaymentStatus.APPROVED
       }
-    },
-    select: {
-      paidAt: true,
-      totalCents: true,
-      discountCents: true,
-      loyaltyDiscountCents: true,
-      loyaltyPointsEarned: true,
-      loyaltyPointsRedeemed: true
-    },
-    orderBy: { paidAt: "asc" }
-  });
+    }),
+    prisma.order.groupBy({
+      by: ["status"],
+      _count: true,
+      where: {
+        createdAt: {
+          gte: startDate,
+          lt: endDate
+        }
+      }
+    }),
+    prisma.order.groupBy({
+      by: ["paymentStatus"],
+      _count: true,
+      where: {
+        createdAt: {
+          gte: startDate,
+          lt: endDate
+        }
+      }
+    }),
+    prisma.order.count({
+      where: {
+        createdAt: { gte: startDate, lt: endDate },
+        paymentStatus: PaymentStatus.PENDING
+      }
+    }),
+    prisma.order.count({
+      where: {
+        canceledAt: { gte: startDate, lt: endDate }
+      }
+    }),
+    prisma.user.count({
+      where: {
+        createdAt: { gte: startDate, lt: endDate },
+        role: "CUSTOMER"
+      }
+    }),
+    prisma.order.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        createdAt: true,
+        id: true,
+        orderNumber: true,
+        paymentStatus: true,
+        status: true,
+        totalCents: true
+      },
+      take: 8,
+      where: {
+        createdAt: {
+          gte: startDate,
+          lt: endDate
+        }
+      }
+    })
+  ]);
+
+  const couponPerformanceMap = new Map<string, AdminReportCouponItem>();
+  const productPerformanceMap = new Map<string, AdminReportTopProduct>();
 
   for (const order of paidOrders) {
     if (!order.paidAt) {
@@ -124,32 +271,76 @@ export async function getAdminAnnualReport(filters?: Partial<AdminReportFilters>
     const monthIndex = (order.paidAt.getUTCFullYear() - startDate.getUTCFullYear()) * 12 + order.paidAt.getUTCMonth() - startDate.getUTCMonth();
     const monthlyItem = monthlyItems[monthIndex];
 
-    if (!monthlyItem) {
-      continue;
+    if (monthlyItem) {
+      monthlyItem.couponDiscountCents += order.discountCents;
+      monthlyItem.loyaltyDiscountCents += order.loyaltyDiscountCents;
+      monthlyItem.loyaltyPointsIssued += order.loyaltyPointsEarned;
+      monthlyItem.loyaltyPointsRedeemed += order.loyaltyPointsRedeemed;
+      monthlyItem.paidOrdersCount += 1;
+      monthlyItem.revenueCents += order.totalCents;
     }
 
-    monthlyItem.revenueCents += order.totalCents;
-    monthlyItem.paidOrdersCount += 1;
-    monthlyItem.couponDiscountCents += order.discountCents;
-    monthlyItem.loyaltyDiscountCents += order.loyaltyDiscountCents;
-    monthlyItem.loyaltyPointsIssued += order.loyaltyPointsEarned;
-    monthlyItem.loyaltyPointsRedeemed += order.loyaltyPointsRedeemed;
+    if (order.coupon || order.discountCents > 0) {
+      const code = order.coupon?.code ?? "DESCONTO_MANUAL";
+      const currentCoupon = couponPerformanceMap.get(code) ?? {
+        code,
+        discountCents: 0,
+        ordersCount: 0
+      };
+
+      currentCoupon.discountCents += order.discountCents;
+      currentCoupon.ordersCount += 1;
+      couponPerformanceMap.set(code, currentCoupon);
+    }
+
+    for (const item of order.items) {
+      const currentProduct = productPerformanceMap.get(item.productId) ?? {
+        productId: item.productId,
+        productTitle: item.productTitle,
+        quantity: 0,
+        revenueCents: 0
+      };
+
+      currentProduct.quantity += item.quantity;
+      currentProduct.revenueCents += item.totalCents;
+      productPerformanceMap.set(item.productId, currentProduct);
+    }
   }
 
   return {
+    couponPerformance: [...couponPerformanceMap.values()]
+      .sort((first, second) => second.discountCents - first.discountCents)
+      .slice(0, 8),
     currentYear,
     filters: resolvedFilters,
     monthlyItems,
-    totals: buildAnnualTotals(monthlyItems)
+    orderStatusItems: orderStatusGroups.map((entry) => ({
+      label: formatOrderStatusLabel(entry.status),
+      value: entry._count
+    })),
+    paymentStatusItems: paymentStatusGroups.map((entry) => ({
+      label: formatPaymentStatusLabel(entry.paymentStatus),
+      value: entry._count
+    })),
+    recentOrders,
+    topProducts: [...productPerformanceMap.values()]
+      .sort((first, second) => second.revenueCents - first.revenueCents)
+      .slice(0, 8),
+    totals: buildAnnualTotals(monthlyItems, paidOrders, {
+      canceledOrdersCount,
+      newCustomersCount,
+      pendingPaymentCount
+    })
   };
 }
 
 export function buildAdminReportCsv(report: AdminAnnualReport): string {
   const rows = [
     [
-      "Mês",
+      "Mes",
       "Receita",
       "Pedidos pagos",
+      "Ticket medio",
       "Desconto em cupons",
       "Desconto em pontos",
       "Pontos emitidos",
@@ -159,10 +350,25 @@ export function buildAdminReportCsv(report: AdminAnnualReport): string {
       item.monthLabel,
       centsToDecimal(item.revenueCents),
       String(item.paidOrdersCount),
+      centsToDecimal(item.paidOrdersCount > 0 ? Math.round(item.revenueCents / item.paidOrdersCount) : 0),
       centsToDecimal(item.couponDiscountCents),
       centsToDecimal(item.loyaltyDiscountCents),
       String(item.loyaltyPointsIssued),
       String(item.loyaltyPointsRedeemed)
+    ]),
+    [],
+    ["Produto", "Quantidade", "Receita"],
+    ...report.topProducts.map((item) => [
+      item.productTitle,
+      String(item.quantity),
+      centsToDecimal(item.revenueCents)
+    ]),
+    [],
+    ["Cupom", "Pedidos", "Desconto"],
+    ...report.couponPerformance.map((item) => [
+      item.code,
+      String(item.ordersCount),
+      centsToDecimal(item.discountCents)
     ])
   ];
 
@@ -177,14 +383,14 @@ export function resolveReportFilters(filters: Partial<AdminReportFilters> | unde
 
   if (parseDateInput(startDate) > parseDateInput(endDate)) {
     return {
-      startDate: endDate,
-      endDate: startDate
+      endDate: startDate,
+      startDate: endDate
     };
   }
 
   return {
-    startDate,
-    endDate
+    endDate,
+    startDate
   };
 }
 
@@ -205,6 +411,34 @@ function escapeCsvCell(value: string): string {
   }
 
   return `"${value.replace(/"/g, "\"\"")}"`;
+}
+
+function formatOrderStatusLabel(status: OrderStatus): string {
+  const labels: Record<OrderStatus, string> = {
+    CANCELED: "Cancelado",
+    DELIVERED: "Entregue",
+    DRAFT: "Rascunho",
+    PAID: "Pago",
+    PENDING_PAYMENT: "Aguardando pagamento",
+    PROCESSING: "Processando",
+    REFUNDED: "Reembolsado",
+    SHIPPED: "Enviado"
+  };
+
+  return labels[status] ?? status;
+}
+
+function formatPaymentStatusLabel(status: PaymentStatus): string {
+  const labels: Record<PaymentStatus, string> = {
+    APPROVED: "Aprovado",
+    CANCELED: "Cancelado",
+    CHARGEBACK: "Chargeback",
+    PENDING: "Pendente",
+    REFUNDED: "Reembolsado",
+    REJECTED: "Recusado"
+  };
+
+  return labels[status] ?? status;
 }
 
 function isDateInput(value: string | undefined): value is string {

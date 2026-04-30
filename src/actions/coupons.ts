@@ -2,6 +2,7 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { couponFormSchema, normalizeCouponInput } from "@/features/coupons/schemas";
 import { requireAdmin } from "@/lib/admin";
@@ -12,15 +13,17 @@ export async function createCoupon(formData: FormData): Promise<void> {
 
   const parsedInput = couponFormSchema.safeParse({
     code: formData.get("code"),
-    type: formData.get("type"),
-    value: formData.get("value"),
-    minSubtotal: formData.get("minSubtotal"),
+    assignedUserId: formData.get("assignedUserId"),
+    expiresAt: formData.get("expiresAt"),
     maxDiscount: formData.get("maxDiscount"),
-    usageLimit: formData.get("usageLimit") ? Number(formData.get("usageLimit")) : undefined,
+    minSubtotal: formData.get("minSubtotal"),
     perCustomerLimit: formData.get("perCustomerLimit")
       ? Number(formData.get("perCustomerLimit"))
       : undefined,
-    expiresAt: formData.get("expiresAt"),
+    startsAt: formData.get("startsAt"),
+    type: formData.get("type"),
+    usageLimit: formData.get("usageLimit") ? Number(formData.get("usageLimit")) : undefined,
+    value: formData.get("value"),
     isActive: formData.get("isActive") === "on",
     isPublic: formData.get("isPublic") === "on"
   });
@@ -40,6 +43,7 @@ export async function createCoupon(formData: FormData): Promise<void> {
 
   revalidatePath("/admin/cupons");
   revalidatePath("/cupons");
+  redirect("/admin/cupons?coupon=created");
 }
 
 export async function deactivateCoupon(couponId: string): Promise<void> {
@@ -73,6 +77,23 @@ export async function setCouponPublicVisibility(
   } catch (error) {
     Sentry.captureException(error);
     throw new Error("Não foi possível atualizar a visibilidade do cupom.");
+  }
+
+  revalidatePath("/admin/cupons");
+  revalidatePath("/cupons");
+}
+
+export async function activateCoupon(couponId: string): Promise<void> {
+  await requireAdmin();
+
+  try {
+    await prisma.coupon.update({
+      data: { isActive: true },
+      where: { id: couponId }
+    });
+  } catch (error) {
+    Sentry.captureException(error);
+    throw new Error("Nao foi possivel ativar o cupom.");
   }
 
   revalidatePath("/admin/cupons");

@@ -148,13 +148,20 @@ export function quoteDefaultManualShippingOptions({
 }
 
 export async function selectShippingOption({
+  freeShippingThresholdCents,
   itemCount,
   items,
   postalCode,
   selectedOptionId,
   subtotalCents
 }: ShippingQuoteInput & { selectedOptionId?: string }): Promise<ShippingQuoteResult> {
-  const options = await quoteShippingOptions({ itemCount, items, postalCode, subtotalCents });
+  const options = await quoteShippingOptions({
+    freeShippingThresholdCents,
+    itemCount,
+    items,
+    postalCode,
+    subtotalCents
+  });
   const selectedOption = options.find((option) => option.id === selectedOptionId) ?? options[0] ?? null;
 
   return { options, selectedOption };

@@ -228,10 +228,13 @@ export function SupportContactClient({
     setNoticeTicket(null);
   }
 
+  const activeTickets = history.filter(isActiveSupportTicket);
+  const finishedTickets = history.filter((ticket) => !isActiveSupportTicket(ticket));
+
   return (
     <>
       {noticeTicket ? <SupportReplyNotice onClose={dismissNotice} ticket={noticeTicket} /> : null}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(420px,1.1fr)]">
         <form action={submitSupport} className="rounded-lg bg-white p-5 shadow-sm sm:p-7">
           <h2 className="text-2xl font-black text-black">Envie sua mensagem</h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -285,28 +288,71 @@ export function SupportContactClient({
           </button>
         </form>
 
-        <aside className="rounded-lg bg-white p-5 shadow-sm">
+        <aside className="rounded-lg bg-white p-5 shadow-sm sm:p-6">
           <div className="flex items-center gap-2">
             <History className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-black text-black">Historico de suporte</h2>
+            <h2 className="text-lg font-black text-black">Acompanhamento de suporte</h2>
           </div>
           <p className="mt-2 text-sm leading-6 text-[#4f5d65]">
-            Usuarios logados veem respostas, podem avaliar o atendimento e reabrir protocolos resolvidos.
+            Protocolos em aberto ou respondidos ficam destacados. Atendimentos avaliados ficam no historico.
           </p>
-          <div className="mt-5 grid gap-3">
-            {history.length > 0 ? (
-              history.map((item) => (
+
+          {activeTickets.length > 0 ? (
+            <section className="mt-5 rounded-lg border border-[#ffd6bd] bg-[#fff8f3] p-3 sm:p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 className="font-black text-black">Em atendimento</h3>
+                  <p className="mt-1 text-xs font-semibold text-[#7a4c32]">
+                    {activeTickets.length} protocolo{activeTickets.length === 1 ? "" : "s"} aguardando acompanhamento.
+                  </p>
+                </div>
+                <span className="rounded-full bg-primary px-3 py-1 text-xs font-black text-white">
+                  Aberto
+                </span>
+              </div>
+              <div className="mt-4 grid gap-3">
+                {activeTickets.map((item) => (
+                  <SupportTicketCard
+                    item={item}
+                    key={item.ticketId}
+                    onRate={(rating, comment) => void rateTicket(item.ticketId, rating, comment)}
+                    onReopen={(reason) => void reopenTicket(item.ticketId, reason)}
+                    variant="featured"
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          <section className="mt-5">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="font-black text-black">Historico finalizado</h3>
+              <span className="rounded-full border px-2 py-1 text-xs font-bold text-[#4f5d65]">
+                {finishedTickets.length}
+              </span>
+            </div>
+            <div className="mt-3 grid gap-3">
+              {finishedTickets.length > 0 ? (
+                finishedTickets.map((item) => (
                 <SupportTicketCard
                   item={item}
                   key={item.ticketId}
                   onRate={(rating, comment) => void rateTicket(item.ticketId, rating, comment)}
                   onReopen={(reason) => void reopenTicket(item.ticketId, reason)}
+                  variant="compact"
                 />
-              ))
-            ) : (
-              <p className="text-sm leading-6 text-[#4f5d65]">Nenhum protocolo aberto ainda.</p>
-            )}
-          </div>
+                ))
+              ) : activeTickets.length === 0 ? (
+                <p className="rounded-lg border border-dashed p-4 text-sm leading-6 text-[#4f5d65]">
+                  Nenhum protocolo aberto ainda.
+                </p>
+              ) : (
+                <p className="rounded-lg border border-dashed p-4 text-sm leading-6 text-[#4f5d65]">
+                  Os atendimentos avaliados aparecem aqui.
+                </p>
+              )}
+            </div>
+          </section>
         </aside>
       </div>
     </>
@@ -316,32 +362,49 @@ export function SupportContactClient({
 function SupportTicketCard({
   item,
   onRate,
-  onReopen
+  onReopen,
+  variant = "compact"
 }: {
   item: SupportHistoryItem;
   onRate: (rating: number, comment: string) => void;
   onReopen: (reason: string) => void;
+  variant?: "compact" | "featured";
 }): React.ReactElement {
   const [ratingComment, setRatingComment] = useState("");
   const [reopenReason, setReopenReason] = useState("");
   const canReopen = !item.rating && (item.status === "RESOLVED" || item.status === "CLOSED");
   const hasReplies = Boolean(item.replies?.length);
+  const isFeatured = variant === "featured";
 
   return (
-    <div className="rounded-lg border border-[#eeeeee] p-3" id={`ticket-${item.ticketId}`}>
+    <div
+      className={[
+        "rounded-lg border bg-white",
+        isFeatured ? "border-[#ffc39e] p-4 shadow-sm" : "border-[#eeeeee] p-3"
+      ].join(" ")}
+      id={`ticket-${item.ticketId}`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-black text-black">{item.ticketId}</p>
+          <p className={isFeatured ? "text-base font-black text-black" : "text-sm font-black text-black"}>{item.ticketId}</p>
           <p className="mt-1 text-sm text-[#4f5d65]">{item.subject}</p>
         </div>
-        {item.status ? <span className="rounded-full border px-2 py-1 text-[11px] font-bold text-[#4f5d65]">{formatTicketStatus(item.status)}</span> : null}
+        {item.status ? (
+          <span className={isFeatured ? "rounded-full bg-primary px-3 py-1 text-xs font-black text-white" : "rounded-full border px-2 py-1 text-[11px] font-bold text-[#4f5d65]"}>
+            {formatTicketStatus(item.status)}
+          </span>
+        ) : null}
       </div>
       <p className="mt-1 text-xs font-semibold text-[#677279]">{formatLocalDate(item.createdAt)}</p>
-      {item.message ? <p className="mt-3 line-clamp-3 text-sm leading-6 text-[#4f5d65]">{item.message}</p> : null}
+      {item.message ? (
+        <p className={isFeatured ? "mt-3 whitespace-pre-line rounded-lg border border-[#f4e1d6] bg-[#fffaf6] p-3 text-sm leading-6 text-[#4f5d65]" : "mt-3 line-clamp-3 text-sm leading-6 text-[#4f5d65]"}>
+          {item.message}
+        </p>
+      ) : null}
       {hasReplies ? (
         <div className="mt-3 grid gap-2">
           {item.replies?.map((reply) => (
-            <div className="rounded-lg bg-[#f7f7f7] p-3" key={reply.id}>
+            <div className={isFeatured ? "rounded-lg border border-[#f0d6c6] bg-white p-3" : "rounded-lg bg-[#f7f7f7] p-3"} key={reply.id}>
               <p className="flex items-center gap-2 text-xs font-black text-black">
                 <MessageCircle className="h-3.5 w-3.5 text-primary" />
                 Resposta da equipe
@@ -412,6 +475,12 @@ function SupportTicketCard({
       ) : null}
     </div>
   );
+}
+
+function isActiveSupportTicket(ticket: SupportHistoryItem): boolean {
+  const hasReplies = Boolean(ticket.replies?.length);
+
+  return !ticket.rating && (ticket.status === "OPEN" || ticket.status === "IN_PROGRESS" || hasReplies);
 }
 
 function SupportReplyNotice({

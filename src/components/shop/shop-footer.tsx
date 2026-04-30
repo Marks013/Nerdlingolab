@@ -16,8 +16,8 @@ const institutional = [
   { href: "/", label: "Página inicial" },
   { href: "/suporte", label: "Entrar em contato" },
   { href: "/suporte", label: "Rastrear meu Pedido" },
-  { href: "/termos", label: "Termos de Uso" },
-  { href: "/privacidade", label: "Política Privacidade" }
+  { href: "/termos-de-uso", label: "Termos de Uso" },
+  { href: "/politica-de-privacidade", label: "Politica de Privacidade" }
 ];
 
 const serviceItems = [

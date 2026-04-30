@@ -66,6 +66,26 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps):
               Confirmar senha
               <input className="h-12 rounded-lg border px-3 outline-none focus:border-primary" minLength={8} name="confirmPassword" required type="password" />
             </label>
+            <label className="flex items-start gap-3 rounded-lg border border-[#f0dfd6] bg-[#fffaf6] p-3 text-sm leading-6 text-[#4f5d65]">
+              <input className="mt-1 h-4 w-4 accent-primary" name="acceptTerms" required type="checkbox" />
+              <span>
+                Li e aceito os{" "}
+                <Link className="font-black text-primary underline-offset-4 hover:underline" href="/termos-de-uso">
+                  Termos de Uso
+                </Link>{" "}
+                da NerdLingoLab.
+              </span>
+            </label>
+            <label className="flex items-start gap-3 rounded-lg border border-[#f0dfd6] bg-[#fffaf6] p-3 text-sm leading-6 text-[#4f5d65]">
+              <input className="mt-1 h-4 w-4 accent-primary" name="acceptPrivacy" required type="checkbox" />
+              <span>
+                Li e aceito a{" "}
+                <Link className="font-black text-primary underline-offset-4 hover:underline" href="/politica-de-privacidade">
+                  Politica de Privacidade
+                </Link>{" "}
+                e autorizo o tratamento dos meus dados para criar conta, comprar e receber atendimento.
+              </span>
+            </label>
             <Button className="h-12 bg-primary text-white" type="submit">Criar conta</Button>
           </form>
           <p className="mt-6 text-center text-sm text-[#4f5d65]">

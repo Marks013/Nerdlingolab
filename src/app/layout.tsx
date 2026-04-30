@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 
 import "@/app/globals.css";
+import { SupportReplyNotifier } from "@/features/support/components/support-reply-notifier";
 
 export const metadata: Metadata = {
   title: {
@@ -26,7 +27,10 @@ export default function RootLayout({
       <head>
         <Script src="/theme-init.js" strategy="beforeInteractive" />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <SupportReplyNotifier />
+      </body>
     </html>
   );
 }

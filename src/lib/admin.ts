@@ -27,11 +27,11 @@ export async function isAdminSession(): Promise<boolean> {
 
 export function sanitizeAdminCallbackUrl(value: string | null | undefined): string {
   if (!value) {
-    return "/admin/dashboard";
+    return "/admin";
   }
 
   if (!value.startsWith("/admin") || value.startsWith("/admin/login") || value.includes("://")) {
-    return "/admin/dashboard";
+    return "/admin";
   }
 
   return value;

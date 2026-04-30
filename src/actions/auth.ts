@@ -51,6 +51,8 @@ const resetPasswordSchema = z.object({
 });
 
 const registerCustomerSchema = credentialsFormSchema.extend({
+  acceptPrivacy: z.literal(true),
+  acceptTerms: z.literal(true),
   birthday: z.string().trim().refine((value) => isValidBirthdayInput(value), "Data de nascimento inválida."),
   confirmPassword: z.string().min(8).max(128),
   cpf: z
@@ -166,6 +168,8 @@ export async function resetCustomerPassword(formData: FormData): Promise<void> {
 
 export async function registerCustomer(formData: FormData): Promise<void> {
   const parsedCustomer = registerCustomerSchema.safeParse({
+    acceptPrivacy: formData.get("acceptPrivacy") === "on",
+    acceptTerms: formData.get("acceptTerms") === "on",
     birthday: formData.get("birthday"),
     confirmPassword: formData.get("confirmPassword"),
     cpf: formData.get("cpf") || undefined,
@@ -234,8 +238,10 @@ export async function registerCustomer(formData: FormData): Promise<void> {
         email,
         name,
         passwordHash,
+        privacyAcceptedAt: new Date(),
         phone,
         role: UserRole.CUSTOMER,
+        termsAcceptedAt: new Date(),
         loyaltyPoints: {
           create: {
             balance: initialBalance,

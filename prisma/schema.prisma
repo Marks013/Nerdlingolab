@@ -117,19 +117,21 @@ enum SupportTicketStatus {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  passwordHash  String?
-  role          UserRole  @default(CUSTOMER)
-  cpf           String?   @unique
-  phone         String?
-  birthday      DateTime?
-  adminNotes    String?   @db.Text
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  name              String?
+  email             String    @unique
+  emailVerified     DateTime?
+  image             String?
+  passwordHash      String?
+  role              UserRole  @default(CUSTOMER)
+  cpf               String?   @unique
+  phone             String?
+  birthday          DateTime?
+  adminNotes        String?   @db.Text
+  termsAcceptedAt   DateTime?
+  privacyAcceptedAt DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   accounts          Account[]
   sessions          Session[]

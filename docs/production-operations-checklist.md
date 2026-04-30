@@ -53,3 +53,11 @@ Use este checklist antes do lançamento e em toda mudança relevante de infraest
 - [ ] Teste manual de login/admin/pedidos/cupons/fidelidade.
 - [ ] Teste de restore recente aprovado.
 - [ ] Alerta de `/api/health/ready` disparando para falha simulada.
+
+## Backlog Funcional Solicitado
+
+- [ ] Adicionar login e cadastro com Google mantendo coleta obrigatoria de CPF, data de nascimento, aceite dos Termos de Uso e aceite da Politica de Privacidade.
+- [ ] Bloquear conclusao do cadastro Google enquanto CPF, data de nascimento e aceites legais estiverem pendentes.
+- [ ] Ocultar formulario de endereco no checkout/carrinho quando o cliente ja tiver endereco cadastrado, exibindo apenas a selecao de endereco e o botao "Adicionar outro endereco".
+- [ ] Manter formulario de endereco aberto quando o cliente ainda nao tiver endereco salvo.
+- [ ] Permitir definir endereco principal e usar este endereco automaticamente no carrinho e no checkout.

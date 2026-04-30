@@ -4,6 +4,8 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useState, useTransition } from "react";
 
+import { GoogleSignInButton } from "@/features/auth/components/google-sign-in-button";
+
 export function AccountLoginPrompt({ message }: { message?: string | null }): React.ReactElement {
   const [errorMessage, setErrorMessage] = useState<string | null>(message ?? null);
   const [isPending, startTransition] = useTransition();
@@ -42,7 +44,16 @@ export function AccountLoginPrompt({ message }: { message?: string | null }): Re
             Acesse pedidos, favoritos, endereços e Nerdcoins com o mesmo login rápido do topo da loja.
           </p>
 
-          <form className="mt-6 grid gap-4" onSubmit={handleSubmit}>
+          <div className="mt-6">
+            <GoogleSignInButton />
+          </div>
+          <div className="my-5 flex items-center gap-3 text-xs font-black uppercase text-[#8a959b]">
+            <span className="h-px flex-1 bg-[#e5e7eb]" />
+            ou entre com e-mail
+            <span className="h-px flex-1 bg-[#e5e7eb]" />
+          </div>
+
+          <form className="grid gap-4" onSubmit={handleSubmit}>
             <label className="grid gap-2 text-sm font-bold">
               E-mail
               <input

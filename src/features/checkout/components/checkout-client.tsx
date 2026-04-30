@@ -65,6 +65,7 @@ export function CheckoutClient({ savedAddresses = [] }: CheckoutClientProps): Re
   const [addressFields, setAddressFields] = useState<AddressFields>(fieldsFromAddress(defaultAddress));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const isManualAddress = addressOptions.length === 0 || !selectedAddressId;
 
   function updateAddressField(field: keyof AddressFields, value: string): void {
     setAddressFields((currentFields) => ({ ...currentFields, [field]: value }));
@@ -238,6 +239,8 @@ export function CheckoutClient({ savedAddresses = [] }: CheckoutClientProps): Re
             CPF
             <Input name="cpf" />
           </label>
+          {isManualAddress ? (
+            <>
           <label className="grid gap-2 text-sm font-medium">
             CEP
             <Input
@@ -301,6 +304,8 @@ export function CheckoutClient({ savedAddresses = [] }: CheckoutClientProps): Re
               value={addressFields.state}
             />
           </label>
+            </>
+          ) : null}
           <Button className="md:col-span-2" disabled={isSubmitting} type="submit">
             {isSubmitting ? "Criando pedido..." : "Pagar com Mercado Pago"}
           </Button>

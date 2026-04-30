@@ -1,11 +1,18 @@
 import { CheckoutClient } from "@/features/checkout/components/checkout-client";
+import { sanitizeCustomerNextPath } from "@/lib/account/completion";
 import { auth } from "@/lib/auth";
 import { getCustomerSavedAddresses } from "@/lib/orders/queries";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function CheckoutPage(): Promise<React.ReactElement> {
   const session = await auth();
+
+  if (session?.user?.id && !session.user.customerRegistrationComplete) {
+    redirect(`/cadastro/google?next=${encodeURIComponent(sanitizeCustomerNextPath("/checkout"))}`);
+  }
+
   const savedAddresses = session?.user?.id
     ? (await getCustomerSavedAddresses(session.user.id)).map((address) => ({
         id: address.id,

@@ -1,7 +1,9 @@
 import { AccountLoginPrompt } from "@/features/account/components/account-login-prompt";
 import { AccountOverview } from "@/features/account/components/account-overview";
+import { sanitizeCustomerNextPath } from "@/lib/account/completion";
 import { auth } from "@/lib/auth";
 import { getCustomerAccountSummary } from "@/lib/orders/queries";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +22,10 @@ export default async function AccountPage({ searchParams }: AccountPageProps): P
 
   if (!session?.user?.id) {
     return <AccountLoginPrompt message={loginMessage} />;
+  }
+
+  if (!session.user.customerRegistrationComplete) {
+    redirect(`/cadastro/google?next=${encodeURIComponent(sanitizeCustomerNextPath("/conta"))}`);
   }
 
   const account = await getCustomerAccountSummary(session.user.id);

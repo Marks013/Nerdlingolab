@@ -7,6 +7,7 @@ import Google from "next-auth/providers/google";
 import { z } from "zod";
 
 import { shouldUseSecureAuthCookies } from "@/lib/auth-cookies";
+import { isCustomerRegistrationComplete } from "@/lib/account/completion";
 import { prisma } from "@/lib/prisma";
 
 const credentialsSchema = z.object({
@@ -84,19 +85,29 @@ export const authConfig = {
         token.role = user.role;
       }
 
-      if (!token.role && token.sub) {
+      if (token.sub) {
         const persistedUser = await prisma.user.findUnique({
           where: { id: token.sub },
-          select: { role: true }
+          select: {
+            birthday: true,
+            cpf: true,
+            privacyAcceptedAt: true,
+            role: true,
+            termsAcceptedAt: true
+          }
         });
 
         token.role = persistedUser?.role ?? UserRole.CUSTOMER;
+        token.customerRegistrationComplete = persistedUser
+          ? isCustomerRegistrationComplete(persistedUser)
+          : false;
       }
 
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
+        session.user.customerRegistrationComplete = token.customerRegistrationComplete ?? false;
         session.user.id = token.sub ?? "";
         session.user.role = token.role ?? UserRole.CUSTOMER;
       }

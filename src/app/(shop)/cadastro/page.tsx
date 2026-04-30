@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { registerCustomer } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
+import { GoogleSignInButton } from "@/features/auth/components/google-sign-in-button";
 import { normalizeReferralCode } from "@/lib/loyalty/referrals";
 
 interface RegisterPageProps {
@@ -22,7 +23,16 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps):
           <p className="mt-4 text-center text-[#4f5d65]">
             Salve seus dados, acompanhe pedidos e use Nerdcoins.
           </p>
-          <form action={registerCustomer} className="mt-8 grid gap-4">
+          <div className="mt-8">
+            <GoogleSignInButton label="Cadastrar com Google" />
+          </div>
+          <div className="my-5 flex items-center gap-3 text-xs font-black uppercase text-[#8a959b]">
+            <span className="h-px flex-1 bg-[#e5e7eb]" />
+            ou cadastre com e-mail
+            <span className="h-px flex-1 bg-[#e5e7eb]" />
+          </div>
+
+          <form action={registerCustomer} className="grid gap-4">
             {referralCode ? <input name="referralCode" type="hidden" value={referralCode} /> : null}
             {referralCode ? (
               <p className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-bold text-black">

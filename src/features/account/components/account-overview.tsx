@@ -37,6 +37,7 @@ type AddressDraft = {
 export function AccountOverview({ account, confirmedAddressLabel }: AccountOverviewProps): React.ReactElement {
   const [displayName, setDisplayName] = useState(account.user.name ?? "Minha conta");
   const addresses = account.addresses;
+  const [isAddressFormOpen, setIsAddressFormOpen] = useState(addresses.length === 0);
   const [postalCodeStatus, setPostalCodeStatus] = useState<string | null>(null);
   const [addressDraft, setAddressDraft] = useState<AddressDraft>({
     city: "",
@@ -225,6 +226,12 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
                 </p>
               ) : null}
             </div>
+            {!isAddressFormOpen && addresses.length > 0 ? (
+              <Button className="w-full" onClick={() => setIsAddressFormOpen(true)} type="button" variant="outline">
+                Adicionar outro endereco
+              </Button>
+            ) : null}
+            {isAddressFormOpen ? (
             <form
               action={createCustomerAddress}
               className="grid gap-3"
@@ -329,6 +336,7 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
               </label>
               <Button type="submit">Salvar endereço</Button>
             </form>
+            ) : null}
             {previewAddressLabel ? (
               <div className="rounded-md border p-3 text-sm">
                 <p className="font-medium">{previewAddressLabel}</p>

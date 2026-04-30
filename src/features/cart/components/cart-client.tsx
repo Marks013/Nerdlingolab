@@ -14,7 +14,15 @@ import { FreeShippingProgress } from "@/features/shipping/components/free-shippi
 import { formatCurrency } from "@/lib/format";
 import { parseFriendlyResponse } from "@/lib/http/friendly-response";
 
-export function CartClient(): React.ReactElement {
+interface CartClientProps {
+  defaultPostalCode?: string | null;
+  defaultShippingLabel?: string | null;
+}
+
+export function CartClient({
+  defaultPostalCode = null,
+  defaultShippingLabel = null
+}: CartClientProps): React.ReactElement {
   const { clearCart, getValidationPayload, items, removeItem, setQuantity } = useCartStore();
   const couponCode = useCartStore((state) => state.couponCode);
   const shippingOptionId = useCartStore((state) => state.shippingOptionId);
@@ -23,9 +31,10 @@ export function CartClient(): React.ReactElement {
   const setShippingOption = useCartStore((state) => state.setShippingOption);
   const setShippingPostalCode = useCartStore((state) => state.setShippingPostalCode);
   const [validatedCart, setValidatedCart] = useState<CartValidationResponse | null>(null);
+  const [isEditingPostalCode, setIsEditingPostalCode] = useState(!defaultPostalCode);
   const [isLoading, setIsLoading] = useState(false);
   const [cartMessage, setCartMessage] = useState<string | null>(null);
-  const shippingPostalCodeRef = useRef(shippingPostalCode);
+  const shippingPostalCodeRef = useRef(shippingPostalCode || defaultPostalCode || "");
   const hasItems = items.length > 0;
 
   const validateCart = useCallback(async (options: { showLoading?: boolean } = {}): Promise<void> => {
@@ -160,24 +169,50 @@ export function CartClient(): React.ReactElement {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="shippingPostalCode">
-              CEP
-            </label>
-            <div className="flex gap-2">
-              <Input
-                id="shippingPostalCode"
-                inputMode="numeric"
-                onChange={(event) => {
-                  shippingPostalCodeRef.current = event.target.value;
-                  setShippingPostalCode(event.target.value);
-                }}
-                placeholder="00000-000"
-                value={shippingPostalCode}
-              />
-              <Button disabled={isLoading} onClick={() => void validateCart({ showLoading: true })} type="button">
-                Calcular
-              </Button>
-            </div>
+            <p className="text-sm font-medium">Entrega</p>
+            {defaultPostalCode && !isEditingPostalCode ? (
+              <div className="rounded-md border bg-white p-3 text-sm">
+                <p className="font-bold text-black">{defaultShippingLabel ?? "Endereco principal"}</p>
+                <p className="mt-1 text-muted-foreground">Frete calculado pelo CEP {defaultPostalCode}.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button disabled={isLoading} onClick={() => void validateCart({ showLoading: true })} size="sm" type="button">
+                    Calcular
+                  </Button>
+                  <Button asChild size="sm" variant="outline">
+                    <Link href="/conta">Adicionar outro endereco</Link>
+                  </Button>
+                  <Button onClick={() => setIsEditingPostalCode(true)} size="sm" type="button" variant="ghost">
+                    Usar outro CEP
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className="sr-only" htmlFor="shippingPostalCode">
+                  CEP
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    id="shippingPostalCode"
+                    inputMode="numeric"
+                    onChange={(event) => {
+                      shippingPostalCodeRef.current = event.target.value;
+                      setShippingPostalCode(event.target.value);
+                    }}
+                    placeholder="00000-000"
+                    value={shippingPostalCode}
+                  />
+                  <Button disabled={isLoading} onClick={() => void validateCart({ showLoading: true })} type="button">
+                    Calcular
+                  </Button>
+                </div>
+                {defaultPostalCode ? (
+                  <Button onClick={() => setIsEditingPostalCode(false)} size="sm" type="button" variant="ghost">
+                    Voltar ao endereco principal
+                  </Button>
+                ) : null}
+              </div>
+            )}
           </div>
 
           {validatedCart?.shippingOptions.length ? (

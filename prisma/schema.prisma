@@ -96,6 +96,7 @@ enum WebhookStatus {
 enum ShippingProvider {
   MANUAL
   MERCADO_ENVIOS
+  MELHOR_ENVIO
 }
 
 enum ShipmentStatus {

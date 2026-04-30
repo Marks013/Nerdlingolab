@@ -1,8 +1,15 @@
 import type { ShippingOption } from "@/features/cart/types";
+import { isMelhorEnvioQuoteConfigured, quoteMelhorEnvioOptions } from "@/lib/shipping/melhor-envio";
 
 export interface ShippingQuoteInput {
   freeShippingThresholdCents?: number;
   itemCount: number;
+  items?: Array<{
+    id: string;
+    quantity: number;
+    unitPriceCents: number;
+    weightGrams?: number | null;
+  }>;
   postalCode?: string;
   subtotalCents: number;
 }
@@ -20,7 +27,46 @@ export function normalizePostalCode(postalCode?: string): string | null {
   return digits.length === 8 ? digits : null;
 }
 
-export function quoteShippingOptions({
+export async function quoteShippingOptions({
+  freeShippingThresholdCents = defaultFreeShippingThresholdCents,
+  itemCount,
+  items,
+  postalCode,
+  subtotalCents
+}: ShippingQuoteInput): Promise<ShippingOption[]> {
+  const normalizedPostalCode = normalizePostalCode(postalCode);
+
+  if (!normalizedPostalCode || itemCount <= 0) {
+    return [];
+  }
+
+  if (isMelhorEnvioQuoteConfigured()) {
+    try {
+      const melhorEnvioOptions = await quoteMelhorEnvioOptions({
+        freeShippingThresholdCents,
+        itemCount,
+        items,
+        postalCode: normalizedPostalCode,
+        subtotalCents
+      });
+
+      if (melhorEnvioOptions.length > 0) {
+        return melhorEnvioOptions;
+      }
+    } catch {
+      // Fall back to local quotes so checkout remains available during provider outages.
+    }
+  }
+
+  return quoteManualShippingOptions({
+    freeShippingThresholdCents,
+    itemCount,
+    postalCode: normalizedPostalCode,
+    subtotalCents
+  });
+}
+
+function quoteManualShippingOptions({
   freeShippingThresholdCents = defaultFreeShippingThresholdCents,
   itemCount,
   postalCode,
@@ -62,13 +108,14 @@ export function quoteShippingOptions({
   ];
 }
 
-export function selectShippingOption({
+export async function selectShippingOption({
   itemCount,
+  items,
   postalCode,
   selectedOptionId,
   subtotalCents
-}: ShippingQuoteInput & { selectedOptionId?: string }): ShippingQuoteResult {
-  const options = quoteShippingOptions({ itemCount, postalCode, subtotalCents });
+}: ShippingQuoteInput & { selectedOptionId?: string }): Promise<ShippingQuoteResult> {
+  const options = await quoteShippingOptions({ itemCount, items, postalCode, subtotalCents });
   const selectedOption = options.find((option) => option.id === selectedOptionId) ?? options[0] ?? null;
 
   return { options, selectedOption };

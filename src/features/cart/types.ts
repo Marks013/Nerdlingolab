@@ -29,7 +29,7 @@ export interface ShippingOption {
   description: string;
   priceCents: number;
   estimatedBusinessDays: number;
-  provider: "MANUAL" | "MERCADO_ENVIOS";
+  provider: "MANUAL" | "MERCADO_ENVIOS" | "MELHOR_ENVIO";
 }
 
 export interface AppliedCoupon {
@@ -58,6 +58,7 @@ export interface ValidatedCartItem {
   variantTitle: string;
   imageUrl: string | null;
   unitPriceCents: number;
+  weightGrams?: number | null;
   quantity: number;
   lineTotalCents: number;
   availableStock: number;

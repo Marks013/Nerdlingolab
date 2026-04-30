@@ -37,10 +37,10 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     return NextResponse.json({
       freeShippingThresholdCents: theme.freeShippingThresholdCents,
-      options: quoteShippingOptions({
-        ...parsedBody.data,
-        freeShippingThresholdCents: theme.freeShippingThresholdCents
-      })
+        options: await quoteShippingOptions({
+          ...parsedBody.data,
+          freeShippingThresholdCents: theme.freeShippingThresholdCents
+        })
     });
   } catch (error) {
     Sentry.captureException(error);

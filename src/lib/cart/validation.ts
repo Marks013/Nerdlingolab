@@ -61,6 +61,7 @@ export async function validateCartItems(
       variantTitle: variant.title,
       imageUrl: getPrimaryImageUrl(variant.product.images),
       unitPriceCents,
+      weightGrams: variant.weightGrams,
       quantity,
       lineTotalCents: unitPriceCents * quantity,
       availableStock
@@ -85,9 +86,15 @@ export async function validateCartItems(
   });
   const totalCents = Math.max(0, discountedSubtotalCents - loyaltyPreview.discountCents);
   const theme = await getStorefrontTheme();
-  const shippingQuote = selectShippingOption({
+  const shippingQuote = await selectShippingOption({
     freeShippingThresholdCents: theme.freeShippingThresholdCents,
     itemCount,
+    items: validatedItems.map((item) => ({
+      id: item.variantId,
+      quantity: item.quantity,
+      unitPriceCents: item.unitPriceCents,
+      weightGrams: item.weightGrams
+    })),
     postalCode: request.shippingPostalCode,
     selectedOptionId: request.shippingOptionId,
     subtotalCents

@@ -93,7 +93,9 @@ export const fallbackProducts: ProductListItem[] = fallbackTitles.map(([title, p
         compareAtPriceCents: priceCents + 1200,
         createdAt: fallbackDate,
         id: `${id}-variant-preto-p`,
+        heightCm: 3,
         isActive: true,
+        lengthCm: 30,
         optionValues: { Cor: "Preto", Tamanho: "P" },
         priceCents,
         productId: id,
@@ -102,14 +104,17 @@ export const fallbackProducts: ProductListItem[] = fallbackTitles.map(([title, p
         stockQuantity: 12,
         title: "Preto / P",
         updatedAt: fallbackDate,
-        weightGrams: 180
+        weightGrams: 180,
+        widthCm: 25
       },
       {
         barcode: null,
         compareAtPriceCents: priceCents + 1200,
         createdAt: fallbackDate,
         id: `${id}-variant-preto-m`,
+        heightCm: 3,
         isActive: true,
+        lengthCm: 30,
         optionValues: { Cor: "Preto", Tamanho: "M" },
         priceCents,
         productId: id,
@@ -118,7 +123,8 @@ export const fallbackProducts: ProductListItem[] = fallbackTitles.map(([title, p
         stockQuantity: 10,
         title: "Preto / M",
         updatedAt: fallbackDate,
-        weightGrams: 190
+        weightGrams: 190,
+        widthCm: 25
       }
     ]
   };

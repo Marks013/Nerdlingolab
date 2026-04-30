@@ -58,7 +58,10 @@ export interface ValidatedCartItem {
   variantTitle: string;
   imageUrl: string | null;
   unitPriceCents: number;
+  heightCm?: number | null;
+  lengthCm?: number | null;
   weightGrams?: number | null;
+  widthCm?: number | null;
   quantity: number;
   lineTotalCents: number;
   availableStock: number;

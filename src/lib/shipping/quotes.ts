@@ -1,14 +1,18 @@
 import type { ShippingOption } from "@/features/cart/types";
 import { isMelhorEnvioQuoteConfigured, quoteMelhorEnvioOptions } from "@/lib/shipping/melhor-envio";
+import { quoteConfiguredManualShippingOptions } from "@/lib/shipping/manual-rates";
 
 export interface ShippingQuoteInput {
   freeShippingThresholdCents?: number;
   itemCount: number;
   items?: Array<{
+    heightCm?: number | null;
     id: string;
+    lengthCm?: number | null;
     quantity: number;
     unitPriceCents: number;
     weightGrams?: number | null;
+    widthCm?: number | null;
   }>;
   postalCode?: string;
   subtotalCents: number;
@@ -66,7 +70,42 @@ export async function quoteShippingOptions({
   });
 }
 
-function quoteManualShippingOptions({
+export async function quoteManualShippingOptions({
+  freeShippingThresholdCents = defaultFreeShippingThresholdCents,
+  itemCount,
+  postalCode,
+  subtotalCents
+}: ShippingQuoteInput): Promise<ShippingOption[]> {
+  const normalizedPostalCode = normalizePostalCode(postalCode);
+
+  if (!normalizedPostalCode || itemCount <= 0) {
+    return [];
+  }
+
+  try {
+    const configuredOptions = await quoteConfiguredManualShippingOptions({
+      freeShippingThresholdCents,
+      itemCount,
+      postalCode: normalizedPostalCode,
+      subtotalCents
+    });
+
+    if (configuredOptions.length > 0) {
+      return configuredOptions;
+    }
+  } catch {
+    // Fall back to deterministic local rates when database rates are unavailable.
+  }
+
+  return quoteDefaultManualShippingOptions({
+    freeShippingThresholdCents,
+    itemCount,
+    postalCode: normalizedPostalCode,
+    subtotalCents
+  });
+}
+
+function quoteDefaultManualShippingOptions({
   freeShippingThresholdCents = defaultFreeShippingThresholdCents,
   itemCount,
   postalCode,

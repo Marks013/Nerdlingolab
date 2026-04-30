@@ -61,7 +61,10 @@ export async function validateCartItems(
       variantTitle: variant.title,
       imageUrl: getPrimaryImageUrl(variant.product.images),
       unitPriceCents,
+      heightCm: variant.heightCm,
+      lengthCm: variant.lengthCm,
       weightGrams: variant.weightGrams,
+      widthCm: variant.widthCm,
       quantity,
       lineTotalCents: unitPriceCents * quantity,
       availableStock
@@ -91,9 +94,12 @@ export async function validateCartItems(
     itemCount,
     items: validatedItems.map((item) => ({
       id: item.variantId,
+      heightCm: item.heightCm,
+      lengthCm: item.lengthCm,
       quantity: item.quantity,
       unitPriceCents: item.unitPriceCents,
-      weightGrams: item.weightGrams
+      weightGrams: item.weightGrams,
+      widthCm: item.widthCm
     })),
     postalCode: request.shippingPostalCode,
     selectedOptionId: request.shippingOptionId,

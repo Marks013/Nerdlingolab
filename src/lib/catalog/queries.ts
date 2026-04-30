@@ -55,9 +55,32 @@ export type AdminCategoryManagerItem = Category & {
   products: CategoryProductListItem[];
 };
 
+export interface ProductShippingPresetItem {
+  heightCm: number;
+  id: string;
+  lengthCm: number;
+  name: string;
+  weightGrams: number;
+  widthCm: number;
+}
+
 export async function getAdminCategories(): Promise<Category[]> {
   return prisma.category.findMany({
     orderBy: [{ position: "asc" }, { name: "asc" }]
+  });
+}
+
+export async function getAdminProductShippingPresets(): Promise<ProductShippingPresetItem[]> {
+  return prisma.productShippingPreset.findMany({
+    orderBy: [{ weightGrams: "asc" }, { name: "asc" }],
+    select: {
+      heightCm: true,
+      id: true,
+      lengthCm: true,
+      name: true,
+      weightGrams: true,
+      widthCm: true
+    }
   });
 }
 

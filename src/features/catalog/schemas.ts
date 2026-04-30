@@ -41,13 +41,16 @@ export type ProductFormInput = z.infer<typeof productFormSchema>;
 export interface NormalizedProductVariantInput {
   barcode?: string;
   compareAtPriceCents?: number;
+  heightCm?: number;
   isActive: boolean;
+  lengthCm?: number;
   optionValues: Record<string, string>;
   priceCents: number;
   sku: string;
   stockQuantity: number;
   title: string;
   weightGrams?: number;
+  widthCm?: number;
 }
 
 export function normalizeCategoryInput(input: CategoryFormInput): CategoryFormInput & { slug: string } {
@@ -102,6 +105,9 @@ function parseProductVariants(input: ProductFormInput): NormalizedProductVariant
       compareAtPriceValue,
       barcodeValue,
       weightGramsValue,
+      heightCmValue,
+      widthCmValue,
+      lengthCmValue,
       activeValue,
       optionValuesValue
     ] = line.split("|").map((part) => part.trim());
@@ -117,17 +123,23 @@ function parseProductVariants(input: ProductFormInput): NormalizedProductVariant
       : fallbackCompareAtPriceCents;
     const stockQuantity = stockValue ? Number.parseInt(stockValue, 10) : input.stockQuantity;
     const weightGrams = weightGramsValue ? Number.parseInt(weightGramsValue, 10) : undefined;
+    const heightCm = heightCmValue ? Number.parseInt(heightCmValue, 10) : undefined;
+    const widthCm = widthCmValue ? Number.parseInt(widthCmValue, 10) : undefined;
+    const lengthCm = lengthCmValue ? Number.parseInt(lengthCmValue, 10) : undefined;
 
     return {
       barcode: barcodeValue || undefined,
       compareAtPriceCents: compareAtPriceCents && compareAtPriceCents > 0 ? compareAtPriceCents : undefined,
+      heightCm: heightCm && heightCm > 0 ? heightCm : undefined,
       isActive: parseActiveValue(activeValue),
+      lengthCm: lengthCm && lengthCm > 0 ? lengthCm : undefined,
       optionValues: parseOptionValues(optionValuesValue),
       priceCents,
       sku,
       stockQuantity: Number.isFinite(stockQuantity) && stockQuantity > 0 ? stockQuantity : 0,
       title: titleValue || "Padrão",
-      weightGrams: weightGrams && weightGrams > 0 ? weightGrams : undefined
+      weightGrams: weightGrams && weightGrams > 0 ? weightGrams : undefined,
+      widthCm: widthCm && widthCm > 0 ? widthCm : undefined
     };
   });
 }

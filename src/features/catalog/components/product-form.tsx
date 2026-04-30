@@ -31,13 +31,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { ProductImageUploader } from "@/features/catalog/components/product-image-uploader";
 import { getImageUrls } from "@/features/catalog/image-utils";
 import { MediaLibraryPicker } from "@/features/media/components/media-library-picker";
-import type { ProductListItem } from "@/lib/catalog/queries";
+import type { ProductListItem, ProductShippingPresetItem } from "@/lib/catalog/queries";
 import { formatCurrency } from "@/lib/format";
 
 interface ProductFormProps {
   action: (formData: FormData) => Promise<void>;
   categories: Category[];
   product?: ProductListItem;
+  shippingPresets: ProductShippingPresetItem[];
 }
 
 interface VariantOptionRow {
@@ -51,12 +52,15 @@ interface VariantFormRow {
   id: string;
   imageUrl: string;
   isActive: boolean;
+  heightCm: string;
+  lengthCm: string;
   options: VariantOptionRow[];
   price: string;
   sku: string;
   stockQuantity: string;
   title: string;
   weightGrams: string;
+  widthCm: string;
 }
 
 interface MetafieldFormRow {
@@ -114,10 +118,25 @@ const productStatusOptions = [
   { label: "Arquivado", value: "ARCHIVED" }
 ];
 
-export function ProductForm({ categories, product, action }: ProductFormProps): React.ReactElement {
+export function ProductForm({
+  categories,
+  product,
+  action,
+  shippingPresets: initialShippingPresets
+}: ProductFormProps): React.ReactElement {
   const imageUrls = getImageUrls(product?.images).join("\n");
   const [variants, setVariants] = useState<VariantFormRow[]>(() => getInitialVariantRows(product));
   const [metafields, setMetafields] = useState<MetafieldFormRow[]>(() => getInitialMetafields(product?.metafields));
+  const [shippingPresets, setShippingPresets] = useState<ProductShippingPresetItem[]>(initialShippingPresets);
+  const [selectedShippingPresetId, setSelectedShippingPresetId] = useState("");
+  const [newShippingPresetName, setNewShippingPresetName] = useState("");
+  const [newShippingPresetWeight, setNewShippingPresetWeight] = useState("");
+  const [newShippingPresetWeightUnit, setNewShippingPresetWeightUnit] = useState<"g" | "kg">("g");
+  const [newShippingPresetHeight, setNewShippingPresetHeight] = useState("");
+  const [newShippingPresetWidth, setNewShippingPresetWidth] = useState("");
+  const [newShippingPresetLength, setNewShippingPresetLength] = useState("");
+  const [shippingPresetMessage, setShippingPresetMessage] = useState<string | null>(null);
+  const [isSavingShippingPreset, setIsSavingShippingPreset] = useState(false);
   const [descriptionHtml, setDescriptionHtml] = useState(product?.description ?? "");
   const [descriptionMediaIntent, setDescriptionMediaIntent] = useState<"image" | "video" | null>(null);
   const [showHtmlSource, setShowHtmlSource] = useState(false);
@@ -238,6 +257,69 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
     }
 
     setVariants((current) => addMatrixOptionValue(current, optionName, normalizedValue));
+  }
+
+  function applyShippingPresetToAll(preset: ProductShippingPresetItem): void {
+    setVariants((current) => current.map((variant) => applyShippingPresetToVariant(variant, preset)));
+  }
+
+  async function createShippingPreset(): Promise<void> {
+    setShippingPresetMessage(null);
+
+    const name = newShippingPresetName.trim();
+    const weightValue = Number.parseFloat(newShippingPresetWeight.replace(",", "."));
+    const weightGrams = newShippingPresetWeightUnit === "kg"
+      ? Math.round(weightValue * 1000)
+      : Math.round(weightValue);
+    const heightCm = Number.parseInt(newShippingPresetHeight, 10);
+    const widthCm = Number.parseInt(newShippingPresetWidth, 10);
+    const lengthCm = Number.parseInt(newShippingPresetLength, 10);
+
+    if (
+      name.length < 2
+      || !Number.isFinite(weightGrams)
+      || weightGrams <= 0
+      || !Number.isFinite(heightCm)
+      || !Number.isFinite(widthCm)
+      || !Number.isFinite(lengthCm)
+    ) {
+      setShippingPresetMessage("Informe nome, peso e dimensoes validos.");
+      return;
+    }
+
+    setIsSavingShippingPreset(true);
+
+    try {
+      const response = await fetch("/api/admin/product-shipping-presets", {
+        body: JSON.stringify({ heightCm, lengthCm, name, weightGrams, widthCm }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST"
+      });
+      const payload: unknown = await response.json();
+
+      if (!response.ok) {
+        throw new Error(getApiMessage(payload) ?? "Nao foi possivel salvar o atalho.");
+      }
+
+      const preset = getShippingPresetFromPayload(payload);
+
+      if (!preset) {
+        throw new Error("Resposta invalida ao salvar o atalho.");
+      }
+
+      setShippingPresets((current) => upsertShippingPreset(current, preset));
+      setSelectedShippingPresetId(preset.id);
+      setNewShippingPresetName("");
+      setNewShippingPresetWeight("");
+      setNewShippingPresetHeight("");
+      setNewShippingPresetWidth("");
+      setNewShippingPresetLength("");
+      setShippingPresetMessage("Atalho salvo para proximos cadastros.");
+    } catch (error) {
+      setShippingPresetMessage(error instanceof Error ? error.message : "Nao foi possivel salvar o atalho.");
+    } finally {
+      setIsSavingShippingPreset(false);
+    }
   }
 
   function removeVariant(id: string): void {
@@ -467,6 +549,86 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
             <p className="mt-3 text-xs text-muted-foreground">
               Ao vincular uma imagem, ela e aplicada nas variantes da mesma Cor + Sexo. Valores novos podem ser digitados ou criados pelos botoes acima.
             </p>
+            <div className="mt-4 rounded-lg border bg-muted/20 p-4">
+              <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold tracking-normal">Atalhos logisticos</h3>
+                  <p className="mt-1 max-w-2xl text-xs text-muted-foreground text-pretty">
+                    Salve peso e dimensoes frequentes para preencher rapidamente as variantes. O Melhor Envio usa esses dados na cotacao de frete.
+                  </p>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-[minmax(180px,1fr)_auto]">
+                  <select
+                    className="h-10 rounded-md border bg-background px-3 text-sm"
+                    onChange={(event) => setSelectedShippingPresetId(event.target.value)}
+                    value={selectedShippingPresetId}
+                  >
+                    <option value="">Selecionar atalho</option>
+                    {shippingPresets.map((preset) => (
+                      <option key={preset.id} value={preset.id}>
+                        {preset.name} - {preset.weightGrams} g / {preset.lengthCm}x{preset.widthCm}x{preset.heightCm} cm
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    disabled={!selectedShippingPresetId}
+                    onClick={() => {
+                      const preset = shippingPresets.find((item) => item.id === selectedShippingPresetId);
+
+                      if (preset) {
+                        applyShippingPresetToAll(preset);
+                      }
+                    }}
+                    type="button"
+                    variant="outline"
+                  >
+                    Aplicar em todas
+                  </Button>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(180px,1fr)_110px_90px_90px_90px_90px_auto]">
+                <Input
+                  aria-label="Nome do novo atalho logistico"
+                  onChange={(event) => setNewShippingPresetName(event.target.value)}
+                  placeholder="Ex.: Camiseta basica"
+                  value={newShippingPresetName}
+                />
+                <Input
+                  aria-label="Peso do novo atalho"
+                  min={1}
+                  onChange={(event) => setNewShippingPresetWeight(event.target.value)}
+                  placeholder="250"
+                  value={newShippingPresetWeight}
+                />
+                <select
+                  aria-label="Unidade do peso"
+                  className="h-10 rounded-md border bg-background px-3 text-sm"
+                  onChange={(event) => setNewShippingPresetWeightUnit(event.target.value === "kg" ? "kg" : "g")}
+                  value={newShippingPresetWeightUnit}
+                >
+                  <option value="g">g</option>
+                  <option value="kg">kg</option>
+                </select>
+                <Input aria-label="Comprimento em centimetros" min={1} onChange={(event) => setNewShippingPresetLength(event.target.value)} placeholder="30" type="number" value={newShippingPresetLength} />
+                <Input aria-label="Largura em centimetros" min={1} onChange={(event) => setNewShippingPresetWidth(event.target.value)} placeholder="25" type="number" value={newShippingPresetWidth} />
+                <Input aria-label="Altura em centimetros" min={1} onChange={(event) => setNewShippingPresetHeight(event.target.value)} placeholder="3" type="number" value={newShippingPresetHeight} />
+                <Button
+                  disabled={isSavingShippingPreset}
+                  onClick={() => void createShippingPreset()}
+                  type="button"
+                  variant="outline"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Salvar atalho
+                </Button>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Campos do atalho: peso, comprimento, largura e altura.
+              </p>
+              {shippingPresetMessage ? (
+                <p className="mt-2 text-xs text-muted-foreground">{shippingPresetMessage}</p>
+              ) : null}
+            </div>
             <div className="mt-4 overflow-x-auto rounded-lg border">
               <table className="w-full min-w-[1120px] border-collapse text-sm">
                 <thead className="bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
@@ -525,7 +687,22 @@ export function ProductForm({ categories, product, action }: ProductFormProps): 
                                       <Input value={variant.barcode} onChange={(event) => updateVariant(variant.id, { barcode: event.target.value })} />
                                     </Field>
                                     <Field label="Peso (g)">
-                                      <Input min={0} type="number" value={variant.weightGrams} onChange={(event) => updateVariant(variant.id, { weightGrams: event.target.value })} />
+                                      <div className="grid gap-2">
+                                        <Input min={0} type="number" value={variant.weightGrams} onChange={(event) => updateVariant(variant.id, { weightGrams: event.target.value })} />
+                                        <ShippingPresetSelect
+                                          onSelect={(preset) => updateVariant(variant.id, applyShippingPresetPatch(preset))}
+                                          presets={shippingPresets}
+                                        />
+                                      </div>
+                                    </Field>
+                                    <Field label="Comprimento (cm)">
+                                      <Input min={0} type="number" value={variant.lengthCm} onChange={(event) => updateVariant(variant.id, { lengthCm: event.target.value })} />
+                                    </Field>
+                                    <Field label="Largura (cm)">
+                                      <Input min={0} type="number" value={variant.widthCm} onChange={(event) => updateVariant(variant.id, { widthCm: event.target.value })} />
+                                    </Field>
+                                    <Field label="Altura (cm)">
+                                      <Input min={0} type="number" value={variant.heightCm} onChange={(event) => updateVariant(variant.id, { heightCm: event.target.value })} />
                                     </Field>
                                     <div className="grid gap-2 md:col-span-3">
                                       <VariantImagePreview imageUrl={variant.imageUrl} title={variant.title} />
@@ -851,6 +1028,39 @@ function OptionSummary({
   );
 }
 
+function ShippingPresetSelect({
+  onSelect,
+  presets
+}: {
+  onSelect: (preset: ProductShippingPresetItem) => void;
+  presets: ProductShippingPresetItem[];
+}): React.ReactElement {
+  return (
+    <select
+      aria-label="Aplicar atalho logistico"
+      className="h-9 rounded-md border bg-background px-3 text-xs"
+      disabled={presets.length === 0}
+      onChange={(event) => {
+        const preset = presets.find((item) => item.id === event.target.value);
+
+        if (preset) {
+          onSelect(preset);
+        }
+
+        event.currentTarget.value = "";
+      }}
+      value=""
+    >
+      <option value="">Usar atalho</option>
+      {presets.map((preset) => (
+        <option key={preset.id} value={preset.id}>
+          {preset.name} - {preset.weightGrams} g / {preset.lengthCm}x{preset.widthCm}x{preset.heightCm} cm
+        </option>
+      ))}
+    </select>
+  );
+}
+
 function Field({ children, label }: { children: React.ReactNode; label: string }): React.ReactElement {
   return (
     <label className="grid gap-2 text-sm font-medium">
@@ -926,15 +1136,18 @@ function getInitialVariantRows(product?: ProductListItem): VariantFormRow[] {
     return createVariantRow({
       barcode: variant.barcode ?? "",
       compareAtPrice: variant.compareAtPriceCents ? formatCurrency(variant.compareAtPriceCents) : "",
+      heightCm: variant.heightCm ? String(variant.heightCm) : "",
       id: variant.id,
       imageUrl: optionValues._imageUrl ?? "",
       isActive: variant.isActive,
+      lengthCm: variant.lengthCm ? String(variant.lengthCm) : "",
       options: fillOptions(options),
       price: formatCurrency(variant.priceCents),
       sku: variant.sku,
       stockQuantity: String(variant.stockQuantity),
       title: variant.title || `Variacao ${index + 1}`,
-      weightGrams: variant.weightGrams ? String(variant.weightGrams) : ""
+      weightGrams: variant.weightGrams ? String(variant.weightGrams) : "",
+      widthCm: variant.widthCm ? String(variant.widthCm) : ""
     });
   });
 }
@@ -943,15 +1156,18 @@ function createVariantRow(overrides: Partial<VariantFormRow> = {}): VariantFormR
   return {
     barcode: "",
     compareAtPrice: "",
+    heightCm: "",
     id: overrides.id ?? createRowId("variant"),
     imageUrl: "",
     isActive: true,
+    lengthCm: "",
     options: fillOptions(overrides.options ?? []),
     price: "",
     sku: "",
     stockQuantity: "0",
     title: "Padrao",
     weightGrams: "",
+    widthCm: "",
     ...overrides
   };
 }
@@ -1036,7 +1252,10 @@ function addMatrixOptionValue(
           sku: buildGeneratedSku(baseVariant.sku, options, nextVariants.length + 1),
           stockQuantity: "0",
           title: buildVariantTitle(options, "Nova variacao"),
-          weightGrams: baseVariant.weightGrams
+          weightGrams: baseVariant.weightGrams,
+          heightCm: baseVariant.heightCm,
+          lengthCm: baseVariant.lengthCm,
+          widthCm: baseVariant.widthCm
         }));
       }
     }
@@ -1097,6 +1316,78 @@ function uniqueStrings(values: string[]): string[] {
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
 }
 
+function applyShippingPresetPatch(preset: ProductShippingPresetItem): Partial<VariantFormRow> {
+  return {
+    heightCm: String(preset.heightCm),
+    lengthCm: String(preset.lengthCm),
+    weightGrams: String(preset.weightGrams),
+    widthCm: String(preset.widthCm)
+  };
+}
+
+function applyShippingPresetToVariant(
+  variant: VariantFormRow,
+  preset: ProductShippingPresetItem
+): VariantFormRow {
+  return {
+    ...variant,
+    ...applyShippingPresetPatch(preset)
+  };
+}
+
+function upsertShippingPreset(
+  presets: ProductShippingPresetItem[],
+  preset: ProductShippingPresetItem
+): ProductShippingPresetItem[] {
+  const nextPresets = presets.filter((item) => item.id !== preset.id && item.name !== preset.name);
+
+  return [...nextPresets, preset].sort((left, right) =>
+    left.weightGrams === right.weightGrams
+      ? left.name.localeCompare(right.name)
+      : left.weightGrams - right.weightGrams
+  );
+}
+
+function getShippingPresetFromPayload(payload: unknown): ProductShippingPresetItem | null {
+  if (!payload || typeof payload !== "object" || !("preset" in payload)) {
+    return null;
+  }
+
+  const preset = (payload as { preset?: unknown }).preset;
+
+  if (!preset || typeof preset !== "object") {
+    return null;
+  }
+
+  const candidate = preset as Partial<ProductShippingPresetItem>;
+
+  return typeof candidate.id === "string"
+    && typeof candidate.name === "string"
+    && typeof candidate.heightCm === "number"
+    && typeof candidate.lengthCm === "number"
+    && typeof candidate.weightGrams === "number"
+    && typeof candidate.widthCm === "number"
+    ? {
+        heightCm: candidate.heightCm,
+        id: candidate.id,
+        lengthCm: candidate.lengthCm,
+        name: candidate.name,
+        weightGrams: candidate.weightGrams,
+        widthCm: candidate.widthCm
+      }
+    : null;
+}
+
+function getApiMessage(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object" || !("message" in payload)) {
+    return null;
+  }
+
+  const message = (payload as { message?: unknown }).message;
+
+  return typeof message === "string" ? message : null;
+}
+
 function getVariantOptionValue(variant: VariantFormRow, name: string): string {
   const target = normalizeOptionName(name);
   const option = variant.options.find((item) => normalizeOptionName(item.name) === target);
@@ -1151,6 +1442,9 @@ function serializeVariants(variants: VariantFormRow[]): string {
         variant.compareAtPrice.trim(),
         variant.barcode.trim(),
         variant.weightGrams.trim(),
+        variant.heightCm.trim(),
+        variant.widthCm.trim(),
+        variant.lengthCm.trim(),
         variant.isActive ? "ativo" : "inativo",
         options.join(";")
       ].join(" | ");

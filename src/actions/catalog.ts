@@ -85,13 +85,16 @@ export async function createProduct(formData: FormData): Promise<void> {
             create: productInput.variantsArray.map((variant) => ({
               barcode: variant.barcode,
               compareAtPriceCents: variant.compareAtPriceCents,
+              heightCm: variant.heightCm,
               isActive: variant.isActive,
+              lengthCm: variant.lengthCm,
               optionValues: variant.optionValues,
               priceCents: variant.priceCents,
               sku: variant.sku,
               stockQuantity: variant.stockQuantity,
               title: variant.title,
-              weightGrams: variant.weightGrams
+              weightGrams: variant.weightGrams,
+              widthCm: variant.widthCm
             }))
           }
         },
@@ -185,12 +188,15 @@ export async function updateProduct(productId: string, formData: FormData): Prom
             data: {
               barcode: variant.barcode ?? null,
               compareAtPriceCents: variant.compareAtPriceCents ?? null,
+              heightCm: variant.heightCm ?? null,
               isActive: variant.isActive,
+              lengthCm: variant.lengthCm ?? null,
               optionValues: variant.optionValues,
               priceCents: variant.priceCents,
               stockQuantity: variant.stockQuantity,
               title: variant.title,
-              weightGrams: variant.weightGrams ?? null
+              weightGrams: variant.weightGrams ?? null,
+              widthCm: variant.widthCm ?? null
             }
           });
           continue;
@@ -200,14 +206,17 @@ export async function updateProduct(productId: string, formData: FormData): Prom
           data: {
             barcode: variant.barcode,
             compareAtPriceCents: variant.compareAtPriceCents,
+            heightCm: variant.heightCm,
             isActive: variant.isActive,
+            lengthCm: variant.lengthCm,
             optionValues: variant.optionValues,
             priceCents: variant.priceCents,
             productId,
             sku: variant.sku,
             stockQuantity: variant.stockQuantity,
             title: variant.title,
-            weightGrams: variant.weightGrams
+            weightGrams: variant.weightGrams,
+            widthCm: variant.widthCm
           }
         });
       }

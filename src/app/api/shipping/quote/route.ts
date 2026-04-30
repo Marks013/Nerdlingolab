@@ -2,7 +2,11 @@ import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { quoteShippingOptions } from "@/lib/shipping/quotes";
+import {
+  defaultFreeShippingThresholdCents,
+  quoteManualShippingOptions,
+  quoteShippingOptions
+} from "@/lib/shipping/quotes";
 import { rateLimitRequest } from "@/lib/security/rate-limit";
 import { assertSameOriginRequest } from "@/lib/security/request";
 import { getStorefrontTheme } from "@/lib/theme/storefront";
@@ -33,14 +37,30 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ message: "Informe um CEP válido." }, { status: 400 });
     }
 
-    const theme = await getStorefrontTheme();
+    let freeShippingThresholdCents = defaultFreeShippingThresholdCents;
+
+    try {
+      const theme = await getStorefrontTheme();
+      freeShippingThresholdCents = theme.freeShippingThresholdCents;
+    } catch (error) {
+      Sentry.captureException(error);
+    }
+
+    const options = await quoteShippingOptions({
+      ...parsedBody.data,
+      freeShippingThresholdCents
+    }).catch((error: unknown) => {
+      Sentry.captureException(error);
+
+      return quoteManualShippingOptions({
+        ...parsedBody.data,
+        freeShippingThresholdCents
+      });
+    });
 
     return NextResponse.json({
-      freeShippingThresholdCents: theme.freeShippingThresholdCents,
-        options: await quoteShippingOptions({
-          ...parsedBody.data,
-          freeShippingThresholdCents: theme.freeShippingThresholdCents
-        })
+      freeShippingThresholdCents,
+      options
     });
   } catch (error) {
     Sentry.captureException(error);

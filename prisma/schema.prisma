@@ -322,6 +322,9 @@ model ProductVariant {
   stockQuantity       Int      @default(0)
   reservedQuantity    Int      @default(0)
   weightGrams         Int?
+  heightCm            Int?
+  widthCm             Int?
+  lengthCm            Int?
   isActive            Boolean  @default(true)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -331,6 +334,38 @@ model ProductVariant {
   inventoryLedger InventoryLedger[]
 
   @@index([productId, isActive])
+}
+
+model ProductShippingPreset {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  weightGrams Int
+  heightCm    Int
+  widthCm     Int
+  lengthCm    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([weightGrams])
+}
+
+model ManualShippingRate {
+  id                    String   @id @default(cuid())
+  name                  String
+  description           String?
+  priceCents            Int
+  estimatedBusinessDays Int      @default(5)
+  minSubtotalCents      Int?
+  maxSubtotalCents      Int?
+  minItems              Int?
+  maxItems              Int?
+  postalCodePrefixes    String[] @default([])
+  sortOrder             Int      @default(0)
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
 }
 
 model StorefrontTheme {

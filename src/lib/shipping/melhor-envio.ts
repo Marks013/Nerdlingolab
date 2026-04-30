@@ -1,10 +1,13 @@
 import type { ShippingOption } from "@/features/cart/types";
 
 interface MelhorEnvioQuoteItem {
+  heightCm?: number | null;
   id: string;
+  lengthCm?: number | null;
   quantity: number;
   unitPriceCents: number;
   weightGrams?: number | null;
+  widthCm?: number | null;
 }
 
 interface MelhorEnvioServiceQuote {
@@ -87,13 +90,13 @@ function buildProducts(
     : [{ id: "generic", quantity: itemCount, unitPriceCents: Math.max(100, Math.floor(subtotalCents / itemCount)) }];
 
   return quoteItems.map((item) => ({
-    height: getNumberEnv("MELHOR_ENVIO_DEFAULT_HEIGHT_CM", 3),
+    height: getPositiveNumber(item.heightCm) ?? 3,
     id: item.id,
     insurance_value: Math.max(1, item.unitPriceCents / 100),
-    length: getNumberEnv("MELHOR_ENVIO_DEFAULT_LENGTH_CM", 30),
+    length: getPositiveNumber(item.lengthCm) ?? 30,
     quantity: item.quantity,
-    weight: Math.max(0.01, (item.weightGrams ?? getNumberEnv("MELHOR_ENVIO_DEFAULT_WEIGHT_GRAMS", 250)) / 1000),
-    width: getNumberEnv("MELHOR_ENVIO_DEFAULT_WIDTH_CM", 25)
+    weight: Math.max(0.01, (item.weightGrams ?? 250) / 1000),
+    width: getPositiveNumber(item.widthCm) ?? 25
   }));
 }
 
@@ -135,10 +138,8 @@ function getMelhorEnvioUserAgent(): string {
   return process.env.MELHOR_ENVIO_USER_AGENT || "NerdLingoLab (nerdlingolab@gmail.com)";
 }
 
-function getNumberEnv(key: string, fallback: number): number {
-  const parsedValue = Number(process.env[key]);
-
-  return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : fallback;
+function getPositiveNumber(value: number | null | undefined): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
 }
 
 function normalizePostalCode(postalCode?: string): string | null {

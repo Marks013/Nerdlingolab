@@ -87,6 +87,8 @@ export async function POST(request: Request): Promise<NextResponse> {
 }
 
 function captureException(error: unknown): void {
+  console.error("[shipping-quote]", error instanceof Error ? error.stack : error);
+
   try {
     Sentry.captureException(error);
   } catch {

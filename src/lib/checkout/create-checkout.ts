@@ -135,8 +135,10 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Create
     input,
     orderId: order.id,
     orderNumber: order.orderNumber,
+    paymentItemsCents: validatedCart.totalCents - validatedCart.shippingCents,
     reservationItems: validatedCart.items,
     shippingAddress,
+    shippingCents: validatedCart.shippingCents,
     totalCents: validatedCart.totalCents
   });
 
@@ -166,15 +168,19 @@ async function createCheckoutPreferenceOrCancel({
   input,
   orderId,
   orderNumber,
+  paymentItemsCents,
   reservationItems,
   shippingAddress,
+  shippingCents,
   totalCents
 }: {
   input: CheckoutRequestInput;
   orderId: string;
   orderNumber: string;
+  paymentItemsCents: number;
   reservationItems: Awaited<ReturnType<typeof validateCartItems>>["items"];
   shippingAddress: CustomerAddressInput;
+  shippingCents: number;
   totalCents: number;
 }): Promise<MercadoPagoPreferenceResponse> {
   try {
@@ -182,7 +188,9 @@ async function createCheckoutPreferenceOrCancel({
       orderId,
       orderNumber,
       input,
+      paymentItemsCents,
       shippingAddress,
+      shippingCents,
       totalCents
     });
   } catch (error) {
@@ -206,13 +214,17 @@ async function createMercadoPagoPreference({
   orderId,
   orderNumber,
   input,
+  paymentItemsCents,
   shippingAddress,
+  shippingCents,
   totalCents
 }: {
   orderId: string;
   orderNumber: string;
   input: CheckoutRequestInput;
+  paymentItemsCents: number;
   shippingAddress: CustomerAddressInput;
+  shippingCents: number;
   totalCents: number;
 }): Promise<MercadoPagoPreferenceResponse> {
   if (shouldUseLocalPaymentMock()) {
@@ -221,6 +233,8 @@ async function createMercadoPagoPreference({
     };
   }
 
+  const productAmountCents = Math.max(0, paymentItemsCents);
+  const shouldSendShippingSeparately = shippingCents > 0 && productAmountCents > 0;
   const preference = await mercadoPagoPreference.create({
     body: {
       items: [
@@ -228,10 +242,16 @@ async function createMercadoPagoPreference({
           id: orderId,
           title: `Pedido ${orderNumber}`,
           quantity: 1,
-          unit_price: totalCents / 100,
+          unit_price: (shouldSendShippingSeparately ? productAmountCents : totalCents) / 100,
           currency_id: "BRL"
         }
       ],
+      shipments: shouldSendShippingSeparately
+        ? {
+            cost: shippingCents / 100,
+            mode: "not_specified"
+          }
+        : undefined,
       payer: {
         name: input.customer.name,
         email: input.customer.email,

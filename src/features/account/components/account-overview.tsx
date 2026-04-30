@@ -174,7 +174,7 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="rounded-lg border bg-white p-4 text-sm">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="grid gap-4">
                 <div className="min-w-0 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-semibold text-black">Google</p>
@@ -184,7 +184,7 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
                       {isGoogleLinked ? "Vinculado" : "Pendente"}
                     </span>
                   </div>
-                  <p className="max-w-[34ch] text-pretty text-muted-foreground">
+                  <p className="text-pretty text-muted-foreground">
                     {isGoogleLinked
                       ? "Sua conta Google ja pode ser usada para entrar."
                       : "Entre pelo Google sem perder seu historico, pedidos e Nerdcoins."}
@@ -193,7 +193,7 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
                 {!isGoogleLinked ? (
                   <GoogleSignInButton
                     callbackUrl="/conta?google=linked"
-                    className="w-full sm:w-auto sm:min-w-[180px]"
+                    className="w-full"
                     label="Vincular Google"
                   />
                 ) : null}

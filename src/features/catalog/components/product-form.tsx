@@ -56,6 +56,7 @@ interface VariantFormRow {
   lengthCm: string;
   options: VariantOptionRow[];
   price: string;
+  shippingLeadTimeDays: string;
   sku: string;
   stockQuantity: string;
   title: string;
@@ -135,6 +136,7 @@ export function ProductForm({
   const [newShippingPresetHeight, setNewShippingPresetHeight] = useState("");
   const [newShippingPresetWidth, setNewShippingPresetWidth] = useState("");
   const [newShippingPresetLength, setNewShippingPresetLength] = useState("");
+  const [newShippingPresetLeadTimeDays, setNewShippingPresetLeadTimeDays] = useState("");
   const [shippingPresetMessage, setShippingPresetMessage] = useState<string | null>(null);
   const [isSavingShippingPreset, setIsSavingShippingPreset] = useState(false);
   const [descriptionHtml, setDescriptionHtml] = useState(product?.description ?? "");
@@ -274,6 +276,9 @@ export function ProductForm({
     const heightCm = Number.parseInt(newShippingPresetHeight, 10);
     const widthCm = Number.parseInt(newShippingPresetWidth, 10);
     const lengthCm = Number.parseInt(newShippingPresetLength, 10);
+    const shippingLeadTimeDays = newShippingPresetLeadTimeDays
+      ? Number.parseInt(newShippingPresetLeadTimeDays, 10)
+      : 0;
 
     if (
       name.length < 2
@@ -282,6 +287,8 @@ export function ProductForm({
       || !Number.isFinite(heightCm)
       || !Number.isFinite(widthCm)
       || !Number.isFinite(lengthCm)
+      || !Number.isFinite(shippingLeadTimeDays)
+      || shippingLeadTimeDays < 0
     ) {
       setShippingPresetMessage("Informe nome, peso e dimensoes validos.");
       return;
@@ -291,7 +298,7 @@ export function ProductForm({
 
     try {
       const response = await fetch("/api/admin/product-shipping-presets", {
-        body: JSON.stringify({ heightCm, lengthCm, name, weightGrams, widthCm }),
+        body: JSON.stringify({ heightCm, lengthCm, name, shippingLeadTimeDays, weightGrams, widthCm }),
         headers: { "Content-Type": "application/json" },
         method: "POST"
       });
@@ -314,6 +321,7 @@ export function ProductForm({
       setNewShippingPresetHeight("");
       setNewShippingPresetWidth("");
       setNewShippingPresetLength("");
+      setNewShippingPresetLeadTimeDays("");
       setShippingPresetMessage("Atalho salvo para proximos cadastros.");
     } catch (error) {
       setShippingPresetMessage(error instanceof Error ? error.message : "Nao foi possivel salvar o atalho.");
@@ -554,7 +562,7 @@ export function ProductForm({
                 <div className="min-w-0">
                   <h3 className="text-sm font-semibold tracking-normal">Atalhos logisticos</h3>
                   <p className="mt-1 max-w-2xl text-xs text-muted-foreground text-pretty">
-                    Salve peso e dimensoes frequentes para preencher rapidamente as variantes. O Melhor Envio usa esses dados na cotacao de frete.
+                    Salve peso e dimensoes frequentes para preencher rapidamente as variantes e calcular o frete com mais precisao.
                   </p>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-[minmax(180px,1fr)_auto]">
@@ -567,6 +575,7 @@ export function ProductForm({
                     {shippingPresets.map((preset) => (
                       <option key={preset.id} value={preset.id}>
                         {preset.name} - {preset.weightGrams} g / {preset.lengthCm}x{preset.widthCm}x{preset.heightCm} cm
+                        {preset.shippingLeadTimeDays > 0 ? ` / +${preset.shippingLeadTimeDays} dias` : ""}
                       </option>
                     ))}
                   </select>
@@ -586,7 +595,7 @@ export function ProductForm({
                   </Button>
                 </div>
               </div>
-              <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(180px,1fr)_110px_90px_90px_90px_90px_auto]">
+              <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(180px,1fr)_110px_90px_90px_90px_90px_110px_auto]">
                 <Input
                   aria-label="Nome do novo atalho logistico"
                   onChange={(event) => setNewShippingPresetName(event.target.value)}
@@ -612,6 +621,7 @@ export function ProductForm({
                 <Input aria-label="Comprimento em centimetros" min={1} onChange={(event) => setNewShippingPresetLength(event.target.value)} placeholder="30" type="number" value={newShippingPresetLength} />
                 <Input aria-label="Largura em centimetros" min={1} onChange={(event) => setNewShippingPresetWidth(event.target.value)} placeholder="25" type="number" value={newShippingPresetWidth} />
                 <Input aria-label="Altura em centimetros" min={1} onChange={(event) => setNewShippingPresetHeight(event.target.value)} placeholder="3" type="number" value={newShippingPresetHeight} />
+                <Input aria-label="Dias adicionais ao prazo de frete" min={0} onChange={(event) => setNewShippingPresetLeadTimeDays(event.target.value)} placeholder="+ dias" type="number" value={newShippingPresetLeadTimeDays} />
                 <Button
                   disabled={isSavingShippingPreset}
                   onClick={() => void createShippingPreset()}
@@ -623,7 +633,7 @@ export function ProductForm({
                 </Button>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                Campos do atalho: peso, comprimento, largura e altura.
+                Campos do atalho: peso, comprimento, largura, altura e prazo adicional opcional.
               </p>
               {shippingPresetMessage ? (
                 <p className="mt-2 text-xs text-muted-foreground">{shippingPresetMessage}</p>
@@ -703,6 +713,9 @@ export function ProductForm({
                                     </Field>
                                     <Field label="Altura (cm)">
                                       <Input min={0} type="number" value={variant.heightCm} onChange={(event) => updateVariant(variant.id, { heightCm: event.target.value })} />
+                                    </Field>
+                                    <Field label="Prazo adicional (dias)">
+                                      <Input min={0} type="number" value={variant.shippingLeadTimeDays} onChange={(event) => updateVariant(variant.id, { shippingLeadTimeDays: event.target.value })} />
                                     </Field>
                                     <div className="grid gap-2 md:col-span-3">
                                       <VariantImagePreview imageUrl={variant.imageUrl} title={variant.title} />
@@ -1143,6 +1156,7 @@ function getInitialVariantRows(product?: ProductListItem): VariantFormRow[] {
       lengthCm: variant.lengthCm ? String(variant.lengthCm) : "",
       options: fillOptions(options),
       price: formatCurrency(variant.priceCents),
+      shippingLeadTimeDays: variant.shippingLeadTimeDays ? String(variant.shippingLeadTimeDays) : "",
       sku: variant.sku,
       stockQuantity: String(variant.stockQuantity),
       title: variant.title || `Variacao ${index + 1}`,
@@ -1163,6 +1177,7 @@ function createVariantRow(overrides: Partial<VariantFormRow> = {}): VariantFormR
     lengthCm: "",
     options: fillOptions(overrides.options ?? []),
     price: "",
+    shippingLeadTimeDays: "",
     sku: "",
     stockQuantity: "0",
     title: "Padrao",
@@ -1249,6 +1264,7 @@ function addMatrixOptionValue(
           isActive: true,
           options,
           price: baseVariant.price,
+          shippingLeadTimeDays: baseVariant.shippingLeadTimeDays,
           sku: buildGeneratedSku(baseVariant.sku, options, nextVariants.length + 1),
           stockQuantity: "0",
           title: buildVariantTitle(options, "Nova variacao"),
@@ -1320,6 +1336,7 @@ function applyShippingPresetPatch(preset: ProductShippingPresetItem): Partial<Va
   return {
     heightCm: String(preset.heightCm),
     lengthCm: String(preset.lengthCm),
+    shippingLeadTimeDays: preset.shippingLeadTimeDays > 0 ? String(preset.shippingLeadTimeDays) : "",
     weightGrams: String(preset.weightGrams),
     widthCm: String(preset.widthCm)
   };
@@ -1365,6 +1382,7 @@ function getShippingPresetFromPayload(payload: unknown): ProductShippingPresetIt
     && typeof candidate.name === "string"
     && typeof candidate.heightCm === "number"
     && typeof candidate.lengthCm === "number"
+    && typeof candidate.shippingLeadTimeDays === "number"
     && typeof candidate.weightGrams === "number"
     && typeof candidate.widthCm === "number"
     ? {
@@ -1372,6 +1390,7 @@ function getShippingPresetFromPayload(payload: unknown): ProductShippingPresetIt
         id: candidate.id,
         lengthCm: candidate.lengthCm,
         name: candidate.name,
+        shippingLeadTimeDays: candidate.shippingLeadTimeDays,
         weightGrams: candidate.weightGrams,
         widthCm: candidate.widthCm
       }
@@ -1445,6 +1464,7 @@ function serializeVariants(variants: VariantFormRow[]): string {
         variant.heightCm.trim(),
         variant.widthCm.trim(),
         variant.lengthCm.trim(),
+        variant.shippingLeadTimeDays.trim(),
         variant.isActive ? "ativo" : "inativo",
         options.join(";")
       ].join(" | ");

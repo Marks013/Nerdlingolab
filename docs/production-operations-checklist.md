@@ -61,3 +61,5 @@ Use este checklist antes do lançamento e em toda mudança relevante de infraest
 - [ ] Ocultar formulario de endereco no checkout/carrinho quando o cliente ja tiver endereco cadastrado, exibindo apenas a selecao de endereco e o botao "Adicionar outro endereco".
 - [ ] Manter formulario de endereco aberto quando o cliente ainda nao tiver endereco salvo.
 - [ ] Permitir definir endereco principal e usar este endereco automaticamente no carrinho e no checkout.
+- [ ] Rebuild do detalhe de pedidos no admin e na geração de pedidos com snapshot completo: forma de pagamento, status bruto/normalizado, endereço usado no frete, opção de frete, indicação de frete grátis por regra de valor, cupom aplicado, desconto, itens, estoque baixado, eventos internos e histórico operacional.
+- [ ] Personalizar opções quando houver frete grátis por valor mínimo ou cupom: exibir apenas uma opção econômica de menor custo interno e uma opção rápida com menor custo entre as opções ágeis, evitando que o cliente escolha fretes gratuitos caros demais para a margem.

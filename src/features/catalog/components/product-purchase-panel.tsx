@@ -16,11 +16,16 @@ import {
 export interface ProductVariantOption {
   availableStock: number;
   compareAtPriceCents: number | null;
+  heightCm?: number | null;
   id: string;
   imageUrl?: string | null;
+  lengthCm?: number | null;
   optionValues: unknown;
   priceCents: number;
+  shippingLeadTimeDays?: number | null;
   title: string;
+  weightGrams?: number | null;
+  widthCm?: number | null;
 }
 
 interface ProductPurchasePanelProps {
@@ -167,6 +172,16 @@ export function ProductPurchasePanel({
 
       <ShippingEstimator
         freeShippingThresholdCents={freeShippingThresholdCents}
+        item={{
+          heightCm: selectedVariant.heightCm,
+          id: selectedVariant.id,
+          lengthCm: selectedVariant.lengthCm,
+          quantity,
+          shippingLeadTimeDays: selectedVariant.shippingLeadTimeDays,
+          unitPriceCents: selectedVariant.priceCents,
+          weightGrams: selectedVariant.weightGrams,
+          widthCm: selectedVariant.widthCm
+        }}
         subtotalCents={subtotalCents}
       />
     </div>

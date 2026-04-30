@@ -1,4 +1,4 @@
-import { ProductStatus } from "@/generated/prisma/client";
+import { CouponType, ProductStatus } from "@/generated/prisma/client";
 
 import { getPrimaryImageUrl } from "@/features/catalog/image-utils";
 import type {
@@ -63,6 +63,7 @@ export async function validateCartItems(
       unitPriceCents,
       heightCm: variant.heightCm,
       lengthCm: variant.lengthCm,
+      shippingLeadTimeDays: variant.shippingLeadTimeDays,
       weightGrams: variant.weightGrams,
       widthCm: variant.widthCm,
       quantity,
@@ -89,14 +90,17 @@ export async function validateCartItems(
   });
   const totalCents = Math.max(0, discountedSubtotalCents - loyaltyPreview.discountCents);
   const theme = await getStorefrontTheme();
+  const hasFreeShippingCoupon = couponPreview.coupon?.type === CouponType.FREE_SHIPPING;
   const shippingQuote = await selectShippingOption({
     freeShippingThresholdCents: theme.freeShippingThresholdCents,
+    forceFreeShipping: hasFreeShippingCoupon,
     itemCount,
     items: validatedItems.map((item) => ({
       id: item.variantId,
       heightCm: item.heightCm,
       lengthCm: item.lengthCm,
       quantity: item.quantity,
+      shippingLeadTimeDays: item.shippingLeadTimeDays,
       unitPriceCents: item.unitPriceCents,
       weightGrams: item.weightGrams,
       widthCm: item.widthCm

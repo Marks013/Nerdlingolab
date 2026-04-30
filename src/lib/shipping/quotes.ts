@@ -4,12 +4,14 @@ import { quoteConfiguredManualShippingOptions } from "@/lib/shipping/manual-rate
 
 export interface ShippingQuoteInput {
   freeShippingThresholdCents?: number;
+  forceFreeShipping?: boolean;
   itemCount: number;
   items?: Array<{
     heightCm?: number | null;
     id: string;
     lengthCm?: number | null;
     quantity: number;
+    shippingLeadTimeDays?: number | null;
     unitPriceCents: number;
     weightGrams?: number | null;
     widthCm?: number | null;
@@ -33,6 +35,7 @@ export function normalizePostalCode(postalCode?: string): string | null {
 
 export async function quoteShippingOptions({
   freeShippingThresholdCents = defaultFreeShippingThresholdCents,
+  forceFreeShipping = false,
   itemCount,
   items,
   postalCode,
@@ -48,6 +51,7 @@ export async function quoteShippingOptions({
     try {
       const melhorEnvioOptions = await quoteMelhorEnvioOptions({
         freeShippingThresholdCents,
+        forceFreeShipping,
         itemCount,
         items,
         postalCode: normalizedPostalCode,
@@ -55,7 +59,7 @@ export async function quoteShippingOptions({
       });
 
       if (melhorEnvioOptions.length > 0) {
-        return melhorEnvioOptions;
+        return limitPreferredShippingOptions(addShippingLeadTime(melhorEnvioOptions, items));
       }
     } catch {
       // Fall back to local quotes so checkout remains available during provider outages.
@@ -64,7 +68,9 @@ export async function quoteShippingOptions({
 
   return quoteManualShippingOptions({
     freeShippingThresholdCents,
+    forceFreeShipping,
     itemCount,
+    items,
     postalCode: normalizedPostalCode,
     subtotalCents
   });
@@ -72,7 +78,9 @@ export async function quoteShippingOptions({
 
 export async function quoteManualShippingOptions({
   freeShippingThresholdCents = defaultFreeShippingThresholdCents,
+  forceFreeShipping = false,
   itemCount,
+  items,
   postalCode,
   subtotalCents
 }: ShippingQuoteInput): Promise<ShippingOption[]> {
@@ -85,28 +93,31 @@ export async function quoteManualShippingOptions({
   try {
     const configuredOptions = await quoteConfiguredManualShippingOptions({
       freeShippingThresholdCents,
+      forceFreeShipping,
       itemCount,
       postalCode: normalizedPostalCode,
       subtotalCents
     });
 
     if (configuredOptions.length > 0) {
-      return configuredOptions;
+      return limitPreferredShippingOptions(addShippingLeadTime(configuredOptions, items));
     }
   } catch {
     // Fall back to deterministic local rates when database rates are unavailable.
   }
 
-  return quoteDefaultManualShippingOptions({
+  return limitPreferredShippingOptions(addShippingLeadTime(quoteDefaultManualShippingOptions({
     freeShippingThresholdCents,
+    forceFreeShipping,
     itemCount,
     postalCode: normalizedPostalCode,
     subtotalCents
-  });
+  }), items));
 }
 
 export function quoteDefaultManualShippingOptions({
   freeShippingThresholdCents = defaultFreeShippingThresholdCents,
+  forceFreeShipping = false,
   itemCount,
   postalCode,
   subtotalCents
@@ -119,17 +130,17 @@ export function quoteDefaultManualShippingOptions({
 
   const regionalMultiplier = getRegionalMultiplier(normalizedPostalCode);
   const itemSurchargeCents = Math.max(0, itemCount - 1) * 350;
-  const hasFreeEconomyShipping = subtotalCents >= freeShippingThresholdCents;
-  const economyPriceCents = hasFreeEconomyShipping
+  const hasFreeShipping = forceFreeShipping || subtotalCents >= freeShippingThresholdCents;
+  const economyPriceCents = hasFreeShipping
     ? 0
     : Math.round((1_490 + itemSurchargeCents) * regionalMultiplier);
-  const expressPriceCents = Math.round((2_490 + itemSurchargeCents) * regionalMultiplier);
+  const expressPriceCents = hasFreeShipping ? 0 : Math.round((2_490 + itemSurchargeCents) * regionalMultiplier);
 
   return [
     {
       id: "economy",
       name: "Entrega econômica",
-      description: hasFreeEconomyShipping
+      description: hasFreeShipping
         ? "Frete grátis para este pedido."
         : "Opção com melhor custo para sua região.",
       priceCents: economyPriceCents,
@@ -149,6 +160,7 @@ export function quoteDefaultManualShippingOptions({
 
 export async function selectShippingOption({
   freeShippingThresholdCents,
+  forceFreeShipping,
   itemCount,
   items,
   postalCode,
@@ -157,6 +169,7 @@ export async function selectShippingOption({
 }: ShippingQuoteInput & { selectedOptionId?: string }): Promise<ShippingQuoteResult> {
   const options = await quoteShippingOptions({
     freeShippingThresholdCents,
+    forceFreeShipping,
     itemCount,
     items,
     postalCode,
@@ -179,4 +192,57 @@ function getRegionalMultiplier(postalCode: string): number {
   }
 
   return 1.55;
+}
+
+function limitPreferredShippingOptions(options: ShippingOption[]): ShippingOption[] {
+  if (options.length <= 5) {
+    return options;
+  }
+
+  const cheapestOptions = [...options]
+    .sort(compareShippingByCost)
+    .slice(0, 2);
+  const selectedIds = new Set(cheapestOptions.map((option) => option.id));
+
+  const fastestOptions = [...options]
+    .filter((option) => !selectedIds.has(option.id))
+    .sort(compareShippingBySpeed)
+    .slice(0, 3);
+
+  return [...cheapestOptions, ...fastestOptions];
+}
+
+function compareShippingByCost(left: ShippingOption, right: ShippingOption): number {
+  return left.priceCents - right.priceCents
+    || left.estimatedBusinessDays - right.estimatedBusinessDays
+    || left.name.localeCompare(right.name);
+}
+
+function compareShippingBySpeed(left: ShippingOption, right: ShippingOption): number {
+  return left.estimatedBusinessDays - right.estimatedBusinessDays
+    || left.priceCents - right.priceCents
+    || left.name.localeCompare(right.name);
+}
+
+function addShippingLeadTime(
+  options: ShippingOption[],
+  items: ShippingQuoteInput["items"]
+): ShippingOption[] {
+  const leadTimeDays = Math.max(
+    0,
+    ...(items ?? []).map((item) => {
+      const days = item.shippingLeadTimeDays;
+
+      return typeof days === "number" && Number.isFinite(days) ? days : 0;
+    })
+  );
+
+  if (leadTimeDays <= 0) {
+    return options;
+  }
+
+  return options.map((option) => ({
+    ...option,
+    estimatedBusinessDays: option.estimatedBusinessDays + leadTimeDays
+  }));
 }

@@ -35,6 +35,11 @@ export default async function ProductPage({ params }: ProductPageProps): Promise
     optionValues: variant.optionValues,
     priceCents: variant.priceCents,
     compareAtPriceCents: variant.compareAtPriceCents,
+    heightCm: variant.heightCm,
+    lengthCm: variant.lengthCm,
+    shippingLeadTimeDays: variant.shippingLeadTimeDays,
+    weightGrams: variant.weightGrams,
+    widthCm: variant.widthCm,
     availableStock: Math.max(0, variant.stockQuantity - variant.reservedQuantity),
     imageUrl: getVariantImageUrl(variant.optionValues)
   }));

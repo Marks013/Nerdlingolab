@@ -11,6 +11,16 @@ import { parseFriendlyResponse } from "@/lib/http/friendly-response";
 
 interface ShippingEstimatorProps {
   freeShippingThresholdCents?: number;
+  item?: {
+    heightCm?: number | null;
+    id: string;
+    lengthCm?: number | null;
+    quantity: number;
+    shippingLeadTimeDays?: number | null;
+    unitPriceCents: number;
+    weightGrams?: number | null;
+    widthCm?: number | null;
+  };
   itemCount?: number;
   subtotalCents: number;
 }
@@ -22,6 +32,7 @@ interface ShippingQuoteResponse {
 
 export function ShippingEstimator({
   freeShippingThresholdCents = 9_990,
+  item,
   itemCount = 1,
   subtotalCents
 }: ShippingEstimatorProps): React.ReactElement {
@@ -38,7 +49,12 @@ export function ShippingEstimator({
     const response = await fetch("/api/shipping/quote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ itemCount, postalCode, subtotalCents })
+      body: JSON.stringify({
+        itemCount: item?.quantity ?? itemCount,
+        items: item ? [item] : undefined,
+        postalCode,
+        subtotalCents
+      })
     });
     const parsedResponse = await parseFriendlyResponse<ShippingQuoteResponse>(
       response,

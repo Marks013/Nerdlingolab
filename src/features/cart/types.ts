@@ -60,6 +60,7 @@ export interface ValidatedCartItem {
   unitPriceCents: number;
   heightCm?: number | null;
   lengthCm?: number | null;
+  shippingLeadTimeDays?: number | null;
   weightGrams?: number | null;
   widthCm?: number | null;
   quantity: number;

@@ -325,6 +325,7 @@ model ProductVariant {
   heightCm            Int?
   widthCm             Int?
   lengthCm            Int?
+  shippingLeadTimeDays Int?
   isActive            Boolean  @default(true)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -343,6 +344,7 @@ model ProductShippingPreset {
   heightCm    Int
   widthCm     Int
   lengthCm    Int
+  shippingLeadTimeDays Int @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

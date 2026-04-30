@@ -60,6 +60,7 @@ export interface ProductShippingPresetItem {
   id: string;
   lengthCm: number;
   name: string;
+  shippingLeadTimeDays: number;
   weightGrams: number;
   widthCm: number;
 }
@@ -78,6 +79,7 @@ export async function getAdminProductShippingPresets(): Promise<ProductShippingP
       id: true,
       lengthCm: true,
       name: true,
+      shippingLeadTimeDays: true,
       weightGrams: true,
       widthCm: true
     }

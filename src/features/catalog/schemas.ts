@@ -46,6 +46,7 @@ export interface NormalizedProductVariantInput {
   lengthCm?: number;
   optionValues: Record<string, string>;
   priceCents: number;
+  shippingLeadTimeDays?: number;
   sku: string;
   stockQuantity: number;
   title: string;
@@ -108,6 +109,7 @@ function parseProductVariants(input: ProductFormInput): NormalizedProductVariant
       heightCmValue,
       widthCmValue,
       lengthCmValue,
+      shippingLeadTimeDaysValue,
       activeValue,
       optionValuesValue
     ] = line.split("|").map((part) => part.trim());
@@ -126,15 +128,21 @@ function parseProductVariants(input: ProductFormInput): NormalizedProductVariant
     const heightCm = heightCmValue ? Number.parseInt(heightCmValue, 10) : undefined;
     const widthCm = widthCmValue ? Number.parseInt(widthCmValue, 10) : undefined;
     const lengthCm = lengthCmValue ? Number.parseInt(lengthCmValue, 10) : undefined;
+    const hasLeadTimeColumn = !isActiveColumnValue(shippingLeadTimeDaysValue);
+    const parsedLeadTimeValue = hasLeadTimeColumn ? shippingLeadTimeDaysValue : undefined;
+    const parsedActiveValue = hasLeadTimeColumn ? activeValue : shippingLeadTimeDaysValue;
+    const parsedOptionValuesValue = hasLeadTimeColumn ? optionValuesValue : activeValue;
+    const shippingLeadTimeDays = parsedLeadTimeValue ? Number.parseInt(parsedLeadTimeValue, 10) : undefined;
 
     return {
       barcode: barcodeValue || undefined,
       compareAtPriceCents: compareAtPriceCents && compareAtPriceCents > 0 ? compareAtPriceCents : undefined,
       heightCm: heightCm && heightCm > 0 ? heightCm : undefined,
-      isActive: parseActiveValue(activeValue),
+      isActive: parseActiveValue(parsedActiveValue),
       lengthCm: lengthCm && lengthCm > 0 ? lengthCm : undefined,
-      optionValues: parseOptionValues(optionValuesValue),
+      optionValues: parseOptionValues(parsedOptionValuesValue),
       priceCents,
+      shippingLeadTimeDays: shippingLeadTimeDays && shippingLeadTimeDays > 0 ? shippingLeadTimeDays : undefined,
       sku,
       stockQuantity: Number.isFinite(stockQuantity) && stockQuantity > 0 ? stockQuantity : 0,
       title: titleValue || "Padrão",
@@ -172,6 +180,14 @@ function parseActiveValue(value: string | undefined): boolean {
   }
 
   return !["0", "false", "inativo", "não", "nao"].includes(value.toLowerCase());
+}
+
+function isActiveColumnValue(value: string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+
+  return ["0", "1", "active", "ativo", "false", "inactive", "inativo", "nao", "não", "true"].includes(value.toLowerCase());
 }
 
 function parseOptionValues(value: string | undefined): Record<string, string> {

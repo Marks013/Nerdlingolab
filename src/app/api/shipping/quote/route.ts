@@ -14,6 +14,16 @@ import { getStorefrontTheme } from "@/lib/theme/storefront";
 
 const shippingQuoteSchema = z.object({
   itemCount: z.coerce.number().int().positive().max(99).default(1),
+  items: z.array(z.object({
+    heightCm: z.number().int().positive().nullable().optional(),
+    id: z.string().trim().min(1).max(120),
+    lengthCm: z.number().int().positive().nullable().optional(),
+    quantity: z.number().int().positive().max(99),
+    shippingLeadTimeDays: z.number().int().min(0).max(90).nullable().optional(),
+    unitPriceCents: z.number().int().min(1).max(1_000_000),
+    weightGrams: z.number().int().positive().nullable().optional(),
+    widthCm: z.number().int().positive().nullable().optional()
+  })).max(99).optional(),
   postalCode: z.string().trim().min(8).max(12),
   subtotalCents: z.coerce.number().int().min(0).max(1_000_000)
 });

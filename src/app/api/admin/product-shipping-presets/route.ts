@@ -11,6 +11,7 @@ const shippingPresetSchema = z.object({
   heightCm: z.coerce.number().int().min(1).max(200),
   lengthCm: z.coerce.number().int().min(1).max(200),
   name: z.string().trim().min(2).max(80),
+  shippingLeadTimeDays: z.coerce.number().int().min(0).max(90).optional().default(0),
   weightGrams: z.coerce.number().int().min(1).max(100_000),
   widthCm: z.coerce.number().int().min(1).max(200)
 });
@@ -44,6 +45,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       update: {
         heightCm: parsedPayload.data.heightCm,
         lengthCm: parsedPayload.data.lengthCm,
+        shippingLeadTimeDays: parsedPayload.data.shippingLeadTimeDays,
         weightGrams: parsedPayload.data.weightGrams,
         widthCm: parsedPayload.data.widthCm
       },
@@ -53,6 +55,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         id: true,
         lengthCm: true,
         name: true,
+        shippingLeadTimeDays: true,
         weightGrams: true,
         widthCm: true
       }

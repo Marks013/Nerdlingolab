@@ -25,6 +25,7 @@ interface MelhorEnvioServiceQuote {
 
 interface MelhorEnvioQuoteInput {
   freeShippingThresholdCents: number;
+  forceFreeShipping?: boolean;
   itemCount: number;
   items?: MelhorEnvioQuoteItem[];
   postalCode?: string;
@@ -37,6 +38,7 @@ export function isMelhorEnvioQuoteConfigured(): boolean {
 
 export async function quoteMelhorEnvioOptions({
   freeShippingThresholdCents,
+  forceFreeShipping = false,
   itemCount,
   items,
   postalCode,
@@ -72,9 +74,10 @@ export async function quoteMelhorEnvioOptions({
   }
 
   const payload = await response.json() as MelhorEnvioServiceQuote[];
-  const hasFreeShipping = subtotalCents >= freeShippingThresholdCents;
+  const hasFreeShipping = forceFreeShipping || subtotalCents >= freeShippingThresholdCents;
+  const services = hasFreeShipping ? selectControlledFreeShippingServices(payload) : payload;
 
-  return payload
+  return services
     .filter((service) => !service.error)
     .map((service) => mapServiceQuote(service, hasFreeShipping))
     .filter((option): option is ShippingOption => Boolean(option));
@@ -108,7 +111,7 @@ function buildOptions(): Record<string, string> | undefined {
 
 function mapServiceQuote(service: MelhorEnvioServiceQuote, hasFreeShipping: boolean): ShippingOption | null {
   const serviceId = String(service.id ?? "").trim();
-  const priceCents = parseCurrencyToCents(service.custom_price ?? service.price);
+  const priceCents = getServicePriceCents(service);
 
   if (!serviceId || priceCents === null) {
     return null;
@@ -121,7 +124,7 @@ function mapServiceQuote(service: MelhorEnvioServiceQuote, hasFreeShipping: bool
   return {
     description: hasFreeShipping
       ? "Frete gratis para este pedido."
-      : "Cotacao em tempo real pelo Melhor Envio.",
+      : "Entrega calculada para seu CEP.",
     estimatedBusinessDays: Number.isFinite(deliveryTime) && deliveryTime > 0 ? deliveryTime : 1,
     id: `melhor-envio:${serviceId}`,
     name: companyName ? `${companyName} - ${serviceName}` : serviceName,
@@ -140,6 +143,57 @@ function getMelhorEnvioUserAgent(): string {
 
 function getPositiveNumber(value: number | null | undefined): number | null {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
+}
+
+function selectControlledFreeShippingServices(services: MelhorEnvioServiceQuote[]): MelhorEnvioServiceQuote[] {
+  const validServices = services.filter((service) => !service.error && getServicePriceCents(service) !== null);
+  const preferredServices = limitPreferredServices(validServices);
+  const cheapestService = [...preferredServices].sort(compareServiceByCost)[0];
+  const fastestDeliveryTime = Math.min(...preferredServices.map(getServiceDeliveryTime).filter((days) => days > 0));
+  const fastestCheapestService = [...preferredServices]
+    .filter((service) => getServiceDeliveryTime(service) === fastestDeliveryTime)
+    .sort(compareServiceByCost)[0];
+  const selectedServices = [cheapestService, fastestCheapestService].filter(Boolean);
+  const uniqueServices = new Map(selectedServices.map((service) => [String(service.id), service]));
+
+  return [...uniqueServices.values()];
+}
+
+function limitPreferredServices(services: MelhorEnvioServiceQuote[]): MelhorEnvioServiceQuote[] {
+  if (services.length <= 5) {
+    return services;
+  }
+
+  const cheapestServices = [...services].sort(compareServiceByCost).slice(0, 2);
+  const selectedIds = new Set(cheapestServices.map((service) => String(service.id)));
+  const fastestServices = [...services]
+    .filter((service) => !selectedIds.has(String(service.id)))
+    .sort(compareServiceBySpeed)
+    .slice(0, 3);
+
+  return [...cheapestServices, ...fastestServices];
+}
+
+function compareServiceByCost(left: MelhorEnvioServiceQuote, right: MelhorEnvioServiceQuote): number {
+  return (getServicePriceCents(left) ?? Number.MAX_SAFE_INTEGER) - (getServicePriceCents(right) ?? Number.MAX_SAFE_INTEGER)
+    || getServiceDeliveryTime(left) - getServiceDeliveryTime(right)
+    || String(left.name ?? "").localeCompare(String(right.name ?? ""));
+}
+
+function compareServiceBySpeed(left: MelhorEnvioServiceQuote, right: MelhorEnvioServiceQuote): number {
+  return getServiceDeliveryTime(left) - getServiceDeliveryTime(right)
+    || (getServicePriceCents(left) ?? Number.MAX_SAFE_INTEGER) - (getServicePriceCents(right) ?? Number.MAX_SAFE_INTEGER)
+    || String(left.name ?? "").localeCompare(String(right.name ?? ""));
+}
+
+function getServiceDeliveryTime(service: MelhorEnvioServiceQuote): number {
+  const deliveryTime = Number(service.custom_delivery_time ?? service.delivery_time ?? 0);
+
+  return Number.isFinite(deliveryTime) && deliveryTime > 0 ? deliveryTime : Number.MAX_SAFE_INTEGER;
+}
+
+function getServicePriceCents(service: MelhorEnvioServiceQuote): number | null {
+  return parseCurrencyToCents(service.custom_price ?? service.price);
 }
 
 function normalizePostalCode(postalCode?: string): string | null {

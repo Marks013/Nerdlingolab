@@ -111,12 +111,13 @@ function BoletoLogo({ compact = false }: { compact?: boolean }): React.ReactElem
 function PixLogo({ compact = false }: { compact?: boolean }): React.ReactElement {
   return (
     <svg aria-hidden="true" className={compact ? "h-6 w-12" : "h-7 w-14"} viewBox="0 0 84 40">
-      <g fill="none" stroke="#32bcad" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4">
-        <path d="M13 20 23 10a4 4 0 0 1 5.7 0l6 6a4.2 4.2 0 0 0 6 0l3.3-3.3" />
-        <path d="m44 27.3-3.3-3.3a4.2 4.2 0 0 0-6 0l-6 6a4 4 0 0 1-5.7 0L13 20" />
-        <path d="m44 12.7 6.2 6.2a1.6 1.6 0 0 1 0 2.2L44 27.3" />
+      <g transform="translate(9 5)">
+        <rect fill="#32bcad" height="19" rx="4.8" stroke="#ffffff" strokeWidth="2.4" transform="rotate(45 19 8)" width="19" x="9.5" y="-1.5" />
+        <rect fill="#32bcad" height="19" rx="4.8" stroke="#ffffff" strokeWidth="2.4" transform="rotate(45 8 19)" width="19" x="-1.5" y="9.5" />
+        <rect fill="#32bcad" height="19" rx="4.8" stroke="#ffffff" strokeWidth="2.4" transform="rotate(45 30 19)" width="19" x="20.5" y="9.5" />
+        <rect fill="#32bcad" height="19" rx="4.8" stroke="#ffffff" strokeWidth="2.4" transform="rotate(45 19 30)" width="19" x="9.5" y="20.5" />
       </g>
-      <text fill="#32bcad" fontFamily="Arial, Helvetica, sans-serif" fontSize="12" fontWeight="900" x="56" y="24">
+      <text fill="#32bcad" fontFamily="Arial, Helvetica, sans-serif" fontSize="12" fontWeight="800" x="49" y="24">
         Pix
       </text>
     </svg>

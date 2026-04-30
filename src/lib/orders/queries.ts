@@ -2,6 +2,7 @@ import type {
   Coupon,
   CouponRedemption,
   CustomerAddress,
+  Account,
   InventoryLedger,
   LoyaltyLedger,
   Order,
@@ -45,6 +46,7 @@ export type CustomerOrderDetail = Order & {
 
 export type CustomerAccountSummary = {
   user: Pick<User, "id" | "name" | "email" | "cpf" | "phone" | "birthday">;
+  accounts: Pick<Account, "provider">[];
   addresses: CustomerAddress[];
   loyaltyPoints: LoyaltyPoints | null;
   orders: CustomerOrderListItem[];
@@ -173,6 +175,12 @@ export async function getCustomerAccountSummary(
       cpf: true,
       phone: true,
       birthday: true,
+      accounts: {
+        select: {
+          provider: true
+        },
+        orderBy: { provider: "asc" }
+      },
       addresses: {
         orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }]
       },
@@ -206,6 +214,7 @@ export async function getCustomerAccountSummary(
       phone: user.phone,
       birthday: user.birthday
     },
+    accounts: user.accounts,
     addresses: user.addresses,
     loyaltyPoints: user.loyaltyPoints,
     orders: user.orders

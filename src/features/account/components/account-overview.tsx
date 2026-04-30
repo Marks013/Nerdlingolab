@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { formatOrderStatus, formatPaymentStatus } from "@/features/orders/status-labels";
+import { GoogleSignInButton } from "@/features/auth/components/google-sign-in-button";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { formatCpf } from "@/lib/identity/brazil";
 import type { CustomerAccountSummary } from "@/lib/orders/queries";
@@ -37,6 +38,7 @@ type AddressDraft = {
 export function AccountOverview({ account, confirmedAddressLabel }: AccountOverviewProps): React.ReactElement {
   const [displayName, setDisplayName] = useState(account.user.name ?? "Minha conta");
   const addresses = account.addresses;
+  const isGoogleLinked = account.accounts.some((linkedAccount) => linkedAccount.provider === "google");
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(addresses.length === 0);
   const [postalCodeStatus, setPostalCodeStatus] = useState<string | null>(null);
   const [addressDraft, setAddressDraft] = useState<AddressDraft>({
@@ -163,6 +165,43 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
                 Sair da conta
               </Button>
             </form>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Acesso e login</CardTitle>
+            <CardDescription>Gerencie os metodos de entrada da sua conta.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="rounded-lg border bg-white p-4 text-sm">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold text-black">Google</p>
+                    <span className={`rounded-full px-2 py-1 text-xs font-medium ${
+                      isGoogleLinked ? "bg-emerald-50 text-emerald-700" : "bg-orange-50 text-orange-700"
+                    }`}>
+                      {isGoogleLinked ? "Vinculado" : "Pendente"}
+                    </span>
+                  </div>
+                  <p className="max-w-[34ch] text-pretty text-muted-foreground">
+                    {isGoogleLinked
+                      ? "Sua conta Google ja pode ser usada para entrar."
+                      : "Entre pelo Google sem perder seu historico, pedidos e Nerdcoins."}
+                  </p>
+                </div>
+                {!isGoogleLinked ? (
+                  <GoogleSignInButton
+                    callbackUrl="/conta?google=linked"
+                    className="w-full sm:w-auto sm:min-w-[180px]"
+                    label="Vincular Google"
+                  />
+                ) : null}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Por seguranca, o vinculo so e concluido apos autenticacao no Google.
+            </p>
           </CardContent>
         </Card>
         <Card>

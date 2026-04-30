@@ -15,6 +15,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps): P
   const session = await auth();
   const resolvedSearchParams = await searchParams;
   const confirmedAddressLabel = normalizeSearchParam(resolvedSearchParams?.endereco);
+  const googleStatus = normalizeSearchParam(resolvedSearchParams?.google);
   const loginMessage = getLoginMessage(
     normalizeSearchParam(resolvedSearchParams?.error),
     normalizeSearchParam(resolvedSearchParams?.reset)
@@ -40,6 +41,11 @@ export default async function AccountPage({ searchParams }: AccountPageProps): P
         <div className="mb-8">
           <h1 className="geek-title text-3xl font-medium tracking-normal text-black">Minha conta</h1>
           <p className="mt-3 text-[#677279]">Acompanhe pedidos e recompensas.</p>
+          {googleStatus === "linked" ? (
+            <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+              Conta Google vinculada com sucesso.
+            </p>
+          ) : null}
         </div>
         <AccountOverview account={account} confirmedAddressLabel={confirmedAddressLabel} />
       </div>

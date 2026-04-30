@@ -3,20 +3,27 @@
 import { signIn } from "next-auth/react";
 import { useTransition } from "react";
 
+import { cn } from "@/lib/utils";
+
 interface GoogleSignInButtonProps {
   callbackUrl?: string;
+  className?: string;
   label?: string;
 }
 
 export function GoogleSignInButton({
   callbackUrl = "/cadastro/google",
+  className,
   label = "Continuar com Google"
 }: GoogleSignInButtonProps): React.ReactElement {
   const [isPending, startTransition] = useTransition();
 
   return (
     <button
-      className="inline-flex h-12 w-full items-center justify-center gap-3 rounded-lg border border-[#d9e0e4] bg-white px-4 text-sm font-black text-black shadow-sm transition hover:-translate-y-0.5 hover:border-primary hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+      className={cn(
+        "inline-flex h-12 w-full items-center justify-center gap-3 rounded-lg border border-[#d9e0e4] bg-white px-4 text-sm font-black text-black shadow-sm transition hover:-translate-y-0.5 hover:border-primary hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60",
+        className
+      )}
       disabled={isPending}
       onClick={() => startTransition(() => void signIn("google", { callbackUrl }))}
       type="button"

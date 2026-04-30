@@ -105,7 +105,7 @@ export async function quoteManualShippingOptions({
   });
 }
 
-function quoteDefaultManualShippingOptions({
+export function quoteDefaultManualShippingOptions({
   freeShippingThresholdCents = defaultFreeShippingThresholdCents,
   itemCount,
   postalCode,

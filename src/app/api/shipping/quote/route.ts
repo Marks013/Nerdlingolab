@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import {
   defaultFreeShippingThresholdCents,
+  quoteDefaultManualShippingOptions,
   quoteManualShippingOptions,
   quoteShippingOptions
 } from "@/lib/shipping/quotes";
@@ -43,28 +44,52 @@ export async function POST(request: Request): Promise<NextResponse> {
       const theme = await getStorefrontTheme();
       freeShippingThresholdCents = theme.freeShippingThresholdCents;
     } catch (error) {
-      Sentry.captureException(error);
+      captureException(error);
     }
 
-    const options = await quoteShippingOptions({
+    let options = await quoteShippingOptions({
       ...parsedBody.data,
       freeShippingThresholdCents
-    }).catch((error: unknown) => {
-      Sentry.captureException(error);
+    }).catch(async (error: unknown) => {
+      captureException(error);
 
-      return quoteManualShippingOptions({
+      try {
+        return await quoteManualShippingOptions({
+          ...parsedBody.data,
+          freeShippingThresholdCents
+        });
+      } catch (fallbackError) {
+        captureException(fallbackError);
+
+        return quoteDefaultManualShippingOptions({
+          ...parsedBody.data,
+          freeShippingThresholdCents
+        });
+      }
+    });
+
+    if (options.length === 0) {
+      options = quoteDefaultManualShippingOptions({
         ...parsedBody.data,
         freeShippingThresholdCents
       });
-    });
+    }
 
     return NextResponse.json({
       freeShippingThresholdCents,
       options
     });
   } catch (error) {
-    Sentry.captureException(error);
+    captureException(error);
 
     return NextResponse.json({ message: "Não foi possível calcular o frete." }, { status: 500 });
+  }
+}
+
+function captureException(error: unknown): void {
+  try {
+    Sentry.captureException(error);
+  } catch {
+    // Observability must never block checkout shipping quotes.
   }
 }

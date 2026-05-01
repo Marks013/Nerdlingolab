@@ -171,7 +171,12 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
               : "grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4"}
             >
               {visibleProducts.map((product, productIndex) => (
-                <ProductCard imagePriority={productIndex < 4} key={product.id} product={product} />
+                <ProductCard
+                  imagePriority={productIndex < 4}
+                  key={product.id}
+                  product={product}
+                  variant={filters.view}
+                />
               ))}
             </div>
             {products.length === 0 ? (

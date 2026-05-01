@@ -20,6 +20,7 @@ import { prisma } from "@/lib/prisma";
 export type AdminOrderListItem = Order & {
   user: Pick<User, "id" | "name" | "email"> | null;
   coupon: Pick<Coupon, "id" | "code"> | null;
+  shipments: (Shipment & { events: ShipmentEvent[] })[];
   _count: {
     items: number;
   };
@@ -37,11 +38,13 @@ export type AdminOrderDetail = Order & {
 
 export type CustomerOrderListItem = Order & {
   items: Pick<OrderItem, "id" | "productTitle" | "quantity">[];
+  shipments: (Shipment & { events: ShipmentEvent[] })[];
 };
 
 export type CustomerOrderDetail = Order & {
   items: OrderItem[];
   loyaltyLedger: LoyaltyLedger[];
+  shipments: (Shipment & { events: ShipmentEvent[] })[];
 };
 
 export type CustomerAccountSummary = {
@@ -118,6 +121,16 @@ export async function getAdminOrders(filters: Partial<AdminOrderFilters> = {}): 
         select: {
           items: true
         }
+      },
+      shipments: {
+        include: {
+          events: {
+            orderBy: { occurredAt: "desc" },
+            take: 1
+          }
+        },
+        orderBy: { createdAt: "desc" },
+        take: 1
       }
     },
     orderBy: { createdAt: "desc" },
@@ -193,6 +206,16 @@ export async function getCustomerAccountSummary(
               productTitle: true,
               quantity: true
             }
+          },
+          shipments: {
+            include: {
+              events: {
+                orderBy: { occurredAt: "desc" },
+                take: 1
+              }
+            },
+            orderBy: { createdAt: "desc" },
+            take: 1
           }
         },
         orderBy: { createdAt: "desc" },
@@ -245,6 +268,14 @@ export async function getCustomerOrderById({
         orderBy: { createdAt: "asc" }
       },
       loyaltyLedger: {
+        orderBy: { createdAt: "desc" }
+      },
+      shipments: {
+        include: {
+          events: {
+            orderBy: { occurredAt: "desc" }
+          }
+        },
         orderBy: { createdAt: "desc" }
       }
     }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatOrderStatus, formatPaymentStatus } from "@/features/orders/status-labels";
+import { ShipmentTrackingPanel } from "@/features/orders/components/shipment-tracking-panel";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import type { CustomerOrderDetail } from "@/lib/orders/queries";
 
@@ -22,6 +23,16 @@ export function CustomerOrderDetail({ order }: CustomerOrderDetailProps): React.
           <Status label="Pedido" value={formatOrderStatus(order.status)} />
           <Status label="Pagamento" value={formatPaymentStatus(order.paymentStatus)} />
           <Status label="Total" value={formatCurrency(order.totalCents)} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Rastreamento</CardTitle>
+          <CardDescription>Acompanhe o envio e o historico da entrega.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ShipmentTrackingPanel shipments={order.shipments} />
         </CardContent>
       </Card>
 

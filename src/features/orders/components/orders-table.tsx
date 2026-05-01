@@ -99,43 +99,57 @@ export function OrdersTable({ filters, orders }: OrdersTableProps): React.ReactE
         </form>
 
         <div className="grid gap-3">
-          {orders.map((order) => (
-            <article key={order.id} className="grid gap-4 rounded-lg border bg-background p-4 lg:grid-cols-[minmax(260px,1fr)_1fr_180px_auto] lg:items-center">
-              <div className="min-w-0">
-                <p className="font-semibold">{order.orderNumber}</p>
-                <p className="truncate text-sm text-muted-foreground">
-                  {order.user?.name ?? "Cliente"} / {order.user?.email ?? order.email}
-                </p>
-                <p className="text-xs text-muted-foreground">{formatDateTime(order.createdAt)}</p>
-              </div>
-              <div className="grid gap-2 text-sm">
-                <span className="inline-flex w-fit rounded-full border px-3 py-1 text-xs font-semibold">
-                  {formatOrderStatus(order.status)}
-                </span>
-                <span className="inline-flex w-fit rounded-full border px-3 py-1 text-xs font-semibold text-muted-foreground">
-                  {formatPaymentStatus(order.paymentStatus)}
-                </span>
-              </div>
-              <div className="grid gap-1 text-sm">
-                <p className="font-semibold">{formatCurrency(order.totalCents)}</p>
-                <p className="text-muted-foreground">{order._count.items} item{order._count.items === 1 ? "" : "s"}</p>
-                <p className="inline-flex items-center text-xs text-muted-foreground">
-                  <Truck className="mr-1 h-3.5 w-3.5" />
-                  {order.shippingServiceName ?? "Frete não definido"}
-                </p>
-                <p className="inline-flex items-center text-xs text-muted-foreground">
-                  <PackageCheck className="mr-1 h-3.5 w-3.5" />
-                  {order.fulfillmentStatus}
-                </p>
-              </div>
-              <Button asChild className="h-10 px-4" variant="outline">
-                <Link href={`/admin/pedidos/${order.id}`}>
-                  <Eye className="mr-2 h-4 w-4" />
-                  Ver pedido
-                </Link>
-              </Button>
-            </article>
-          ))}
+          {orders.map((order) => {
+            const latestShipment = order.shipments[0];
+
+            return (
+              <article key={order.id} className="grid gap-4 rounded-lg border bg-background p-4 lg:grid-cols-[minmax(260px,1fr)_1fr_180px_auto] lg:items-center">
+                <div className="min-w-0">
+                  <p className="font-semibold">{order.orderNumber}</p>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {order.user?.name ?? "Cliente"} / {order.user?.email ?? order.email}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{formatDateTime(order.createdAt)}</p>
+                </div>
+                <div className="grid gap-2 text-sm">
+                  <span className="inline-flex w-fit rounded-full border px-3 py-1 text-xs font-semibold">
+                    {formatOrderStatus(order.status)}
+                  </span>
+                  <span className="inline-flex w-fit rounded-full border px-3 py-1 text-xs font-semibold text-muted-foreground">
+                    {formatPaymentStatus(order.paymentStatus)}
+                  </span>
+                </div>
+                <div className="grid gap-1 text-sm">
+                  <p className="font-semibold">{formatCurrency(order.totalCents)}</p>
+                  <p className="text-muted-foreground">{order._count.items} item{order._count.items === 1 ? "" : "s"}</p>
+                  <p className="inline-flex items-center text-xs text-muted-foreground">
+                    <Truck className="mr-1 h-3.5 w-3.5" />
+                    {order.shippingServiceName ?? "Frete não definido"}
+                  </p>
+                  <p className="inline-flex items-center text-xs text-muted-foreground">
+                    <PackageCheck className="mr-1 h-3.5 w-3.5" />
+                    {order.fulfillmentStatus}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 lg:justify-end">
+                  {latestShipment ? (
+                    <Button asChild className="h-10 px-4">
+                      <Link href={`/admin/pedidos/${order.id}#rastreamento`}>
+                        <Truck className="mr-2 h-4 w-4" />
+                        Rastrear
+                      </Link>
+                    </Button>
+                  ) : null}
+                  <Button asChild className="h-10 px-4" variant="outline">
+                    <Link href={`/admin/pedidos/${order.id}`}>
+                      <Eye className="mr-2 h-4 w-4" />
+                      Ver pedido
+                    </Link>
+                  </Button>
+                </div>
+              </article>
+            );
+          })}
           {orders.length === 0 ? (
             <p className="p-4 text-sm text-muted-foreground">Nenhum pedido encontrado.</p>
           ) : null}

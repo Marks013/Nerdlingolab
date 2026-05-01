@@ -1,8 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { saveManualShipment, syncMercadoEnviosOrderShipment } from "@/actions/orders";
+import { saveManualShipment, syncMelhorEnvioOrderShipment, syncMercadoEnviosOrderShipment } from "@/actions/orders";
 import { OrderActions } from "@/features/orders/components/order-actions";
+import { ShipmentTrackingPanel } from "@/features/orders/components/shipment-tracking-panel";
 import {
   formatFulfillmentStatus,
   formatOrderStatus,
@@ -66,40 +67,7 @@ function ShippingCard({ order }: OrderDetailProps): React.ReactElement {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 text-sm">
-        {order.shipments.length > 0 ? (
-          <div className="space-y-4">
-            {order.shipments.map((shipment) => (
-              <div className="rounded-md border p-4" key={shipment.id}>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="font-medium">{shipment.carrierName ?? formatShippingProvider(shipment.provider)}</p>
-                    <p className="text-muted-foreground">
-                      {shipment.trackingNumber ?? shipment.externalShipmentId ?? "Sem código"} ·{" "}
-                      {formatShipmentStatus(shipment.status)}
-                    </p>
-                  </div>
-                  {shipment.carrierUrl ? (
-                    <a className="text-primary underline-offset-4 hover:underline" href={shipment.carrierUrl}>
-                      Acompanhar entrega
-                    </a>
-                  ) : null}
-                </div>
-                {shipment.events.length > 0 ? (
-                  <ul className="mt-3 space-y-1 text-muted-foreground">
-                    {shipment.events.slice(0, 5).map((event) => (
-                      <li key={event.id}>
-                        {formatDateTime(event.occurredAt)} · {formatShipmentStatus(event.status)}
-                        {event.substatus ? ` · ${event.substatus}` : ""}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-muted-foreground">Nenhum rastreamento registrado.</p>
-        )}
+        <ShipmentTrackingPanel shipments={order.shipments} />
 
         <form action={saveManualShipment.bind(null, order.id)} className="grid gap-3 rounded-md border p-4">
           <p className="font-medium">Registrar rastreio manual</p>
@@ -118,28 +86,17 @@ function ShippingCard({ order }: OrderDetailProps): React.ReactElement {
             Sincronizar entrega
           </button>
         </form>
+
+        <form action={syncMelhorEnvioOrderShipment.bind(null, order.id)} className="grid gap-3 rounded-md border p-4">
+          <p className="font-medium">Sincronizar Melhor Envio</p>
+          <Input name="externalShipmentId" placeholder="Código da etiqueta Melhor Envio" required />
+          <button className="rounded-md border px-3 py-2 text-sm font-medium" type="submit">
+            Sincronizar rastreio
+          </button>
+        </form>
       </CardContent>
     </Card>
   );
-}
-
-function formatShippingProvider(provider: string): string {
-  return provider === "MERCADO_ENVIOS" ? "Mercado Envios" : "Rastreamento manual";
-}
-
-function formatShipmentStatus(status: string): string {
-  const labels: Record<string, string> = {
-    CANCELLED: "Cancelado",
-    DELAYED: "Atrasado",
-    DELIVERED: "Entregue",
-    HANDLING: "Em preparação",
-    PENDING: "Pendente",
-    READY_TO_SHIP: "Pronto para envio",
-    SHIPPED: "Enviado",
-    UNKNOWN: "Status indisponível"
-  };
-
-  return labels[status] ?? "Status indisponível";
 }
 
 function StatusLine({ label, value }: { label: string; value: string }): React.ReactElement {

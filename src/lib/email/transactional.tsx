@@ -68,6 +68,51 @@ export async function sendPasswordResetEmail(resetToken: PasswordResetToken, bas
   }
 }
 
+export async function sendShipmentOverdueAdminEmail({
+  carrierName,
+  estimatedDeliveryAt,
+  orderId,
+  orderNumber,
+  trackingNumber
+}: {
+  carrierName?: string | null;
+  estimatedDeliveryAt: Date;
+  orderId: string;
+  orderNumber: string;
+  trackingNumber?: string | null;
+}): Promise<void> {
+  if (!resend) {
+    return;
+  }
+
+  try {
+    const adminUrl = `${(process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "")}/admin/pedidos/${orderId}#rastreamento`;
+    const html = `
+      <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
+        <h1 style="color:#ff6902">Pedido com entrega em atraso</h1>
+        <p>O pedido <strong>${escapeHtml(orderNumber)}</strong> passou do prazo estimado de entrega.</p>
+        <p><strong>Transportadora:</strong> ${escapeHtml(carrierName ?? "Nao informada")}<br>
+        <strong>Codigo:</strong> ${escapeHtml(trackingNumber ?? "Nao informado")}<br>
+        <strong>Prazo:</strong> ${estimatedDeliveryAt.toLocaleString("pt-BR")}</p>
+        <p>
+          <a href="${adminUrl}" style="display:inline-block;background:#ff6902;color:white;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:700">
+            Abrir rastreamento
+          </a>
+        </p>
+      </div>
+    `;
+
+    await resend.emails.send({
+      from: emailFrom,
+      html,
+      subject: `Entrega em atraso · ${orderNumber}`,
+      to: process.env.SUPPORT_EMAIL ?? "nerdlingolab@gmail.com"
+    });
+  } catch (error) {
+    Sentry.captureException(error);
+  }
+}
+
 async function sendOrderEmail({
   buildHtml,
   orderId,
@@ -121,4 +166,12 @@ function mapOrderToEmailModel(order: NonNullable<Awaited<ReturnType<typeof getAd
     ].filter(Boolean).join(" · "),
     totalCents: order.totalCents
   };
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

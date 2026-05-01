@@ -39,9 +39,10 @@ const adminNavigationGroups = [
 
 interface AdminShellProps {
   children: React.ReactNode;
+  shippingAlertCount?: number;
 }
 
-export function AdminShell({ children }: AdminShellProps): React.ReactElement {
+export function AdminShell({ children, shippingAlertCount = 0 }: AdminShellProps): React.ReactElement {
   return (
     <div className="min-h-screen overflow-x-hidden bg-muted">
       <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r bg-background p-4 lg:flex">
@@ -58,6 +59,7 @@ export function AdminShell({ children }: AdminShellProps): React.ReactElement {
                   icon={link.icon}
                   key={link.href}
                   label={link.label}
+                  badgeCount={link.href === "/admin/fretes" ? shippingAlertCount : 0}
                 />
               ))}
             </div>
@@ -95,6 +97,11 @@ export function AdminShell({ children }: AdminShellProps): React.ReactElement {
                 key={link.href}
               >
                 {link.label}
+                {link.href === "/admin/fretes" && shippingAlertCount > 0 ? (
+                  <span className="ml-2 rounded-full bg-orange-500 px-2 py-0.5 text-[11px] font-bold text-white">
+                    {shippingAlertCount}
+                  </span>
+                ) : null}
               </a>
             ))}
           </nav>
@@ -106,10 +113,12 @@ export function AdminShell({ children }: AdminShellProps): React.ReactElement {
 }
 
 function AdminNavLink({
+  badgeCount = 0,
   href,
   icon: Icon,
   label
 }: {
+  badgeCount?: number;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   label: string;
@@ -123,6 +132,11 @@ function AdminNavLink({
     >
       <Icon className="mr-2 h-4 w-4 shrink-0" />
       <span className="truncate">{label}</span>
+      {badgeCount > 0 ? (
+        <span className="ml-auto rounded-full bg-orange-500 px-2 py-0.5 text-[11px] font-bold text-white">
+          {badgeCount}
+        </span>
+      ) : null}
     </a>
   );
 }

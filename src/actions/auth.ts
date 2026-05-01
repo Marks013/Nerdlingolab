@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { LoyaltyLedgerType, UserRole } from "@/generated/prisma/client";
+import { CouponType, LoyaltyLedgerType, UserRole } from "@/generated/prisma/client";
 
 import { signIn, signOut } from "@/lib/auth";
 import { sanitizeAdminCallbackUrl } from "@/lib/admin";
@@ -251,6 +251,18 @@ export async function registerCustomer(formData: FormData): Promise<void> {
       }
     });
     await ensureReferralCode(user.id, tx);
+    await tx.coupon.create({
+      data: {
+        assignedUserId: user.id,
+        code: `NERD10-${user.id.slice(-6).toUpperCase()}`,
+        expiresAt: addDays(new Date(), 60),
+        isPublic: false,
+        minSubtotalCents: 1000,
+        perCustomerLimit: 1,
+        type: CouponType.FIXED_AMOUNT,
+        value: 1000
+      }
+    });
 
     if (signupBonusPoints > 0) {
       await tx.loyaltyLedger.create({
@@ -311,6 +323,13 @@ export async function registerCustomer(formData: FormData): Promise<void> {
     password,
     redirectTo: "/conta"
   });
+}
+
+function addDays(date: Date, days: number): Date {
+  const nextDate = new Date(date);
+  nextDate.setUTCDate(nextDate.getUTCDate() + days);
+
+  return nextDate;
 }
 
 export async function signOutFromAdmin(): Promise<void> {

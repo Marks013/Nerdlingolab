@@ -1,4 +1,7 @@
+import { ShipmentStatus, ShippingProvider } from "@/generated/prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 import type { ShippingOption } from "@/features/cart/types";
+import { prisma } from "@/lib/prisma";
 
 interface MelhorEnvioQuoteItem {
   heightCm?: number | null;
@@ -31,6 +34,13 @@ interface MelhorEnvioQuoteInput {
   postalCode?: string;
   subtotalCents: number;
 }
+
+interface MelhorEnvioTrackingInput {
+  externalShipmentId: string;
+  orderId: string;
+}
+
+type MelhorEnvioTrackingPayload = Record<string, unknown> | Record<string, unknown>[];
 
 export function isMelhorEnvioQuoteConfigured(): boolean {
   return Boolean(process.env.MELHOR_ENVIO_ACCESS_TOKEN && process.env.MELHOR_ENVIO_FROM_POSTAL_CODE);
@@ -81,6 +91,262 @@ export async function quoteMelhorEnvioOptions({
     .filter((service) => !service.error)
     .map((service) => mapServiceQuote(service, hasFreeShipping))
     .filter((option): option is ShippingOption => Boolean(option));
+}
+
+export async function syncMelhorEnvioShipment({
+  externalShipmentId,
+  orderId
+}: MelhorEnvioTrackingInput): Promise<void> {
+  const token = process.env.MELHOR_ENVIO_ACCESS_TOKEN;
+
+  if (!token) {
+    throw new Error("Melhor Envio nao configurado.");
+  }
+
+  const response = await fetch(`${getMelhorEnvioBaseUrl()}/api/v2/me/shipment/tracking`, {
+    body: JSON.stringify({ orders: [externalShipmentId] }),
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "User-Agent": getMelhorEnvioUserAgent()
+    },
+    method: "POST",
+    signal: AbortSignal.timeout(10_000)
+  });
+
+  if (!response.ok) {
+    throw new Error("Melhor Envio tracking sync failed.");
+  }
+
+  const payload = await response.json() as MelhorEnvioTrackingPayload;
+  const rawPayload = toInputJson(payload);
+  const tracking = normalizeMelhorEnvioTracking(payload, externalShipmentId);
+  const shipment = await prisma.shipment.upsert({
+    create: {
+      carrierName: tracking.carrierName,
+      externalShipmentId,
+      lastSyncedAt: new Date(),
+      orderId,
+      provider: ShippingProvider.MELHOR_ENVIO,
+      rawPayload,
+      status: tracking.status,
+      trackingNumber: tracking.trackingNumber
+    },
+    update: {
+      carrierName: tracking.carrierName,
+      lastSyncedAt: new Date(),
+      rawPayload,
+      status: tracking.status,
+      trackingNumber: tracking.trackingNumber
+    },
+    where: {
+      provider_externalShipmentId: {
+        externalShipmentId,
+        provider: ShippingProvider.MELHOR_ENVIO
+      }
+    }
+  });
+
+  for (const event of tracking.events) {
+    const existingEvent = await prisma.shipmentEvent.findFirst({
+      where: {
+        description: event.description,
+        occurredAt: event.occurredAt,
+        shipmentId: shipment.id
+      }
+    });
+
+    if (existingEvent) {
+      await prisma.shipmentEvent.update({
+        data: {
+          rawPayload: event.rawPayload,
+          status: event.status,
+          substatus: event.substatus
+        },
+        where: { id: existingEvent.id }
+      });
+    } else {
+      await prisma.shipmentEvent.create({
+        data: {
+          description: event.description,
+          occurredAt: event.occurredAt,
+          rawPayload: event.rawPayload,
+          shipmentId: shipment.id,
+          status: event.status,
+          substatus: event.substatus
+        }
+      });
+    }
+  }
+}
+
+function normalizeMelhorEnvioTracking(payload: MelhorEnvioTrackingPayload, fallbackId: string): {
+  carrierName?: string;
+  events: Array<{
+    description?: string;
+    occurredAt: Date;
+    rawPayload: Prisma.InputJsonValue;
+    status: ShipmentStatus;
+    substatus?: string;
+  }>;
+  status: ShipmentStatus;
+  trackingNumber?: string;
+} {
+  const record = findTrackingRecord(payload, fallbackId);
+  const statusText = getStringValue(record, ["status", "status_label", "tracking_status", "name", "description"]);
+  const trackingNumber = getStringValue(record, ["tracking", "tracking_number", "tracking_code", "codigo_rastreio", "code"]);
+  const carrierName = getStringValue(record, ["company", "company_name", "carrier", "carrier_name", "service"]);
+  const eventRecords = getArrayValue(record, ["events", "history", "histories", "tracking_events", "statuses"]);
+  const events = eventRecords
+    .map((event) => normalizeTrackingEvent(event))
+    .filter((event): event is NonNullable<ReturnType<typeof normalizeTrackingEvent>> => Boolean(event));
+
+  return {
+    carrierName,
+    events,
+    status: events[0]?.status ?? mapMelhorEnvioShipmentStatus(statusText),
+    trackingNumber
+  };
+}
+
+function findTrackingRecord(payload: MelhorEnvioTrackingPayload, fallbackId: string): Record<string, unknown> {
+  if (Array.isArray(payload)) {
+    return payload.find((item) => recordMatchesShipment(item, fallbackId)) ?? payload[0] ?? {};
+  }
+
+  const directMatch = Object.values(payload).find((item) => recordMatchesShipment(item, fallbackId));
+
+  if (directMatch && isRecord(directMatch)) {
+    return directMatch;
+  }
+
+  return payload;
+}
+
+function normalizeTrackingEvent(event: unknown): {
+  description?: string;
+  occurredAt: Date;
+  rawPayload: Prisma.InputJsonValue;
+  status: ShipmentStatus;
+  substatus?: string;
+} | null {
+  if (!isRecord(event)) {
+    return null;
+  }
+
+  const occurredAt = parseTrackingDate(getStringValue(event, ["date", "created_at", "occurred_at", "datetime", "time"]));
+
+  if (!occurredAt) {
+    return null;
+  }
+
+  const description = getStringValue(event, ["description", "message", "status", "name"]);
+  const substatus = getStringValue(event, ["substatus", "location", "place"]);
+
+  return {
+    description,
+    occurredAt,
+    rawPayload: toInputJson(event),
+    status: mapMelhorEnvioShipmentStatus(description ?? substatus),
+    substatus
+  };
+}
+
+function recordMatchesShipment(value: unknown, shipmentId: string): value is Record<string, unknown> {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return Object.values(value).some((innerValue) => String(innerValue).trim() === shipmentId);
+}
+
+function getArrayValue(record: Record<string, unknown>, keys: string[]): Record<string, unknown>[] {
+  for (const key of keys) {
+    const value = record[key];
+
+    if (Array.isArray(value)) {
+      return value.filter(isRecord);
+    }
+  }
+
+  return [];
+}
+
+function getStringValue(record: Record<string, unknown>, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = record[key];
+
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+
+    if (isRecord(value)) {
+      const nestedValue = getStringValue(value, keys);
+
+      if (nestedValue) {
+        return nestedValue;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function mapMelhorEnvioShipmentStatus(value: string | undefined): ShipmentStatus {
+  const normalizedValue = normalizeText(value);
+
+  if (normalizedValue.includes("entreg") || normalizedValue.includes("delivered")) {
+    return ShipmentStatus.DELIVERED;
+  }
+
+  if (normalizedValue.includes("cancel")) {
+    return ShipmentStatus.CANCELLED;
+  }
+
+  if (normalizedValue.includes("atras") || normalizedValue.includes("delay")) {
+    return ShipmentStatus.DELAYED;
+  }
+
+  if (normalizedValue.includes("post") || normalizedValue.includes("transit") || normalizedValue.includes("shipped")) {
+    return ShipmentStatus.SHIPPED;
+  }
+
+  if (normalizedValue.includes("pronto") || normalizedValue.includes("ready")) {
+    return ShipmentStatus.READY_TO_SHIP;
+  }
+
+  if (normalizedValue.includes("prepar") || normalizedValue.includes("handling")) {
+    return ShipmentStatus.HANDLING;
+  }
+
+  if (normalizedValue.includes("pend")) {
+    return ShipmentStatus.PENDING;
+  }
+
+  return ShipmentStatus.UNKNOWN;
+}
+
+function normalizeText(value: string | undefined): string {
+  return (value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function parseTrackingDate(value: string | undefined): Date | null {
+  if (!value) {
+    return null;
+  }
+
+  const parsedDate = new Date(value);
+
+  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function toInputJson(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value ?? {})) as Prisma.InputJsonValue;
 }
 
 function buildProducts(

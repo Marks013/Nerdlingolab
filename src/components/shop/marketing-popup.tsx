@@ -44,6 +44,8 @@ export function MarketingPopup({ popup }: MarketingPopupProps): React.ReactEleme
     setIsVisible(false);
   }
 
+  const isWelcomeOffer = popup.id === "welcome-nerdcoins-r10";
+
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/55 px-4 py-6 backdrop-blur-sm sm:items-center">
       <section className="manga-panel relative grid w-full max-w-3xl overflow-hidden rounded-lg border-2 border-primary bg-white shadow-2xl sm:grid-cols-[0.95fr_1.05fr]">
@@ -56,11 +58,11 @@ export function MarketingPopup({ popup }: MarketingPopupProps): React.ReactEleme
           <X className="h-5 w-5" />
         </button>
 
-        <div className="relative min-h-[210px] bg-primary/10">
+        <div className={`relative min-h-[210px] ${isWelcomeOffer ? "bg-[linear-gradient(135deg,#ff6902,#ffd447)]" : "bg-primary/10"}`}>
           {popup.imageUrl ? (
             <Image
               alt={popup.title}
-              className="object-cover"
+              className={isWelcomeOffer ? "object-contain p-8" : "object-cover"}
               fill
               sizes="(min-width: 640px) 340px, 100vw"
               src={popup.imageUrl}
@@ -78,6 +80,11 @@ export function MarketingPopup({ popup }: MarketingPopupProps): React.ReactEleme
           ) : null}
           <h2 className="mt-3 text-3xl font-black leading-tight text-black">{popup.title}</h2>
           <p className="mt-4 text-sm leading-6 text-[#4f5d65]">{popup.description}</p>
+          {isWelcomeOffer ? (
+            <div className="mt-5 rounded-lg border border-primary/25 bg-orange-50 px-4 py-3 text-sm font-bold text-primary">
+              Cupom de R$ 10 liberado automaticamente para novos cadastros.
+            </div>
+          ) : null}
 
           {popup.ctaHref && popup.ctaLabel ? (
             <Link

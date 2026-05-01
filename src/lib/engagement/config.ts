@@ -15,6 +15,20 @@ export interface PublicMarketingPopup {
   triggerValue: number;
 }
 
+const welcomeNerdcoinsPopup: PublicMarketingPopup = {
+  ctaHref: "/cadastro",
+  ctaLabel: "Criar conta e ganhar R$ 10",
+  description: "Entre no sistema de NerdCoins, acumule pontos nas compras e receba um cupom exclusivo de R$ 10 ao concluir seu cadastro.",
+  eyebrow: "Boas-vindas ao laboratório",
+  frequencyHours: 72,
+  id: "welcome-nerdcoins-r10",
+  imageUrl: "/brand-assets/nerd-icon-nerdcoins.webp",
+  themeTone: "ORANGE",
+  title: "Ganhe NerdCoins desde a primeira missão",
+  triggerType: "DELAY",
+  triggerValue: 1200
+};
+
 export const defaultNotificationTemplates = [
   {
     templateKey: "abandoned_cart",
@@ -78,7 +92,7 @@ export async function getActiveMarketingPopup(): Promise<PublicMarketingPopup | 
     });
 
   if (!popup) {
-    return null;
+    return welcomeNerdcoinsPopup;
   }
 
   return {

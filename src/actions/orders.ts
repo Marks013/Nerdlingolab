@@ -14,6 +14,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/admin";
 import { releaseInventoryReservations } from "@/lib/inventory/reservations";
 import { prisma } from "@/lib/prisma";
+import { syncMelhorEnvioShipment } from "@/lib/shipping/melhor-envio";
 import { syncMercadoEnviosShipment } from "@/lib/shipping/mercado-envios";
 import { normalizeHttpUrl } from "@/lib/urls";
 
@@ -146,6 +147,29 @@ export async function syncMercadoEnviosOrderShipment(orderId: string, formData: 
   } catch (error) {
     Sentry.captureException(error);
     throw new Error("Nao foi possivel sincronizar o Mercado Envios.");
+  }
+
+  revalidateOrderPaths(parsedOrderId);
+}
+
+export async function syncMelhorEnvioOrderShipment(orderId: string, formData: FormData): Promise<void> {
+  await requireAdmin();
+  const parsedOrderId = parseRecordId(orderId);
+
+  try {
+    const parsedExternalShipmentId = externalShipmentIdSchema.safeParse(formData.get("externalShipmentId"));
+
+    if (!parsedExternalShipmentId.success) {
+      throw new Error("Informe o codigo de envio.");
+    }
+
+    await syncMelhorEnvioShipment({
+      externalShipmentId: parsedExternalShipmentId.data,
+      orderId: parsedOrderId
+    });
+  } catch (error) {
+    Sentry.captureException(error);
+    throw new Error("Nao foi possivel sincronizar o Melhor Envio.");
   }
 
   revalidateOrderPaths(parsedOrderId);

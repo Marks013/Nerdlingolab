@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Truck } from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -395,23 +396,37 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
         </CardHeader>
         <CardContent>
           <div className="divide-y rounded-md border">
-            {account.orders.map((order) => (
-              <div key={order.id} className="grid gap-3 p-4 md:grid-cols-[1fr_auto_auto] md:items-center">
-                <div>
-                  <p className="font-medium">{order.orderNumber}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDateTime(order.createdAt)} · {formatOrderStatus(order.status)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {formatPaymentStatus(order.paymentStatus)}
-                  </p>
+            {account.orders.map((order) => {
+              const latestShipment = order.shipments[0];
+
+              return (
+                <div key={order.id} className="grid gap-3 p-4 md:grid-cols-[1fr_auto_auto] md:items-center">
+                  <div>
+                    <p className="font-medium">{order.orderNumber}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatDateTime(order.createdAt)} · {formatOrderStatus(order.status)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatPaymentStatus(order.paymentStatus)}
+                    </p>
+                  </div>
+                  <p className="font-semibold">{formatCurrency(order.totalCents)}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {latestShipment ? (
+                      <Button asChild size="sm">
+                        <Link href={`/conta/pedidos/${order.id}#rastreamento`}>
+                          <Truck className="mr-2 h-4 w-4" />
+                          Rastrear
+                        </Link>
+                      </Button>
+                    ) : null}
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/conta/pedidos/${order.id}`}>Ver pedido</Link>
+                    </Button>
+                  </div>
                 </div>
-                <p className="font-semibold">{formatCurrency(order.totalCents)}</p>
-                <Button asChild size="sm" variant="outline">
-                  <Link href={`/conta/pedidos/${order.id}`}>Ver pedido</Link>
-                </Button>
-              </div>
-            ))}
+              );
+            })}
             {account.orders.length === 0 ? (
               <p className="p-4 text-sm text-muted-foreground">Você ainda não tem pedidos.</p>
             ) : null}

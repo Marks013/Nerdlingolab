@@ -572,6 +572,7 @@ model Shipment {
   shippedAt           DateTime?
   deliveredAt         DateTime?
   lastSyncedAt        DateTime?
+  overdueNotifiedAt   DateTime?
   rawPayload          Json             @default("{}")
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
@@ -582,6 +583,7 @@ model Shipment {
   @@unique([provider, externalShipmentId])
   @@index([orderId, createdAt])
   @@index([status])
+  @@index([estimatedDeliveryAt, overdueNotifiedAt])
 }
 
 model ShipmentEvent {

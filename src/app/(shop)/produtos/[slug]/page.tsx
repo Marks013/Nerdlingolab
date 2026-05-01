@@ -69,6 +69,7 @@ export default async function ProductPage({ params }: ProductPageProps): Promise
           productBadges={productBadges}
           productSlug={product.slug}
           productTitle={product.title}
+          productUrl={`${(process.env.APP_URL ?? "https://nerdlingolab.duckdns.org").replace(/\/$/, "")}/produtos/${product.slug}`}
           freeShippingThresholdCents={theme.freeShippingThresholdCents}
           paymentTerms={{
             cardInstallmentMonthlyRateBps: theme.cardInstallmentMonthlyRateBps,

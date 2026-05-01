@@ -22,6 +22,7 @@ interface ProductDetailShellProps {
   productId: string;
   productSlug: string;
   productTitle: string;
+  productUrl: string;
   variants: ProductVariantOption[];
 }
 
@@ -35,6 +36,7 @@ export function ProductDetailShell({
   productId,
   productSlug,
   productTitle,
+  productUrl,
   variants
 }: ProductDetailShellProps): React.ReactElement {
   const initialVariant = getInitialVariant(variants);
@@ -143,6 +145,7 @@ export function ProductDetailShell({
             productId={productId}
             productSlug={productSlug}
             productTitle={productTitle}
+            productUrl={productUrl}
             freeShippingThresholdCents={freeShippingThresholdCents}
             paymentTerms={paymentTerms}
             selectedVariantId={selectedVariant?.id ?? selectedVariantId}

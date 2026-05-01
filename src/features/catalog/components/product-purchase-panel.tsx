@@ -36,6 +36,7 @@ interface ProductPurchasePanelProps {
   productId: string;
   productSlug: string;
   productTitle: string;
+  productUrl: string;
   selectedVariantId?: string;
   variants: ProductVariantOption[];
 }
@@ -48,6 +49,7 @@ export function ProductPurchasePanel({
   productId,
   productSlug,
   productTitle,
+  productUrl,
   selectedVariantId: controlledSelectedVariantId,
   variants
 }: ProductPurchasePanelProps): React.ReactElement | null {
@@ -73,6 +75,15 @@ export function ProductPurchasePanel({
     priceCents: selectedVariant.priceCents
   }).at(-1);
   const subtotalCents = selectedVariant.priceCents * quantity;
+  const whatsappHref = buildProductWhatsappHref({
+    color: getVariantColor(selectedVariant),
+    gender: getVariantGender(selectedVariant),
+    productTitle,
+    productUrl,
+    quantity,
+    size: getVariantSize(selectedVariant),
+    variantTitle: selectedVariant.title
+  });
   const handleVariantSelect = (variantId: string) => {
     setLocalSelectedVariantId(variantId);
     onVariantSelect?.(variantId);
@@ -156,7 +167,9 @@ export function ProductPurchasePanel({
 
       <a
         className="mt-5 inline-flex h-12 w-full items-center justify-center rounded-lg border border-[#9ee8c1] bg-[#f2fff8] px-4 text-sm font-black text-[#168a4d]"
-        href="https://wa.me/5544991362488"
+        href={whatsappHref}
+        rel="noreferrer"
+        target="_blank"
       >
         <MessageCircle className="mr-2 h-5 w-5" />
         Comprar pelo whatsapp
@@ -462,6 +475,40 @@ function VariantSelector({
       </div>
     </fieldset>
   );
+}
+
+function buildProductWhatsappHref({
+  color,
+  gender,
+  productTitle,
+  productUrl,
+  quantity,
+  size,
+  variantTitle
+}: {
+  color: string | null;
+  gender: string | null;
+  productTitle: string;
+  productUrl: string;
+  quantity: number;
+  size: string | null;
+  variantTitle: string;
+}): string {
+  const optionLines = [
+    gender ? `Genero: ${formatOptionName(gender)}` : null,
+    color ? `Cor: ${formatOptionName(color)}` : null,
+    size ? `Tamanho: ${formatOptionName(size)}` : null,
+    `Quantidade: ${quantity}`,
+    variantTitle ? `Variacao selecionada: ${variantTitle}` : null
+  ].filter(Boolean);
+  const message = [
+    "Ola! Tenho interesse em comprar este produto da NerdLingoLab:",
+    productTitle,
+    ...optionLines,
+    `Link: ${productUrl}`
+  ].join("\n");
+
+  return `https://wa.me/5544991362488?text=${encodeURIComponent(message)}`;
 }
 
 function formatVariantLabel(variant: ProductVariantOption): string {

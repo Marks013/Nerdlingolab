@@ -1,6 +1,7 @@
 import { MessageCircle } from "lucide-react";
 
-const whatsappHref = "https://wa.me/5544991362488";
+const whatsappMessage = "Olá! Vim pelo site da NerdLingoLab e gostaria de atendimento.";
+const whatsappHref = `https://wa.me/5544991362488?text=${encodeURIComponent(whatsappMessage)}`;
 
 export function FloatingWhatsappButton(): React.ReactElement {
   return (

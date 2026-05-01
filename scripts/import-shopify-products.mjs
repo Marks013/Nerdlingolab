@@ -249,6 +249,10 @@ function expandVariantMatrixFromMetafields({ categorySlug, columns, handle, rows
   const colors = getMatrixValues(matrixOptions.Cor, existingOptions.Cor);
   const sizes = getMatrixValues(matrixOptions.Tamanho, existingOptions.Tamanho);
   const genders = getMatrixValues(matrixOptions.Genero, existingOptions.Genero);
+  const defaultGender = genders.length === 1 ? genders[0] : "";
+  if (defaultGender) {
+    fillMissingSingleGender(variants, defaultGender);
+  }
   const existingKeys = new Set(variants.map((variant) => getMatrixKey(variant.optionValues)));
   const baseVariant = variants.find((variant) => variant.isActive && variant.priceCents > 0) ?? variants[0];
 
@@ -299,6 +303,20 @@ function expandVariantMatrixFromMetafields({ categorySlug, columns, handle, rows
         });
       }
     }
+  }
+}
+
+function fillMissingSingleGender(variants, gender) {
+  for (const variant of variants) {
+    if (getOptionValue(variant.optionValues, "Genero")) {
+      continue;
+    }
+
+    variant.optionValues = {
+      Genero: gender,
+      ...variant.optionValues
+    };
+    variant.title = buildVariantTitle(variant.optionValues, variant.title);
   }
 }
 

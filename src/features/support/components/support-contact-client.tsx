@@ -1,7 +1,7 @@
 "use client";
 
-import { CheckCircle2, History, MessageCircle, RefreshCw, Send, Star, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, History, MessageCircle, RefreshCw, Send, Star } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import {
   supportSubjectLabels,
@@ -50,7 +50,6 @@ interface SupportContactClientProps {
 }
 
 const historyStorageKey = "nerdlingolab:support-history";
-const seenRepliesStorageKey = "nerdlingolab:support-seen-replies";
 
 export function SupportContactClient({
   initialEmail = "",
@@ -58,16 +57,7 @@ export function SupportContactClient({
 }: SupportContactClientProps): React.ReactElement {
   const [history, setHistory] = useState<SupportHistoryItem[]>(() => loadHistory());
   const [message, setMessage] = useState<string | null>(null);
-  const [noticeTicket, setNoticeTicket] = useState<SupportHistoryItem | null>(null);
   const [status, setStatus] = useState<"error" | "idle" | "sending" | "success">("idle");
-
-  const latestReplyByTicket = useMemo(() => {
-    const entries = history
-      .map((ticket) => [ticket.ticketId, ticket.replies?.at(-1)?.id] as const)
-      .filter((entry): entry is readonly [string, string] => Boolean(entry[1]));
-
-    return new Map(entries);
-  }, [history]);
 
   useEffect(() => {
     let isMounted = true;
@@ -99,15 +89,6 @@ export function SupportContactClient({
         }
 
         setHistory(tickets);
-        const unseenTicket = tickets.find((ticket) => {
-          const latestReplyId = ticket.replies.at(-1)?.id;
-
-          return latestReplyId ? !getSeenReplies().has(latestReplyId) : false;
-        });
-
-        if (unseenTicket) {
-          setNoticeTicket(unseenTicket);
-        }
       } catch {
         // Local protocol history remains available even when account history cannot be loaded.
       }
@@ -212,28 +193,11 @@ export function SupportContactClient({
     setStatus("success");
   }
 
-  function dismissNotice(): void {
-    if (!noticeTicket) {
-      return;
-    }
-
-    const latestReplyId = latestReplyByTicket.get(noticeTicket.ticketId);
-
-    if (latestReplyId) {
-      const seenReplies = getSeenReplies();
-      seenReplies.add(latestReplyId);
-      window.localStorage.setItem(seenRepliesStorageKey, JSON.stringify([...seenReplies]));
-    }
-
-    setNoticeTicket(null);
-  }
-
   const activeTickets = history.filter(isActiveSupportTicket);
   const finishedTickets = history.filter((ticket) => !isActiveSupportTicket(ticket));
 
   return (
     <>
-      {noticeTicket ? <SupportReplyNotice onClose={dismissNotice} ticket={noticeTicket} /> : null}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(420px,1.1fr)]">
         <form action={submitSupport} className="rounded-lg bg-white p-5 shadow-sm sm:p-7">
           <h2 className="text-2xl font-black text-black">Envie sua mensagem</h2>
@@ -483,40 +447,6 @@ function isActiveSupportTicket(ticket: SupportHistoryItem): boolean {
   return !ticket.rating && (ticket.status === "OPEN" || ticket.status === "IN_PROGRESS" || hasReplies);
 }
 
-function SupportReplyNotice({
-  onClose,
-  ticket
-}: {
-  onClose: () => void;
-  ticket: SupportHistoryItem;
-}): React.ReactElement {
-  return (
-    <div className="fixed bottom-4 right-4 z-40 w-[min(360px,calc(100vw-2rem))] rounded-lg border border-[#f1d5c3] bg-white p-4 shadow-lg">
-      <div className="flex items-start gap-3">
-        <div className="rounded-full bg-primary/10 p-2 text-primary">
-          <MessageCircle className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="font-black text-black">Seu suporte foi respondido</p>
-          <p className="mt-1 text-sm leading-5 text-[#4f5d65]">
-            Protocolo {ticket.ticketId}. Veja a resposta no historico e avalie o atendimento.
-          </p>
-          <a
-            className="mt-3 inline-flex text-sm font-black text-primary hover:underline"
-            href={`#ticket-${ticket.ticketId}`}
-            onClick={onClose}
-          >
-            Ver resposta
-          </a>
-        </div>
-        <button aria-label="Fechar aviso de suporte" className="rounded-full p-1 text-[#4f5d65] hover:bg-[#f7f7f7]" onClick={onClose} type="button">
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function loadHistory(): SupportHistoryItem[] {
   if (typeof window === "undefined") {
     return [];
@@ -528,21 +458,6 @@ function loadHistory(): SupportHistoryItem[] {
     return storedHistory ? JSON.parse(storedHistory) as SupportHistoryItem[] : [];
   } catch {
     return [];
-  }
-}
-
-function getSeenReplies(): Set<string> {
-  if (typeof window === "undefined") {
-    return new Set();
-  }
-
-  try {
-    const value = window.localStorage.getItem(seenRepliesStorageKey);
-    const parsedValue = value ? JSON.parse(value) : [];
-
-    return new Set(Array.isArray(parsedValue) ? parsedValue.filter((item): item is string => typeof item === "string") : []);
-  } catch {
-    return new Set();
   }
 }
 

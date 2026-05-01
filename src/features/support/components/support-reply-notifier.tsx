@@ -27,13 +27,14 @@ interface SupportHistoryResponse {
 
 const seenRepliesStorageKey = "nerdlingolab:support-seen-replies";
 const pollingIntervalMs = 60_000;
+const replyNoticeFreshnessMs = 14 * 24 * 60 * 60 * 1000;
 
 export function SupportReplyNotifier(): React.ReactElement | null {
   const pathname = usePathname();
   const [ticket, setTicket] = useState<SupportTicketItem | null>(null);
 
   const latestReplyId = useMemo(() => ticket?.replies.at(-1)?.id ?? null, [ticket]);
-  const shouldPoll = pathname ? !pathname.startsWith("/admin") && !pathname.startsWith("/suporte") : true;
+  const shouldPoll = pathname ? !pathname.startsWith("/admin") : true;
 
   useEffect(() => {
     if (!shouldPoll) {
@@ -60,9 +61,12 @@ export function SupportReplyNotifier(): React.ReactElement | null {
             return false;
           }
 
-          const replyId = item.replies.at(-1)?.id;
+          const latestReply = item.replies.at(-1);
+          const replyId = latestReply?.id;
 
-          return replyId ? !getSeenReplies().has(replyId) : false;
+          return replyId && latestReply
+            ? !getSeenReplies().has(replyId) && isFreshReply(latestReply.createdAt)
+            : false;
         });
 
         if (isMounted) {
@@ -148,4 +152,10 @@ function markReplyAsSeen(replyId: string): void {
   const seenReplies = getSeenReplies();
   seenReplies.add(replyId);
   window.localStorage.setItem(seenRepliesStorageKey, JSON.stringify([...seenReplies]));
+}
+
+function isFreshReply(createdAt: string): boolean {
+  const createdAtTime = new Date(createdAt).getTime();
+
+  return Number.isFinite(createdAtTime) && Date.now() - createdAtTime <= replyNoticeFreshnessMs;
 }

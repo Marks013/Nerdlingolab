@@ -310,6 +310,22 @@ export async function rejectProductReview(reviewId: string, formData: FormData):
   const session = await auth();
   const rejectionReason = String(formData.get("rejectionReason") ?? "").trim().slice(0, 1200) || null;
 
+  const review = await prisma.productReview.findUnique({
+    select: {
+      rewardGrantedAt: true,
+      status: true
+    },
+    where: { id: reviewId }
+  });
+
+  if (!review) {
+    throw new Error("Avaliação não encontrada.");
+  }
+
+  if (review.status === ProductReviewStatus.PUBLISHED || review.rewardGrantedAt) {
+    throw new Error("Avaliações publicadas devem ser ocultadas, não recusadas.");
+  }
+
   const mediaAssets = await prisma.productReviewMedia.findMany({
     include: { asset: true },
     where: { reviewId }
@@ -331,7 +347,7 @@ export async function rejectProductReview(reviewId: string, formData: FormData):
     });
   });
 
-  await Promise.allSettled(
+  const cleanupResults = await Promise.allSettled(
     mediaAssets.map(async ({ asset }) => {
       await removeProductImageObject(asset.objectKey);
       await prisma.mediaAsset.update({
@@ -340,6 +356,12 @@ export async function rejectProductReview(reviewId: string, formData: FormData):
       });
     })
   );
+
+  for (const result of cleanupResults) {
+    if (result.status === "rejected") {
+      Sentry.captureException(result.reason);
+    }
+  }
 
   revalidateReviewAdminAndProducts();
 }

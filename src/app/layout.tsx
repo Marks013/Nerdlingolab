@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 
 import "@/app/globals.css";
+import { ThemeScopeController } from "@/components/theme-scope-controller";
 import { SupportReplyNotifier } from "@/features/support/components/support-reply-notifier";
 
 export const metadata: Metadata = {
@@ -28,6 +29,7 @@ export default function RootLayout({
         <Script src="/theme-init.js" strategy="beforeInteractive" />
       </head>
       <body>
+        <ThemeScopeController />
         {children}
         <SupportReplyNotifier />
       </body>

@@ -225,10 +225,17 @@ function ReviewCard({ review }: { review: AdminProductReview }): React.ReactElem
         </form>
         <form action={rejectProductReview.bind(null, review.id)} className="grid gap-2 rounded-lg border p-3">
           <Textarea defaultValue={review.rejectionReason ?? ""} name="rejectionReason" placeholder="Motivo da recusa" />
-          <Button disabled={review.status === ProductReviewStatus.REJECTED} type="submit" variant="outline">
+          <Button
+            disabled={review.status === ProductReviewStatus.REJECTED || review.status === ProductReviewStatus.PUBLISHED}
+            type="submit"
+            variant="outline"
+          >
             <XCircle className="mr-2 size-4" />
             Recusar e limpar mídias
           </Button>
+          {review.status === ProductReviewStatus.PUBLISHED ? (
+            <p className="text-xs text-muted-foreground">Avaliações publicadas devem ser ocultadas para preservar o histórico da recompensa.</p>
+          ) : null}
         </form>
       </div>
 

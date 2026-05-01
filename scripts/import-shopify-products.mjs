@@ -38,7 +38,10 @@ try {
   const [header, ...dataRows] = rows;
   const columns = Object.fromEntries(header.map((name, index) => [name, index]));
   const groupedRows = groupByHandle(dataRows, columns);
-  const products = [...groupedRows.entries()].slice(0, limit).map(([handle, productRows]) =>
+  const filteredRows = args.handle
+    ? [...groupedRows.entries()].filter(([handle]) => handle === args.handle)
+    : [...groupedRows.entries()];
+  const products = filteredRows.slice(0, limit).map(([handle, productRows]) =>
     normalizeProduct(handle, productRows, columns)
   );
 
@@ -67,6 +70,9 @@ function parseArgs(rawArgs) {
       index += 1;
     } else if (value === "--limit") {
       parsed.limit = rawArgs[index + 1];
+      index += 1;
+    } else if (value === "--handle") {
+      parsed.handle = rawArgs[index + 1];
       index += 1;
     }
   }
@@ -179,6 +185,7 @@ function normalizeProduct(handle, rows, columns) {
 function normalizeVariants(handle, rows, columns, title) {
   const seen = new Set();
   const variants = [];
+  const optionNames = inferVariantOptionNames(rows, columns);
 
   for (const row of rows) {
     const priceCents = readPrice(row, columns, "Variant Price") ?? readPrice(row, columns, "Price / Brasil");
@@ -187,7 +194,7 @@ function normalizeVariants(handle, rows, columns, title) {
       continue;
     }
 
-    const optionValues = extractOptionValues(row, columns);
+    const optionValues = extractOptionValues(row, columns, optionNames);
     const variantTitle = Object.entries(optionValues)
       .filter(([key, value]) => !key.startsWith("_") && Boolean(value))
       .map(([, value]) => String(value))
@@ -350,15 +357,29 @@ function extractVariantTags(row, columns) {
   ].filter(Boolean);
 }
 
-function extractOptionValues(row, columns) {
+function inferVariantOptionNames(rows, columns) {
+  const names = {};
+
+  for (const number of [1, 2, 3]) {
+    const name = rows.map((row) => getCell(row, columns, `Option${number} Name`)).find(Boolean);
+
+    if (name) {
+      names[number] = normalizeVariantOptionName(name);
+    }
+  }
+
+  return names;
+}
+
+function extractOptionValues(row, columns, optionNames = {}) {
   const values = {};
 
   for (const number of [1, 2, 3]) {
-    const name = getCell(row, columns, `Option${number} Name`);
+    const name = getCell(row, columns, `Option${number} Name`) || optionNames[number];
     const value = getCell(row, columns, `Option${number} Value`);
 
     if (name && value && value !== "Default Title") {
-      values[name] = value;
+      values[normalizeVariantOptionName(name)] = normalizeOptionValue(value);
     }
   }
 
@@ -378,7 +399,7 @@ function extractOptionValues(row, columns) {
     values.Tamanho = normalizeOptionValue(size);
   }
 
-  if (gender) {
+  if (gender && !values.Genero) {
     values.Genero = normalizeOptionValue(gender);
   }
 
@@ -391,6 +412,28 @@ function extractOptionValues(row, columns) {
   }
 
   return values;
+}
+
+function normalizeVariantOptionName(value) {
+  const normalized = String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+
+  if (["genero", "genero alvo", "sexo", "gender", "target gender"].includes(normalized)) {
+    return "Genero";
+  }
+
+  if (["cor", "color", "colour"].includes(normalized)) {
+    return "Cor";
+  }
+
+  if (["tamanho", "size", "tam"].includes(normalized)) {
+    return "Tamanho";
+  }
+
+  return String(value ?? "").trim();
 }
 
 function normalizeOptionValue(value) {

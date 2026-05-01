@@ -1,5 +1,6 @@
 import { ShopHeader } from "@/components/shop/shop-header";
 import { ShopFooter } from "@/components/shop/shop-footer";
+import { FloatingWhatsappButton } from "@/components/shop/floating-whatsapp-button";
 import { MarketingPopup } from "@/components/shop/marketing-popup";
 import { auth } from "@/lib/auth";
 import { getActiveMarketingPopup } from "@/lib/engagement/config";
@@ -31,6 +32,7 @@ export default async function ShopLayout({
         nerdcoinsBalance={nerdcoinsBalance}
       />
       <div id="conteudo-principal">{children}</div>
+      <FloatingWhatsappButton />
       <MarketingPopup popup={popup} />
       <ShopFooter theme={theme} />
     </>

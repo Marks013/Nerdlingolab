@@ -27,14 +27,14 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
   const storefrontSections = [
     {
       title: "Novidades",
-      href: "/produtos?ordem=recentes",
+      href: "/produtos?ordem=recentes#catalogo-produtos",
       products: newProducts.slice(0, 6),
       emptyMessage: "Nenhum produto entrou na regra de Novo dos últimos 30 dias."
     },
-    { title: "Nossos Produtos", href: "/produtos", products: products.slice(0, 6) },
+    { title: "Nossos Produtos", href: "/produtos#catalogo-produtos", products: products.slice(0, 6) },
     {
       title: "Mais Vendidos",
-      href: "/produtos",
+      href: "/produtos?ordem=mais-vendidos#catalogo-produtos",
       products: bestSellingProducts,
       emptyMessage: "O ranking aparece assim que houver pedidos pagos com estes produtos."
     }

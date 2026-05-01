@@ -19,7 +19,7 @@ import {
 } from "@/lib/catalog/fallback";
 import { prisma } from "@/lib/prisma";
 
-export const publicProductSorts = ["recentes", "menor-valor", "maior-valor", "nome"] as const;
+export const publicProductSorts = ["recentes", "mais-vendidos", "menor-valor", "maior-valor", "nome"] as const;
 
 export type PublicProductSort = (typeof publicProductSorts)[number];
 
@@ -150,6 +150,10 @@ export async function getPublicCategories(): Promise<Category[]> {
 
 export async function getPublicProducts(filters: PublicProductFilters = {}): Promise<ProductListItem[]> {
   try {
+    if (filters.sort === "mais-vendidos") {
+      return await getPublicProductsSortedBySales(filters);
+    }
+
     return await prisma.product.findMany({
       where: getPublicProductWhere(filters),
       include: {
@@ -168,6 +172,48 @@ export async function getPublicProducts(filters: PublicProductFilters = {}): Pro
 
     throw error;
   }
+}
+
+async function getPublicProductsSortedBySales(filters: PublicProductFilters): Promise<ProductListItem[]> {
+  const where = getPublicProductWhere(filters);
+  const [products, rankedItems] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      include: {
+        category: true,
+        variants: {
+          where: { isActive: true },
+          orderBy: { createdAt: "asc" }
+        }
+      }
+    }),
+    prisma.orderItem.groupBy({
+      by: ["productId"],
+      where: {
+        order: {
+          paymentStatus: PaymentStatus.APPROVED,
+          status: {
+            in: [OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED]
+          }
+        },
+        product: where
+      },
+      _sum: {
+        quantity: true
+      }
+    })
+  ]);
+  const salesByProductId = new Map(rankedItems.map((item) => [item.productId, item._sum.quantity ?? 0]));
+
+  return products.sort((left, right) => {
+    const salesDifference = (salesByProductId.get(right.id) ?? 0) - (salesByProductId.get(left.id) ?? 0);
+
+    if (salesDifference !== 0) {
+      return salesDifference;
+    }
+
+    return right.createdAt.getTime() - left.createdAt.getTime() || left.title.localeCompare(right.title);
+  });
 }
 
 export async function getPublicBestSellingProducts(take = 6): Promise<ProductListItem[]> {
@@ -519,6 +565,10 @@ function filterFallbackProducts(filters: PublicProductFilters): ProductListItem[
 
       if (filters.sort === "maior-valor") {
         return b.priceCents - a.priceCents;
+      }
+
+      if (filters.sort === "mais-vendidos") {
+        return b.createdAt.getTime() - a.createdAt.getTime();
       }
 
       if (filters.sort === "nome") {

@@ -1,9 +1,9 @@
 "use client";
 
-import { Bot, ChevronDown, ChevronRight, Headphones, Menu, Search, ShoppingCart, Star, Tags, Ticket, UserRound, X } from "lucide-react";
+import { ArrowRight, Bot, ChevronDown, ChevronRight, Headphones, Menu, Search, ShoppingCart, Star, Tags, Ticket, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 
 import { signOutFromCustomer } from "@/actions/auth";
 import { SafeImage as Image } from "@/components/media/safe-image";
@@ -20,22 +20,22 @@ const headerLinks = [
 const categoryLinks = [
   { href: "/cupons", label: "Cupons", icon: Ticket, color: "bg-[#ffd13d]", iconColor: "text-[#221b00]" },
   { href: "/ofertas", label: "Ofertas", icon: Star, color: "bg-[#ff4e70]", iconColor: "text-[#24000a]" },
-  { href: "/produtos?categoria=temporada", label: "Temporada", icon: Tags, color: "bg-[#3fc66a]", iconColor: "text-[#062411]" },
-  { href: "/produtos?categoria=action-figures", label: "Action Figures", icon: Bot, color: "bg-[#5522a8]", iconColor: "text-white" }
+  { href: "/produtos?categoria=temporada#catalogo-produtos", label: "Temporada", icon: Tags, color: "bg-[#3fc66a]", iconColor: "text-[#062411]" },
+  { href: "/produtos?categoria=action-figures#catalogo-produtos", label: "Action Figures", icon: Bot, color: "bg-[#5522a8]", iconColor: "text-white" }
 ];
 
 const drawerCategoryGroups = [
-  { href: "/produtos?ordem=recentes", label: "Novidades" },
-  { href: "/produtos?ordem=maior-valor", label: "Mais Vendidos" },
+  { href: "/produtos?ordem=recentes#catalogo-produtos", label: "Novidades" },
+  { href: "/produtos?ordem=mais-vendidos#catalogo-produtos", label: "Mais Vendidos" },
   { href: "/ofertas", label: "Ofertas" },
-  { href: "/produtos?categoria=temporada", label: "Temporadas" }
+  { href: "/produtos?categoria=temporada#catalogo-produtos", label: "Temporadas" }
 ];
 
 const drawerCatalogLinks = [
-  { href: "/produtos?categoria=camisetas", label: "Camisetas" },
-  { href: "/produtos?categoria=anime", label: "Anime" },
-  { href: "/produtos?categoria=geek", label: "Geek" },
-  { href: "/produtos?categoria=oversized", label: "Oversized" }
+  { href: "/produtos?categoria=camisetas#catalogo-produtos", label: "Camisetas" },
+  { href: "/produtos?categoria=anime#catalogo-produtos", label: "Anime" },
+  { href: "/produtos?categoria=geek#catalogo-produtos", label: "Geek" },
+  { href: "/produtos?categoria=oversized#catalogo-produtos", label: "Oversized" }
 ];
 
 export function ShopHeader({
@@ -48,43 +48,21 @@ export function ShopHeader({
   nerdcoinsBalance?: number | null;
 }): React.ReactElement {
   const router = useRouter();
-  const hydratedSearchRef = useRef(false);
   const [isCategoryDrawerOpen, setIsCategoryDrawerOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const cartCount = useCartStore((state) => state.items.reduce((total, item) => total + item.quantity, 0));
   const cartBadgeLabel = useMemo(() => (cartCount > 99 ? "99+" : String(cartCount)), [cartCount]);
-
-  useEffect(() => {
-    if (!hydratedSearchRef.current) {
-      hydratedSearchRef.current = true;
-      return;
-    }
-
-    const searchTimeoutId = window.setTimeout(() => {
-      const query = searchTerm.trim();
-      const currentPath = window.location.pathname;
-
-      if (!query) {
-        if (currentPath === "/produtos" && new URLSearchParams(window.location.search).has("busca")) {
-          router.replace("/produtos");
-        }
-        return;
-      }
-
-      const params = new URLSearchParams(currentPath === "/produtos" ? window.location.search : "");
-      params.set("busca", query);
-      params.delete("pagina");
-      router.push(`/produtos?${params.toString()}`);
-    }, 280);
-
-    return () => window.clearTimeout(searchTimeoutId);
-  }, [router, searchTerm]);
+  const trimmedSearchTerm = searchTerm.trim();
+  const searchHref = trimmedSearchTerm
+    ? `/produtos?busca=${encodeURIComponent(trimmedSearchTerm)}#catalogo-produtos`
+    : "/produtos#catalogo-produtos";
 
   function submitSearch(event: React.FormEvent<HTMLFormElement>): void {
     event.preventDefault();
-    const query = searchTerm.trim();
-    router.push(query ? `/produtos?busca=${encodeURIComponent(query)}` : "/produtos");
+    setIsSearchPanelOpen(false);
+    router.push(searchHref);
   }
 
   return (
@@ -106,22 +84,57 @@ export function ShopHeader({
             />
           </Link>
 
-          <form
-            action="/produtos"
-            className="search-arcade mx-auto flex h-12 w-full max-w-[550px] items-center rounded-full border-2 border-primary bg-white px-4 shadow-sm"
-            onSubmit={submitSearch}
-          >
-            <Search className="mr-3 h-5 w-5 text-[#1c1c1c]" />
-            <input
-              className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#9aa1a6]"
-              maxLength={80}
-              name="busca"
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Buscar produtos..."
-              type="search"
-              value={searchTerm}
-            />
-          </form>
+          <div className="relative mx-auto w-full max-w-[550px]">
+            <form
+              action="/produtos"
+              className="search-arcade flex h-12 w-full items-center rounded-full border-2 border-primary bg-white px-4 shadow-sm"
+              onBlur={() => window.setTimeout(() => setIsSearchPanelOpen(false), 140)}
+              onSubmit={submitSearch}
+            >
+              <Search className="mr-3 h-5 w-5 text-[#1c1c1c]" />
+              <input
+                className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#9aa1a6]"
+                maxLength={80}
+                name="busca"
+                onChange={(event) => {
+                  setSearchTerm(event.target.value);
+                  setIsSearchPanelOpen(true);
+                }}
+                onFocus={() => setIsSearchPanelOpen(true)}
+                placeholder="Buscar produtos..."
+                type="search"
+                value={searchTerm}
+              />
+            </form>
+            {isSearchPanelOpen ? (
+              <div className="absolute left-0 right-0 top-14 z-50 rounded-lg border border-primary/15 bg-white p-3 text-[#1c1c1c] shadow-[0_18px_42px_rgba(17,24,39,0.16)]">
+                <div className="flex items-start gap-3">
+                  <span className="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fff4ec] text-primary">
+                    <Search className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-black uppercase tracking-wide text-primary">Pesquisa</p>
+                    <p className="mt-1 line-clamp-2 text-sm font-semibold">
+                      {trimmedSearchTerm ? `Buscar por "${trimmedSearchTerm}"` : "Digite um termo para pesquisar no catálogo"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-black text-white transition hover:bg-[#d85b00]"
+                  disabled={!trimmedSearchTerm}
+                  onMouseDown={(event) => event.preventDefault()}
+                  type="submit"
+                  onClick={() => {
+                    setIsSearchPanelOpen(false);
+                    router.push(searchHref);
+                  }}
+                >
+                  Ver resultados
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+            ) : null}
+          </div>
 
           <nav className="flex flex-wrap items-center justify-center gap-3 lg:justify-end">
             {headerLinks.map((link) => {
@@ -295,7 +308,7 @@ function CategoryDrawer({
           <div className="sticky bottom-0 bg-white p-5">
             <Link
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-black text-white shadow-md transition hover:bg-primary/90"
-              href="/produtos"
+              href="/produtos#catalogo-produtos"
               onClick={onClose}
             >
               <Menu className="h-4 w-4" />

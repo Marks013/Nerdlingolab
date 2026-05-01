@@ -62,7 +62,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
               Filtros
             </div>
 
-            <form action="/produtos" className="space-y-6">
+            <form action="/produtos#catalogo-produtos" className="space-y-6">
               <div>
                 <label className="text-sm font-bold text-black" htmlFor="busca">
                   Buscar
@@ -148,14 +148,14 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
                 <button className="h-11 flex-1 rounded-lg bg-primary px-5 text-sm font-black text-white transition hover:bg-[#d85b00]" type="submit">
                   Filtrar
                 </button>
-                <Link className="inline-flex h-11 items-center rounded-lg border bg-white px-4 text-sm font-medium text-black transition hover:border-primary" href="/produtos">
+                <Link className="inline-flex h-11 items-center rounded-lg border bg-white px-4 text-sm font-medium text-black transition hover:border-primary" href="/produtos#catalogo-produtos">
                   Limpar
                 </Link>
               </div>
             </form>
           </aside>
 
-          <section>
+          <section className="scroll-mt-32" id="catalogo-produtos">
             <div className="manga-panel mb-5 flex flex-col gap-4 rounded-lg bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
               <p className="text-sm font-medium text-[#4f5d65]">{resultLabel}</p>
 
@@ -169,11 +169,14 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
                   </select>
                 </label>
 
-                <form action="/produtos" className="flex items-center gap-2 text-sm text-[#4f5d65]">
+                <form action="/produtos#catalogo-produtos" className="flex items-center gap-2 text-sm text-[#4f5d65]">
                   <input name="busca" type="hidden" value={filters.query ?? ""} />
                   <input name="categoria" type="hidden" value={filters.categorySlug ?? ""} />
                   <input name="precoMin" type="hidden" value={filters.minPriceCents ? formatCurrency(filters.minPriceCents) : ""} />
                   <input name="precoMax" type="hidden" value={filters.maxPriceCents ? formatCurrency(filters.maxPriceCents) : ""} />
+                  {filters.tags.map((tag) => (
+                    <input key={tag} name="tag" type="hidden" value={tag} />
+                  ))}
                   <label htmlFor="ordem">Ordenar</label>
                   <select
                     className="h-10 rounded-lg border bg-white px-3 text-sm text-black outline-none"
@@ -183,6 +186,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
                   >
                     <option value="nome">Ordem alfabética, A-Z</option>
                     <option value="recentes">Mais recentes</option>
+                    <option value="mais-vendidos">Mais vendidos</option>
                     <option value="menor-valor">Menor valor</option>
                     <option value="maior-valor">Maior valor</option>
                   </select>

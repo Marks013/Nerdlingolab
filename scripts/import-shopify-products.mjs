@@ -13,6 +13,24 @@ const repositoryCsvPath = path.resolve("data/shopify/products_export_1.csv");
 const desktopCsvPath = "C:/Users/samue/Desktop/products_export_1.csv";
 const defaultCsvPath = fs.existsSync(repositoryCsvPath) ? repositoryCsvPath : desktopCsvPath;
 const defaultStock = Number.parseInt(process.env.SHOPIFY_IMPORT_DEFAULT_STOCK ?? "10", 10);
+const defaultShippingProfiles = {
+  actionFigure: {
+    heightCm: 16,
+    lengthCm: 32,
+    name: "Melhor Envio - Action Figure",
+    shippingLeadTimeDays: 3,
+    weightGrams: 800,
+    widthCm: 22
+  },
+  apparel: {
+    heightCm: 4,
+    lengthCm: 32,
+    name: "Melhor Envio - Camiseta",
+    shippingLeadTimeDays: 2,
+    weightGrams: 300,
+    widthCm: 24
+  }
+};
 
 const baseCategories = [
   ["catalogo", "Catálogo", 10, "Todos os produtos publicados."],
@@ -154,7 +172,8 @@ function normalizeProduct(handle, rows, columns) {
   ]);
   const categorySlug = inferCategorySlug(firstRow, columns, tags, title);
   const originalProductUrl = getSourceProductUrl(firstRow, columns);
-  const variants = normalizeVariants(handle, rows, columns, title, categorySlug, tags);
+  const shippingProfile = inferShippingProfile(firstRow, columns, categorySlug, tags, title);
+  const variants = normalizeVariants(handle, rows, columns, title, categorySlug, tags, shippingProfile);
   const activeVariants = variants.filter((variant) => variant.isActive && variant.priceCents > 0);
   const priceCents = Math.min(...activeVariants.map((variant) => variant.priceCents));
   const compareAtPriceCents = minOptional(activeVariants.map((variant) => variant.compareAtPriceCents));
@@ -182,7 +201,7 @@ function normalizeProduct(handle, rows, columns) {
   };
 }
 
-function normalizeVariants(handle, rows, columns, title, categorySlug, tags) {
+function normalizeVariants(handle, rows, columns, title, categorySlug, tags, shippingProfile) {
   const seen = new Set();
   const variants = [];
   const optionNames = inferVariantOptionNames(rows, columns);
@@ -210,36 +229,44 @@ function normalizeVariants(handle, rows, columns, title, categorySlug, tags) {
       barcode: getCell(row, columns, "Variant Barcode") || null,
       compareAtPriceCents:
         readPrice(row, columns, "Variant Compare At Price") ?? readPrice(row, columns, "Compare At Price / Brasil") ?? null,
+      heightCm: shippingProfile?.heightCm ?? null,
       isActive: isActiveProduct(row, columns),
+      lengthCm: shippingProfile?.lengthCm ?? null,
       optionValues,
       priceCents,
       sku: makeSku(handle, variants.length + 1),
+      shippingLeadTimeDays: shippingProfile?.shippingLeadTimeDays ?? null,
       stockQuantity: isActiveProduct(row, columns) ? defaultStock : 0,
       title: variantTitle,
-      weightGrams: readInteger(row, columns, "Variant Grams")
+      weightGrams: readInteger(row, columns, "Variant Grams") ?? shippingProfile?.weightGrams ?? null,
+      widthCm: shippingProfile?.widthCm ?? null
     });
   }
 
-  expandVariantMatrixFromMetafields({ categorySlug, columns, handle, rows, tags, title, variants });
+  expandVariantMatrixFromMetafields({ categorySlug, columns, handle, rows, shippingProfile, tags, title, variants });
 
   if (variants.length === 0) {
     variants.push({
       barcode: null,
       compareAtPriceCents: null,
       isActive: true,
+      heightCm: shippingProfile?.heightCm ?? null,
+      lengthCm: shippingProfile?.lengthCm ?? null,
       optionValues: {},
       priceCents: 0,
+      shippingLeadTimeDays: shippingProfile?.shippingLeadTimeDays ?? null,
       sku: makeSku(handle, 1),
       stockQuantity: defaultStock,
       title: title || "Padrão",
-      weightGrams: null
+      weightGrams: shippingProfile?.weightGrams ?? null,
+      widthCm: shippingProfile?.widthCm ?? null
     });
   }
 
   return variants;
 }
 
-function expandVariantMatrixFromMetafields({ categorySlug, columns, handle, rows, tags, title, variants }) {
+function expandVariantMatrixFromMetafields({ categorySlug, columns, handle, rows, shippingProfile, tags, title, variants }) {
   if (!shouldExpandVariantMatrix({ categorySlug, columns, rows, tags, title }) || variants.length === 0) {
     return;
   }
@@ -293,13 +320,17 @@ function expandVariantMatrixFromMetafields({ categorySlug, columns, handle, rows
         variants.push({
           barcode: null,
           compareAtPriceCents: baseVariant.compareAtPriceCents,
+          heightCm: baseVariant.heightCm ?? shippingProfile?.heightCm ?? null,
           isActive: baseVariant.isActive,
+          lengthCm: baseVariant.lengthCm ?? shippingProfile?.lengthCm ?? null,
           optionValues,
           priceCents: baseVariant.priceCents,
+          shippingLeadTimeDays: baseVariant.shippingLeadTimeDays ?? shippingProfile?.shippingLeadTimeDays ?? null,
           sku: makeSku(handle, variants.length + 1),
           stockQuantity: baseVariant.isActive ? defaultStock : 0,
           title: buildVariantTitle(optionValues, title),
-          weightGrams: baseVariant.weightGrams
+          weightGrams: baseVariant.weightGrams ?? shippingProfile?.weightGrams ?? null,
+          widthCm: baseVariant.widthCm ?? shippingProfile?.widthCm ?? null
         });
       }
     }
@@ -335,6 +366,32 @@ function shouldExpandVariantMatrix({ categorySlug, columns, rows, tags, title })
     || haystack.includes("regata")
     || haystack.includes("oversized")
     || haystack.includes("streetwear");
+}
+
+function inferShippingProfile(row, columns, categorySlug, tags, title) {
+  const type = getCell(row, columns, "Type").toLowerCase();
+  const haystack = `${title} ${type} ${tags.join(" ")}`.toLowerCase();
+
+  if (categorySlug === "action-figures"
+    || haystack.includes("action figure")
+    || haystack.includes("colecionável")
+    || haystack.includes("colecionavel")
+    || haystack.includes("pvc")) {
+    return defaultShippingProfiles.actionFigure;
+  }
+
+  if (categorySlug === "camisetas"
+    || categorySlug === "oversized"
+    || haystack.includes("camiseta")
+    || haystack.includes("camisa")
+    || haystack.includes("regata")
+    || haystack.includes("babylook")
+    || haystack.includes("oversized")
+    || haystack.includes("streetwear")) {
+    return defaultShippingProfiles.apparel;
+  }
+
+  return null;
 }
 
 function getMetafieldMatrixOptions(rows, columns) {
@@ -416,6 +473,8 @@ async function importProducts(products) {
     categoryMap.set(slug, category.id);
   }
 
+  await ensureDefaultShippingPresets(prisma);
+
   for (const product of products) {
     await prisma.$transaction(async (tx) => {
       const existingProduct = await tx.product.findFirst({
@@ -468,6 +527,16 @@ async function importProducts(products) {
           productId: savedProduct.id
         }))
       });
+    });
+  }
+}
+
+async function ensureDefaultShippingPresets(client) {
+  for (const preset of Object.values(defaultShippingProfiles)) {
+    await client.productShippingPreset.upsert({
+      create: preset,
+      update: preset,
+      where: { name: preset.name }
     });
   }
 }

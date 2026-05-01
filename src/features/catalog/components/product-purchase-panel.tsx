@@ -278,28 +278,84 @@ function VariantSelector({
   selectedVariantId: string;
   variants: ProductVariantOption[];
 }): React.ReactElement {
-  const hasStructuredOptions = variants.some((variant) => getVariantColor(variant) || getVariantSize(variant));
+  const hasStructuredOptions = variants.some(
+    (variant) => getVariantGender(variant) || getVariantColor(variant) || getVariantSize(variant)
+  );
   const selectedVariant = variants.find((variant) => variant.id === selectedVariantId) ?? variants[0];
 
   if (hasStructuredOptions && selectedVariant) {
+    const selectedGender = getVariantGender(selectedVariant);
     const selectedColor = getVariantColor(selectedVariant);
     const selectedSize = getVariantSize(selectedVariant);
-    const colors = unique(variants.map(getVariantColor).filter((color): color is string => Boolean(color)));
-    const visibleSizes = selectedColor
-      ? variants.filter((variant) => getVariantColor(variant) === selectedColor)
-      : variants;
+    const genders = unique(variants.map(getVariantGender).filter((gender): gender is string => Boolean(gender)))
+      .sort(compareGenderOptions);
+    const colors = unique(
+      variants
+        .filter((variant) => !selectedGender || getVariantGender(variant) === selectedGender)
+        .map(getVariantColor)
+        .filter((color): color is string => Boolean(color))
+    );
+    const sizes = unique(
+      variants
+        .filter((variant) => (!selectedGender || getVariantGender(variant) === selectedGender)
+          && (!selectedColor || getVariantColor(variant) === selectedColor))
+        .map(getVariantSize)
+        .filter((size): size is string => Boolean(size))
+    ).sort(compareSizeOptions);
 
     return (
       <fieldset>
-        {colors.length > 0 ? (
+        {genders.length > 0 ? (
           <div>
+            <legend className="text-base font-semibold text-black">Genero: {selectedGender ?? "Selecione"}</legend>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {genders.map((gender) => {
+                const genderVariant = getBestVariantForSelection(variants, {
+                  color: selectedColor,
+                  gender,
+                  size: selectedSize
+                });
+                const isSelected = gender === selectedGender;
+                const isUnavailable = !variants.some(
+                  (variant) => getVariantGender(variant) === gender && variant.availableStock > 0
+                );
+
+                return (
+                  <button
+                    aria-pressed={isSelected}
+                    className={[
+                      "inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 text-sm font-bold transition",
+                      isSelected ? "border-primary bg-[#fff7f2] text-primary" : "border-[#d9e0e4] bg-white text-[#344049]",
+                      isUnavailable ? "cursor-not-allowed opacity-50" : "hover:border-primary"
+                    ].join(" ")}
+                    disabled={!genderVariant || isUnavailable}
+                    key={gender}
+                    onClick={() => genderVariant && onSelect(genderVariant.id)}
+                    type="button"
+                  >
+                    {formatOptionName(gender)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
+        {colors.length > 0 ? (
+          <div className={genders.length > 0 ? "mt-5" : ""}>
             <legend className="text-base font-semibold text-black">Cor: {selectedColor ?? "Selecione"}</legend>
             <div className="mt-3 flex flex-wrap gap-2">
               {colors.map((color) => {
-                const colorVariant = getBestVariantForColor(variants, color, selectedSize);
+                const colorVariant = getBestVariantForSelection(variants, {
+                  color,
+                  gender: selectedGender,
+                  size: selectedSize
+                });
                 const isSelected = color === selectedColor;
                 const isUnavailable = !variants.some(
-                  (variant) => getVariantColor(variant) === color && variant.availableStock > 0
+                  (variant) => getVariantColor(variant) === color
+                    && (!selectedGender || getVariantGender(variant) === selectedGender)
+                    && variant.availableStock > 0
                 );
 
                 return (
@@ -327,33 +383,44 @@ function VariantSelector({
           </div>
         ) : null}
 
-        <div className={colors.length > 0 ? "mt-5" : ""}>
-          <p className="text-base font-semibold text-black">Tamanho</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {visibleSizes.map((variant) => {
-              const size = getVariantSize(variant) ?? variant.title;
-              const isSelected = variant.id === selectedVariantId;
-              const isUnavailable = variant.availableStock <= 0;
+        {sizes.length > 0 ? (
+          <div className={colors.length > 0 || genders.length > 0 ? "mt-5" : ""}>
+            <p className="text-base font-semibold text-black">Tamanho</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {sizes.map((size) => {
+                const sizeVariant = getBestVariantForSelection(variants, {
+                  color: selectedColor,
+                  gender: selectedGender,
+                  size
+                });
+                const isSelected = size === selectedSize;
+                const isUnavailable = !variants.some(
+                  (variant) => getVariantSize(variant) === size
+                    && (!selectedGender || getVariantGender(variant) === selectedGender)
+                    && (!selectedColor || getVariantColor(variant) === selectedColor)
+                    && variant.availableStock > 0
+                );
 
-              return (
-                <button
-                  aria-pressed={isSelected}
-                  className={[
-                    "inline-flex min-h-10 min-w-12 items-center justify-center rounded-lg border px-3 text-sm font-bold transition",
-                    isSelected ? "border-primary bg-[#fff7f2] text-primary" : "border-[#d9e0e4] bg-white text-[#344049]",
-                    isUnavailable ? "cursor-not-allowed opacity-50" : "hover:border-primary"
-                  ].join(" ")}
-                  disabled={isUnavailable}
-                  key={variant.id}
-                  onClick={() => onSelect(variant.id)}
-                  type="button"
-                >
-                  {formatOptionName(size)}
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    aria-pressed={isSelected}
+                    className={[
+                      "inline-flex min-h-10 min-w-12 items-center justify-center rounded-lg border px-3 text-sm font-bold transition",
+                      isSelected ? "border-primary bg-[#fff7f2] text-primary" : "border-[#d9e0e4] bg-white text-[#344049]",
+                      isUnavailable ? "cursor-not-allowed opacity-50" : "hover:border-primary"
+                    ].join(" ")}
+                    disabled={!sizeVariant || isUnavailable}
+                    key={size}
+                    onClick={() => sizeVariant && onSelect(sizeVariant.id)}
+                    type="button"
+                  >
+                    {formatOptionName(size)}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        ) : null}
       </fieldset>
     );
   }
@@ -410,47 +477,135 @@ function formatVariantLabel(variant: ProductVariantOption): string {
   return values.length > 0 ? values.join(" / ") : variant.title;
 }
 
+const sizeOrder = ["PP", "P", "M", "G", "GG", "XG"];
+const sizeValues = new Set(sizeOrder.map(normalizeOptionValue));
+const genderValues = new Set(["feminino", "feminina", "mulher", "masculino", "masculina", "homem", "unissex"]);
+const colorValues = new Set([
+  "amarelo",
+  "azul",
+  "bege",
+  "branco",
+  "caqui",
+  "cinza",
+  "creme",
+  "laranja",
+  "marrom",
+  "off white",
+  "preto",
+  "rosa",
+  "roxo",
+  "verde",
+  "vermelho",
+  "vinho"
+]);
+
+function getVariantGender(variant: ProductVariantOption): string | null {
+  return getSemanticOptionValue(variant, isGenderValue)
+    ?? getOptionValueByKeys(variant, ["Genero", "Gênero", "Gender", "Sexo", "Modelo"], [isColorValue, isSizeValue]);
+}
+
 function getVariantColor(variant: ProductVariantOption): string | null {
-  return getOptionValue(variant, "Cor") ?? getOptionValue(variant, "Color");
+  return getSemanticOptionValue(variant, isColorValue)
+    ?? getOptionValueByKeys(variant, ["Cor", "Color", "Colour"], [isGenderValue, isSizeValue]);
 }
 
 function getVariantSize(variant: ProductVariantOption): string | null {
-  return getOptionValue(variant, "Tamanho") ?? getOptionValue(variant, "Size");
+  return getSemanticOptionValue(variant, isSizeValue)
+    ?? getOptionValueByKeys(variant, ["Tamanho", "Size", "Tam"], [isGenderValue, isColorValue]);
 }
 
-function getOptionValue(variant: ProductVariantOption, key: string): string | null {
+function getSemanticOptionValue(
+  variant: ProductVariantOption,
+  predicate: (value: string) => boolean
+): string | null {
+  return getOptionEntries(variant)
+    .map(([, value]) => value)
+    .find(predicate) ?? null;
+}
+
+function getOptionValueByKeys(
+  variant: ProductVariantOption,
+  keys: string[],
+  disallowedPredicates: Array<(value: string) => boolean>
+): string | null {
+  const normalizedKeys = new Set(keys.map(normalizeOptionKey));
+  const entry = getOptionEntries(variant).find(([optionKey, value]) => {
+    if (!normalizedKeys.has(normalizeOptionKey(optionKey))) {
+      return false;
+    }
+
+    return !disallowedPredicates.some((predicate) => predicate(value));
+  });
+
+  return entry?.[1] ?? null;
+}
+
+function getOptionEntries(variant: ProductVariantOption): Array<[string, string]> {
   if (!variant.optionValues || typeof variant.optionValues !== "object" || Array.isArray(variant.optionValues)) {
-    return null;
+    return [];
   }
 
-  const targetKey = normalizeOptionKey(key);
-  const entry = Object.entries(variant.optionValues as Record<string, unknown>).find(
-    ([optionKey]) => normalizeOptionKey(optionKey) === targetKey
-  );
-  const value = entry?.[1];
-
-  return typeof value === "string" && value.length > 0 ? value : null;
+  return Object.entries(variant.optionValues as Record<string, unknown>)
+    .filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1].trim().length > 0)
+    .map(([key, value]) => [key, value.trim()]);
 }
 
-function getBestVariantForColor(
+function getBestVariantForSelection(
   variants: ProductVariantOption[],
-  color: string,
-  preferredSize: string | null
+  selection: {
+    color?: string | null;
+    gender?: string | null;
+    size?: string | null;
+  }
 ): ProductVariantOption | undefined {
-  const colorVariants = variants.filter((variant) => getVariantColor(variant) === color);
+  const exactVariants = variants.filter((variant) => matchesVariantSelection(variant, selection));
 
   return (
-    colorVariants.find(
-      (variant) => preferredSize && getVariantSize(variant) === preferredSize && variant.availableStock > 0
-    ) ??
-    colorVariants.find((variant) => variant.availableStock > 0) ??
-    colorVariants.find((variant) => preferredSize && getVariantSize(variant) === preferredSize) ??
-    colorVariants[0]
+    exactVariants.find((variant) => variant.availableStock > 0) ??
+    exactVariants[0] ??
+    variants.find((variant) => matchesVariantSelection(variant, { color: selection.color, gender: selection.gender }) && variant.availableStock > 0) ??
+    variants.find((variant) => matchesVariantSelection(variant, { color: selection.color, size: selection.size }) && variant.availableStock > 0) ??
+    variants.find((variant) => matchesVariantSelection(variant, { gender: selection.gender, size: selection.size }) && variant.availableStock > 0) ??
+    variants.find((variant) => variant.availableStock > 0) ??
+    variants[0]
   );
+}
+
+function matchesVariantSelection(
+  variant: ProductVariantOption,
+  selection: {
+    color?: string | null;
+    gender?: string | null;
+    size?: string | null;
+  }
+): boolean {
+  return (!selection.gender || getVariantGender(variant) === selection.gender)
+    && (!selection.color || getVariantColor(variant) === selection.color)
+    && (!selection.size || getVariantSize(variant) === selection.size);
 }
 
 function unique(values: string[]): string[] {
   return [...new Set(values)];
+}
+
+function compareGenderOptions(left: string, right: string): number {
+  const order = ["feminino", "feminina", "mulher", "masculino", "masculina", "homem", "unissex"];
+
+  return getOptionOrder(left, order) - getOptionOrder(right, order)
+    || left.localeCompare(right, "pt-BR");
+}
+
+function compareSizeOptions(left: string, right: string): number {
+  return getOptionOrder(left, sizeOrder) - getOptionOrder(right, sizeOrder)
+    || left.localeCompare(right, "pt-BR", { numeric: true });
+}
+
+function getOptionOrder(value: string, order: string[]): number {
+  const normalizedValue = normalizeOptionValue(value);
+  const normalizedOrder = order.map(normalizeOptionValue);
+  const index = normalizedOrder.indexOf(normalizedValue);
+
+  return index >= 0 ? index : Number.MAX_SAFE_INTEGER;
 }
 
 function normalizeOptionKey(value: string): string {
@@ -459,6 +614,22 @@ function normalizeOptionKey(value: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toLowerCase();
+}
+
+function normalizeOptionValue(value: string): string {
+  return normalizeOptionKey(value).replace(/\s+/g, " ");
+}
+
+function isGenderValue(value: string): boolean {
+  return genderValues.has(normalizeOptionValue(value));
+}
+
+function isColorValue(value: string): boolean {
+  return colorValues.has(normalizeOptionValue(value));
+}
+
+function isSizeValue(value: string): boolean {
+  return sizeValues.has(normalizeOptionValue(value));
 }
 
 function formatOptionName(value: string): string {

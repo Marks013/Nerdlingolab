@@ -188,21 +188,30 @@ function getVariantDisplayImage(
 }
 
 function getVariantColor(variant: ProductVariantOption): string | null {
-  return getOptionValue(variant, "Cor") ?? getOptionValue(variant, "Color");
+  const semanticColor = getOptionEntries(variant)
+    .map(([, value]) => value)
+    .find(isColorValue);
+
+  return semanticColor ?? getOptionValue(variant, "Cor") ?? getOptionValue(variant, "Color");
 }
 
 function getOptionValue(variant: ProductVariantOption, key: string): string | null {
+  const targetKey = normalizeOptionKey(key);
+  const entry = getOptionEntries(variant).find(
+    ([optionKey, value]) => normalizeOptionKey(optionKey) === targetKey && !isGenderValue(value)
+  );
+
+  return entry?.[1] ?? null;
+}
+
+function getOptionEntries(variant: ProductVariantOption): Array<[string, string]> {
   if (!variant.optionValues || typeof variant.optionValues !== "object" || Array.isArray(variant.optionValues)) {
-    return null;
+    return [];
   }
 
-  const targetKey = normalizeOptionKey(key);
-  const entry = Object.entries(variant.optionValues as Record<string, unknown>).find(
-    ([optionKey]) => normalizeOptionKey(optionKey) === targetKey
-  );
-  const value = entry?.[1];
-
-  return typeof value === "string" && value.length > 0 ? value : null;
+  return Object.entries(variant.optionValues as Record<string, unknown>)
+    .filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1].trim().length > 0)
+    .map(([optionKey, value]) => [optionKey, value.trim()]);
 }
 
 function normalizeOptionKey(value: string): string {
@@ -211,4 +220,31 @@ function normalizeOptionKey(value: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toLowerCase();
+}
+
+function isGenderValue(value: string): boolean {
+  return ["feminino", "feminina", "mulher", "masculino", "masculina", "homem", "unissex"].includes(
+    normalizeOptionKey(value)
+  );
+}
+
+function isColorValue(value: string): boolean {
+  return [
+    "amarelo",
+    "azul",
+    "bege",
+    "branco",
+    "caqui",
+    "cinza",
+    "creme",
+    "laranja",
+    "marrom",
+    "off white",
+    "preto",
+    "rosa",
+    "roxo",
+    "verde",
+    "vermelho",
+    "vinho"
+  ].includes(normalizeOptionKey(value).replace(/\s+/g, " "));
 }

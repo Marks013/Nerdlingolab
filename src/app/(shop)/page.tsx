@@ -5,31 +5,28 @@ import { AutoCarousel } from "@/components/shop/auto-carousel";
 import { SafeImage as Image } from "@/components/media/safe-image";
 import { ShopTrustStrip } from "@/components/shop/shop-trust-strip";
 import { ProductCard } from "@/features/catalog/components/product-card";
-import { PublicOffersSection } from "@/features/offers/components/public-offers-section";
 import {
   getPublicBestSellingProducts,
   getPublicNewProducts,
   getPublicProducts,
   type ProductListItem
 } from "@/lib/catalog/queries";
-import { getPublicOffers } from "@/lib/offers/queries";
 import { getStorefrontTheme } from "@/lib/theme/storefront";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "NerdLingoLab",
-  description: "Produtos geek, camisetas, oversized, action figures, cupons e NerdCoins em uma loja divertida e segura.",
+  description: "Produtos geek, camisetas, oversized, action figures e NerdCoins em uma loja divertida e segura.",
   alternates: {
     canonical: "/"
   }
 };
 
 export default async function ShopHomePage(): Promise<React.ReactElement> {
-  const [bestSellingProducts, newProducts, offers, products, theme] = await Promise.all([
+  const [bestSellingProducts, newProducts, products, theme] = await Promise.all([
     getPublicBestSellingProducts(6),
     getPublicNewProducts(6),
-    getPublicOffers(),
     getPublicProducts({ sort: "recentes" }),
     getStorefrontTheme()
   ]);
@@ -85,8 +82,6 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
             title={section.title}
           />
         ))}
-
-        <PublicOffersSection coupons={offers.coupons} products={offers.products} />
 
         <section id="sobre" className="manga-panel grid gap-8 rounded-lg bg-white p-8 shadow-sm lg:grid-cols-[0.8fr_1.2fr]">
           <div className="relative min-h-[260px] overflow-hidden rounded-lg bg-[#f7f7f7]">

@@ -302,15 +302,17 @@ function VariantSelector({
     const selectedSize = getVariantSize(selectedVariant);
     const genders = unique(variants.map(getVariantGender).filter((gender): gender is string => Boolean(gender)))
       .sort(compareGenderOptions);
+    const shouldShowGenderOptions = genders.length > 1;
+    const activeGenderFilter = shouldShowGenderOptions ? selectedGender : null;
     const colors = unique(
       variants
-        .filter((variant) => !selectedGender || getVariantGender(variant) === selectedGender)
+        .filter((variant) => !activeGenderFilter || getVariantGender(variant) === activeGenderFilter)
         .map(getVariantColor)
         .filter((color): color is string => Boolean(color))
     );
     const sizes = unique(
       variants
-        .filter((variant) => (!selectedGender || getVariantGender(variant) === selectedGender)
+        .filter((variant) => (!activeGenderFilter || getVariantGender(variant) === activeGenderFilter)
           && (!selectedColor || getVariantColor(variant) === selectedColor))
         .map(getVariantSize)
         .filter((size): size is string => Boolean(size))
@@ -318,7 +320,7 @@ function VariantSelector({
 
     return (
       <fieldset>
-        {genders.length > 0 ? (
+        {shouldShowGenderOptions ? (
           <div>
             <legend className="text-base font-semibold text-black">Genero: {selectedGender ?? "Selecione"}</legend>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -355,19 +357,19 @@ function VariantSelector({
         ) : null}
 
         {colors.length > 0 ? (
-          <div className={genders.length > 0 ? "mt-5" : ""}>
+          <div className={shouldShowGenderOptions ? "mt-5" : ""}>
             <legend className="text-base font-semibold text-black">Cor: {selectedColor ?? "Selecione"}</legend>
             <div className="mt-3 flex flex-wrap gap-2">
               {colors.map((color) => {
                 const colorVariant = getBestVariantForSelection(variants, {
                   color,
-                  gender: selectedGender,
+                  gender: activeGenderFilter,
                   size: selectedSize
                 });
                 const isSelected = color === selectedColor;
                 const isUnavailable = !variants.some(
                   (variant) => getVariantColor(variant) === color
-                    && (!selectedGender || getVariantGender(variant) === selectedGender)
+                    && (!activeGenderFilter || getVariantGender(variant) === activeGenderFilter)
                     && variant.availableStock > 0
                 );
 
@@ -397,19 +399,19 @@ function VariantSelector({
         ) : null}
 
         {sizes.length > 0 ? (
-          <div className={colors.length > 0 || genders.length > 0 ? "mt-5" : ""}>
+          <div className={colors.length > 0 || shouldShowGenderOptions ? "mt-5" : ""}>
             <p className="text-base font-semibold text-black">Tamanho</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {sizes.map((size) => {
                 const sizeVariant = getBestVariantForSelection(variants, {
                   color: selectedColor,
-                  gender: selectedGender,
+                  gender: activeGenderFilter,
                   size
                 });
                 const isSelected = size === selectedSize;
                 const isUnavailable = !variants.some(
                   (variant) => getVariantSize(variant) === size
-                    && (!selectedGender || getVariantGender(variant) === selectedGender)
+                    && (!activeGenderFilter || getVariantGender(variant) === activeGenderFilter)
                     && (!selectedColor || getVariantColor(variant) === selectedColor)
                     && variant.availableStock > 0
                 );

@@ -1,4 +1,4 @@
-import { Award, BarChart3, Boxes, Headphones, Images, LayoutDashboard, ListTree, Mail, Megaphone, Palette, ReceiptText, TicketPercent, Truck, UsersRound } from "lucide-react";
+import { Award, BarChart3, Boxes, Headphones, Images, LayoutDashboard, ListTree, Mail, Megaphone, Palette, ReceiptText, Star, TicketPercent, Truck, UsersRound } from "lucide-react";
 
 import { signOutFromAdmin } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ const adminLinks = [
   { href: "/admin/clientes", label: "Clientes", icon: UsersRound },
   { href: "/admin/fidelidade", label: "Nerdcoins", icon: Award },
   { href: "/admin/suporte", label: "Suporte", icon: Headphones },
+  { href: "/admin/avaliacoes", label: "Avaliações", icon: Star },
   { href: "/admin/engajamento", label: "Engajamento", icon: Megaphone },
   { href: "/admin/newsletter", label: "Newsletter", icon: Mail },
   { href: "/admin/tema", label: "Tema", icon: Palette },
@@ -25,15 +26,15 @@ const adminLinks = [
 const adminNavigationGroups = [
   {
     label: "Operação",
-    links: adminLinks.slice(0, 7)
+    links: adminLinks.slice(0, 8)
   },
   {
     label: "Vitrine",
-    links: adminLinks.slice(7, 11)
+    links: adminLinks.slice(8, 12)
   },
   {
     label: "Catálogo",
-    links: adminLinks.slice(11)
+    links: adminLinks.slice(12)
   }
 ];
 

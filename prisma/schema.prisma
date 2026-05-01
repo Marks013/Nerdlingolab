@@ -67,6 +67,24 @@ enum LoyaltyLedgerType {
   REFUND_REVERSAL
 }
 
+enum ProductReviewStatus {
+  PENDING
+  PUBLISHED
+  REJECTED
+  HIDDEN
+}
+
+enum ProductReviewRewardMode {
+  NONE
+  COUPON
+  NERDCOINS
+}
+
+enum ProductReviewMediaType {
+  IMAGE
+  VIDEO
+}
+
 enum ReferralStatus {
   PENDING
   REWARDED
@@ -134,20 +152,22 @@ model User {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  accounts          Account[]
-  sessions          Session[]
-  orders            Order[]
-  couponRedemptions CouponRedemption[]
-  loyaltyPoints     LoyaltyPoints?
-  loyaltyLedger     LoyaltyLedger[]
-  addresses         CustomerAddress[]
-  supportTickets    SupportTicket[]
-  supportReplies    SupportTicketReply[]
-  assignedCoupons   Coupon[]             @relation("AssignedCoupons")
-  mediaAssets       MediaAsset[]
-  referralCode      ReferralCode?
-  referralsSent     Referral[]           @relation("ReferralInviter")
-  referralReceived  Referral?            @relation("ReferralInvitee")
+  accounts               Account[]
+  sessions               Session[]
+  orders                 Order[]
+  couponRedemptions      CouponRedemption[]
+  loyaltyPoints          LoyaltyPoints?
+  loyaltyLedger          LoyaltyLedger[]
+  addresses              CustomerAddress[]
+  supportTickets         SupportTicket[]
+  supportReplies         SupportTicketReply[]
+  assignedCoupons        Coupon[]             @relation("AssignedCoupons")
+  mediaAssets            MediaAsset[]
+  productReviews         ProductReview[]      @relation("ProductReviewAuthor")
+  reviewedProductReviews ProductReview[]      @relation("ProductReviewModerator")
+  referralCode           ReferralCode?
+  referralsSent          Referral[]           @relation("ReferralInviter")
+  referralReceived       Referral?            @relation("ReferralInvitee")
 
   @@index([role])
   @@index([createdAt])
@@ -305,48 +325,50 @@ model Product {
   orderItems      OrderItem[]
   inventoryLedger InventoryLedger[]
   mediaUsages     MediaAssetUsage[]
+  reviews         ProductReview[]
 
   @@index([status, publishedAt])
   @@index([categoryId])
 }
 
 model ProductVariant {
-  id                  String   @id @default(cuid())
-  productId           String
-  title               String
-  sku                 String   @unique
-  barcode             String?
-  optionValues        Json     @default("{}")
-  priceCents          Int
-  compareAtPriceCents Int?
-  stockQuantity       Int      @default(0)
-  reservedQuantity    Int      @default(0)
-  weightGrams         Int?
-  heightCm            Int?
-  widthCm             Int?
-  lengthCm            Int?
+  id                   String   @id @default(cuid())
+  productId            String
+  title                String
+  sku                  String   @unique
+  barcode              String?
+  optionValues         Json     @default("{}")
+  priceCents           Int
+  compareAtPriceCents  Int?
+  stockQuantity        Int      @default(0)
+  reservedQuantity     Int      @default(0)
+  weightGrams          Int?
+  heightCm             Int?
+  widthCm              Int?
+  lengthCm             Int?
   shippingLeadTimeDays Int?
-  isActive            Boolean  @default(true)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   product         Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
   orderItems      OrderItem[]
   inventoryLedger InventoryLedger[]
+  reviews         ProductReview[]
 
   @@index([productId, isActive])
 }
 
 model ProductShippingPreset {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  weightGrams Int
-  heightCm    Int
-  widthCm     Int
-  lengthCm    Int
-  shippingLeadTimeDays Int @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  name                 String   @unique
+  weightGrams          Int
+  heightCm             Int
+  widthCm              Int
+  lengthCm             Int
+  shippingLeadTimeDays Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@index([weightGrams])
 }
@@ -410,8 +432,9 @@ model MediaAsset {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  createdBy User?             @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  usages    MediaAssetUsage[]
+  createdBy   User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  usages      MediaAssetUsage[]
+  reviewMedia ProductReviewMedia[]
 
   @@index([source, createdAt])
   @@index([deletedAt])
@@ -552,6 +575,7 @@ model Order {
   inventoryLedger    InventoryLedger[]
   shipments          Shipment[]
   referralsQualified Referral[]
+  reviews            ProductReview[]
 
   @@index([userId, createdAt])
   @@index([paymentStatus, status])
@@ -620,6 +644,7 @@ model OrderItem {
   order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
   variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  review  ProductReview?
 
   @@index([orderId])
   @@index([productId])
@@ -645,9 +670,10 @@ model Coupon {
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
-  orders       Order[]
-  redemptions  CouponRedemption[]
-  assignedUser User?              @relation("AssignedCoupons", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  orders        Order[]
+  redemptions   CouponRedemption[]
+  assignedUser  User?              @relation("AssignedCoupons", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  reviewRewards ProductReview[]    @relation("ProductReviewRewardCoupons")
 
   @@index([code, isActive])
   @@index([isActive, isPublic])
@@ -684,6 +710,79 @@ model LoyaltyProgramSettings {
   hokageMultiplier           Int      @default(200)
   updatedAt                  DateTime @updatedAt
   createdAt                  DateTime @default(now())
+}
+
+model ProductReviewSettings {
+  id                    String                  @id @default(cuid())
+  singletonKey          String                  @unique @default("default")
+  isEnabled             Boolean                 @default(true)
+  requireDeliveredOrder Boolean                 @default(true)
+  allowImages           Boolean                 @default(true)
+  allowVideos           Boolean                 @default(true)
+  maxImages             Int                     @default(3)
+  maxVideos             Int                     @default(1)
+  maxVideoSeconds       Int                     @default(30)
+  rewardMode            ProductReviewRewardMode @default(COUPON)
+  couponValueCents      Int                     @default(500)
+  nerdcoinsRewardPoints Int                     @default(50)
+  couponExpiresInDays   Int                     @default(30)
+  updatedAt             DateTime                @updatedAt
+  createdAt             DateTime                @default(now())
+}
+
+model ProductReview {
+  id              String                   @id @default(cuid())
+  productId       String
+  variantId       String?
+  orderId         String
+  orderItemId     String                   @unique
+  userId          String
+  rating          Int
+  title           String?
+  body            String                   @db.Text
+  status          ProductReviewStatus      @default(PENDING)
+  publicConsent   Boolean                  @default(true)
+  adminNotes      String?                  @db.Text
+  rejectionReason String?                  @db.Text
+  rewardMode      ProductReviewRewardMode?
+  rewardCouponId  String?
+  rewardPoints    Int?
+  rewardGrantedAt DateTime?
+  publishedAt     DateTime?
+  reviewedAt      DateTime?
+  reviewedById    String?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  product      Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant      ProductVariant?      @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  order        Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem    OrderItem            @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  user         User                 @relation("ProductReviewAuthor", fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy   User?                @relation("ProductReviewModerator", fields: [reviewedById], references: [id], onDelete: SetNull)
+  rewardCoupon Coupon?              @relation("ProductReviewRewardCoupons", fields: [rewardCouponId], references: [id], onDelete: SetNull)
+  media        ProductReviewMedia[]
+
+  @@index([productId, status, publishedAt])
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([orderId])
+}
+
+model ProductReviewMedia {
+  id        String                 @id @default(cuid())
+  reviewId  String
+  assetId   String
+  mediaType ProductReviewMediaType
+  sortOrder Int                    @default(0)
+  createdAt DateTime               @default(now())
+
+  review ProductReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  asset  MediaAsset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, assetId])
+  @@index([reviewId, sortOrder])
+  @@index([assetId])
 }
 
 model CouponRedemption {

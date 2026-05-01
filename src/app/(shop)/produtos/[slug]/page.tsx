@@ -5,11 +5,13 @@ import { notFound } from "next/navigation";
 import { ProductDetailShell } from "@/features/catalog/components/product-detail-shell";
 import { ProductRecommendations } from "@/features/catalog/components/product-recommendations";
 import { getImageUrls, getPrimaryImageUrl } from "@/features/catalog/image-utils";
+import { ProductReviewsSection } from "@/features/reviews/components/product-reviews-section";
 import {
   getPublicProductBySlug,
   getPublicProductRecommendations
 } from "@/lib/catalog/queries";
 import { getProductBadges } from "@/lib/catalog/badges";
+import { getPublishedProductReviews } from "@/lib/reviews/queries";
 import { getStorefrontTheme } from "@/lib/theme/storefront";
 
 export const dynamic = "force-dynamic";
@@ -76,11 +78,14 @@ export default async function ProductPage({ params }: ProductPageProps): Promise
     availableStock: Math.max(0, variant.stockQuantity - variant.reservedQuantity),
     imageUrl: getVariantImageUrl(variant.optionValues)
   }));
-  const recommendedProducts = await getPublicProductRecommendations({
-    categoryId: product.categoryId,
-    productId: product.id
-  });
-  const theme = await getStorefrontTheme();
+  const [recommendedProducts, theme, reviewData] = await Promise.all([
+    getPublicProductRecommendations({
+      categoryId: product.categoryId,
+      productId: product.id
+    }),
+    getStorefrontTheme(),
+    getPublishedProductReviews(product.id)
+  ]);
   const productBadges = getProductBadges(product);
 
   return (
@@ -113,6 +118,7 @@ export default async function ProductPage({ params }: ProductPageProps): Promise
           variants={variants}
         />
 
+        <ProductReviewsSection reviews={reviewData.reviews} summary={reviewData.summary} />
         <ProductRecommendations products={recommendedProducts} />
       </div>
     </main>

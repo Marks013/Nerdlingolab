@@ -8,6 +8,9 @@ import type {
   Order,
   OrderItem,
   LoyaltyPoints,
+  MediaAsset,
+  ProductReview,
+  ProductReviewMedia,
   Shipment,
   ShipmentEvent,
   User
@@ -42,7 +45,11 @@ export type CustomerOrderListItem = Order & {
 };
 
 export type CustomerOrderDetail = Order & {
-  items: OrderItem[];
+  items: (OrderItem & {
+    review: (ProductReview & {
+      media: (ProductReviewMedia & { asset: MediaAsset })[];
+    }) | null;
+  })[];
   loyaltyLedger: LoyaltyLedger[];
   shipments: (Shipment & { events: ShipmentEvent[] })[];
 };
@@ -153,6 +160,18 @@ export async function getAdminOrderById(orderId: string): Promise<AdminOrderDeta
       },
       coupon: true,
       items: {
+        include: {
+          review: {
+            include: {
+              media: {
+                include: {
+                  asset: true
+                },
+                orderBy: { sortOrder: "asc" }
+              }
+            }
+          }
+        },
         orderBy: { createdAt: "asc" }
       },
       couponRedemptions: {
@@ -265,6 +284,18 @@ export async function getCustomerOrderById({
     },
     include: {
       items: {
+        include: {
+          review: {
+            include: {
+              media: {
+                include: {
+                  asset: true
+                },
+                orderBy: { sortOrder: "asc" }
+              }
+            }
+          }
+        },
         orderBy: { createdAt: "asc" }
       },
       loyaltyLedger: {

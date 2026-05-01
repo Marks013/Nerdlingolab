@@ -154,7 +154,7 @@ function normalizeProduct(handle, rows, columns) {
   ]);
   const categorySlug = inferCategorySlug(firstRow, columns, tags, title);
   const originalProductUrl = getSourceProductUrl(firstRow, columns);
-  const variants = normalizeVariants(handle, rows, columns, title);
+  const variants = normalizeVariants(handle, rows, columns, title, categorySlug, tags);
   const activeVariants = variants.filter((variant) => variant.isActive && variant.priceCents > 0);
   const priceCents = Math.min(...activeVariants.map((variant) => variant.priceCents));
   const compareAtPriceCents = minOptional(activeVariants.map((variant) => variant.compareAtPriceCents));
@@ -182,7 +182,7 @@ function normalizeProduct(handle, rows, columns) {
   };
 }
 
-function normalizeVariants(handle, rows, columns, title) {
+function normalizeVariants(handle, rows, columns, title, categorySlug, tags) {
   const seen = new Set();
   const variants = [];
   const optionNames = inferVariantOptionNames(rows, columns);
@@ -220,6 +220,8 @@ function normalizeVariants(handle, rows, columns, title) {
     });
   }
 
+  expandVariantMatrixFromMetafields({ categorySlug, columns, handle, rows, tags, title, variants });
+
   if (variants.length === 0) {
     variants.push({
       barcode: null,
@@ -235,6 +237,148 @@ function normalizeVariants(handle, rows, columns, title) {
   }
 
   return variants;
+}
+
+function expandVariantMatrixFromMetafields({ categorySlug, columns, handle, rows, tags, title, variants }) {
+  if (!shouldExpandVariantMatrix({ categorySlug, columns, rows, tags, title }) || variants.length === 0) {
+    return;
+  }
+
+  const matrixOptions = getMetafieldMatrixOptions(rows, columns);
+  const existingOptions = getExistingMatrixOptions(variants);
+  const colors = getMatrixValues(matrixOptions.Cor, existingOptions.Cor);
+  const sizes = getMatrixValues(matrixOptions.Tamanho, existingOptions.Tamanho);
+  const genders = getMatrixValues(matrixOptions.Genero, existingOptions.Genero);
+  const existingKeys = new Set(variants.map((variant) => getMatrixKey(variant.optionValues)));
+  const baseVariant = variants.find((variant) => variant.isActive && variant.priceCents > 0) ?? variants[0];
+
+  if (colors.length === 0 && sizes.length === 0 && genders.length === 0) {
+    return;
+  }
+
+  for (const gender of genders.length > 0 ? genders : [""]) {
+    for (const color of colors.length > 0 ? colors : [""]) {
+      for (const size of sizes.length > 0 ? sizes : [""]) {
+        const optionValues = {};
+
+        if (gender) {
+          optionValues.Genero = gender;
+        }
+
+        if (color) {
+          optionValues.Cor = color;
+        }
+
+        if (size) {
+          optionValues.Tamanho = size;
+        }
+
+        const key = getMatrixKey(optionValues);
+
+        if (existingKeys.has(key)) {
+          continue;
+        }
+
+        const imageUrl = findReusableVariantImage(variants, { color, gender });
+
+        if (imageUrl) {
+          optionValues._imageUrl = imageUrl;
+        }
+
+        existingKeys.add(key);
+        variants.push({
+          barcode: null,
+          compareAtPriceCents: baseVariant.compareAtPriceCents,
+          isActive: baseVariant.isActive,
+          optionValues,
+          priceCents: baseVariant.priceCents,
+          sku: makeSku(handle, variants.length + 1),
+          stockQuantity: baseVariant.isActive ? defaultStock : 0,
+          title: buildVariantTitle(optionValues, title),
+          weightGrams: baseVariant.weightGrams
+        });
+      }
+    }
+  }
+}
+
+function shouldExpandVariantMatrix({ categorySlug, columns, rows, tags, title }) {
+  const type = getCell(rows[0], columns, "Type").toLowerCase();
+  const haystack = `${title} ${type} ${tags.join(" ")}`.toLowerCase();
+
+  if (categorySlug === "action-figures" || haystack.includes("action figure") || haystack.includes("pvc")) {
+    return false;
+  }
+
+  return categorySlug === "camisetas"
+    || categorySlug === "oversized"
+    || haystack.includes("camiseta")
+    || haystack.includes("camisa")
+    || haystack.includes("regata")
+    || haystack.includes("oversized")
+    || haystack.includes("streetwear");
+}
+
+function getMetafieldMatrixOptions(rows, columns) {
+  return {
+    Cor: unique(rows.flatMap((row) => splitOptionList(getCell(row, columns, "Cor (product.metafields.shopify.color-pattern)")))),
+    Genero: unique(rows.flatMap((row) => splitOptionList(getCell(row, columns, "Gênero alvo (product.metafields.shopify.target-gender)")))),
+    Tamanho: sortSizeOptions(unique(rows.flatMap((row) => splitOptionList(getCell(row, columns, "Tamanho (product.metafields.shopify.size)")))))
+  };
+}
+
+function getExistingMatrixOptions(variants) {
+  return {
+    Cor: unique(variants.map((variant) => getOptionValue(variant.optionValues, "Cor")).filter(Boolean)),
+    Genero: unique(variants.map((variant) => getOptionValue(variant.optionValues, "Genero")).filter(Boolean)),
+    Tamanho: sortSizeOptions(unique(variants.map((variant) => getOptionValue(variant.optionValues, "Tamanho")).filter(Boolean)))
+  };
+}
+
+function getMatrixValues(metafieldValues, existingValues) {
+  return metafieldValues.length > 0 ? metafieldValues : existingValues;
+}
+
+function getMatrixKey(optionValues) {
+  return ["Genero", "Cor", "Tamanho"]
+    .map((name) => normalizeComparableOptionValue(getOptionValue(optionValues, name)))
+    .join("|");
+}
+
+function findReusableVariantImage(variants, { color, gender }) {
+  const exactMatch = variants.find((variant) =>
+    (!color || normalizeComparableOptionValue(getOptionValue(variant.optionValues, "Cor")) === normalizeComparableOptionValue(color))
+    && (!gender || normalizeComparableOptionValue(getOptionValue(variant.optionValues, "Genero")) === normalizeComparableOptionValue(gender))
+    && getOptionValue(variant.optionValues, "_imageUrl")
+  );
+  const colorMatch = variants.find((variant) =>
+    color
+    && normalizeComparableOptionValue(getOptionValue(variant.optionValues, "Cor")) === normalizeComparableOptionValue(color)
+    && getOptionValue(variant.optionValues, "_imageUrl")
+  );
+  const fallbackMatch = variants.find((variant) => getOptionValue(variant.optionValues, "_imageUrl"));
+
+  return getOptionValue((exactMatch ?? colorMatch ?? fallbackMatch)?.optionValues ?? {}, "_imageUrl");
+}
+
+function getOptionValue(optionValues, name) {
+  if (!optionValues || typeof optionValues !== "object" || Array.isArray(optionValues)) {
+    return "";
+  }
+
+  const normalizedName = normalizeVariantOptionName(name);
+  const entry = Object.entries(optionValues).find(([key]) => normalizeVariantOptionName(key) === normalizedName);
+
+  return entry ? String(entry[1] ?? "").trim() : "";
+}
+
+function buildVariantTitle(optionValues, fallback) {
+  const title = ["Genero", "Cor", "Tamanho"]
+    .map((name) => getOptionValue(optionValues, name))
+    .filter(Boolean)
+    .join(" / ");
+
+  return title || fallback || "Padrão";
 }
 
 async function importProducts(products) {
@@ -438,6 +582,45 @@ function normalizeVariantOptionName(value) {
 
 function normalizeOptionValue(value) {
   return String(value).split(";")[0]?.trim() ?? String(value).trim();
+}
+
+function splitOptionList(value) {
+  return String(value ?? "")
+    .split(";")
+    .map((item) => normalizeOptionValue(item))
+    .filter(Boolean);
+}
+
+function sortSizeOptions(values) {
+  const order = ["PP", "P", "M", "G", "GG", "XG", "EXG", "3XL"];
+
+  return [...values].sort((left, right) => {
+    const leftIndex = getOptionOrder(left, order);
+    const rightIndex = getOptionOrder(right, order);
+
+    if (leftIndex !== rightIndex) {
+      return leftIndex - rightIndex;
+    }
+
+    return left.localeCompare(right, "pt-BR", { numeric: true, sensitivity: "base" });
+  });
+}
+
+function getOptionOrder(value, order) {
+  const normalizedValue = normalizeComparableOptionValue(value);
+  const index = order.findIndex((item) => normalizeComparableOptionValue(item) === normalizedValue);
+
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+}
+
+function normalizeComparableOptionValue(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/_/g, "-")
+    .replace(/\s+/g, "-");
 }
 
 function inferCategorySlug(row, columns, tags, title) {

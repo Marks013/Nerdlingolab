@@ -99,7 +99,7 @@ export const authConfig = {
 
         token.role = persistedUser?.role ?? UserRole.CUSTOMER;
         token.customerRegistrationComplete = persistedUser
-          ? isCustomerRegistrationComplete(persistedUser)
+          ? persistedUser.role === UserRole.ADMIN || persistedUser.role === UserRole.SUPERADMIN || isCustomerRegistrationComplete(persistedUser)
           : false;
       }
 

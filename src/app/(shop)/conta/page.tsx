@@ -1,5 +1,6 @@
 import { AccountLoginPrompt } from "@/features/account/components/account-login-prompt";
 import { AccountOverview } from "@/features/account/components/account-overview";
+import { UserRole } from "@/generated/prisma/client";
 import { sanitizeCustomerNextPath } from "@/lib/account/completion";
 import { auth } from "@/lib/auth";
 import { getCustomerAccountSummary } from "@/lib/orders/queries";
@@ -23,6 +24,10 @@ export default async function AccountPage({ searchParams }: AccountPageProps): P
 
   if (!session?.user?.id) {
     return <AccountLoginPrompt message={loginMessage} />;
+  }
+
+  if (session.user.role === UserRole.ADMIN || session.user.role === UserRole.SUPERADMIN) {
+    redirect("/admin");
   }
 
   if (!session.user.customerRegistrationComplete) {

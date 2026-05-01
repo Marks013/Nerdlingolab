@@ -2,9 +2,8 @@
 
 import { X } from "lucide-react";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
-import { useState, useTransition } from "react";
 
+import { signInCustomerWithCredentials } from "@/actions/auth";
 import { GoogleSignInButton } from "@/features/auth/components/google-sign-in-button";
 
 interface LoginModalProps {
@@ -13,35 +12,8 @@ interface LoginModalProps {
 }
 
 export function LoginModal({ isOpen, onClose }: LoginModalProps): React.ReactElement | null {
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-
   if (!isOpen) {
     return null;
-  }
-
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-    setErrorMessage(null);
-
-    const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") ?? "").trim().toLowerCase();
-    const password = String(formData.get("password") ?? "");
-
-    startTransition(async () => {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false
-      });
-
-      if (!result?.ok) {
-        setErrorMessage("E-mail ou senha inválidos. Confira os dados e tente novamente.");
-        return;
-      }
-
-      window.location.href = "/conta";
-    });
   }
 
   return (
@@ -71,7 +43,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps): React.ReactEle
           <span className="h-px flex-1 bg-[#e5e7eb]" />
         </div>
 
-        <form className="grid gap-4" onSubmit={handleSubmit}>
+        <form action={signInCustomerWithCredentials} className="grid gap-4">
           <label className="grid gap-2 text-sm font-bold">
             E-mail
             <input
@@ -93,17 +65,11 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps): React.ReactEle
               type="password"
             />
           </label>
-          {errorMessage ? (
-            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
-              {errorMessage}
-            </p>
-          ) : null}
           <button
-            className="h-12 rounded-lg bg-primary px-5 text-sm font-black text-white transition hover:bg-primary/90 disabled:opacity-60"
-            disabled={isPending}
+            className="h-12 rounded-lg bg-primary px-5 text-sm font-black text-white transition hover:bg-primary/90"
             type="submit"
           >
-            {isPending ? "Entrando..." : "Entrar"}
+            Entrar
           </button>
         </form>
 

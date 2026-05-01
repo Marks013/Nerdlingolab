@@ -249,7 +249,7 @@ function LoyaltyCustomerPanel({ customer }: { customer: LoyaltyCustomer }): Reac
           <Info label="Ganhos vitalicios" value={`${customer.loyaltyPoints?.lifetimeEarned ?? 0} pontos`} />
           <Info label="Resgatados" value={`${customer.loyaltyPoints?.lifetimeRedeemed ?? 0} pontos`} />
           <Info label="Expirados" value={`${customer.loyaltyPoints?.lifetimeExpired ?? 0} pontos`} />
-          <Info label="Codigo de indicacao" value={customer.referralCode?.code ?? "Nao gerado"} />
+          <Info label="Código de indicação" value={customer.referralCode?.code ?? "Não gerado"} />
         </Panel>
 
         <Panel title="Cupons">
@@ -280,7 +280,7 @@ function LoyaltyCustomerPanel({ customer }: { customer: LoyaltyCustomer }): Reac
                 {getReferralStatusLabel(customer.referralReceived.status)} / codigo {customer.referralReceived.referralCode}
               </p>
             </div>
-          ) : <EmptyText>Nao veio por indicacao.</EmptyText>}
+          ) : <EmptyText>Não veio por indicação.</EmptyText>}
           {customer.referralsSent.map((referral) => (
             <div className="rounded-md border p-3 text-sm" key={referral.id}>
               <p className="font-semibold">Indicou {referral.invitee.name ?? referral.invitee.email}</p>

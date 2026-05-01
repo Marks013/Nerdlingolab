@@ -27,7 +27,7 @@ export function ShipmentTrackingPanel({ shipments }: ShipmentTrackingPanelProps)
             <div>
               <p className="font-black">Estamos analisando o atraso e acompanhando de perto o pedido.</p>
               <p className="mt-1 text-sm">
-                Nossa equipe ja foi notificada e esta monitorando cada atualizacao do rastreio.
+                Nossa equipe já foi notificada e acompanha cada atualização do rastreio.
               </p>
             </div>
           </div>
@@ -45,7 +45,7 @@ export function ShipmentTrackingPanel({ shipments }: ShipmentTrackingPanelProps)
               {formatShipmentStatus(latestShipment.status)}
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Codigo: {latestShipment.trackingNumber ?? latestShipment.externalShipmentId ?? "indisponivel"}
+              Código: {latestShipment.trackingNumber ?? latestShipment.externalShipmentId ?? "indisponível"}
             </p>
           </div>
 
@@ -60,7 +60,7 @@ export function ShipmentTrackingPanel({ shipments }: ShipmentTrackingPanelProps)
         </div>
 
         <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
-          <TrackingMetric icon={Clock} label="Prazo estimado" value={latestShipment.estimatedDeliveryAt ? formatDateTime(latestShipment.estimatedDeliveryAt) : "Nao informado"} />
+          <TrackingMetric icon={Clock} label="Prazo estimado" value={latestShipment.estimatedDeliveryAt ? formatDateTime(latestShipment.estimatedDeliveryAt) : "Não informado"} />
           <TrackingMetric icon={PackageCheck} label="Postado em" value={latestShipment.shippedAt ? formatDateTime(latestShipment.shippedAt) : "Aguardando postagem"} />
           <TrackingMetric icon={CheckCircle2} label="Entregue em" value={latestShipment.deliveredAt ? formatDateTime(latestShipment.deliveredAt) : "Ainda em andamento"} />
         </div>
@@ -128,10 +128,10 @@ export function formatShipmentStatus(status: string): string {
     PENDING: "Pendente",
     READY_TO_SHIP: "Pronto para envio",
     SHIPPED: "Enviado",
-    UNKNOWN: "Status indisponivel"
+    UNKNOWN: "Status indisponível"
   };
 
-  return labels[status] ?? "Status indisponivel";
+  return labels[status] ?? "Status indisponível";
 }
 
 export function isShipmentOverdue(shipment: Shipment): boolean {

@@ -194,7 +194,7 @@ function TicketPanel({ ticket }: { ticket: AdminSupportTicket }): React.ReactEle
             <div className="mt-3 grid gap-2 text-sm">
               <p>
                 <span className="text-muted-foreground">Avaliacao:</span>{" "}
-                {ticket.rating ? `${ticket.rating}/5` : "Ainda nao avaliado"}
+                {ticket.rating ? `${ticket.rating}/5` : "Ainda não avaliado"}
               </p>
               {ticket.ratingComment ? (
                 <p className="whitespace-pre-line rounded-md bg-muted px-3 py-2 text-xs">{ticket.ratingComment}</p>

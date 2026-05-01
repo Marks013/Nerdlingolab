@@ -23,7 +23,7 @@ export default async function AdminShippingPage(): Promise<React.ReactElement> {
           <p className="text-sm text-muted-foreground">Operacao / Fretes</p>
           <h1 className="text-2xl font-bold tracking-normal">Fretes manuais</h1>
           <p className="max-w-3xl text-sm text-muted-foreground text-pretty">
-            Configure opcoes de entrega usadas quando o Melhor Envio nao estiver ativo, ou como fallback operacional.
+            Configure opções de entrega usadas quando o Melhor Envio não estiver ativo, ou como fallback operacional.
             O frete gratis continua valendo acima de {formatCurrency(theme.freeShippingThresholdCents)}.
           </p>
         </div>
@@ -133,7 +133,7 @@ function ManualShippingRateForm({
         <TextField defaultValue={values.priceCents} label="Valor" name="priceCents" placeholder="14,90" required />
         <TextField defaultValue={values.estimatedBusinessDays} label="Prazo em dias uteis" name="estimatedBusinessDays" type="number" required />
       </div>
-      <TextField defaultValue={values.description} label="Descricao exibida no checkout" name="description" placeholder="Opcao com melhor custo para sua regiao." />
+      <TextField defaultValue={values.description} label="Descrição exibida no checkout" name="description" placeholder="Opção com melhor custo para sua região." />
       <div className="grid gap-4 lg:grid-cols-4">
         <TextField defaultValue={values.minSubtotalCents} label="Subtotal minimo" name="minSubtotalCents" placeholder="0,00" />
         <TextField defaultValue={values.maxSubtotalCents} label="Subtotal maximo" name="maxSubtotalCents" placeholder="99,89" />

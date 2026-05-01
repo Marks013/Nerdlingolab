@@ -68,7 +68,7 @@ export default async function GoogleRegistrationPage({
           </p>
           {error ? (
             <p className="mt-5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
-              {error === "cpf" ? "Este CPF ja esta vinculado a outra conta." : "Revise os dados obrigatorios."}
+              {error === "cpf" ? "Este CPF já está vinculado a outra conta." : "Revise os dados obrigatórios."}
             </p>
           ) : null}
           <form action={completeCustomerRegistration} className="mt-7 grid gap-4">

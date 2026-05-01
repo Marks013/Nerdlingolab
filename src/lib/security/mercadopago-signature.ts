@@ -49,7 +49,7 @@ export function verifyMercadoPagoWebhookSignature(request: Request, payload: unk
   const webhookSecret = process.env.MERCADO_PAGO_WEBHOOK_SECRET;
 
   if (!webhookSecret) {
-    return process.env.NODE_ENV !== "production";
+    return process.env.MERCADO_PAGO_ALLOW_UNSIGNED_WEBHOOKS === "true";
   }
 
   const signatureParts = parseSignatureHeader(request.headers.get("x-signature"));

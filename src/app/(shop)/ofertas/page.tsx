@@ -1,5 +1,15 @@
+import type { Metadata } from "next";
+
 import { ProductCard } from "@/features/catalog/components/product-card";
 import { getPublicOffers } from "@/lib/offers/queries";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/ofertas"
+  },
+  description: "Produtos geek em oferta na NerdLingoLab, com camisetas, colecionáveis e novidades selecionadas.",
+  title: "Ofertas NerdLingoLab"
+};
 
 export const dynamic = "force-dynamic";
 

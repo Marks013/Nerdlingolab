@@ -1,4 +1,14 @@
+import type { Metadata } from "next";
+
 import { FavoritesClient } from "@/features/catalog/components/favorites-client";
+
+export const metadata: Metadata = {
+  robots: {
+    follow: false,
+    index: false
+  },
+  title: "Favoritos"
+};
 
 export default function FavoritesPage(): React.ReactElement {
   return (

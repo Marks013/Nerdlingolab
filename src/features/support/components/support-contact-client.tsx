@@ -141,7 +141,7 @@ export function SupportContactClient({
       const responseBody = await response.json() as { message?: string; ticketId?: string };
 
       if (!response.ok || !responseBody.ticketId) {
-        throw new Error(responseBody.message ?? "Nao foi possivel enviar sua mensagem agora.");
+        throw new Error(responseBody.message ?? "Não foi possível enviar sua mensagem agora.");
       }
 
       const nextHistory = [
@@ -161,7 +161,7 @@ export function SupportContactClient({
       setMessage(`${responseBody.message ?? "Mensagem registrada."} Protocolo ${responseBody.ticketId}.`);
       setStatus("success");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Nao foi possivel enviar sua mensagem agora.");
+      setMessage(error instanceof Error ? error.message : "Não foi possível enviar sua mensagem agora.");
       setStatus("error");
     }
   }
@@ -175,7 +175,7 @@ export function SupportContactClient({
     const payload = await response.json() as { message?: string };
 
     if (!response.ok) {
-      setMessage(payload.message ?? "Nao foi possivel avaliar o atendimento.");
+      setMessage(payload.message ?? "Não foi possível avaliar o atendimento.");
       setStatus("error");
       return;
     }
@@ -198,7 +198,7 @@ export function SupportContactClient({
     const payload = await response.json() as { message?: string };
 
     if (!response.ok) {
-      setMessage(payload.message ?? "Nao foi possivel reabrir o atendimento.");
+      setMessage(payload.message ?? "Não foi possível reabrir o atendimento.");
       setStatus("error");
       return;
     }
@@ -444,7 +444,7 @@ function SupportTicketCard({
                   value={ratingComment}
                 />
                 <p className="text-xs text-[#677279]">
-                  Ao avaliar, o protocolo fica encerrado e nao podera ser reaberto.
+                  Ao avaliar, o protocolo fica encerrado e não poderá ser reaberto.
                 </p>
               </div>
             )}

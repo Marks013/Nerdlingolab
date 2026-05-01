@@ -67,7 +67,7 @@ export function CouponManager({ data }: CouponManagerProps): React.ReactElement 
                       <Info label="Limite global" value={coupon.usageLimit ? `${coupon.usedCount}/${coupon.usageLimit}` : "Ilimitado"} />
                       <Info label="Limite por cliente" value={coupon.perCustomerLimit ? String(coupon.perCustomerLimit) : "Ilimitado"} />
                       <Info label="Inicio" value={coupon.startsAt ? formatDateTime(coupon.startsAt) : "Imediato"} />
-                      <Info label="Cliente vinculado" value={coupon.assignedUser?.name ?? coupon.assignedUser?.email ?? "Nao vinculado"} />
+                      <Info label="Cliente vinculado" value={coupon.assignedUser?.name ?? coupon.assignedUser?.email ?? "Não vinculado"} />
                     </section>
 
                     <section className="grid content-start gap-3 rounded-lg border bg-muted/20 p-4">
@@ -81,7 +81,7 @@ export function CouponManager({ data }: CouponManagerProps): React.ReactElement 
                         </Link>
                       ))}
                       {coupon.redemptions.length === 0 ? (
-                        <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">Ainda nao usado.</p>
+                        <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">Ainda não usado.</p>
                       ) : null}
                     </section>
 

@@ -1,7 +1,16 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { requestPasswordReset } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = {
+  title: "Recuperar senha",
+  robots: {
+    follow: false,
+    index: false
+  }
+};
 
 interface ForgotPasswordPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;

@@ -1,12 +1,22 @@
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+
 import { AccountLoginPrompt } from "@/features/account/components/account-login-prompt";
 import { AccountOverview } from "@/features/account/components/account-overview";
 import { UserRole } from "@/generated/prisma/client";
 import { sanitizeCustomerNextPath } from "@/lib/account/completion";
 import { auth } from "@/lib/auth";
 import { getCustomerAccountSummary } from "@/lib/orders/queries";
-import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Minha conta",
+  robots: {
+    follow: false,
+    index: false
+  }
+};
 
 interface AccountPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;

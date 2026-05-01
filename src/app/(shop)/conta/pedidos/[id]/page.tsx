@@ -1,8 +1,17 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { CustomerOrderDetail } from "@/features/account/components/customer-order-detail";
 import { auth } from "@/lib/auth";
 import { getCustomerOrderById } from "@/lib/orders/queries";
+
+export const metadata: Metadata = {
+  robots: {
+    follow: false,
+    index: false
+  },
+  title: "Detalhes do pedido"
+};
 
 export const dynamic = "force-dynamic";
 

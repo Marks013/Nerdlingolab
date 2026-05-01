@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { AutoCarousel } from "@/components/shop/auto-carousel";
 import { SafeImage as Image } from "@/components/media/safe-image";
@@ -16,6 +17,14 @@ import { getStorefrontTheme } from "@/lib/theme/storefront";
 
 export const dynamic = "force-dynamic";
 
+export const metadata: Metadata = {
+  title: "NerdLingoLab",
+  description: "Produtos geek, camisetas, oversized, action figures, cupons e NerdCoins em uma loja divertida e segura.",
+  alternates: {
+    canonical: "/"
+  }
+};
+
 export default async function ShopHomePage(): Promise<React.ReactElement> {
   const [bestSellingProducts, newProducts, offers, products, theme] = await Promise.all([
     getPublicBestSellingProducts(6),
@@ -27,14 +36,14 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
   const storefrontSections = [
     {
       title: "Novidades",
-      href: "/produtos?ordem=recentes#catalogo-produtos",
+      href: "/produtos?ordem=recentes#lista-produtos",
       products: newProducts.slice(0, 6),
       emptyMessage: "Nenhum produto entrou na regra de Novo dos últimos 30 dias."
     },
-    { title: "Nossos Produtos", href: "/produtos#catalogo-produtos", products: products.slice(0, 6) },
+    { title: "Nossos Produtos", href: "/produtos#lista-produtos", products: products.slice(0, 6) },
     {
       title: "Mais Vendidos",
-      href: "/produtos?ordem=mais-vendidos#catalogo-produtos",
+      href: "/produtos?ordem=mais-vendidos#lista-produtos",
       products: bestSellingProducts,
       emptyMessage: "O ranking aparece assim que houver pedidos pagos com estes produtos."
     }

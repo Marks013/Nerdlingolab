@@ -361,7 +361,7 @@ function VariantSelector({
             <legend className="text-base font-semibold text-black">Cor: {selectedColor ?? "Selecione"}</legend>
             <div className="mt-3 flex flex-wrap gap-2">
               {colors.map((color) => {
-                const colorVariant = getBestVariantForSelection(variants, {
+                const colorVariant = getBestVariantForColor(variants, {
                   color,
                   gender: activeGenderFilter,
                   size: selectedSize
@@ -618,6 +618,17 @@ function getBestVariantForSelection(
     variants.find((variant) => variant.availableStock > 0) ??
     variants[0]
   );
+}
+
+function getBestVariantForColor(
+  variants: ProductVariantOption[],
+  selection: {
+    color?: string | null;
+    gender?: string | null;
+    size?: string | null;
+  }
+): ProductVariantOption | undefined {
+  return getBestVariantForSelection(variants, selection);
 }
 
 function matchesVariantSelection(

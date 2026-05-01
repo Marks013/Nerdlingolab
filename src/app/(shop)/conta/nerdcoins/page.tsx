@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { convertNerdcoinsToCoupon } from "@/actions/loyalty";
@@ -15,6 +16,14 @@ import {
   loyaltyTierLabels
 } from "@/lib/loyalty/settings";
 import { prisma } from "@/lib/prisma";
+
+export const metadata: Metadata = {
+  robots: {
+    follow: false,
+    index: false
+  },
+  title: "Meus Nerdcoins"
+};
 
 export const dynamic = "force-dynamic";
 

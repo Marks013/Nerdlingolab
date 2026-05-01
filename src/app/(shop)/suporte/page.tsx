@@ -1,7 +1,16 @@
 import { Clock3, Headphones, Mail, MessageCircle, Share2, UsersRound } from "lucide-react";
+import type { Metadata } from "next";
 
 import { SupportContactClient } from "@/features/support/components/support-contact-client";
 import { auth } from "@/lib/auth";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/suporte"
+  },
+  description: "Fale com o suporte da NerdLingoLab para dúvidas sobre pedidos, entrega, produtos e atendimento.",
+  title: "Suporte NerdLingoLab"
+};
 
 export default async function SupportPage(): Promise<React.ReactElement> {
   const session = await auth();

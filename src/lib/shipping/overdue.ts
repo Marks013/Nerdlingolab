@@ -8,6 +8,18 @@ export interface OverdueShipmentSummary {
 
 const finalShipmentStatuses = [ShipmentStatus.CANCELLED, ShipmentStatus.DELIVERED];
 
+export async function getOverdueShipmentSummary(now = new Date()): Promise<OverdueShipmentSummary> {
+  const count = await prisma.shipment.count({
+    where: {
+      deliveredAt: null,
+      estimatedDeliveryAt: { lt: now },
+      status: { notIn: finalShipmentStatuses }
+    }
+  });
+
+  return { count };
+}
+
 export async function notifyOverdueShipments(): Promise<OverdueShipmentSummary> {
   const now = new Date();
   const overdueShipments = await prisma.shipment.findMany({

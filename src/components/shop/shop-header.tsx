@@ -22,24 +22,24 @@ const headerLinks = [
 const categoryLinks = [
   { href: "/cupons", label: "Cupons", icon: Ticket, color: "bg-[#ffd13d]", iconColor: "text-[#221b00]" },
   { href: "/ofertas", label: "Ofertas", icon: Star, color: "bg-[#ff4e70]", iconColor: "text-[#24000a]" },
-  { href: "/produtos?categoria=temporada#catalogo-produtos", label: "Temporada", icon: Tags, color: "bg-[#3fc66a]", iconColor: "text-[#062411]" },
-  { href: "/produtos?categoria=action-figures#catalogo-produtos", label: "Action Figures", icon: Bot, color: "bg-[#5522a8]", iconColor: "text-white" }
+  { href: "/produtos?categoria=temporada#lista-produtos", label: "Temporada", icon: Tags, color: "bg-[#3fc66a]", iconColor: "text-[#062411]" },
+  { href: "/produtos?categoria=action-figures#lista-produtos", label: "Action Figures", icon: Bot, color: "bg-[#5522a8]", iconColor: "text-white" }
 ];
 
 const drawerCategoryGroups = [
-  { href: "/produtos?ordem=recentes#catalogo-produtos", label: "Novidades" },
-  { href: "/produtos?ordem=mais-vendidos#catalogo-produtos", label: "Mais Vendidos" },
+  { href: "/produtos?ordem=recentes#lista-produtos", label: "Novidades" },
+  { href: "/produtos?ordem=mais-vendidos#lista-produtos", label: "Mais Vendidos" },
   { href: "/ofertas", label: "Ofertas" },
-  { href: "/produtos?categoria=temporada#catalogo-produtos", label: "Temporadas" }
+  { href: "/produtos?categoria=temporada#lista-produtos", label: "Temporadas" }
 ];
 
 const drawerCatalogLinks = [
-  { href: "/produtos#catalogo-produtos", label: "Todos os produtos" },
-  { href: "/produtos?categoria=camisetas#catalogo-produtos", label: "Camisetas" },
-  { href: "/produtos?categoria=action-figures#catalogo-produtos", label: "Action Figures" },
-  { href: "/produtos?categoria=anime#catalogo-produtos", label: "Anime" },
-  { href: "/produtos?categoria=geek#catalogo-produtos", label: "Geek" },
-  { href: "/produtos?categoria=oversized#catalogo-produtos", label: "Oversized" },
+  { href: "/produtos#lista-produtos", label: "Todos os produtos" },
+  { href: "/produtos?categoria=camisetas#lista-produtos", label: "Camisetas" },
+  { href: "/produtos?categoria=action-figures#lista-produtos", label: "Action Figures" },
+  { href: "/produtos?categoria=anime#lista-produtos", label: "Anime" },
+  { href: "/produtos?categoria=geek#lista-produtos", label: "Geek" },
+  { href: "/produtos?categoria=oversized#lista-produtos", label: "Oversized" },
   { href: "/cupons", label: "Cupons" },
   { href: "/programa-de-fidelidade", label: "NerdCoins" }
 ];
@@ -84,8 +84,8 @@ export function ShopHeader({
       .slice(0, 6);
   }, [searchProducts, trimmedSearchTerm]);
   const searchHref = trimmedSearchTerm
-    ? `/produtos?busca=${encodeURIComponent(trimmedSearchTerm)}#catalogo-produtos`
-    : "/produtos#catalogo-produtos";
+    ? `/produtos?busca=${encodeURIComponent(trimmedSearchTerm)}#lista-produtos`
+    : "/produtos#lista-produtos";
 
   function submitSearch(event: React.FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -368,7 +368,7 @@ function CategoryDrawer({
           <div className="sticky bottom-0 bg-white p-5">
             <Link
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-black text-white shadow-md transition hover:bg-primary/90"
-              href="/produtos#catalogo-produtos"
+              href="/produtos#lista-produtos"
               onClick={onClose}
             >
               <Menu className="h-4 w-4" />

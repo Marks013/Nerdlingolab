@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { ProductDetailShell } from "@/features/catalog/components/product-detail-shell";
@@ -17,6 +18,38 @@ interface ProductPageProps {
   params: Promise<{
     slug: string;
   }>;
+}
+
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await getPublicProductBySlug(slug);
+
+  if (!product) {
+    return {
+      title: "Produto não encontrado",
+      robots: {
+        follow: false,
+        index: false
+      }
+    };
+  }
+
+  const primaryImage = getPrimaryImageUrl(product.images);
+  const description = product.seoDescription ?? product.shortDescription ?? product.description.slice(0, 155);
+
+  return {
+    title: product.seoTitle ?? product.title,
+    description,
+    alternates: {
+      canonical: `/produtos/${product.slug}`
+    },
+    openGraph: {
+      description,
+      images: primaryImage ? [primaryImage] : undefined,
+      title: product.title,
+      type: "website"
+    }
+  };
 }
 
 export default async function ProductPage({ params }: ProductPageProps): Promise<React.ReactElement> {

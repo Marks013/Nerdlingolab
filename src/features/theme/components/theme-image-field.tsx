@@ -44,7 +44,7 @@ export function ThemeImageField({ defaultValue = "", label, name }: ThemeImageFi
     });
     const parsedResponse = await parseFriendlyResponse<UploadResponse>(
       response,
-      "Nao foi possivel enviar a imagem do tema."
+      "Não foi possível enviar a imagem do tema."
     );
 
     setIsUploading(false);

@@ -1,4 +1,5 @@
 import { SlidersHorizontal } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { ShopTrustStrip } from "@/components/shop/shop-trust-strip";
@@ -6,13 +7,21 @@ import { ProductCatalogControls } from "@/features/catalog/components/product-ca
 import { ProductCard } from "@/features/catalog/components/product-card";
 import {
   getPublicCategories,
-  getPublicProducts,
+  getPublicProductsPage,
   publicProductSorts,
   type PublicProductSort
 } from "@/lib/catalog/queries";
 import { formatCurrency, parseCurrencyToCents } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Todos os produtos geek, camisetas e action figures",
+  description: "Confira camisetas, oversized, action figures, cupons e ofertas da NerdLingoLab.",
+  alternates: {
+    canonical: "/produtos"
+  }
+};
 
 interface ProductsPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -36,15 +45,19 @@ const storefrontTags = [
 export default async function ProductsPage({ searchParams }: ProductsPageProps): Promise<React.ReactElement> {
   const resolvedSearchParams = await searchParams;
   const filters = parseCatalogFilters(resolvedSearchParams);
-  const [categories, products] = await Promise.all([
+  const [categories, productPage] = await Promise.all([
     getPublicCategories(),
-    getPublicProducts(filters)
+    getPublicProductsPage(filters, filters.page, filters.perPage)
   ]);
-  const visibleProducts = products.slice(0, filters.perPage);
+  const visibleProducts = productPage.products;
+  const firstVisibleProduct = productPage.total === 0
+    ? 0
+    : (productPage.currentPage - 1) * productPage.perPage + 1;
+  const lastVisibleProduct = firstVisibleProduct + visibleProducts.length - 1;
   const resultLabel =
-    products.length === 1
+    productPage.total === 1
       ? "1 produto encontrado."
-      : `Mostrando 1 - ${visibleProducts.length} de ${products.length} produtos`;
+      : `Mostrando ${firstVisibleProduct} - ${lastVisibleProduct} de ${productPage.total} produtos`;
 
   return (
     <main className="geek-page min-h-screen">
@@ -64,7 +77,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
               Filtros
             </div>
 
-            <form action="/produtos#catalogo-produtos" className="space-y-6">
+            <form action="/produtos#lista-produtos" className="space-y-6">
               <div>
                 <label className="text-sm font-bold text-black" htmlFor="busca">
                   Buscar
@@ -152,14 +165,14 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
                 <button className="h-11 flex-1 rounded-lg bg-primary px-5 text-sm font-black text-white transition hover:bg-[#d85b00]" type="submit">
                   Filtrar
                 </button>
-                <Link className="inline-flex h-11 items-center rounded-lg border bg-white px-4 text-sm font-medium text-black transition hover:border-primary" href="/produtos#catalogo-produtos">
+                <Link className="inline-flex h-11 items-center rounded-lg border bg-white px-4 text-sm font-medium text-black transition hover:border-primary" href="/produtos#lista-produtos">
                   Limpar
                 </Link>
               </div>
             </form>
           </aside>
 
-          <section className="scroll-mt-32" id="catalogo-produtos">
+          <section className="scroll-mt-32" id="lista-produtos">
             <div className="manga-panel mb-5 flex flex-col gap-4 rounded-lg bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
               <p className="text-sm font-medium text-[#4f5d65]">{resultLabel}</p>
 
@@ -179,10 +192,26 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
                 />
               ))}
             </div>
-            {products.length === 0 ? (
+            {productPage.total === 0 ? (
               <p className="manga-panel rounded-lg bg-white p-6 text-sm text-[#4f5d65] shadow-sm">
                 Nenhum produto encontrado com esses filtros.
               </p>
+            ) : null}
+            {productPage.totalPages > 1 ? (
+              <nav className="mt-8 flex flex-wrap items-center justify-center gap-2" aria-label="Paginação de produtos">
+                {Array.from({ length: productPage.totalPages }, (_, index) => index + 1).map((pageNumber) => (
+                  <Link
+                    aria-current={pageNumber === productPage.currentPage ? "page" : undefined}
+                    className={pageNumber === productPage.currentPage
+                      ? "flex h-10 min-w-10 items-center justify-center rounded-lg bg-primary px-3 text-sm font-black text-white shadow-sm"
+                      : "flex h-10 min-w-10 items-center justify-center rounded-lg border border-[#ffd7bd] bg-white px-3 text-sm font-bold text-[#4f5d65] shadow-sm transition hover:border-primary hover:text-primary"}
+                    href={buildPageHref(resolvedSearchParams, pageNumber)}
+                    key={pageNumber}
+                  >
+                    {pageNumber}
+                  </Link>
+                ))}
+              </nav>
             ) : null}
           </section>
         </div>
@@ -199,6 +228,7 @@ function parseCatalogFilters(searchParams?: Record<string, string | string[] | u
   categorySlug?: string;
   maxPriceCents?: number;
   minPriceCents?: number;
+  page: number;
   perPage: number;
   query?: string;
   sort: PublicProductSort;
@@ -216,6 +246,7 @@ function parseCatalogFilters(searchParams?: Record<string, string | string[] | u
     categorySlug,
     maxPriceCents: normalizePriceParam(searchParams?.precoMax),
     minPriceCents: normalizePriceParam(searchParams?.precoMin),
+    page: normalizePageParam(searchParams?.pagina),
     perPage: normalizePerPageParam(searchParams?.porPagina),
     query,
     sort,
@@ -255,4 +286,38 @@ function normalizePerPageParam(value: string | string[] | undefined): number {
   const rawValue = Number(normalizeSearchParam(value, 3) ?? 24);
 
   return [24, 48, 96].includes(rawValue) ? rawValue : 24;
+}
+
+function normalizePageParam(value: string | string[] | undefined): number {
+  const rawValue = Number(normalizeSearchParam(value, 5) ?? 1);
+
+  return Number.isInteger(rawValue) && rawValue > 0 ? rawValue : 1;
+}
+
+function buildPageHref(
+  searchParams: Record<string, string | string[] | undefined> | undefined,
+  page: number
+): string {
+  const params = new URLSearchParams();
+
+  Object.entries(searchParams ?? {}).forEach(([key, value]) => {
+    if (key === "pagina" || value === undefined) {
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach((item) => params.append(key, item));
+      return;
+    }
+
+    params.set(key, value);
+  });
+
+  if (page > 1) {
+    params.set("pagina", String(page));
+  }
+
+  const queryString = params.toString();
+
+  return queryString ? `/produtos?${queryString}#lista-produtos` : "/produtos#lista-produtos";
 }

@@ -2,7 +2,7 @@ import "dotenv/config";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
-import { PrismaClient, UserRole } from "../src/generated/prisma/client";
+import { CouponType, PrismaClient, UserRole } from "../src/generated/prisma/client";
 
 const adapter = new PrismaPg({
   connectionString:
@@ -20,6 +20,8 @@ async function main(): Promise<void> {
 
   await ensureDefaultManualShippingRates();
   await ensureDefaultNotificationTemplates();
+  await ensureDefaultWelcomeCoupon();
+  await ensureDefaultMarketingPopup();
 
   const superadminName: string = process.env.SUPERADMIN_NAME ?? "NerdLingoLab Admin";
   const superadminEmail: string | undefined = process.env.SUPERADMIN_EMAIL;
@@ -181,6 +183,68 @@ async function ensureDefaultManualShippingRates(): Promise<void> {
         sortOrder: 20
       }
     ]
+  });
+}
+
+async function ensureDefaultWelcomeCoupon(): Promise<void> {
+  await prisma.coupon.upsert({
+    where: { code: "BEMVINDO10" },
+    create: {
+      code: "BEMVINDO10",
+      isActive: true,
+      isPublic: true,
+      minSubtotalCents: 1000,
+      perCustomerLimit: 1,
+      type: CouponType.FIXED_AMOUNT,
+      value: 1000
+    },
+    update: {
+      isActive: true,
+      isPublic: true,
+      minSubtotalCents: 1000,
+      perCustomerLimit: 1,
+      type: CouponType.FIXED_AMOUNT,
+      value: 1000
+    }
+  });
+}
+
+async function ensureDefaultMarketingPopup(): Promise<void> {
+  await prisma.marketingPopup.upsert({
+    where: { id: "welcome-nerdcoins-r10" },
+    create: {
+      id: "welcome-nerdcoins-r10",
+      audience: "GUESTS",
+      ctaHref: "/cadastro",
+      ctaLabel: "Criar conta e ganhar R$ 10",
+      description: "Entre no sistema de NerdCoins, acumule pontos nas compras e receba o cupom BEMVINDO10 ao concluir seu cadastro.",
+      eyebrow: "Boas-vindas ao laboratório",
+      frequencyHours: 72,
+      imageUrl: "/brand-assets/nerd-icon-nerdcoins.webp",
+      isActive: true,
+      placement: "GLOBAL",
+      priority: 100,
+      themeTone: "ORANGE",
+      title: "Ganhe NerdCoins desde a primeira missão",
+      triggerType: "DELAY",
+      triggerValue: 1200
+    },
+    update: {
+      audience: "GUESTS",
+      ctaHref: "/cadastro",
+      ctaLabel: "Criar conta e ganhar R$ 10",
+      description: "Entre no sistema de NerdCoins, acumule pontos nas compras e receba o cupom BEMVINDO10 ao concluir seu cadastro.",
+      eyebrow: "Boas-vindas ao laboratório",
+      frequencyHours: 72,
+      imageUrl: "/brand-assets/nerd-icon-nerdcoins.webp",
+      isActive: true,
+      placement: "GLOBAL",
+      priority: 100,
+      themeTone: "ORANGE",
+      title: "Ganhe NerdCoins desde a primeira missão",
+      triggerType: "DELAY",
+      triggerValue: 1200
+    }
   });
 }
 

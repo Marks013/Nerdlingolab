@@ -32,6 +32,14 @@ export interface PublicProductFilters {
   tags?: string[];
 }
 
+export interface PublicProductPageResult {
+  currentPage: number;
+  perPage: number;
+  products: ProductListItem[];
+  total: number;
+  totalPages: number;
+}
+
 export interface AdminProductFilters {
   categoryId?: string;
   query?: string;
@@ -177,6 +185,78 @@ export async function getPublicProducts(filters: PublicProductFilters = {}): Pro
   } catch (error) {
     if (shouldUseCatalogFallback(error)) {
       return filterFallbackProducts(filters);
+    }
+
+    throw error;
+  }
+}
+
+export async function getPublicProductsPage(
+  filters: PublicProductFilters = {},
+  page = 1,
+  perPage = 24
+): Promise<PublicProductPageResult> {
+  const normalizedPerPage = normalizeCatalogPerPage(perPage);
+  const normalizedPage = Math.max(1, Math.floor(page));
+
+  try {
+    if (filters.sort === "mais-vendidos") {
+      const sortedProducts = await getPublicProductsSortedBySales(filters);
+      const totalPages = Math.max(1, Math.ceil(sortedProducts.length / normalizedPerPage));
+      const currentPage = Math.min(normalizedPage, totalPages);
+      const start = (currentPage - 1) * normalizedPerPage;
+
+      return {
+        currentPage,
+        perPage: normalizedPerPage,
+        products: sortedProducts.slice(start, start + normalizedPerPage),
+        total: sortedProducts.length,
+        totalPages
+      };
+    }
+
+    const where = getPublicProductWhere(filters);
+    const total = await prisma.product.count({ where });
+    const totalPages = Math.max(1, Math.ceil(total / normalizedPerPage));
+    const currentPage = Math.min(normalizedPage, totalPages);
+
+    const products = total === 0
+      ? []
+      : await prisma.product.findMany({
+          where,
+          include: {
+            category: true,
+            variants: {
+              where: { isActive: true },
+              orderBy: { createdAt: "asc" }
+            }
+          },
+          orderBy: getPublicProductOrderBy(filters.sort),
+          skip: (currentPage - 1) * normalizedPerPage,
+          take: normalizedPerPage
+        });
+
+    return {
+      currentPage,
+      perPage: normalizedPerPage,
+      products,
+      total,
+      totalPages
+    };
+  } catch (error) {
+    if (shouldUseCatalogFallback(error)) {
+      const sortedProducts = filterFallbackProducts(filters);
+      const totalPages = Math.max(1, Math.ceil(sortedProducts.length / normalizedPerPage));
+      const currentPage = Math.min(normalizedPage, totalPages);
+      const start = (currentPage - 1) * normalizedPerPage;
+
+      return {
+        currentPage,
+        perPage: normalizedPerPage,
+        products: sortedProducts.slice(start, start + normalizedPerPage),
+        total: sortedProducts.length,
+        totalPages
+      };
     }
 
     throw error;
@@ -589,6 +669,10 @@ function getPublicProductOrderBy(sort: PublicProductSort = "recentes"): ProductO
   }
 
   return [{ publishedAt: "desc" }, { createdAt: "desc" }];
+}
+
+function normalizeCatalogPerPage(perPage: number): number {
+  return [24, 48, 96].includes(perPage) ? perPage : 24;
 }
 
 function getFirstImageUrl(images: unknown): string | null {

@@ -1,6 +1,16 @@
+import type { Metadata } from "next";
+
 import { CartClient } from "@/features/cart/components/cart-client";
 import { auth } from "@/lib/auth";
 import { getCustomerSavedAddresses } from "@/lib/orders/queries";
+
+export const metadata: Metadata = {
+  title: "Carrinho",
+  robots: {
+    follow: false,
+    index: false
+  }
+};
 
 export default async function CartPage(): Promise<React.ReactElement> {
   const session = await auth();

@@ -102,8 +102,8 @@ function CustomerProfile({ customer }: { customer: AdminCustomer }): React.React
       <div className="grid gap-4 border-t p-4 xl:grid-cols-[1.1fr_1fr_1fr]">
         <Panel title="Cliente">
           <Info label="E-mail" value={customer.email} />
-          <Info label="Telefone" value={customer.phone ?? "Nao informado"} />
-          <Info label="CPF" value={customer.cpf ?? "Nao informado"} />
+          <Info label="Telefone" value={customer.phone ?? "Não informado"} />
+          <Info label="CPF" value={customer.cpf ?? "Não informado"} />
           <Info label="Cadastro" value={formatDateTime(customer.createdAt)} />
           <Info label="Total recente" value={formatCurrency(spentCents)} />
           <Info label="Ticket medio recente" value={averageTicketCents > 0 ? formatCurrency(averageTicketCents) : "Sem compras"} />
@@ -131,7 +131,7 @@ function CustomerProfile({ customer }: { customer: AdminCustomer }): React.React
           <div className="rounded-md border p-3">
             <p className="font-semibold">Indicacoes</p>
             <p className="text-xs text-muted-foreground">
-              Codigo: {customer.referralCode?.code ?? "nao gerado"} / Enviadas: {customer.referralsSent.length}
+              Código: {customer.referralCode?.code ?? "não gerado"} / Enviadas: {customer.referralsSent.length}
             </p>
             {customer.referralReceived ? (
               <p className="mt-1 text-xs text-muted-foreground">

@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import { ShopHeader } from "@/components/shop/shop-header";
 import { ShopFooter } from "@/components/shop/shop-footer";
 import { FloatingWhatsappButton } from "@/components/shop/floating-whatsapp-button";
@@ -10,6 +12,23 @@ import { prisma } from "@/lib/prisma";
 import { getStorefrontTheme } from "@/lib/theme/storefront";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: {
+    default: "NerdLingoLab - Produtos geek, camisetas e action figures",
+    template: "%s | NerdLingoLab"
+  },
+  description: "Loja geek com camisetas, oversized, action figures, NerdCoins, cupons e frete acompanhado.",
+  alternates: {
+    canonical: "/"
+  },
+  openGraph: {
+    description: "Loja geek com camisetas, oversized, action figures, NerdCoins, cupons e frete acompanhado.",
+    siteName: "NerdLingoLab",
+    title: "NerdLingoLab",
+    type: "website"
+  }
+};
 
 export default async function ShopLayout({
   children

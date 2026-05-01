@@ -9,6 +9,7 @@ import { z } from "zod";
 import { shouldUseSecureAuthCookies } from "@/lib/auth-cookies";
 import { isCustomerRegistrationComplete } from "@/lib/account/completion";
 import { prisma } from "@/lib/prisma";
+import { isRateLimitedKey } from "@/lib/security/rate-limit";
 
 const credentialsSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -29,8 +30,20 @@ const providers: NextAuthConfig["providers"] = [
         return null;
       }
 
+      const email = parsedCredentials.data.email;
+
+      if (
+        isRateLimitedKey(`nextauth-login:${email}`, {
+          intervalMs: 15 * 60 * 1000,
+          limit: 20,
+          name: "nextauth-login"
+        })
+      ) {
+        return null;
+      }
+
       const user = await prisma.user.findUnique({
-        where: { email: parsedCredentials.data.email }
+        where: { email }
       });
 
       if (!user?.passwordHash) {

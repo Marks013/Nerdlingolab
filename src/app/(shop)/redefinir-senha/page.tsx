@@ -1,7 +1,16 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { resetCustomerPassword } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = {
+  title: "Redefinir senha",
+  robots: {
+    follow: false,
+    index: false
+  }
+};
 
 interface ResetPasswordPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;

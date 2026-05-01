@@ -31,7 +31,7 @@ export function ProductCatalogControls({
       }
     }
 
-    router.push(`${pathname}?${params.toString()}#catalogo-produtos`);
+    router.push(`${pathname}?${params.toString()}#lista-produtos`);
   }
 
   return (

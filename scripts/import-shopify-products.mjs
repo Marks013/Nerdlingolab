@@ -660,8 +660,12 @@ function normalizeVariantOptionName(value) {
     return "Cor";
   }
 
-  if (["tamanho", "size", "tam"].includes(normalized)) {
+  if (["tamanho", "tamanhos", "size", "sizes", "tam"].includes(normalized)) {
     return "Tamanho";
+  }
+
+  if (["modelo", "modelos", "variacao", "variacoes", "variation", "variations"].includes(normalized)) {
+    return "Modelo";
   }
 
   return String(value ?? "").trim();

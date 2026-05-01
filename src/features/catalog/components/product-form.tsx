@@ -313,7 +313,7 @@ export function ProductForm({
       const payload: unknown = await response.json();
 
       if (!response.ok) {
-        throw new Error(getApiMessage(payload) ?? "Nao foi possivel salvar o atalho.");
+        throw new Error(getApiMessage(payload) ?? "Não foi possível salvar o atalho.");
       }
 
       const preset = getShippingPresetFromPayload(payload);
@@ -332,7 +332,7 @@ export function ProductForm({
       setNewShippingPresetLeadTimeDays("");
       setShippingPresetMessage("Atalho salvo para proximos cadastros.");
     } catch (error) {
-      setShippingPresetMessage(error instanceof Error ? error.message : "Nao foi possivel salvar o atalho.");
+      setShippingPresetMessage(error instanceof Error ? error.message : "Não foi possível salvar o atalho.");
     } finally {
       setIsSavingShippingPreset(false);
     }
@@ -567,7 +567,7 @@ export function ProductForm({
               />
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
-              Ao vincular uma imagem, ela e aplicada nas variantes da mesma Cor + Genero. Valores novos podem ser digitados ou criados pelos botoes acima.
+              Ao vincular uma imagem, ela é aplicada nas variantes da mesma Cor + Sexo. Valores novos podem ser digitados ou criados pelos botões acima.
             </p>
             <div className="mt-4 rounded-lg border bg-muted/20 p-4">
               <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
@@ -979,7 +979,7 @@ function VariantImagePreview({ imageUrl, title }: { imageUrl: string; title: str
       <figcaption className="min-w-0 text-sm">
         <strong className="block truncate">Imagem vinculada</strong>
         <span className="text-xs text-muted-foreground">
-          Sera aplicada nas variantes com a mesma cor e sexo.
+          Será aplicada nas variantes com a mesma cor e sexo.
         </span>
       </figcaption>
     </figure>

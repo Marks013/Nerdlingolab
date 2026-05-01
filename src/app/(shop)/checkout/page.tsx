@@ -1,10 +1,20 @@
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+
 import { CheckoutClient } from "@/features/checkout/components/checkout-client";
 import { sanitizeCustomerNextPath } from "@/lib/account/completion";
 import { auth } from "@/lib/auth";
 import { getCustomerSavedAddresses } from "@/lib/orders/queries";
-import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Checkout",
+  robots: {
+    follow: false,
+    index: false
+  }
+};
 
 export default async function CheckoutPage(): Promise<React.ReactElement> {
   const session = await auth();

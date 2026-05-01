@@ -1,9 +1,18 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { registerCustomer } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 import { GoogleSignInButton } from "@/features/auth/components/google-sign-in-button";
 import { normalizeReferralCode } from "@/lib/loyalty/referrals";
+
+export const metadata: Metadata = {
+  robots: {
+    follow: false,
+    index: false
+  },
+  title: "Criar conta"
+};
 
 interface RegisterPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;

@@ -1,5 +1,6 @@
 import { Crown, History, TicketPercent } from "lucide-react";
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,14 @@ import {
   loyaltyTierLabels
 } from "@/lib/loyalty/settings";
 import { prisma } from "@/lib/prisma";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/programa-de-fidelidade"
+  },
+  description: "Conheça o programa Nerdcoins da NerdLingoLab e acompanhe seus benefícios, cupons e recompensas.",
+  title: "Programa Nerdcoins"
+};
 
 const loyaltyBlocks = [
   {

@@ -1,7 +1,16 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { PublicOffersSection } from "@/features/offers/components/public-offers-section";
 import { getPublicOffers } from "@/lib/offers/queries";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/cupons"
+  },
+  description: "Cupons ativos da NerdLingoLab para economizar em camisetas, action figures e produtos geek.",
+  title: "Cupons NerdLingoLab"
+};
 
 export const dynamic = "force-dynamic";
 

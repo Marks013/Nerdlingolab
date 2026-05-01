@@ -115,7 +115,7 @@ export async function signInCustomerWithCredentials(formData: FormData): Promise
   await signIn("credentials", {
     email: parsedCredentials.data.email,
     password: parsedCredentials.data.password,
-    redirectTo: "/conta"
+    redirectTo: user.role === UserRole.ADMIN || user.role === UserRole.SUPERADMIN ? "/admin" : "/conta"
   });
 }
 
@@ -333,7 +333,7 @@ function addDays(date: Date, days: number): Date {
 }
 
 export async function signOutFromAdmin(): Promise<void> {
-  await signOut({ redirectTo: "/admin/login" });
+  await signOut({ redirectTo: "/" });
 }
 
 export async function signOutFromCustomer(): Promise<void> {

@@ -3,6 +3,7 @@ import { ShopFooter } from "@/components/shop/shop-footer";
 import { FloatingWhatsappButton } from "@/components/shop/floating-whatsapp-button";
 import { MarketingPopup } from "@/components/shop/marketing-popup";
 import { auth } from "@/lib/auth";
+import { getPublicProductSearchSuggestions } from "@/lib/catalog/queries";
 import { getActiveMarketingPopup } from "@/lib/engagement/config";
 import { getLoyaltyProgramSettings } from "@/lib/loyalty/settings";
 import { prisma } from "@/lib/prisma";
@@ -15,7 +16,12 @@ export default async function ShopLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>): Promise<React.ReactElement> {
-  const [session, theme, popup] = await Promise.all([auth(), getStorefrontTheme(), getActiveMarketingPopup()]);
+  const [session, theme, searchProducts] = await Promise.all([
+    auth(),
+    getStorefrontTheme(),
+    getPublicProductSearchSuggestions()
+  ]);
+  const popup = session?.user?.id ? null : await getActiveMarketingPopup();
   const nerdcoinsBalance = session?.user?.id ? await getHeaderNerdcoinsBalance(session.user.id) : null;
 
   return (
@@ -30,6 +36,7 @@ export default async function ShopLayout({
         announcementText={theme.announcementText}
         isAuthenticated={Boolean(session?.user?.id)}
         nerdcoinsBalance={nerdcoinsBalance}
+        searchProducts={searchProducts}
       />
       <div id="conteudo-principal">{children}</div>
       <FloatingWhatsappButton />

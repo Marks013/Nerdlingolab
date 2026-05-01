@@ -18,7 +18,7 @@ const defaultShippingProfiles = {
     heightCm: 16,
     lengthCm: 32,
     name: "Melhor Envio - Action Figure",
-    shippingLeadTimeDays: 3,
+    shippingLeadTimeDays: 10,
     weightGrams: 800,
     widthCm: 22
   },
@@ -26,7 +26,7 @@ const defaultShippingProfiles = {
     heightCm: 4,
     lengthCm: 32,
     name: "Melhor Envio - Camiseta",
-    shippingLeadTimeDays: 2,
+    shippingLeadTimeDays: 10,
     weightGrams: 300,
     widthCm: 24
   }

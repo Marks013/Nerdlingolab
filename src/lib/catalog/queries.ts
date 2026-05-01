@@ -19,7 +19,7 @@ import {
 } from "@/lib/catalog/fallback";
 import { prisma } from "@/lib/prisma";
 
-export const publicProductSorts = ["recentes", "mais-vendidos", "menor-valor", "maior-valor", "nome"] as const;
+export const publicProductSorts = ["recomendados", "recentes", "mais-vendidos", "menor-valor", "maior-valor", "nome"] as const;
 
 export type PublicProductSort = (typeof publicProductSorts)[number];
 
@@ -42,6 +42,15 @@ export type ProductListItem = Product & {
   category: Category | null;
   variants: ProductVariant[];
 };
+
+export interface ProductSearchSuggestion {
+  categoryName: string | null;
+  id: string;
+  imageUrl: string | null;
+  priceCents: number;
+  slug: string;
+  title: string;
+}
 
 export type CategoryProductListItem = Product & {
   variants: ProductVariant[];
@@ -168,6 +177,48 @@ export async function getPublicProducts(filters: PublicProductFilters = {}): Pro
   } catch (error) {
     if (shouldUseCatalogFallback(error)) {
       return filterFallbackProducts(filters);
+    }
+
+    throw error;
+  }
+}
+
+export async function getPublicProductSearchSuggestions(take = 120): Promise<ProductSearchSuggestion[]> {
+  try {
+    const products = await prisma.product.findMany({
+      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }, { title: "asc" }],
+      select: {
+        category: {
+          select: { name: true }
+        },
+        id: true,
+        images: true,
+        priceCents: true,
+        slug: true,
+        title: true
+      },
+      take,
+      where: getPublicProductWhere()
+    });
+
+    return products.map((product) => ({
+      categoryName: product.category?.name ?? null,
+      id: product.id,
+      imageUrl: getFirstImageUrl(product.images),
+      priceCents: product.priceCents,
+      slug: product.slug,
+      title: product.title
+    }));
+  } catch (error) {
+    if (shouldUseCatalogFallback(error)) {
+      return fallbackProducts.slice(0, take).map((product) => ({
+        categoryName: product.category?.name ?? null,
+        id: product.id,
+        imageUrl: getFirstImageUrl(product.images),
+        priceCents: product.priceCents,
+        slug: product.slug,
+        title: product.title
+      }));
     }
 
     throw error;
@@ -533,7 +584,21 @@ function getPublicProductOrderBy(sort: PublicProductSort = "recentes"): ProductO
     return [{ title: "asc" }];
   }
 
+  if (sort === "recomendados") {
+    return [{ publishedAt: "desc" }, { updatedAt: "desc" }, { title: "asc" }];
+  }
+
   return [{ publishedAt: "desc" }, { createdAt: "desc" }];
+}
+
+function getFirstImageUrl(images: unknown): string | null {
+  if (!Array.isArray(images)) {
+    return null;
+  }
+
+  const firstImage = images.find((image): image is string => typeof image === "string" && image.length > 0);
+
+  return firstImage ?? null;
 }
 
 function filterFallbackProducts(filters: PublicProductFilters): ProductListItem[] {
@@ -573,6 +638,10 @@ function filterFallbackProducts(filters: PublicProductFilters): ProductListItem[
 
       if (filters.sort === "nome") {
         return a.title.localeCompare(b.title);
+      }
+
+      if (filters.sort === "recomendados") {
+        return b.updatedAt.getTime() - a.updatedAt.getTime() || a.title.localeCompare(b.title);
       }
 
       return b.createdAt.getTime() - a.createdAt.getTime();

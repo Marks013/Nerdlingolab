@@ -21,6 +21,8 @@ export default async function AdminEngagementPage(): Promise<React.ReactElement>
       orderBy: { name: "asc" }
     })
   ]);
+  const activePopups = popups.filter((popup) => popup.isActive).length;
+  const activeTemplates = templates.filter((template) => template.isActive).length;
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -28,15 +30,22 @@ export default async function AdminEngagementPage(): Promise<React.ReactElement>
         <p className="text-sm text-muted-foreground">Campanhas e alertas</p>
         <h1 className="text-3xl font-bold tracking-normal">Engajamento</h1>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-          Configure popups de campanha e templates para fluxos como carrinho abandonado, redefinição de senha e descontos.
+          Configure popups de campanha e templates de e-mail para cada situação importante da loja.
         </p>
       </div>
+
+      <section className="mt-6 grid gap-3 md:grid-cols-4">
+        <EngagementMetric label="Popups salvos" value={String(popups.length)} />
+        <EngagementMetric label="Popups ativos" value={String(activePopups)} />
+        <EngagementMetric label="Templates de e-mail" value={String(templates.length)} />
+        <EngagementMetric label="Templates ativos" value={String(activeTemplates)} />
+      </section>
 
       <section className="mt-6 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <Card>
           <CardHeader>
             <CardTitle>Novo popup</CardTitle>
-            <CardDescription>Use para anúncio, cupom, lançamento ou aviso urgente.</CardDescription>
+            <CardDescription>Use para anúncio, cupom, lançamento, NerdCoins ou aviso urgente.</CardDescription>
           </CardHeader>
           <CardContent>
             <PopupForm />
@@ -65,7 +74,14 @@ export default async function AdminEngagementPage(): Promise<React.ReactElement>
         </Card>
       </section>
 
-      <section className="mt-6 grid gap-6 lg:grid-cols-3">
+      <section className="mt-6">
+        <div className="mb-4">
+          <h2 className="text-xl font-bold tracking-normal">Templates de e-mail</h2>
+          <p className="text-sm text-muted-foreground">
+            Cada card abaixo representa uma situação automática do site. Mantenha assunto, prévia, mensagem e botão coerentes com o fluxo.
+          </p>
+        </div>
+        <div className="grid gap-6 xl:grid-cols-2">
         {templates.map((template) => (
           <Card key={template.id}>
             <CardHeader>
@@ -95,8 +111,20 @@ export default async function AdminEngagementPage(): Promise<React.ReactElement>
             </CardContent>
           </Card>
         ))}
+        </div>
       </section>
     </main>
+  );
+}
+
+function EngagementMetric({ label, value }: { label: string; value: string }): React.ReactElement {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <p className="text-xs font-bold uppercase text-muted-foreground">{label}</p>
+        <p className="mt-2 text-2xl font-black tracking-normal">{value}</p>
+      </CardContent>
+    </Card>
   );
 }
 

@@ -18,6 +18,8 @@ async function main(): Promise<void> {
     update: {}
   });
 
+  await ensureDefaultManualShippingRates();
+
   const superadminName: string = process.env.SUPERADMIN_NAME ?? "NerdLingoLab Admin";
   const superadminEmail: string | undefined = process.env.SUPERADMIN_EMAIL;
   const superadminPassword: string | undefined = process.env.SUPERADMIN_PASSWORD;
@@ -54,6 +56,33 @@ async function main(): Promise<void> {
         create: {}
       }
     }
+  });
+}
+
+async function ensureDefaultManualShippingRates(): Promise<void> {
+  const existingCount = await prisma.manualShippingRate.count();
+
+  if (existingCount > 0) {
+    return;
+  }
+
+  await prisma.manualShippingRate.createMany({
+    data: [
+      {
+        description: "Opção padrão com melhor custo para pedidos nacionais.",
+        estimatedBusinessDays: 7,
+        name: "Frete padrão econômico",
+        priceCents: 1490,
+        sortOrder: 10
+      },
+      {
+        description: "Opção rápida para clientes que querem receber antes.",
+        estimatedBusinessDays: 3,
+        name: "Frete rápido prioritário",
+        priceCents: 2490,
+        sortOrder: 20
+      }
+    ]
   });
 }
 

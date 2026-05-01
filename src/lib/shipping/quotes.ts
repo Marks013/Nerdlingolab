@@ -59,7 +59,10 @@ export async function quoteShippingOptions({
       });
 
       if (melhorEnvioOptions.length > 0) {
-        return limitPreferredShippingOptions(addShippingLeadTime(melhorEnvioOptions, items));
+        return limitPreferredShippingOptions(
+          addShippingLeadTime(melhorEnvioOptions, items),
+          hasFreeShipping({ forceFreeShipping, freeShippingThresholdCents, subtotalCents })
+        );
       }
     } catch {
       // Fall back to local quotes so checkout remains available during provider outages.
@@ -100,7 +103,10 @@ export async function quoteManualShippingOptions({
     });
 
     if (configuredOptions.length > 0) {
-      return limitPreferredShippingOptions(addShippingLeadTime(configuredOptions, items));
+      return limitPreferredShippingOptions(
+        addShippingLeadTime(configuredOptions, items),
+        hasFreeShipping({ forceFreeShipping, freeShippingThresholdCents, subtotalCents })
+      );
     }
   } catch {
     // Fall back to deterministic local rates when database rates are unavailable.
@@ -112,7 +118,7 @@ export async function quoteManualShippingOptions({
     itemCount,
     postalCode: normalizedPostalCode,
     subtotalCents
-  }), items));
+  }), items), hasFreeShipping({ forceFreeShipping, freeShippingThresholdCents, subtotalCents }));
 }
 
 export function quoteDefaultManualShippingOptions({
@@ -194,7 +200,11 @@ function getRegionalMultiplier(postalCode: string): number {
   return 1.55;
 }
 
-function limitPreferredShippingOptions(options: ShippingOption[]): ShippingOption[] {
+function limitPreferredShippingOptions(options: ShippingOption[], isFreeShipping = false): ShippingOption[] {
+  if (isFreeShipping) {
+    return selectBalancedFreeShippingOptions(options);
+  }
+
   if (options.length <= 5) {
     return options;
   }
@@ -212,6 +222,28 @@ function limitPreferredShippingOptions(options: ShippingOption[]): ShippingOptio
   return [...cheapestOptions, ...fastestOptions];
 }
 
+function selectBalancedFreeShippingOptions(options: ShippingOption[]): ShippingOption[] {
+  if (options.length <= 2) {
+    return options;
+  }
+
+  const preferredOptions = options.length > 5
+    ? [...options].sort(compareShippingByCost).slice(0, 5)
+    : options;
+  const standardOption = [...preferredOptions].sort(compareShippingByStandardCost)[0];
+  const fastOption = [...preferredOptions]
+    .filter((option) => option.id !== standardOption?.id)
+    .sort(compareShippingBySpeed)[0];
+
+  return [standardOption, fastOption].filter((option): option is ShippingOption => Boolean(option));
+}
+
+function compareShippingByStandardCost(left: ShippingOption, right: ShippingOption): number {
+  return left.priceCents - right.priceCents
+    || right.estimatedBusinessDays - left.estimatedBusinessDays
+    || left.name.localeCompare(right.name);
+}
+
 function compareShippingByCost(left: ShippingOption, right: ShippingOption): number {
   return left.priceCents - right.priceCents
     || left.estimatedBusinessDays - right.estimatedBusinessDays
@@ -222,6 +254,18 @@ function compareShippingBySpeed(left: ShippingOption, right: ShippingOption): nu
   return left.estimatedBusinessDays - right.estimatedBusinessDays
     || left.priceCents - right.priceCents
     || left.name.localeCompare(right.name);
+}
+
+function hasFreeShipping({
+  forceFreeShipping,
+  freeShippingThresholdCents,
+  subtotalCents
+}: {
+  forceFreeShipping: boolean;
+  freeShippingThresholdCents: number;
+  subtotalCents: number;
+}): boolean {
+  return forceFreeShipping || subtotalCents >= freeShippingThresholdCents;
 }
 
 function addShippingLeadTime(

@@ -59,6 +59,56 @@ export const defaultNotificationTemplates = [
     ctaLabel: "Ver ofertas",
     ctaHref: "/ofertas",
     cooldownHours: 24
+  },
+  {
+    templateKey: "welcome_coupon",
+    name: "Boas-vindas com cupom",
+    subject: "Seu cupom NerdLingoLab de R$ 10 chegou",
+    previewText: "Ative sua conta, acumule NerdCoins e use seu desconto.",
+    body: "Olá, {{customerName}}! Obrigado por entrar no laboratório. Seu cupom de R$ 10 já está pronto para a primeira missão.",
+    ctaLabel: "Ver meu cupom",
+    ctaHref: "/cupons",
+    cooldownHours: 168
+  },
+  {
+    templateKey: "order_created",
+    name: "Pedido recebido",
+    subject: "Recebemos seu pedido {{orderNumber}}",
+    previewText: "Agora é só concluir o pagamento para seguir com a preparação.",
+    body: "Olá, {{customerName}}! Recebemos o pedido {{orderNumber}} e vamos acompanhar cada etapa por aqui.",
+    ctaLabel: "Ver pedido",
+    ctaHref: "/conta",
+    cooldownHours: 1
+  },
+  {
+    templateKey: "order_paid",
+    name: "Pagamento aprovado",
+    subject: "Pagamento aprovado do pedido {{orderNumber}}",
+    previewText: "Seu pedido entrou na fila de preparação.",
+    body: "Boa notícia, {{customerName}}! O pagamento do pedido {{orderNumber}} foi aprovado e a preparação já pode começar.",
+    ctaLabel: "Acompanhar pedido",
+    ctaHref: "/conta",
+    cooldownHours: 1
+  },
+  {
+    templateKey: "shipment_overdue",
+    name: "Entrega em atraso",
+    subject: "Estamos acompanhando o atraso do pedido {{orderNumber}}",
+    previewText: "Nossa equipe está analisando o rastreio e acompanhando de perto.",
+    body: "Olá, {{customerName}}! O pedido {{orderNumber}} passou do prazo estimado. Estamos analisando o atraso e acompanhando de perto até a entrega.",
+    ctaLabel: "Ver rastreio",
+    ctaHref: "/conta",
+    cooldownHours: 24
+  },
+  {
+    templateKey: "support_reply",
+    name: "Resposta do suporte",
+    subject: "Respondemos seu atendimento NerdLingoLab",
+    previewText: "Sua solicitação recebeu uma nova resposta.",
+    body: "Olá, {{customerName}}! Atualizamos seu atendimento. Entre na sua conta para conferir a resposta da equipe.",
+    ctaLabel: "Abrir suporte",
+    ctaHref: "/suporte",
+    cooldownHours: 1
   }
 ] as const;
 

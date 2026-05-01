@@ -1,7 +1,8 @@
-import { Grid3X3, Rows3, SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 
 import { ShopTrustStrip } from "@/components/shop/shop-trust-strip";
+import { ProductCatalogControls } from "@/features/catalog/components/product-catalog-controls";
 import { ProductCard } from "@/features/catalog/components/product-card";
 import {
   getPublicCategories,
@@ -39,10 +40,11 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
     getPublicCategories(),
     getPublicProducts(filters)
   ]);
+  const visibleProducts = products.slice(0, filters.perPage);
   const resultLabel =
     products.length === 1
       ? "1 produto encontrado."
-      : `Mostrando 1 - ${products.length} de ${products.length} produtos`;
+      : `Mostrando 1 - ${visibleProducts.length} de ${products.length} produtos`;
 
   return (
     <main className="geek-page min-h-screen">
@@ -143,6 +145,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
               </div>
 
               <input name="ordem" type="hidden" value={filters.sort} />
+              <input name="porPagina" type="hidden" value={filters.perPage} />
+              <input name="visualizacao" type="hidden" value={filters.view} />
 
               <div className="flex gap-2">
                 <button className="h-11 flex-1 rounded-lg bg-primary px-5 text-sm font-black text-white transition hover:bg-[#d85b00]" type="submit">
@@ -159,62 +163,14 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
             <div className="manga-panel mb-5 flex flex-col gap-4 rounded-lg bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
               <p className="text-sm font-medium text-[#4f5d65]">{resultLabel}</p>
 
-              <div className="flex flex-wrap items-center gap-3">
-                <label className="flex items-center gap-2 text-sm text-[#4f5d65]">
-                  Mostrar:
-                  <select className="h-10 rounded-lg border bg-white px-3 text-sm text-black outline-none">
-                    <option>24 por página</option>
-                    <option>48 por página</option>
-                    <option>96 por página</option>
-                  </select>
-                </label>
-
-                <form action="/produtos#catalogo-produtos" className="flex items-center gap-2 text-sm text-[#4f5d65]">
-                  <input name="busca" type="hidden" value={filters.query ?? ""} />
-                  <input name="categoria" type="hidden" value={filters.categorySlug ?? ""} />
-                  <input name="precoMin" type="hidden" value={filters.minPriceCents ? formatCurrency(filters.minPriceCents) : ""} />
-                  <input name="precoMax" type="hidden" value={filters.maxPriceCents ? formatCurrency(filters.maxPriceCents) : ""} />
-                  {filters.tags.map((tag) => (
-                    <input key={tag} name="tag" type="hidden" value={tag} />
-                  ))}
-                  <label htmlFor="ordem">Ordenar</label>
-                  <select
-                    className="h-10 rounded-lg border bg-white px-3 text-sm text-black outline-none"
-                    defaultValue={filters.sort}
-                    id="ordem"
-                    name="ordem"
-                  >
-                    <option value="nome">Ordem alfabética, A-Z</option>
-                    <option value="recentes">Mais recentes</option>
-                    <option value="mais-vendidos">Mais vendidos</option>
-                    <option value="menor-valor">Menor valor</option>
-                    <option value="maior-valor">Maior valor</option>
-                  </select>
-                  <button className="sr-only" type="submit">Ordenar</button>
-                </form>
-
-                <div className="hidden items-center gap-1 text-[#4f5d65] sm:flex" aria-label="Visualização">
-                  <span className="text-sm">Visualização</span>
-                  <button
-                    aria-label="Visualizar produtos em grade"
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white"
-                    type="button"
-                  >
-                    <Grid3X3 className="h-4 w-4" />
-                  </button>
-                  <button
-                    aria-label="Visualizar produtos em lista"
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border bg-white text-[#4f5d65]"
-                    type="button"
-                  >
-                    <Rows3 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
+              <ProductCatalogControls perPage={filters.perPage} sort={filters.sort} view={filters.view} />
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
-              {products.map((product, productIndex) => (
+            <div className={filters.view === "list"
+              ? "grid grid-cols-1 gap-3 sm:gap-4"
+              : "grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4"}
+            >
+              {visibleProducts.map((product, productIndex) => (
                 <ProductCard imagePriority={productIndex < 4} key={product.id} product={product} />
               ))}
             </div>
@@ -238,9 +194,11 @@ function parseCatalogFilters(searchParams?: Record<string, string | string[] | u
   categorySlug?: string;
   maxPriceCents?: number;
   minPriceCents?: number;
+  perPage: number;
   query?: string;
   sort: PublicProductSort;
   tags: string[];
+  view: "grid" | "list";
 } {
   const query = normalizeSearchParam(searchParams?.busca, 80);
   const categorySlug = normalizeSearchParam(searchParams?.categoria, 80);
@@ -253,9 +211,11 @@ function parseCatalogFilters(searchParams?: Record<string, string | string[] | u
     categorySlug,
     maxPriceCents: normalizePriceParam(searchParams?.precoMax),
     minPriceCents: normalizePriceParam(searchParams?.precoMin),
+    perPage: normalizePerPageParam(searchParams?.porPagina),
     query,
     sort,
-    tags: normalizeMultiParam(searchParams?.tag, 40)
+    tags: normalizeMultiParam(searchParams?.tag, 40),
+    view: normalizeSearchParam(searchParams?.visualizacao, 12) === "list" ? "list" : "grid"
   };
 }
 
@@ -284,4 +244,10 @@ function normalizePriceParam(value: string | string[] | undefined): number | und
   const priceCents = parseCurrencyToCents(rawValue);
 
   return priceCents > 0 ? priceCents : undefined;
+}
+
+function normalizePerPageParam(value: string | string[] | undefined): number {
+  const rawValue = Number(normalizeSearchParam(value, 3) ?? 24);
+
+  return [24, 48, 96].includes(rawValue) ? rawValue : 24;
 }

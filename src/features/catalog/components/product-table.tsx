@@ -109,7 +109,7 @@ export function ProductTable({ categories, filters, products }: ProductTableProp
       ) : null}
 
       <div className="overflow-hidden rounded-lg border bg-background">
-        <div className="hidden grid-cols-[minmax(320px,1.4fr)_140px_120px_110px_220px] gap-4 border-b bg-muted/40 px-4 py-3 text-xs font-semibold uppercase text-muted-foreground lg:grid">
+        <div className="hidden grid-cols-[minmax(260px,1fr)_110px_110px_110px_minmax(180px,auto)] gap-4 border-b bg-muted/40 px-4 py-3 text-xs font-semibold uppercase text-muted-foreground lg:grid">
           <span>Produto</span>
           <span>Status</span>
           <span>Estoque</span>
@@ -135,7 +135,7 @@ function ProductRow({ product }: { product: ProductListItem }): React.ReactEleme
   const metafieldCount = getMetafieldCount(product.metafields);
 
   return (
-      <div className="grid gap-4 p-4 lg:grid-cols-[minmax(320px,1.4fr)_140px_120px_110px_220px] lg:items-center">
+    <div className="grid min-w-0 gap-4 p-4 lg:grid-cols-[minmax(260px,1fr)_110px_110px_110px_minmax(180px,auto)] lg:items-center">
       <div className="grid min-w-0 grid-cols-[72px_minmax(0,1fr)] gap-3">
         <div className="relative h-16 w-16 overflow-hidden rounded-md border bg-muted">
           {imageUrl ? <Image alt={product.title} className="object-cover" fill sizes="72px" src={imageUrl} /> : null}
@@ -156,7 +156,7 @@ function ProductRow({ product }: { product: ProductListItem }): React.ReactEleme
       <StatusBadge status={product.status} />
       <StockBadge availableStock={availableStock} />
       <p className="text-sm font-semibold">{formatCurrency(product.priceCents)}</p>
-      <div className="flex flex-wrap justify-end gap-1.5">
+      <div className="flex min-w-0 flex-wrap justify-start gap-1.5 lg:justify-end">
         <Button asChild className="h-9 px-2.5 text-xs" variant="outline">
           <Link href={`/admin/produtos/${product.id}/editar`}>
             <Pencil className="mr-1.5 h-3.5 w-3.5" />

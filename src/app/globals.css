@@ -64,6 +64,19 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+html.dark,
+html.dark body {
+  background-color: hsl(var(--background));
+}
+
+html.dark body {
+  background:
+    linear-gradient(90deg, hsl(var(--primary) / 0.035) 1px, transparent 1px),
+    linear-gradient(hsl(var(--secondary) / 0.025) 1px, transparent 1px),
+    hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
 ::selection {
   background: hsl(var(--primary) / 0.28);
 }

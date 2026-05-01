@@ -9,6 +9,8 @@ import { signOutFromCustomer } from "@/actions/auth";
 import { SafeImage as Image } from "@/components/media/safe-image";
 import { LoginModal } from "@/features/auth/components/login-modal";
 import { useCartStore } from "@/features/cart/cart-store";
+import { useFavorites } from "@/features/catalog/components/favorite-button";
+import { formatCurrency } from "@/lib/format";
 
 const headerLinks = [
   { href: "/conta", label: "Conta", icon: UserRound },
@@ -32,29 +34,55 @@ const drawerCategoryGroups = [
 ];
 
 const drawerCatalogLinks = [
+  { href: "/produtos#catalogo-produtos", label: "Todos os produtos" },
   { href: "/produtos?categoria=camisetas#catalogo-produtos", label: "Camisetas" },
+  { href: "/produtos?categoria=action-figures#catalogo-produtos", label: "Action Figures" },
   { href: "/produtos?categoria=anime#catalogo-produtos", label: "Anime" },
   { href: "/produtos?categoria=geek#catalogo-produtos", label: "Geek" },
-  { href: "/produtos?categoria=oversized#catalogo-produtos", label: "Oversized" }
+  { href: "/produtos?categoria=oversized#catalogo-produtos", label: "Oversized" },
+  { href: "/cupons", label: "Cupons" },
+  { href: "/programa-de-fidelidade", label: "NerdCoins" }
 ];
 
 export function ShopHeader({
   announcementText = "FRETE GRÁTIS em compras acima de R$99,90",
   isAuthenticated = false,
-  nerdcoinsBalance = null
+  nerdcoinsBalance = null,
+  searchProducts = []
 }: {
   announcementText?: string;
   isAuthenticated?: boolean;
   nerdcoinsBalance?: number | null;
+  searchProducts?: Array<{
+    categoryName: string | null;
+    id: string;
+    imageUrl: string | null;
+    priceCents: number;
+    slug: string;
+    title: string;
+  }>;
 }): React.ReactElement {
   const router = useRouter();
   const [isCategoryDrawerOpen, setIsCategoryDrawerOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const favorites = useFavorites();
   const cartCount = useCartStore((state) => state.items.reduce((total, item) => total + item.quantity, 0));
   const cartBadgeLabel = useMemo(() => (cartCount > 99 ? "99+" : String(cartCount)), [cartCount]);
+  const favoriteBadgeLabel = useMemo(() => (favorites.length > 99 ? "99+" : String(favorites.length)), [favorites.length]);
   const trimmedSearchTerm = searchTerm.trim();
+  const searchMatches = useMemo(() => {
+    const query = normalizeSearchText(trimmedSearchTerm);
+
+    if (!query) {
+      return searchProducts.slice(0, 5);
+    }
+
+    return searchProducts
+      .filter((product) => normalizeSearchText(`${product.title} ${product.categoryName ?? ""}`).includes(query))
+      .slice(0, 6);
+  }, [searchProducts, trimmedSearchTerm]);
   const searchHref = trimmedSearchTerm
     ? `/produtos?busca=${encodeURIComponent(trimmedSearchTerm)}#catalogo-produtos`
     : "/produtos#catalogo-produtos";
@@ -119,6 +147,33 @@ export function ShopHeader({
                     </p>
                   </div>
                 </div>
+                <div className="mt-3 grid max-h-[360px] gap-2 overflow-y-auto">
+                  {searchMatches.map((product) => (
+                    <Link
+                      className="grid grid-cols-[52px_1fr_auto] items-center gap-3 rounded-lg border border-transparent p-2 transition hover:border-primary/30 hover:bg-[#fff7ef]"
+                      href={`/produtos/${product.slug}`}
+                      key={product.id}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => setIsSearchPanelOpen(false)}
+                    >
+                      <span className="relative h-12 w-12 overflow-hidden rounded-md border bg-[#f6f7f8]">
+                        {product.imageUrl ? (
+                          <Image alt="" className="object-cover" fill sizes="52px" src={product.imageUrl} />
+                        ) : null}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-black">{product.title}</span>
+                        <span className="block truncate text-xs text-[#6b7280]">{product.categoryName ?? "Produto NerdLingoLab"}</span>
+                      </span>
+                      <span className="text-sm font-black text-primary">{formatCurrency(product.priceCents)}</span>
+                    </Link>
+                  ))}
+                  {trimmedSearchTerm && searchMatches.length === 0 ? (
+                    <p className="rounded-lg bg-[#fff7ef] p-3 text-sm font-semibold text-[#4f5d65]">
+                      Nenhum produto encontrado para esse termo.
+                    </p>
+                  ) : null}
+                </div>
                 <button
                   className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-black text-white transition hover:bg-[#d85b00]"
                   disabled={!trimmedSearchTerm}
@@ -164,6 +219,11 @@ export function ShopHeader({
                     {link.href === "/carrinho" && cartCount > 0 ? (
                       <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#111827] px-1 text-[10px] font-black leading-none text-white shadow-sm">
                         {cartBadgeLabel}
+                      </span>
+                    ) : null}
+                    {link.href === "/favoritos" && favorites.length > 0 ? (
+                      <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#111827] px-1 text-[10px] font-black leading-none text-white shadow-sm">
+                        {favoriteBadgeLabel}
                       </span>
                     ) : null}
                     {link.label}
@@ -253,7 +313,7 @@ function CategoryDrawer({
       <aside
         aria-label="Todas as categorias"
         className={[
-          "h-full w-[min(330px,92vw)] overflow-hidden bg-white text-[#1c1c1c] shadow-2xl transition-transform duration-300",
+          "h-full w-[min(380px,92vw)] overflow-hidden bg-white text-[#1c1c1c] shadow-2xl transition-transform duration-300",
           isOpen ? "translate-x-0" : "-translate-x-full"
         ].join(" ")}
       >
@@ -290,10 +350,10 @@ function CategoryDrawer({
               Catálogo
               <ChevronDown className="h-4 w-4 text-primary" />
             </div>
-            <div className="bg-[#f7f7f7]">
+            <div className="grid grid-cols-1 gap-2 bg-[#f7f7f7] p-4">
               {drawerCatalogLinks.map((item) => (
                 <Link
-                  className="flex min-h-12 items-center gap-3 border-t border-white px-10 text-sm text-[#4f5d65] transition hover:bg-white hover:text-primary"
+                  className="flex min-h-11 items-center gap-3 rounded-lg border border-white bg-white/80 px-4 text-sm font-semibold text-[#4f5d65] transition hover:border-primary/40 hover:bg-white hover:text-primary"
                   href={item.href}
                   key={item.label}
                   onClick={onClose}
@@ -319,4 +379,12 @@ function CategoryDrawer({
       </aside>
     </div>
   );
+}
+
+function normalizeSearchText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 }

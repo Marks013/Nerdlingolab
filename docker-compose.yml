@@ -64,7 +64,9 @@ services:
     ports:
       - "${POSTGRES_HOST_PORT:-127.0.0.1:5432}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - type: bind
+        source: ${POSTGRES_DATA_DIR:-/srv/nerdlingolab/postgres-data}
+        target: /var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
@@ -85,7 +87,9 @@ services:
       - "${MINIO_API_HOST_PORT:-127.0.0.1:9000}:9000"
       - "${MINIO_CONSOLE_HOST_PORT:-127.0.0.1:9001}:9001"
     volumes:
-      - minio_data:/data
+      - type: bind
+        source: ${MINIO_DATA_DIR:-/srv/nerdlingolab/minio-data}
+        target: /data
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 10s
@@ -156,9 +160,6 @@ services:
     networks:
       - commerce
 
-volumes:
-  postgres_data:
-  minio_data:
 
 networks:
   commerce:

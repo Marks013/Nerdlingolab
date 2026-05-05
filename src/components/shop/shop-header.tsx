@@ -100,7 +100,7 @@ export function ShopHeader({
       </div>
 
       <div className="bg-[#f6f7f8] text-[#677279]">
-        <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-5 px-5 py-6 lg:grid-cols-[280px_1fr_auto] lg:items-center">
+        <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-4 px-5 py-6 lg:grid-cols-[320px_1fr_auto] lg:items-center">
           <Link className="group flex min-w-0 items-center justify-center gap-3 text-[#111827] lg:justify-start" href="/">
             <Image
               alt="NerdLingoLab"
@@ -111,7 +111,7 @@ export function ShopHeader({
               width={96}
             />
             <span className="flex min-w-0 flex-col leading-none">
-              <span className="whitespace-nowrap text-[30px] font-black tracking-normal leading-none">
+              <span className="whitespace-nowrap text-[34px] font-black tracking-normal leading-none">
                 <span className="text-[#ff6902]">Nerd</span>
                 <span className="text-[#7c1fe6]">LingoLab</span>
               </span>

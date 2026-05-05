@@ -2,6 +2,13 @@ import * as Sentry from "@sentry/nextjs";
 import { Resend } from "resend";
 
 import {
+  buildBrandedEmailHtml,
+  buildInfoGrid,
+  escapeHtml,
+  formatMultilineText,
+  getEmailBaseUrl
+} from "@/lib/email/branded-template";
+import {
   supportSubjectLabels,
   type SupportRequestInput
 } from "@/lib/support/schema";
@@ -20,7 +27,7 @@ export async function sendSupportEmail(input: SupportRequestInput): Promise<{
 
   if (!resend) {
     return {
-      error: "Envio de suporte nao configurado.",
+      error: "Envio de suporte não configurado.",
       ok: false,
       ticketId
     };
@@ -47,7 +54,7 @@ export async function sendSupportEmail(input: SupportRequestInput): Promise<{
     Sentry.captureException(error);
 
     return {
-      error: error instanceof Error ? error.message : "Nao foi possivel enviar sua mensagem agora.",
+      error: error instanceof Error ? error.message : "Não foi possível enviar sua mensagem agora.",
       ok: false,
       ticketId
     };
@@ -133,17 +140,34 @@ function buildSupportHtml({
   subjectLabel: string;
   ticketId: string;
 }): string {
-  return `
-    <div style="font-family:Arial,sans-serif;color:#1c1c1c;line-height:1.5">
-      <h1 style="font-size:22px;margin:0 0 16px">Contato NerdLingoLab</h1>
-      <p><strong>Protocolo:</strong> ${escapeHtml(ticketId)}</p>
-      <p><strong>Assunto:</strong> ${escapeHtml(subjectLabel)}</p>
-      <p><strong>Nome:</strong> ${escapeHtml(input.name)}</p>
-      <p><strong>E-mail:</strong> ${escapeHtml(input.email)}</p>
-      ${input.phone ? `<p><strong>Telefone:</strong> ${escapeHtml(input.phone)}</p>` : ""}
-      <p style="white-space:pre-line;background:#f7f7f7;padding:16px;border-radius:8px">${escapeHtml(input.message)}</p>
-    </div>
-  `;
+  const adminUrl = `${getEmailBaseUrl()}/admin/suporte`;
+
+  return buildBrandedEmailHtml({
+    cta: {
+      href: adminUrl,
+      label: "Abrir painel de suporte"
+    },
+    eyebrow: "Novo atendimento",
+    introHtml: `<p style="margin:0;">Uma nova solicitação chegou pelo formulário de suporte do site.</p>`,
+    preheader: `Novo ticket ${ticketId}: ${subjectLabel}.`,
+    sections: [
+      {
+        html: buildInfoGrid([
+          { label: "Protocolo", value: ticketId },
+          { label: "Assunto", value: subjectLabel },
+          { label: "Nome", value: input.name },
+          { label: "E-mail", value: input.email },
+          { label: "Telefone", value: input.phone ?? "Não informado" }
+        ]),
+        title: "Dados do cliente"
+      },
+      {
+        html: `<div style="white-space:normal;color:#172033;font-size:14px;line-height:1.65;">${formatMultilineText(input.message)}</div>`,
+        title: "Mensagem"
+      }
+    ],
+    title: "Novo ticket de suporte"
+  });
 }
 
 function buildReplyText(input: SupportReplyEmailInput): string {
@@ -160,24 +184,35 @@ function buildReplyText(input: SupportReplyEmailInput): string {
 }
 
 function buildReplyHtml(input: SupportReplyEmailInput): string {
-  return `
-    <div style="font-family:Arial,sans-serif;color:#1c1c1c;line-height:1.5">
-      <h1 style="font-size:22px;margin:0 0 16px">Resposta do suporte NerdLingoLab</h1>
-      <p>Olá, ${escapeHtml(input.contactName)}.</p>
-      <p><strong>Protocolo:</strong> ${escapeHtml(input.ticketId)}</p>
-      <p><strong>Assunto:</strong> ${escapeHtml(input.subjectLabel)}</p>
-      <p style="white-space:pre-line;background:#f7f7f7;padding:16px;border-radius:8px">${escapeHtml(input.replyMessage)}</p>
-      <p style="font-size:13px;color:#58636b">Mensagem original:</p>
-      <p style="white-space:pre-line;border-left:3px solid #d9e0e4;padding-left:12px;color:#58636b">${escapeHtml(input.originalMessage)}</p>
-    </div>
-  `;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+  return buildBrandedEmailHtml({
+    cta: {
+      href: `${getEmailBaseUrl()}/suporte`,
+      label: "Abrir meu atendimento"
+    },
+    eyebrow: "Resposta do suporte",
+    introHtml: `
+      <p style="margin:0 0 10px;">Olá, ${escapeHtml(input.contactName)}.</p>
+      <p style="margin:0;">Nossa equipe respondeu seu atendimento. O ticket foi concluído; você pode avaliar ou reabrir pelo histórico de suporte.</p>
+    `,
+    preheader: `Respondemos seu atendimento ${input.ticketId}.`,
+    sections: [
+      {
+        html: buildInfoGrid([
+          { label: "Protocolo", value: input.ticketId },
+          { label: "Assunto", value: input.subjectLabel },
+          { label: "Respondido por", value: input.adminName }
+        ]),
+        title: "Resumo"
+      },
+      {
+        html: `<div style="color:#172033;font-size:14px;line-height:1.65;">${formatMultilineText(input.replyMessage)}</div>`,
+        title: "Resposta da equipe"
+      },
+      {
+        html: `<div style="border-left:3px solid #fed7aa;color:#667085;font-size:13px;line-height:1.6;padding-left:12px;">${formatMultilineText(input.originalMessage)}</div>`,
+        title: "Mensagem original"
+      }
+    ],
+    title: "Respondemos seu atendimento"
+  });
 }

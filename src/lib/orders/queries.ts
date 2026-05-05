@@ -64,6 +64,8 @@ export type CustomerAccountSummary = {
 
 export type CustomerSavedAddress = CustomerAddress;
 
+export type CustomerCheckoutProfile = Pick<User, "id" | "name" | "email" | "cpf" | "phone">;
+
 export const adminOrderStatuses = Object.values(OrderStatus);
 export const adminPaymentStatuses = Object.values(PaymentStatus);
 
@@ -261,6 +263,19 @@ export async function getCustomerAccountSummary(
     loyaltyPoints: user.loyaltyPoints,
     orders: user.orders
   };
+}
+
+export async function getCustomerCheckoutProfile(userId: string): Promise<CustomerCheckoutProfile | null> {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      cpf: true,
+      phone: true
+    }
+  });
 }
 
 export async function getCustomerSavedAddresses(userId: string): Promise<CustomerSavedAddress[]> {

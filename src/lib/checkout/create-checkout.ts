@@ -22,6 +22,8 @@ interface MercadoPagoPreferenceResponse {
   sandbox_init_point?: string;
 }
 
+type CheckoutCustomer = CheckoutRequestInput["customer"];
+
 const appUrl = process.env.APP_URL ?? "http://localhost:3000";
 const mercadoPagoWebhookUrl = process.env.MERCADO_PAGO_WEBHOOK_URL
   ?? `${appUrl}/api/webhooks/mercadopago`;
@@ -62,6 +64,7 @@ export interface CreateCheckoutResult {
 
 export async function createCheckout(input: CreateCheckoutInput): Promise<CreateCheckoutResult> {
   const shippingAddress = await resolveShippingAddress(input);
+  const customer = await resolveCheckoutCustomer(input);
   const validatedCart = await validateCartItems({
     items: input.items,
     couponCode: input.couponCode,
@@ -96,7 +99,7 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Create
         orderNumber: generateOrderNumber(),
         userId: input.userId,
         couponId: validatedCart.appliedCoupon?.id,
-        email: input.customer.email,
+        email: customer.email,
         status: OrderStatus.PENDING_PAYMENT,
         paymentStatus: PaymentStatus.PENDING,
         subtotalCents: validatedCart.subtotalCents,
@@ -112,7 +115,8 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Create
         totalCents: validatedCart.totalCents,
         loyaltyPointsRedeemed: 0,
         shippingAddress: buildShippingAddressSnapshot(shippingAddress),
-        customerSnapshot: input.customer,
+        customerSnapshot: customer,
+        customerNote: input.customerNote || null,
         paymentIdempotencyKey: crypto.randomUUID(),
         items: {
           create: validatedCart.items.map((item) => ({
@@ -132,9 +136,9 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Create
   });
 
   const preference = await createCheckoutPreferenceOrCancel({
-    input,
     orderId: order.id,
     orderNumber: order.orderNumber,
+    customer,
     paymentItemsCents: validatedCart.totalCents - validatedCart.shippingCents,
     reservationItems: validatedCart.items,
     shippingAddress,
@@ -165,7 +169,7 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Create
 }
 
 async function createCheckoutPreferenceOrCancel({
-  input,
+  customer,
   orderId,
   orderNumber,
   paymentItemsCents,
@@ -174,7 +178,7 @@ async function createCheckoutPreferenceOrCancel({
   shippingCents,
   totalCents
 }: {
-  input: CheckoutRequestInput;
+  customer: CheckoutCustomer;
   orderId: string;
   orderNumber: string;
   paymentItemsCents: number;
@@ -187,7 +191,7 @@ async function createCheckoutPreferenceOrCancel({
     return await createMercadoPagoPreference({
       orderId,
       orderNumber,
-      input,
+      customer,
       paymentItemsCents,
       shippingAddress,
       shippingCents,
@@ -213,7 +217,7 @@ async function createCheckoutPreferenceOrCancel({
 async function createMercadoPagoPreference({
   orderId,
   orderNumber,
-  input,
+  customer,
   paymentItemsCents,
   shippingAddress,
   shippingCents,
@@ -221,7 +225,7 @@ async function createMercadoPagoPreference({
 }: {
   orderId: string;
   orderNumber: string;
-  input: CheckoutRequestInput;
+  customer: CheckoutCustomer;
   paymentItemsCents: number;
   shippingAddress: CustomerAddressInput;
   shippingCents: number;
@@ -253,10 +257,10 @@ async function createMercadoPagoPreference({
           }
         : undefined,
       payer: {
-        name: input.customer.name,
-        email: input.customer.email,
-        phone: input.customer.phone ? { number: input.customer.phone } : undefined,
-        identification: input.customer.cpf ? { type: "CPF", number: input.customer.cpf } : undefined,
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone ? { number: customer.phone } : undefined,
+        identification: customer.cpf ? { type: "CPF", number: customer.cpf } : undefined,
         address: {
           zip_code: shippingAddress.postalCode,
           street_name: shippingAddress.street,
@@ -308,6 +312,33 @@ async function resolveShippingAddress(input: CreateCheckoutInput): Promise<Custo
     city: savedAddress.city,
     state: savedAddress.state,
     country: savedAddress.country
+  };
+}
+
+async function resolveCheckoutCustomer(input: CreateCheckoutInput): Promise<CheckoutCustomer> {
+  if (!input.userId) {
+    return input.customer;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: input.userId },
+    select: {
+      cpf: true,
+      email: true,
+      name: true,
+      phone: true
+    }
+  });
+
+  if (!user) {
+    throw new Error("Cliente nao encontrado.");
+  }
+
+  return {
+    name: user.name ?? input.customer.name,
+    email: user.email,
+    phone: user.phone ?? input.customer.phone,
+    cpf: user.cpf ?? input.customer.cpf
   };
 }
 

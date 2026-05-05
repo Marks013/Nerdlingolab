@@ -2,6 +2,7 @@
 
 import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ export function CartClient({
   defaultPostalCode = null,
   defaultShippingLabel = null
 }: CartClientProps): React.ReactElement {
+  const router = useRouter();
   const { clearCart, getValidationPayload, items, removeItem, setQuantity } = useCartStore();
   const couponCode = useCartStore((state) => state.couponCode);
   const shippingOptionId = useCartStore((state) => state.shippingOptionId);
@@ -95,6 +97,30 @@ export function CartClient({
   const freeShippingThresholdCents = validatedCart?.freeShippingThresholdCents ?? 9_990;
   const total = validatedCart?.totalCents ?? subtotal;
 
+  function handleCheckoutClick(): void {
+    if (!validatedCart?.items.length) {
+      setCartMessage("Seu carrinho esta vazio. Adicione um produto antes de continuar.");
+      return;
+    }
+
+    if (!shippingPostalCodeRef.current.trim()) {
+      setCartMessage("Informe seu CEP e clique em Calcular para ver as opcoes de entrega.");
+      return;
+    }
+
+    if (!validatedCart.shippingOptions.length) {
+      setCartMessage("Calcule o frete para carregar as opcoes de entrega antes de continuar.");
+      return;
+    }
+
+    if (!validatedCart.selectedShippingOption) {
+      setCartMessage("Selecione uma opcao de frete antes de continuar para o checkout.");
+      return;
+    }
+
+    router.push("/checkout");
+  }
+
   if (!hasItems) {
     return (
       <section className="flex min-h-[620px] items-center justify-center">
@@ -135,7 +161,6 @@ export function CartClient({
               />
             ))}
             {isLoading ? <p className="py-4 text-sm text-muted-foreground">Validando carrinho...</p> : null}
-            {cartMessage ? <p className="py-4 text-sm text-muted-foreground">{cartMessage}</p> : null}
           </CardContent>
         </Card>
       </section>
@@ -260,14 +285,18 @@ export function CartClient({
             <span>Total</span>
             <strong>{formatCurrency(total)}</strong>
           </div>
+          {cartMessage ? (
+            <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900">
+              {cartMessage}
+            </p>
+          ) : null}
           <Button
             aria-disabled={!validatedCart?.items.length || !validatedCart.selectedShippingOption}
-            asChild
             className="w-full"
+            onClick={handleCheckoutClick}
+            type="button"
           >
-            <Link href={validatedCart?.items.length && validatedCart.selectedShippingOption ? "/checkout" : "/carrinho"}>
-              Continuar para checkout
-            </Link>
+            Continuar para checkout
           </Button>
           <Button className="w-full" onClick={clearCart} type="button" variant="outline">
             Limpar carrinho

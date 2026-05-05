@@ -1,12 +1,18 @@
 "use client";
 
-import Link from "next/link";
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 import { useState, useTransition } from "react";
 
 import { GoogleSignInButton } from "@/features/auth/components/google-sign-in-button";
 
-export function AccountLoginPrompt({ message }: { message?: string | null }): React.ReactElement {
+export function AccountLoginPrompt({
+  message,
+  nextPath = "/conta"
+}: {
+  message?: string | null;
+  nextPath?: string;
+}): React.ReactElement {
   const [errorMessage, setErrorMessage] = useState<string | null>(message ?? null);
   const [isPending, startTransition] = useTransition();
 
@@ -30,7 +36,7 @@ export function AccountLoginPrompt({ message }: { message?: string | null }): Re
         return;
       }
 
-      window.location.href = "/conta";
+      window.location.href = nextPath;
     });
   }
 
@@ -45,7 +51,7 @@ export function AccountLoginPrompt({ message }: { message?: string | null }): Re
           </p>
 
           <div className="mt-6">
-            <GoogleSignInButton />
+            <GoogleSignInButton callbackUrl={`/cadastro/google?next=${encodeURIComponent(nextPath)}`} />
           </div>
           <div className="my-5 flex items-center gap-3 text-xs font-black uppercase text-[#8a959b]">
             <span className="h-px flex-1 bg-[#e5e7eb]" />
@@ -95,7 +101,7 @@ export function AccountLoginPrompt({ message }: { message?: string | null }): Re
             </Link>
             <p>
               Ainda não tem conta?{" "}
-              <Link className="font-bold text-primary underline" href="/cadastro">
+              <Link className="font-bold text-primary underline" href={`/cadastro?next=${encodeURIComponent(nextPath)}`}>
                 Criar cadastro
               </Link>
             </p>

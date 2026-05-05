@@ -562,6 +562,7 @@ model Order {
   shippingAddress               Json
   billingAddress                Json?
   customerSnapshot              Json              @default("{}")
+  customerNote                  String?           @db.Text
   paidAt                        DateTime?
   canceledAt                    DateTime?
   createdAt                     DateTime          @default(now())

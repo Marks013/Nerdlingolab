@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/features/cart/cart-store";
+import { formatCpf } from "@/lib/identity/brazil";
 import { parseFriendlyResponse } from "@/lib/http/friendly-response";
 
 interface CheckoutResponse {
@@ -30,6 +31,14 @@ export interface CheckoutSavedAddress {
   isDefault: boolean;
 }
 
+export interface CheckoutCustomerProfile {
+  id: string;
+  name: string | null;
+  email: string;
+  phone: string | null;
+  cpf: string | null;
+}
+
 interface AddressFields {
   postalCode: string;
   street: string;
@@ -41,6 +50,7 @@ interface AddressFields {
 }
 
 interface CheckoutClientProps {
+  customerProfile?: CheckoutCustomerProfile | null;
   savedAddresses?: CheckoutSavedAddress[];
 }
 
@@ -56,7 +66,10 @@ function fieldsFromAddress(address?: CheckoutSavedAddress): AddressFields {
   };
 }
 
-export function CheckoutClient({ savedAddresses = [] }: CheckoutClientProps): React.ReactElement {
+export function CheckoutClient({
+  customerProfile = null,
+  savedAddresses = []
+}: CheckoutClientProps): React.ReactElement {
   const { clearCart, couponCode, getValidationPayload, items, shippingOptionId, shippingPostalCode } = useCartStore();
   const draftAddress = readDraftCheckoutAddress();
   const addressOptions = savedAddresses.length > 0 ? savedAddresses : draftAddress ? [draftAddress] : [];
@@ -66,6 +79,10 @@ export function CheckoutClient({ savedAddresses = [] }: CheckoutClientProps): Re
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const isManualAddress = addressOptions.length === 0 || !selectedAddressId;
+  const customerName = customerProfile?.name ?? "";
+  const customerEmail = customerProfile?.email ?? "";
+  const customerPhone = customerProfile?.phone ?? "";
+  const customerCpf = customerProfile?.cpf ?? "";
 
   function updateAddressField(field: keyof AddressFields, value: string): void {
     setAddressFields((currentFields) => ({ ...currentFields, [field]: value }));
@@ -96,6 +113,7 @@ export function CheckoutClient({ savedAddresses = [] }: CheckoutClientProps): Re
       body: JSON.stringify({
         items: getValidationPayload(),
         couponCode,
+        customerNote: formData.get("customerNote"),
         shippingOptionId,
         savedAddressId: selectedAddressId || undefined,
         customer: {
@@ -223,22 +241,44 @@ export function CheckoutClient({ savedAddresses = [] }: CheckoutClientProps): Re
               </div>
             </fieldset>
           ) : null}
-          <label className="grid gap-2 text-sm font-medium">
-            Nome completo
-            <Input name="name" required />
-          </label>
-          <label className="grid gap-2 text-sm font-medium">
-            E-mail
-            <Input name="email" required type="email" />
-          </label>
-          <label className="grid gap-2 text-sm font-medium">
-            Telefone
-            <Input name="phone" />
-          </label>
-          <label className="grid gap-2 text-sm font-medium">
-            CPF
-            <Input name="cpf" />
-          </label>
+          {customerProfile ? (
+            <div className="rounded-lg border bg-[#fffaf6] p-4 text-sm md:col-span-2">
+              <p className="font-black text-black">Dados da conta</p>
+              <p className="mt-2 text-[#4f5d65]">
+                {customerName} · {customerEmail}
+              </p>
+              <p className="mt-1 text-[#4f5d65]">
+                {customerCpf ? `CPF ${formatCpf(customerCpf)}` : "CPF pendente"}
+                {customerPhone ? ` · ${customerPhone}` : ""}
+              </p>
+              <p className="mt-3 text-xs text-[#677279]">
+                Esses dados vêm da sua conta e serão usados no pedido e no pagamento.
+              </p>
+              <input name="name" type="hidden" value={customerName} />
+              <input name="email" type="hidden" value={customerEmail} />
+              <input name="phone" type="hidden" value={customerPhone} />
+              <input name="cpf" type="hidden" value={customerCpf} />
+            </div>
+          ) : (
+            <>
+              <label className="grid gap-2 text-sm font-medium">
+                Nome completo
+                <Input name="name" required />
+              </label>
+              <label className="grid gap-2 text-sm font-medium">
+                E-mail
+                <Input name="email" required type="email" />
+              </label>
+              <label className="grid gap-2 text-sm font-medium">
+                Telefone
+                <Input name="phone" />
+              </label>
+              <label className="grid gap-2 text-sm font-medium">
+                CPF
+                <Input name="cpf" />
+              </label>
+            </>
+          )}
           {isManualAddress ? (
             <>
           <label className="grid gap-2 text-sm font-medium">
@@ -306,6 +346,18 @@ export function CheckoutClient({ savedAddresses = [] }: CheckoutClientProps): Re
           </label>
             </>
           ) : null}
+          <label className="grid gap-2 text-sm font-medium md:col-span-2">
+            Observacao do pedido
+            <textarea
+              className="min-h-28 resize-y rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              maxLength={1000}
+              name="customerNote"
+              placeholder="Ex.: instrucoes para entrega, preferencia de contato ou alguma observacao sobre o pedido."
+            />
+            <span className="text-xs font-normal text-muted-foreground">
+              Opcional. Evite informar dados sensiveis como senhas ou dados de cartao.
+            </span>
+          </label>
           <Button className="md:col-span-2" disabled={isSubmitting} type="submit">
             {isSubmitting ? "Criando pedido..." : "Pagar com Mercado Pago"}
           </Button>

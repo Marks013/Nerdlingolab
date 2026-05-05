@@ -33,6 +33,7 @@ export function OrderDetail({ order }: OrderDetailProps): React.ReactElement {
         </Card>
 
         <OrderItemsCard order={order} />
+        <CustomerNoteCard order={order} />
         <ShippingCard order={order} />
         <LedgerCard order={order} />
       </div>
@@ -54,6 +55,26 @@ export function OrderDetail({ order }: OrderDetailProps): React.ReactElement {
         <OrderActions order={order} />
       </div>
     </div>
+  );
+}
+
+function CustomerNoteCard({ order }: OrderDetailProps): React.ReactElement | null {
+  if (!order.customerNote) {
+    return null;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Observacao do cliente</CardTitle>
+        <CardDescription>Mensagem informada no checkout.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="whitespace-pre-wrap rounded-md border bg-[#fffaf6] p-4 text-sm leading-6 text-[#3a2a1c]">
+          {order.customerNote}
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 

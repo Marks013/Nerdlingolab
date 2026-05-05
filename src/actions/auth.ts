@@ -7,6 +7,7 @@ import { z } from "zod";
 import { CouponType, LoyaltyLedgerType, UserRole } from "@/generated/prisma/client";
 
 import { signIn, signOut } from "@/lib/auth";
+import { sanitizeCustomerNextPath } from "@/lib/account/completion";
 import { sanitizeAdminCallbackUrl } from "@/lib/admin";
 import {
   getCpfLookupValues,
@@ -61,6 +62,7 @@ const registerCustomerSchema = credentialsFormSchema.extend({
     .transform((value) => normalizeCpf(value))
     .refine((value) => isValidCpf(value), "CPF inválido."),
   name: z.string().trim().min(2).max(80),
+  nextPath: z.string().trim().max(300).optional(),
   phone: z.string().trim().max(20).regex(/^[0-9()+\-\s]*$/).optional().transform((value) => normalizePhone(value)),
   referralCode: z.string().trim().max(40).optional().transform((value) => normalizeReferralCode(value ?? ""))
 }).refine((value) => value.password === value.confirmPassword, {
@@ -175,6 +177,7 @@ export async function registerCustomer(formData: FormData): Promise<void> {
     cpf: formData.get("cpf") || undefined,
     email: formData.get("email"),
     name: formData.get("name"),
+    nextPath: formData.get("nextPath") || undefined,
     password: formData.get("password"),
     phone: formData.get("phone") || undefined,
     referralCode: formData.get("referralCode") || undefined
@@ -184,7 +187,8 @@ export async function registerCustomer(formData: FormData): Promise<void> {
     redirect("/cadastro?error=invalid");
   }
 
-  const { birthday, cpf, email, name, password, phone, referralCode } = parsedCustomer.data;
+  const { birthday, cpf, email, name, nextPath: rawNextPath, password, phone, referralCode } = parsedCustomer.data;
+  const nextPath = sanitizeCustomerNextPath(rawNextPath, "/conta");
   await enforceFormRateLimit("customer-register", email, 5);
   await enforceFormRateLimit("customer-register-cpf", cpf, 3);
 
@@ -321,7 +325,7 @@ export async function registerCustomer(formData: FormData): Promise<void> {
   await signIn("credentials", {
     email,
     password,
-    redirectTo: "/conta"
+    redirectTo: nextPath
   });
 }
 

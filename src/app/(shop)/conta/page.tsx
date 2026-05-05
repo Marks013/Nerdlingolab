@@ -27,13 +27,14 @@ export default async function AccountPage({ searchParams }: AccountPageProps): P
   const resolvedSearchParams = await searchParams;
   const confirmedAddressLabel = normalizeSearchParam(resolvedSearchParams?.endereco);
   const googleStatus = normalizeSearchParam(resolvedSearchParams?.google);
+  const nextPath = sanitizeCustomerNextPath(normalizeSearchParam(resolvedSearchParams?.next), "/conta");
   const loginMessage = getLoginMessage(
     normalizeSearchParam(resolvedSearchParams?.error),
     normalizeSearchParam(resolvedSearchParams?.reset)
   );
 
   if (!session?.user?.id) {
-    return <AccountLoginPrompt message={loginMessage} />;
+    return <AccountLoginPrompt message={loginMessage} nextPath={nextPath} />;
   }
 
   if (session.user.role === UserRole.ADMIN || session.user.role === UserRole.SUPERADMIN) {
@@ -47,7 +48,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps): P
   const account = await getCustomerAccountSummary(session.user.id);
 
   if (!account) {
-    return <AccountLoginPrompt message={loginMessage} />;
+    return <AccountLoginPrompt message={loginMessage} nextPath={nextPath} />;
   }
 
   return (

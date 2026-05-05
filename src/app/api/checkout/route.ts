@@ -28,9 +28,18 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
 
     const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ message: "Entre na conta para finalizar o checkout." }, { status: 401 });
+    }
+
+    if (!session.user.customerRegistrationComplete) {
+      return NextResponse.json({ message: "Finalize seu cadastro antes de pagar." }, { status: 403 });
+    }
+
     const checkout = await createCheckout({
       ...parsedBody.data,
-      userId: session?.user?.id
+      userId: session.user.id
     });
 
     return NextResponse.json(checkout);

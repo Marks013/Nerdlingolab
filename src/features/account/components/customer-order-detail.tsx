@@ -36,6 +36,20 @@ export function CustomerOrderDetail({
         </CardContent>
       </Card>
 
+      {order.customerNote ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Observacao enviada</CardTitle>
+            <CardDescription>Informacao registrada no checkout.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="whitespace-pre-wrap rounded-md border bg-[#fffaf6] p-4 text-sm leading-6 text-[#3a2a1c]">
+              {order.customerNote}
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle>Rastreamento</CardTitle>

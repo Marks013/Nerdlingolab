@@ -1,10 +1,13 @@
 "use client";
 
 import { BadgePercent, ChevronDown, CreditCard, Heart, MessageCircle, Minus, Plus, Zap } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { PaymentBadge, PaymentBadgeStrip, pixPaymentMethod } from "@/components/shop/payment-badges";
+import { useCartStore } from "@/features/cart/cart-store";
 import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
+import type { CartItem } from "@/features/cart/types";
 import { ShippingEstimator } from "@/features/shipping/components/shipping-estimator";
 import { formatCurrency } from "@/lib/format";
 import {
@@ -53,6 +56,8 @@ export function ProductPurchasePanel({
   selectedVariantId: controlledSelectedVariantId,
   variants
 }: ProductPurchasePanelProps): React.ReactElement | null {
+  const addItem = useCartStore((state) => state.addItem);
+  const router = useRouter();
   const [localSelectedVariantId, setLocalSelectedVariantId] = useState(variants[0]?.id ?? "");
   const [quantity, setQuantity] = useState(1);
   const selectedVariantId = controlledSelectedVariantId ?? localSelectedVariantId;
@@ -75,6 +80,16 @@ export function ProductPurchasePanel({
     priceCents: selectedVariant.priceCents
   }).at(-1);
   const subtotalCents = selectedVariant.priceCents * quantity;
+  const selectedCartItem: CartItem = {
+    productId,
+    variantId: selectedVariant.id,
+    slug: productSlug,
+    title: productTitle,
+    variantTitle: selectedVariant.title,
+    imageUrl,
+    unitPriceCents: selectedVariant.priceCents,
+    quantity
+  };
   const whatsappHref = buildProductWhatsappHref({
     color: getVariantColor(selectedVariant),
     gender: getVariantGender(selectedVariant),
@@ -144,25 +159,21 @@ export function ProductPurchasePanel({
       <div className="mt-7 grid gap-3 sm:grid-cols-2">
         <AddToCartButton
           availableStock={selectedVariant.availableStock}
-          item={{
-            productId,
-            variantId: selectedVariant.id,
-            slug: productSlug,
-            title: productTitle,
-            variantTitle: selectedVariant.title,
-            imageUrl,
-            unitPriceCents: selectedVariant.priceCents,
-            quantity
-          }}
+          item={selectedCartItem}
           key={`${selectedVariant.id}-${quantity}`}
         />
-        <a
-          className="inline-flex h-12 items-center justify-center rounded-lg bg-[#b85415] px-4 text-sm font-black text-white shadow-sm transition hover:bg-[#a14912]"
-          href="/checkout"
+        <button
+          className="inline-flex h-12 items-center justify-center rounded-lg bg-[#b85415] px-4 text-sm font-black text-white shadow-sm transition hover:bg-[#a14912] disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={selectedVariant.availableStock <= 0}
+          onClick={() => {
+            addItem(selectedCartItem);
+            router.push("/carrinho");
+          }}
+          type="button"
         >
           <Zap className="mr-2 h-4 w-4" />
           Comprar Agora
-        </a>
+        </button>
       </div>
 
       <a

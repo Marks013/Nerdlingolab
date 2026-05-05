@@ -10,6 +10,7 @@ export const checkoutRequestSchema = z.object({
     })
   ).min(1).max(60),
   couponCode: z.string().trim().max(64).optional(),
+  customerNote: z.string().trim().max(1000).optional(),
   shippingOptionId: z.string().trim().min(1).max(64),
   savedAddressId: z.string().trim().min(1).max(128).optional(),
   customer: z.object({

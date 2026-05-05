@@ -46,8 +46,13 @@ export async function POST(request: Request): Promise<NextResponse> {
       return (sameOriginError ?? rateLimitError) as NextResponse;
     }
 
-    const body: unknown = await request.json();
-    const parsedBody = shippingQuoteSchema.safeParse(body);
+    const body = await readJsonRequest(request);
+
+    if (!body.ok) {
+      return NextResponse.json({ message: "Informe os dados do frete corretamente." }, { status: 400 });
+    }
+
+    const parsedBody = shippingQuoteSchema.safeParse(body.value);
 
     if (!parsedBody.success) {
       return NextResponse.json({ message: "Informe um CEP válido." }, { status: 400 });
@@ -106,5 +111,22 @@ function captureException(error: unknown): void {
     Sentry.captureException(error);
   } catch {
     // Observability must never block checkout shipping quotes.
+  }
+}
+
+async function readJsonRequest(request: Request): Promise<{ ok: true; value: unknown } | { ok: false }> {
+  const rawBody = await request.text();
+
+  if (!rawBody.trim()) {
+    return { ok: false };
+  }
+
+  try {
+    return {
+      ok: true,
+      value: JSON.parse(rawBody) as unknown
+    };
+  } catch {
+    return { ok: false };
   }
 }

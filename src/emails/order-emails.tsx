@@ -27,26 +27,26 @@ const pageStyle: CSSProperties = {
   color: emailBrand.colors.ink,
   fontFamily: "Arial, Helvetica, sans-serif",
   margin: 0,
-  padding: "28px 12px"
+  padding: "24px 12px"
 };
 
 const cardStyle: CSSProperties = {
   backgroundColor: emailBrand.colors.card,
   border: `1px solid ${emailBrand.colors.border}`,
-  borderRadius: "18px",
-  boxShadow: "0 18px 44px rgba(23,32,51,.08)",
+  borderRadius: "12px",
+  borderTop: `4px solid ${emailBrand.colors.orange}`,
   margin: "0 auto",
-  maxWidth: "660px",
+  maxWidth: "620px",
   overflow: "hidden"
 };
 
 const headerStyle: CSSProperties = {
-  backgroundColor: emailBrand.colors.ink,
-  padding: "22px 28px"
+  borderBottom: `1px solid ${emailBrand.colors.border}`,
+  padding: "20px 24px"
 };
 
 const contentStyle: CSSProperties = {
-  padding: "30px 28px 8px"
+  padding: "26px 24px 6px"
 };
 
 const mutedStyle: CSSProperties = {
@@ -58,21 +58,20 @@ const mutedStyle: CSSProperties = {
 const sectionStyle: CSSProperties = {
   backgroundColor: "#ffffff",
   border: `1px solid ${emailBrand.colors.border}`,
-  borderRadius: "16px",
-  margin: "18px 0",
-  padding: "18px"
+  borderRadius: "10px",
+  margin: "16px 0",
+  padding: "16px"
 };
 
 const ctaStyle: CSSProperties = {
   backgroundColor: emailBrand.colors.orange,
-  borderRadius: "12px",
-  boxShadow: "0 10px 22px rgba(255,105,2,.22)",
-  color: "#111827",
+  borderRadius: "8px",
+  color: "#ffffff",
   display: "inline-block",
   fontSize: "15px",
   fontWeight: 800,
   lineHeight: 1,
-  padding: "15px 20px",
+  padding: "14px 18px",
   textDecoration: "none"
 };
 
@@ -88,7 +87,7 @@ export function OrderCreatedEmail({ order }: { order: OrderEmailModel }): ReactE
       </p>
       <OrderSummary order={order} />
       {order.checkoutUrl ? (
-        <div style={{ padding: "4px 0 20px" }}>
+        <div style={{ padding: "2px 0 20px" }}>
           <a href={order.checkoutUrl} style={ctaStyle}>
             Concluir pagamento
           </a>
@@ -136,48 +135,71 @@ function EmailShell({
             <table style={{ width: "100%" }}>
               <tbody>
                 <tr>
-                  <td>
-                    {/* eslint-disable-next-line @next/next/no-img-element -- E-mail clients need a plain remote image tag. */}
-                    <img
-                      alt={emailBrand.name}
-                      src={getEmailAssetUrl(emailBrand.logoPath)}
-                      style={{ border: 0, display: "block", height: "auto", maxWidth: "172px" }}
-                      width="172"
-                    />
+                  <td style={{ verticalAlign: "middle" }}>
+                    <table>
+                      <tbody>
+                        <tr>
+                          <td style={{ paddingRight: "10px", verticalAlign: "middle" }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element -- E-mail clients need a plain remote image tag. */}
+                            <img
+                              alt=""
+                              height="42"
+                              src={getEmailAssetUrl(emailBrand.markPath)}
+                              style={{ border: 0, borderRadius: "10px", display: "block", height: "42px", width: "42px" }}
+                              width="42"
+                            />
+                          </td>
+                          <td style={{ verticalAlign: "middle" }}>
+                            <div style={{ color: emailBrand.colors.ink, fontSize: "18px", fontWeight: 800, lineHeight: 1.15 }}>
+                              NerdLingoLab
+                            </div>
+                            <div style={{ color: emailBrand.colors.muted, fontSize: "12px", lineHeight: 1.35 }}>
+                              Loja geek oficial
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </td>
-                  <td
-                    style={{
-                      color: "#ffffff",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      letterSpacing: ".08em",
-                      textAlign: "right",
-                      textTransform: "uppercase"
-                    }}
-                  >
-                    {eyebrow}
+                  <td style={{ textAlign: "right", verticalAlign: "middle" }}>
+                    <span
+                      style={{
+                        backgroundColor: emailBrand.colors.soft,
+                        border: "1px solid #fed7aa",
+                        borderRadius: "999px",
+                        color: "#9a3412",
+                        display: "inline-block",
+                        fontSize: "11px",
+                        fontWeight: 800,
+                        lineHeight: 1,
+                        padding: "8px 10px",
+                        textTransform: "uppercase"
+                      }}
+                    >
+                      {eyebrow}
+                    </span>
                   </td>
                 </tr>
               </tbody>
             </table>
           </header>
           <section style={contentStyle}>
-            <h1 style={{ color: emailBrand.colors.ink, fontSize: "30px", lineHeight: 1.18, margin: 0 }}>
+            <h1 style={{ color: emailBrand.colors.ink, fontSize: "24px", lineHeight: 1.28, margin: 0 }}>
               {title}
             </h1>
             {children}
           </section>
           <footer
             style={{
-              backgroundColor: emailBrand.colors.soft,
+              backgroundColor: "#fafafa",
               borderTop: `1px solid ${emailBrand.colors.border}`,
               color: emailBrand.colors.muted,
               fontSize: "12px",
               lineHeight: 1.55,
-              padding: "18px 28px"
+              padding: "16px 24px"
             }}
           >
-            Mensagem automática da NerdLingoLab. Acompanhe seus pedidos e suporte direto pela sua conta.
+            Mensagem automática da NerdLingoLab. Acompanhe pedidos e suporte direto pela sua conta.
           </footer>
         </main>
       </body>
@@ -189,19 +211,19 @@ function OrderSummary({ order }: { order: OrderEmailModel }): ReactElement {
   return (
     <>
       <section style={sectionStyle}>
-        <p style={{ margin: "0 0 14px" }}>Olá, {order.customerName}.</p>
+        <p style={{ margin: "0 0 12px" }}>Olá, {order.customerName}.</p>
         <table style={{ borderCollapse: "collapse", width: "100%" }}>
           <tbody>
             {order.items.map((item) => (
               <tr key={`${item.title}-${item.variantTitle ?? "default"}`}>
-                <td style={{ borderTop: "1px solid #eef1f5", padding: "12px 0" }}>
+                <td style={{ borderTop: "1px solid #eef1f5", padding: "11px 0" }}>
                   <strong>{item.title}</strong>
                   <br />
                   <span style={mutedStyle}>
                     {item.variantTitle ?? "Padrão"} · qtd. {item.quantity}
                   </span>
                 </td>
-                <td style={{ borderTop: "1px solid #eef1f5", padding: "12px 0", textAlign: "right" }}>
+                <td style={{ borderTop: "1px solid #eef1f5", padding: "11px 0", textAlign: "right" }}>
                   {formatCurrency(item.totalCents)}
                 </td>
               </tr>
@@ -213,10 +235,10 @@ function OrderSummary({ order }: { order: OrderEmailModel }): ReactElement {
         <SummaryRow label="Produtos" value={formatCurrency(order.subtotalCents)} />
         {order.discountCents > 0 ? <SummaryRow label="Descontos" value={`-${formatCurrency(order.discountCents)}`} /> : null}
         <SummaryRow label="Frete" value={order.shippingCents > 0 ? formatCurrency(order.shippingCents) : "Grátis"} />
-        <div style={{ borderTop: "1px solid #eef1f5", marginTop: "10px", paddingTop: "12px" }}>
+        <div style={{ borderTop: "1px solid #eef1f5", marginTop: "8px", paddingTop: "10px" }}>
           <SummaryRow emphasis label="Total" value={formatCurrency(order.totalCents)} />
         </div>
-        <p style={{ ...mutedStyle, margin: "16px 0 0" }}>Entrega: {order.shippingLabel || "A definir"}</p>
+        <p style={{ ...mutedStyle, margin: "14px 0 0" }}>Entrega: {order.shippingLabel || "A definir"}</p>
       </section>
     </>
   );

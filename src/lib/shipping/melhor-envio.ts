@@ -83,7 +83,7 @@ export async function quoteMelhorEnvioOptions({
     throw new Error("Melhor Envio shipping quote failed.");
   }
 
-  const payload = await response.json() as MelhorEnvioServiceQuote[];
+  const payload = await readJsonResponse<MelhorEnvioServiceQuote[]>(response, "quote");
   const hasFreeShipping = forceFreeShipping || subtotalCents >= freeShippingThresholdCents;
   const services = hasFreeShipping ? selectControlledFreeShippingServices(payload) : payload;
 
@@ -119,7 +119,7 @@ export async function syncMelhorEnvioShipment({
     throw new Error("Melhor Envio tracking sync failed.");
   }
 
-  const payload = await response.json() as MelhorEnvioTrackingPayload;
+  const payload = await readJsonResponse<MelhorEnvioTrackingPayload>(response, "tracking");
   const rawPayload = toInputJson(payload);
   const tracking = normalizeMelhorEnvioTracking(payload, externalShipmentId);
   const shipment = await prisma.shipment.upsert({
@@ -405,6 +405,20 @@ function getMelhorEnvioBaseUrl(): string {
 
 function getMelhorEnvioUserAgent(): string {
   return process.env.MELHOR_ENVIO_USER_AGENT || "NerdLingoLab (nerdlingolab@gmail.com)";
+}
+
+async function readJsonResponse<T>(response: Response, context: string): Promise<T> {
+  const rawBody = await response.text();
+
+  if (!rawBody.trim()) {
+    throw new Error(`Melhor Envio ${context} returned an empty response.`);
+  }
+
+  try {
+    return JSON.parse(rawBody) as T;
+  } catch {
+    throw new Error(`Melhor Envio ${context} returned invalid JSON.`);
+  }
 }
 
 function getPositiveNumber(value: number | null | undefined): number | null {

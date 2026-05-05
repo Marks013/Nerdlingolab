@@ -25,17 +25,16 @@ export interface BrandedEmailOptions {
 
 export const emailBrand = {
   colors: {
-    background: "#fff7ed",
-    border: "#fed7aa",
+    background: "#f5f6f8",
+    border: "#e5e7eb",
     card: "#ffffff",
-    cyan: "#17bfd0",
     ink: "#172033",
     muted: "#667085",
     orange: "#ff6902",
-    soft: "#fff3e8",
+    soft: "#fff7ed",
     violet: "#7c1fe6"
   },
-  logoPath: "/brand-assets/logo.webp",
+  markPath: "/brand-assets/FAVICON_NERDLINGOLAB.webp",
   name: "NerdLingoLab"
 };
 
@@ -60,8 +59,6 @@ export function buildBrandedEmailHtml({
   sections = [],
   title
 }: BrandedEmailOptions): string {
-  const logoUrl = getEmailAssetUrl(emailBrand.logoPath);
-
   return `<!doctype html>
 <html lang="pt-BR">
   <head>
@@ -71,35 +68,26 @@ export function buildBrandedEmailHtml({
   </head>
   <body style="margin:0;background:${emailBrand.colors.background};font-family:Arial,Helvetica,sans-serif;color:${emailBrand.colors.ink};">
     ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${escapeHtml(preheader)}</div>` : ""}
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:${emailBrand.colors.background};padding:28px 12px;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:${emailBrand.colors.background};padding:24px 12px;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:660px;background:${emailBrand.colors.card};border:1px solid ${emailBrand.colors.border};border-radius:18px;overflow:hidden;box-shadow:0 18px 44px rgba(23,32,51,.08);">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:${emailBrand.colors.card};border:1px solid ${emailBrand.colors.border};border-top:4px solid ${emailBrand.colors.orange};border-radius:12px;overflow:hidden;">
             <tr>
-              <td style="background:${emailBrand.colors.ink};padding:22px 28px;">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-                  <tr>
-                    <td>
-                      <img src="${logoUrl}" width="172" alt="${emailBrand.name}" style="display:block;max-width:172px;height:auto;border:0;">
-                    </td>
-                    <td align="right" style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#ffffff;">
-                      ${escapeHtml(eyebrow ?? emailBrand.name)}
-                    </td>
-                  </tr>
-                </table>
+              <td style="padding:20px 24px;border-bottom:1px solid ${emailBrand.colors.border};">
+                ${buildBrandHeaderHtml(eyebrow)}
               </td>
             </tr>
             <tr>
-              <td style="padding:30px 28px 8px;">
-                <h1 style="margin:0;color:${emailBrand.colors.ink};font-size:30px;line-height:1.18;font-weight:800;">${escapeHtml(title)}</h1>
-                ${introHtml ? `<div style="margin-top:16px;color:${emailBrand.colors.muted};font-size:15px;line-height:1.65;">${introHtml}</div>` : ""}
+              <td style="padding:26px 24px 6px;">
+                <h1 style="margin:0;color:${emailBrand.colors.ink};font-size:24px;line-height:1.28;font-weight:800;">${escapeHtml(title)}</h1>
+                ${introHtml ? `<div style="margin-top:14px;color:${emailBrand.colors.muted};font-size:15px;line-height:1.6;">${introHtml}</div>` : ""}
               </td>
             </tr>
             ${sections.map((section) => buildSectionHtml(section)).join("")}
-            ${cta ? `<tr><td style="padding:18px 28px 28px;">${buildEmailButton(cta)}</td></tr>` : ""}
+            ${cta ? `<tr><td style="padding:16px 24px 28px;">${buildEmailButton(cta)}</td></tr>` : ""}
             <tr>
-              <td style="background:${emailBrand.colors.soft};border-top:1px solid ${emailBrand.colors.border};padding:18px 28px;color:${emailBrand.colors.muted};font-size:12px;line-height:1.55;">
-                ${footerNote ? escapeHtml(footerNote) : `Mensagem automática da ${emailBrand.name}. Se precisar de ajuda, responda pelo suporte do site.`}
+              <td style="background:#fafafa;border-top:1px solid ${emailBrand.colors.border};padding:16px 24px;color:${emailBrand.colors.muted};font-size:12px;line-height:1.55;">
+                ${footerNote ? escapeHtml(footerNote) : `Mensagem automática da ${emailBrand.name}. Acesse sua conta para acompanhar pedidos e suporte.`}
               </td>
             </tr>
           </table>
@@ -110,8 +98,36 @@ export function buildBrandedEmailHtml({
 </html>`;
 }
 
+export function buildBrandHeaderHtml(eyebrow?: string): string {
+  const markUrl = getEmailAssetUrl(emailBrand.markPath);
+
+  return `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+      <tr>
+        <td style="vertical-align:middle;">
+          <table role="presentation" cellspacing="0" cellpadding="0">
+            <tr>
+              <td style="vertical-align:middle;padding-right:10px;">
+                <img src="${markUrl}" width="42" height="42" alt="" style="display:block;width:42px;height:42px;border:0;border-radius:10px;">
+              </td>
+              <td style="vertical-align:middle;">
+                <div style="font-size:18px;line-height:1.15;font-weight:800;color:${emailBrand.colors.ink};">${emailBrand.name}</div>
+                <div style="font-size:12px;line-height:1.35;color:${emailBrand.colors.muted};">Loja geek oficial</div>
+              </td>
+            </tr>
+          </table>
+        </td>
+        <td align="right" style="vertical-align:middle;">
+          <span style="display:inline-block;background:${emailBrand.colors.soft};border:1px solid #fed7aa;border-radius:999px;color:#9a3412;font-size:11px;font-weight:800;line-height:1;padding:8px 10px;text-transform:uppercase;">
+            ${escapeHtml(eyebrow ?? "Atualização")}
+          </span>
+        </td>
+      </tr>
+    </table>`;
+}
+
 export function buildEmailButton({ href, label }: BrandedEmailCta): string {
-  return `<a href="${escapeHtml(href)}" style="display:inline-block;background:${emailBrand.colors.orange};border-radius:12px;color:#111827;font-size:15px;font-weight:800;line-height:1;text-decoration:none;padding:15px 20px;box-shadow:0 10px 22px rgba(255,105,2,.22);">${escapeHtml(label)}</a>`;
+  return `<a href="${escapeHtml(href)}" style="display:inline-block;background:${emailBrand.colors.orange};border-radius:8px;color:#ffffff;font-size:15px;font-weight:800;line-height:1;text-decoration:none;padding:14px 18px;">${escapeHtml(label)}</a>`;
 }
 
 export function buildInfoGrid(items: BrandedEmailMetaItem[]): string {
@@ -119,8 +135,8 @@ export function buildInfoGrid(items: BrandedEmailMetaItem[]): string {
     .filter((item) => item.value.trim().length > 0)
     .map((item) => `
       <tr>
-        <td style="padding:9px 0;color:${emailBrand.colors.muted};font-size:13px;">${escapeHtml(item.label)}</td>
-        <td align="right" style="padding:9px 0;color:${emailBrand.colors.ink};font-size:13px;font-weight:700;">${escapeHtml(item.value)}</td>
+        <td style="padding:8px 0;color:${emailBrand.colors.muted};font-size:13px;">${escapeHtml(item.label)}</td>
+        <td align="right" style="padding:8px 0;color:${emailBrand.colors.ink};font-size:13px;font-weight:700;">${escapeHtml(item.value)}</td>
       </tr>
     `)
     .join("");
@@ -129,7 +145,7 @@ export function buildInfoGrid(items: BrandedEmailMetaItem[]): string {
 }
 
 export function buildNoticeHtml(message: string): string {
-  return `<div style="background:${emailBrand.colors.soft};border:1px solid ${emailBrand.colors.border};border-radius:14px;color:${emailBrand.colors.ink};font-size:14px;line-height:1.55;padding:14px 16px;">${escapeHtml(message)}</div>`;
+  return `<div style="background:${emailBrand.colors.soft};border:1px solid #fed7aa;border-radius:10px;color:${emailBrand.colors.ink};font-size:14px;line-height:1.55;padding:13px 14px;">${escapeHtml(message)}</div>`;
 }
 
 export function formatMultilineText(value: string): string {
@@ -148,9 +164,9 @@ export function escapeHtml(value: string): string {
 function buildSectionHtml({ html, title }: BrandedEmailSection): string {
   return `
     <tr>
-      <td style="padding:14px 28px;">
-        <div style="border:1px solid ${emailBrand.colors.border};border-radius:16px;padding:18px;background:#ffffff;">
-          ${title ? `<h2 style="margin:0 0 14px;color:${emailBrand.colors.ink};font-size:16px;line-height:1.3;font-weight:800;">${escapeHtml(title)}</h2>` : ""}
+      <td style="padding:12px 24px;">
+        <div style="border:1px solid ${emailBrand.colors.border};border-radius:10px;padding:16px;background:#ffffff;">
+          ${title ? `<h2 style="margin:0 0 12px;color:${emailBrand.colors.ink};font-size:15px;line-height:1.3;font-weight:800;">${escapeHtml(title)}</h2>` : ""}
           ${html}
         </div>
       </td>

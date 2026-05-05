@@ -101,15 +101,26 @@ export function ShopHeader({
 
       <div className="bg-[#f6f7f8] text-[#677279]">
         <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-5 px-5 py-6 lg:grid-cols-[280px_1fr_auto] lg:items-center">
-          <Link className="group flex justify-center lg:justify-start" href="/">
+          <Link
+            className="group flex items-center justify-center gap-3 text-[#111827] lg:justify-start"
+            href="/"
+          >
             <Image
               alt="NerdLingoLab"
-              className="h-auto w-[260px] transition duration-300 group-hover:scale-[1.025] group-hover:drop-shadow-[0_6px_18px_rgba(255,105,2,0.24)]"
-              height={118}
+              className="h-16 w-16 rounded-2xl object-cover transition duration-300 group-hover:scale-[1.025] group-hover:drop-shadow-[0_6px_18px_rgba(255,105,2,0.24)]"
+              height={96}
               priority
-              src="/brand-assets/logo.webp"
-              width={360}
+              src="/brand-assets/FAVICON_NERDLINGOLAB.webp"
+              width={96}
             />
+            <span className="flex flex-col leading-none">
+              <span className="text-2xl font-black tracking-normal text-[#111827] sm:text-3xl">
+                NerdLingoLab
+              </span>
+              <span className="mt-1 text-xs font-bold uppercase tracking-[0.08em] text-[#ff6902]">
+                Loja geek oficial
+              </span>
+            </span>
           </Link>
 
           <div className="relative mx-auto w-full max-w-[550px]">

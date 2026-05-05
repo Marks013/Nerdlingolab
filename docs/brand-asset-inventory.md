@@ -15,8 +15,7 @@ Fonte: `C:\Users\samue\Desktop\theme_export__nerdlingolab-com-nerdlingolav-v11-9
 
 | Arquivo no ZIP | Status | Uso atual ou decisão |
 | --- | --- | --- |
-| `assets/header_logo.webp` | Migrado | Logo do cabeçalho. |
-| `assets/logo.webp` | Migrado | Logo da home. |
+| Logo antigo de cabecalho | Substituido | O cabecalho usa `FAVICON_NERDLINGOLAB.webp` com texto HTML para evitar pixelizacao. |
 | `assets/product-1.webp` | Removido | Placeholder antigo substituído por assets reais da marca. |
 | `assets/instant-view.webp` | Migrado | Reservado para selo visual em etapa futura. |
 | `assets/ima_digital.webp` | Migrado | Reservado para confiança/integrações em etapa futura. |

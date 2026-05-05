@@ -2,7 +2,7 @@
 
 ## Referencias usadas
 
-- Tema tema legado anexado: paleta principal `#ff6902`, acento de checkout `#00badb`, neutros `#000000`, `#ffffff`, `#677279`, logos em `assets/header_logo.webp` e `assets/logo.webp`.
+- Tema legado anexado: paleta principal `#ff6902`, acento de checkout `#00badb`, neutros `#000000`, `#ffffff`, `#677279`; logo antigo pixelado foi substituido por `FAVICON_NERDLINGOLAB.webp` com texto HTML no cabecalho.
 - Tema tema legado anexado: modulos existentes de cashback/provedor legado de fidelidade em `sections/provedor-legado-fidelidade-loyalty-page.liquid`, `snippets/provedor-legado-fidelidade-loyalty-header-points.liquid`, `snippets/provedor-legado-fidelidade-loyalty-mini-cart.liquid` e documentacao `assets/CASHBACK-ARCHITECTURE.md`.
 - programa legado de fidelidade: pontos por compra, formas de resgate, cupons, referrals, VIP tiers, pagina de fidelidade, ajustes manuais, historico completo de atividade e suporte a timeline auditavel.
 

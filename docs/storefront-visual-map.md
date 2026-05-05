@@ -84,7 +84,7 @@ Primeira implantação no Next.js:
 
 ## Assets locais implantados
 
-- `public/brand-assets/logo.webp`: cabeçalho e identidade principal.
+- `public/brand-assets/FAVICON_NERDLINGOLAB.webp`: cabecalho, favicon/metadados e e-mails transacionais.
 - `public/brand-assets/FAVICON_NERDLINGOLAB.webp`: favicon/metadados do app.
 - `public/brand-assets/BANNER_01_*` a `BANNER_05_*`: vitrine principal responsiva da home, com versões PC e mobile.
 - `public/brand-assets/ESTAMPAS_MAIS_VENDIDAS_-_NERDLINGOLAB.webp`: chamada de mais vendidos e fallback do primeiro produto.

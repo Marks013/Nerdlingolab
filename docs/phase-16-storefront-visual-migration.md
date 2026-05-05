@@ -18,8 +18,7 @@ Iniciar a substituição visual do tema legado sem importar Liquid para produç�
 
 ## Assets migrados
 
-- `public/brand-assets/header_logo.webp`
-- `public/brand-assets/logo.webp`
+- `public/brand-assets/FAVICON_NERDLINGOLAB.webp`
 - `public/brand-assets/ESTAMPAS_MAIS_VENDIDAS_-_NERDLINGOLAB.webp`
 - `public/brand-assets/instant-view.webp`
 - `public/brand-assets/ima_digital.webp`

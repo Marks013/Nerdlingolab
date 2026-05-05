@@ -27,7 +27,9 @@ export default async function AccountPage({ searchParams }: AccountPageProps): P
   const resolvedSearchParams = await searchParams;
   const confirmedAddressLabel = normalizeSearchParam(resolvedSearchParams?.endereco);
   const googleStatus = normalizeSearchParam(resolvedSearchParams?.google);
-  const nextPath = sanitizeCustomerNextPath(normalizeSearchParam(resolvedSearchParams?.next), "/conta");
+  const checkoutFlow = normalizeSearchParam(resolvedSearchParams?.checkout) === "1";
+  const requestedNextPath = sanitizeCustomerNextPath(normalizeSearchParam(resolvedSearchParams?.next), "/conta");
+  const nextPath = checkoutFlow && requestedNextPath === "/checkout" ? "/checkout" : "/conta";
   const loginMessage = getLoginMessage(
     normalizeSearchParam(resolvedSearchParams?.error),
     normalizeSearchParam(resolvedSearchParams?.reset)

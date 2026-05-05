@@ -20,7 +20,7 @@ export default async function CheckoutPage(): Promise<React.ReactElement> {
   const session = await auth();
 
   if (!session?.user?.id) {
-    redirect(`/entrar?next=${encodeURIComponent(sanitizeCustomerNextPath("/checkout"))}`);
+    redirect(`/cadastro?checkout=1&next=${encodeURIComponent(sanitizeCustomerNextPath("/checkout"))}`);
   }
 
   if (session?.user?.id && !session.user.customerRegistrationComplete) {

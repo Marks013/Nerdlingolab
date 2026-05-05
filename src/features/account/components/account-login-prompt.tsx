@@ -15,6 +15,10 @@ export function AccountLoginPrompt({
 }): React.ReactElement {
   const [errorMessage, setErrorMessage] = useState<string | null>(message ?? null);
   const [isPending, startTransition] = useTransition();
+  const registerHref =
+    nextPath === "/checkout"
+      ? `/cadastro?checkout=1&next=${encodeURIComponent(nextPath)}`
+      : `/cadastro?next=${encodeURIComponent(nextPath)}`;
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -101,7 +105,7 @@ export function AccountLoginPrompt({
             </Link>
             <p>
               Ainda não tem conta?{" "}
-              <Link className="font-bold text-primary underline" href={`/cadastro?next=${encodeURIComponent(nextPath)}`}>
+              <Link className="font-bold text-primary underline" href={registerHref}>
                 Criar cadastro
               </Link>
             </p>

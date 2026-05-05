@@ -24,10 +24,13 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps):
   const referralCode = normalizeReferralCode(
     Array.isArray(resolvedSearchParams?.ref) ? resolvedSearchParams?.ref[0] : resolvedSearchParams?.ref
   );
-  const nextPath = sanitizeCustomerNextPath(
+  const checkoutFlow = normalizeSearchParam(resolvedSearchParams?.checkout) === "1";
+  const requestedNextPath = sanitizeCustomerNextPath(
     Array.isArray(resolvedSearchParams?.next) ? resolvedSearchParams.next[0] : resolvedSearchParams?.next,
     "/conta"
   );
+  const isCheckoutReturn = checkoutFlow && requestedNextPath === "/checkout";
+  const nextPath = isCheckoutReturn ? "/checkout" : "/conta";
 
   return (
     <main className="geek-page min-h-screen px-5 py-10">
@@ -35,7 +38,9 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps):
         <div className="manga-panel w-full max-w-[540px] rounded-lg bg-white p-8 shadow-sm sm:p-10">
           <h1 className="geek-title justify-center text-center text-3xl font-black text-black">Criar conta</h1>
           <p className="mt-4 text-center text-[#4f5d65]">
-            Salve seus dados, acompanhe pedidos e use Nerdcoins.
+            {isCheckoutReturn
+              ? "Crie sua conta para salvar os dados do pedido e continuar o checkout."
+              : "Salve seus dados, acompanhe pedidos e use Nerdcoins."}
           </p>
           <div className="mt-8">
             <GoogleSignInButton
@@ -117,10 +122,27 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps):
             <Button className="h-12 bg-primary text-white" type="submit">Criar conta</Button>
           </form>
           <p className="mt-6 text-center text-sm text-[#4f5d65]">
-            Já tem conta? <Link className="font-bold underline" href={`/conta?next=${encodeURIComponent(nextPath)}`}>Entrar</Link>
+            Já tem conta?{" "}
+            <Link
+              className="font-bold underline"
+              href={
+                isCheckoutReturn
+                  ? `/conta?checkout=1&next=${encodeURIComponent(nextPath)}`
+                  : `/conta?next=${encodeURIComponent(nextPath)}`
+              }
+            >
+              Entrar
+            </Link>
           </p>
         </div>
       </section>
     </main>
   );
+}
+
+function normalizeSearchParam(value: string | string[] | undefined): string | undefined {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  const normalizedValue = rawValue?.trim().slice(0, 120);
+
+  return normalizedValue || undefined;
 }

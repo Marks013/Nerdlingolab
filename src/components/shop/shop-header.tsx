@@ -101,24 +101,21 @@ export function ShopHeader({
 
       <div className="bg-[#f6f7f8] text-[#677279]">
         <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-5 px-5 py-6 lg:grid-cols-[280px_1fr_auto] lg:items-center">
-          <Link
-            className="group flex items-center justify-center gap-3 text-[#111827] lg:justify-start"
-            href="/"
-          >
+          <Link className="group flex min-w-0 items-center justify-center gap-2 text-[#111827] lg:justify-start" href="/">
             <Image
               alt="NerdLingoLab"
-              className="h-16 w-16 rounded-2xl object-cover transition duration-300 group-hover:scale-[1.025] group-hover:drop-shadow-[0_6px_18px_rgba(255,105,2,0.24)]"
+              className="h-12 w-12 shrink-0 rounded-2xl object-cover transition duration-300 group-hover:scale-[1.025] group-hover:drop-shadow-[0_6px_18px_rgba(255,105,2,0.24)] sm:h-14 sm:w-14"
               height={96}
               priority
               src="/brand-assets/FAVICON_NERDLINGOLAB.webp"
               width={96}
             />
-            <span className="flex flex-col leading-none">
-              <span className="text-2xl font-black tracking-normal sm:text-3xl">
+            <span className="flex min-w-0 flex-col leading-none">
+              <span className="whitespace-nowrap text-2xl font-black tracking-normal">
                 <span className="text-[#ff6902]">Nerd</span>
                 <span className="text-[#7c1fe6]">LingoLab</span>
               </span>
-              <span className="mt-1 text-xs font-bold uppercase tracking-[0.08em] text-[#ff6902]">
+              <span className="mt-1 whitespace-nowrap text-[11px] font-bold uppercase tracking-[0.08em] text-[#ff6902]">
                 Loja geek oficial
               </span>
             </span>

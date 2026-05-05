@@ -16,7 +16,9 @@ import { getStorefrontTheme } from "@/lib/theme/storefront";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "NerdLingoLab",
+  title: {
+    absolute: "NerdLingoLab"
+  },
   description: "Produtos geek, camisetas, oversized, action figures e NerdCoins em uma loja divertida e segura.",
   alternates: {
     canonical: "/"

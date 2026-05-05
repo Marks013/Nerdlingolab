@@ -19,6 +19,7 @@ export function AccountLoginPrompt({
     nextPath === "/checkout"
       ? `/cadastro?checkout=1&next=${encodeURIComponent(nextPath)}`
       : `/cadastro?next=${encodeURIComponent(nextPath)}`;
+  const isCheckoutReturn = nextPath === "/checkout";
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -115,6 +116,14 @@ export function AccountLoginPrompt({
                 Entrar no admin
               </Link>
             </p>
+            {isCheckoutReturn ? (
+              <p>
+                Nao quer finalizar agora?{" "}
+                <Link className="font-bold text-primary underline" href="/produtos">
+                  Continuar comprando
+                </Link>
+              </p>
+            ) : null}
           </div>
         </div>
       </section>

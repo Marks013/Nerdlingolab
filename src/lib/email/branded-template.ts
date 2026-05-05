@@ -25,7 +25,7 @@ export interface BrandedEmailOptions {
 
 export const emailBrand = {
   colors: {
-    background: "#f5f6f8",
+    background: "#fff7ed",
     border: "#e5e7eb",
     card: "#ffffff",
     ink: "#172033",
@@ -34,6 +34,7 @@ export const emailBrand = {
     soft: "#fff7ed",
     violet: "#7c1fe6"
   },
+  mascotPath: "/brand-assets/MASCOTE_02_NERDLINGOLAB.webp",
   markPath: "/brand-assets/FAVICON_NERDLINGOLAB.webp",
   name: "NerdLingoLab"
 };
@@ -64,30 +65,58 @@ export function buildBrandedEmailHtml({
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light only">
+    <meta name="supported-color-schemes" content="light">
     <title>${escapeHtml(title)}</title>
+    <style>
+      :root { color-scheme: light only; supported-color-schemes: light; }
+      body, table, td, div, p, a { color-scheme: light only; }
+      @media (prefers-color-scheme: dark) {
+        .nll-page { background:#fff7ed !important; }
+        .nll-card, .nll-panel { background:#ffffff !important;color:#172033 !important; }
+        .nll-hero, .nll-footer { background:#172033 !important;color:#ffffff !important; }
+        .nll-soft { background:#fffaf5 !important;color:#172033 !important; }
+      }
+    </style>
   </head>
-  <body style="margin:0;background:${emailBrand.colors.background};font-family:Arial,Helvetica,sans-serif;color:${emailBrand.colors.ink};">
+  <body class="nll-page" bgcolor="${emailBrand.colors.background}" style="margin:0;background:${emailBrand.colors.background};font-family:Arial,Helvetica,sans-serif;color:${emailBrand.colors.ink};color-scheme:light;">
     ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${escapeHtml(preheader)}</div>` : ""}
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:${emailBrand.colors.background};padding:24px 12px;">
+    <table class="nll-page" role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="${emailBrand.colors.background}" style="background:${emailBrand.colors.background};padding:24px 12px;color-scheme:light;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:${emailBrand.colors.card};border:1px solid ${emailBrand.colors.border};border-top:4px solid ${emailBrand.colors.orange};border-radius:12px;overflow:hidden;">
+          <table class="nll-card" role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="${emailBrand.colors.card}" style="max-width:640px;background:${emailBrand.colors.card};border:1px solid #fed7aa;border-radius:18px;overflow:hidden;color-scheme:light;">
             <tr>
-              <td style="padding:20px 24px;border-bottom:1px solid ${emailBrand.colors.border};">
+              <td bgcolor="${emailBrand.colors.orange}" style="background:${emailBrand.colors.orange};color:#ffffff;font-size:12px;font-weight:800;letter-spacing:0.08em;padding:10px 24px;text-transform:uppercase;color-scheme:light;">
+                NerdLingoLab · Comunicacao oficial
+              </td>
+            </tr>
+            <tr>
+              <td class="nll-panel" bgcolor="#ffffff" style="background:#ffffff;padding:18px 24px;color-scheme:light;">
                 ${buildBrandHeaderHtml(eyebrow)}
               </td>
             </tr>
             <tr>
-              <td style="padding:26px 24px 6px;">
-                <h1 style="margin:0;color:${emailBrand.colors.ink};font-size:24px;line-height:1.28;font-weight:800;">${escapeHtml(title)}</h1>
-                ${introHtml ? `<div style="margin-top:14px;color:${emailBrand.colors.muted};font-size:15px;line-height:1.6;">${introHtml}</div>` : ""}
+              <td class="nll-hero" bgcolor="#172033" style="background:#172033;color:#ffffff;padding:24px;color-scheme:light;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td style="vertical-align:middle;padding-right:16px;">
+                      <div style="color:#fed7aa;font-size:12px;font-weight:800;letter-spacing:0.08em;margin-bottom:10px;text-transform:uppercase;">${escapeHtml(eyebrow ?? "Atualizacao")}</div>
+                      <h1 style="margin:0;color:#ffffff;font-size:26px;line-height:1.2;font-weight:900;">${escapeHtml(title)}</h1>
+                      ${introHtml ? `<div style="margin-top:12px;color:#dbe4f0;font-size:15px;line-height:1.6;">${introHtml}</div>` : ""}
+                    </td>
+                    <td align="right" style="vertical-align:middle;width:86px;">
+                      <img src="${getEmailAssetUrl(emailBrand.mascotPath)}" width="72" height="72" alt="" style="display:inline-block;width:72px;height:72px;border:0;">
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
             ${sections.map((section) => buildSectionHtml(section)).join("")}
-            ${cta ? `<tr><td style="padding:16px 24px 28px;">${buildEmailButton(cta)}</td></tr>` : ""}
+            ${cta ? `<tr><td align="center" style="padding:16px 24px 28px;">${buildEmailButton(cta)}</td></tr>` : ""}
             <tr>
-              <td style="background:#fafafa;border-top:1px solid ${emailBrand.colors.border};padding:16px 24px;color:${emailBrand.colors.muted};font-size:12px;line-height:1.55;">
-                ${footerNote ? escapeHtml(footerNote) : `Mensagem automática da ${emailBrand.name}. Acesse sua conta para acompanhar pedidos e suporte.`}
+              <td class="nll-footer" bgcolor="#172033" style="background:#172033;border-top:1px solid #263247;padding:16px 24px;color:#cbd5e1;font-size:12px;line-height:1.55;color-scheme:light;">
+                <strong><span style="color:${emailBrand.colors.orange};">Nerd</span><span style="color:#c084fc;">LingoLab</span></strong><br>
+                ${footerNote ? escapeHtml(footerNote) : `Mensagem automatica. Acesse sua conta para acompanhar pedidos, suporte e Nerdcoins.`}
               </td>
             </tr>
           </table>
@@ -111,7 +140,7 @@ export function buildBrandHeaderHtml(eyebrow?: string): string {
                 <img src="${markUrl}" width="42" height="42" alt="" style="display:block;width:42px;height:42px;border:0;border-radius:10px;">
               </td>
               <td style="vertical-align:middle;">
-                <div style="font-size:18px;line-height:1.15;font-weight:800;color:${emailBrand.colors.ink};">${emailBrand.name}</div>
+                <div style="font-size:18px;line-height:1.15;font-weight:800;"><span style="color:${emailBrand.colors.orange};">Nerd</span><span style="color:${emailBrand.colors.violet};">LingoLab</span></div>
                 <div style="font-size:12px;line-height:1.35;color:${emailBrand.colors.muted};">Loja geek oficial</div>
               </td>
             </tr>
@@ -127,7 +156,7 @@ export function buildBrandHeaderHtml(eyebrow?: string): string {
 }
 
 export function buildEmailButton({ href, label }: BrandedEmailCta): string {
-  return `<a href="${escapeHtml(href)}" style="display:inline-block;background:${emailBrand.colors.orange};border-radius:8px;color:#ffffff;font-size:15px;font-weight:800;line-height:1;text-decoration:none;padding:14px 18px;">${escapeHtml(label)}</a>`;
+  return `<a href="${escapeHtml(href)}" style="display:inline-block;background:${emailBrand.colors.orange};border-radius:12px;color:#ffffff;font-size:16px;font-weight:900;line-height:1;text-decoration:none;padding:16px 22px;">${escapeHtml(label)}</a>`;
 }
 
 export function buildInfoGrid(items: BrandedEmailMetaItem[]): string {
@@ -145,7 +174,7 @@ export function buildInfoGrid(items: BrandedEmailMetaItem[]): string {
 }
 
 export function buildNoticeHtml(message: string): string {
-  return `<div style="background:${emailBrand.colors.soft};border:1px solid #fed7aa;border-radius:10px;color:${emailBrand.colors.ink};font-size:14px;line-height:1.55;padding:13px 14px;">${escapeHtml(message)}</div>`;
+  return `<div style="background:${emailBrand.colors.soft};border:1px solid #fed7aa;border-radius:12px;color:${emailBrand.colors.ink};font-size:14px;line-height:1.55;padding:14px 15px;">${escapeHtml(message)}</div>`;
 }
 
 export function formatMultilineText(value: string): string {
@@ -165,7 +194,7 @@ function buildSectionHtml({ html, title }: BrandedEmailSection): string {
   return `
     <tr>
       <td style="padding:12px 24px;">
-        <div style="border:1px solid ${emailBrand.colors.border};border-radius:10px;padding:16px;background:#ffffff;">
+        <div class="nll-panel" style="border:1px solid #fed7aa;border-radius:14px;padding:18px;background:#ffffff;color-scheme:light;">
           ${title ? `<h2 style="margin:0 0 12px;color:${emailBrand.colors.ink};font-size:15px;line-height:1.3;font-weight:800;">${escapeHtml(title)}</h2>` : ""}
           ${html}
         </div>

@@ -114,8 +114,9 @@ export function ShopHeader({
               width={96}
             />
             <span className="flex flex-col leading-none">
-              <span className="text-2xl font-black tracking-normal text-[#111827] sm:text-3xl">
-                NerdLingoLab
+              <span className="text-2xl font-black tracking-normal sm:text-3xl">
+                <span className="text-[#ff6902]">Nerd</span>
+                <span className="text-[#7c1fe6]">LingoLab</span>
               </span>
               <span className="mt-1 text-xs font-bold uppercase tracking-[0.08em] text-[#ff6902]">
                 Loja geek oficial

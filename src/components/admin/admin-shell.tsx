@@ -45,9 +45,9 @@ interface AdminShellProps {
 
 export function AdminShell({ children, shippingAlertCount = 0 }: AdminShellProps): React.ReactElement {
   return (
-    <div className="min-h-screen overflow-x-hidden bg-muted">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r bg-background p-4 lg:flex">
-        <a className="block shrink-0 px-2 text-lg font-bold tracking-normal" href="/admin/dashboard">
+    <div className="admin-shell min-h-screen overflow-x-hidden bg-background">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-primary/30 bg-card p-4 shadow-lg lg:flex">
+        <a className="block shrink-0 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-lg font-bold tracking-normal text-foreground" href="/admin/dashboard">
           NerdLingoLab
         </a>
         <nav className="mt-6 grid min-h-0 flex-1 gap-5 overflow-y-auto pr-1">
@@ -66,17 +66,17 @@ export function AdminShell({ children, shippingAlertCount = 0 }: AdminShellProps
             </div>
           ))}
         </nav>
-        <div className="mt-4 shrink-0 space-y-2 border-t pt-4">
+        <div className="mt-4 shrink-0 space-y-2 border-t border-primary/25 pt-4">
           <ThemeToggle />
           <form action={signOutFromAdmin}>
-            <Button className="w-full" type="submit" variant="outline">
+            <Button className="w-full" type="submit" variant="destructive">
               Sair
             </Button>
           </form>
         </div>
       </aside>
       <div className="min-w-0 overflow-x-hidden lg:pl-64">
-        <header className="sticky top-0 z-30 border-b bg-background/95 px-4 py-3 backdrop-blur lg:hidden">
+        <header className="sticky top-0 z-30 border-b border-primary/30 bg-card/95 px-4 py-3 backdrop-blur lg:hidden">
           <div className="flex items-center justify-between">
             <a className="font-bold" href="/admin/dashboard">
               NerdLingoLab
@@ -84,7 +84,7 @@ export function AdminShell({ children, shippingAlertCount = 0 }: AdminShellProps
             <form action={signOutFromAdmin}>
               <div className="flex items-center gap-1">
                 <ThemeToggle compact />
-                <Button size="sm" type="submit" variant="outline">
+                <Button size="sm" type="submit" variant="destructive">
                   Sair
                 </Button>
               </div>
@@ -93,7 +93,7 @@ export function AdminShell({ children, shippingAlertCount = 0 }: AdminShellProps
           <nav className="mt-3 flex gap-1 overflow-x-auto">
             {adminLinks.map((link) => (
               <a
-                className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg px-3 text-sm font-medium text-foreground transition hover:bg-muted"
+                className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-primary/25 px-3 text-sm font-medium text-foreground transition hover:border-primary hover:bg-primary/10"
                 href={link.href}
                 key={link.href}
               >
@@ -127,7 +127,7 @@ function AdminNavLink({
   return (
     <a
       className={cn(
-        "flex h-9 min-w-0 items-center rounded-lg px-2 text-sm font-medium text-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        "flex h-9 min-w-0 items-center rounded-lg border border-transparent px-2 text-sm font-medium text-foreground transition hover:border-primary/35 hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       )}
       href={href}
     >

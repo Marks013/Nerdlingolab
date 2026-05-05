@@ -563,6 +563,13 @@ model Order {
   billingAddress                Json?
   customerSnapshot              Json              @default("{}")
   customerNote                  String?           @db.Text
+  cancellationReason            String?           @db.Text
+  canceledByUserId              String?
+  refundedAt                    DateTime?
+  refundAmountCents             Int?
+  refundProviderId              String?
+  refundStatus                  String?
+  refundIdempotencyKey          String?
   paidAt                        DateTime?
   canceledAt                    DateTime?
   createdAt                     DateTime          @default(now())
@@ -737,7 +744,7 @@ model ProductReview {
   variantId       String?
   orderId         String
   orderItemId     String                   @unique
-  userId          String
+  userId          String?
   rating          Int
   title           String?
   body            String                   @db.Text
@@ -759,7 +766,7 @@ model ProductReview {
   variant      ProductVariant?      @relation(fields: [variantId], references: [id], onDelete: SetNull)
   order        Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
   orderItem    OrderItem            @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
-  user         User                 @relation("ProductReviewAuthor", fields: [userId], references: [id], onDelete: Cascade)
+  user         User?                @relation("ProductReviewAuthor", fields: [userId], references: [id], onDelete: SetNull)
   reviewedBy   User?                @relation("ProductReviewModerator", fields: [reviewedById], references: [id], onDelete: SetNull)
   rewardCoupon Coupon?              @relation("ProductReviewRewardCoupons", fields: [rewardCouponId], references: [id], onDelete: SetNull)
   media        ProductReviewMedia[]
@@ -822,7 +829,7 @@ model LoyaltyPoints {
 
 model LoyaltyLedger {
   id             String            @id @default(cuid())
-  userId         String
+  userId         String?
   orderId        String?
   type           LoyaltyLedgerType
   pointsDelta    Int
@@ -837,7 +844,7 @@ model LoyaltyLedger {
   metadata       Json              @default("{}")
   createdAt      DateTime          @default(now())
 
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
   order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])

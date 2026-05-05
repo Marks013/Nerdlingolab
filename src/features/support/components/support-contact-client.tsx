@@ -243,7 +243,7 @@ export function SupportContactClient({
             </p>
           ) : null}
           <button
-            className="mt-5 inline-flex h-12 items-center justify-center rounded-lg bg-primary px-5 text-sm font-black text-white transition hover:bg-[#d85b00] disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-5 inline-flex h-12 items-center justify-center rounded-lg bg-emerald-600 px-5 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={status === "sending"}
             type="submit"
           >
@@ -427,7 +427,7 @@ function SupportTicketCard({
             value={reopenReason}
           />
           <button
-            className="mt-2 inline-flex h-10 items-center rounded-lg border px-3 text-sm font-black text-black transition hover:border-primary hover:text-primary disabled:opacity-50"
+            className="mt-2 inline-flex h-10 items-center rounded-lg bg-orange-600 px-3 text-sm font-black text-white transition hover:bg-orange-700 disabled:opacity-50"
             disabled={reopenReason.trim().length < 10}
             onClick={() => onReopen(reopenReason)}
             type="button"

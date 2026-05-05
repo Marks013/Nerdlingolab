@@ -73,3 +73,43 @@ export async function decrementInventoryForOrder(
     });
   }
 }
+
+export async function restoreInventoryForCanceledOrder(
+  tx: TransactionClient,
+  order: PaidOrder
+): Promise<void> {
+  for (const item of order.items) {
+    if (!item.variantId) {
+      continue;
+    }
+
+    await tx.productVariant.update({
+      where: { id: item.variantId },
+      data: {
+        stockQuantity: {
+          increment: item.quantity
+        }
+      }
+    });
+    const updatedVariant = await tx.productVariant.findUniqueOrThrow({
+      where: { id: item.variantId }
+    });
+
+    await tx.inventoryLedger.upsert({
+      where: {
+        idempotencyKey: `stock:refund:${order.id}:${item.id}`
+      },
+      create: {
+        productId: item.productId,
+        variantId: item.variantId,
+        orderId: order.id,
+        type: InventoryLedgerType.RETURN,
+        quantityDelta: item.quantity,
+        quantityAfter: updatedVariant.stockQuantity,
+        reason: `Cancelamento do pedido ${order.orderNumber}`,
+        idempotencyKey: `stock:refund:${order.id}:${item.id}`
+      },
+      update: {}
+    });
+  }
+}

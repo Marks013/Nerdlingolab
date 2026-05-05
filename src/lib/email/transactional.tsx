@@ -12,12 +12,14 @@ import {
   buildInfoGrid,
   buildNoticeHtml,
   escapeHtml,
+  formatMultilineText,
   getEmailBaseUrl
 } from "@/lib/email/branded-template";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { getAdminOrderById } from "@/lib/orders/queries";
 import type { PasswordResetToken } from "@/lib/password-reset";
 import { getAppBaseUrl } from "@/lib/password-reset";
+import { prisma } from "@/lib/prisma";
 
 const emailFrom = process.env.EMAIL_FROM ?? "NerdLingoLab <no-reply@nerdlingolab.com>";
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -42,6 +44,84 @@ export async function sendOrderPaidEmail(orderId: string): Promise<void> {
     orderId,
     subjectPrefix: "Pagamento aprovado"
   });
+}
+
+export async function sendOrderCanceledEmail({
+  cancellationReason,
+  orderId
+}: {
+  cancellationReason: string;
+  orderId: string;
+}): Promise<void> {
+  if (!resend) {
+    return;
+  }
+
+  try {
+    const order = await getAdminOrderById(orderId);
+
+    if (!order) {
+      return;
+    }
+
+    const customerSnapshot = order.customerSnapshot as Record<string, string | undefined>;
+    const customerName = order.user?.name ?? customerSnapshot.name ?? order.email;
+    const orderUrl = `${getEmailBaseUrl()}/conta/pedidos/${order.id}`;
+    const variables = {
+      cancellationReason,
+      customerName,
+      orderNumber: order.orderNumber,
+      orderTotal: formatCurrency(order.totalCents),
+      orderUrl,
+      supportEmail: process.env.SUPPORT_EMAIL ?? "nerdlingolab@gmail.com"
+    };
+    const template = await prismaNotificationTemplate("order_canceled");
+    const subject = renderNotificationText(template?.subject ?? "Pedido {{orderNumber}} cancelado", variables);
+    const body = renderNotificationText(
+      template?.body ??
+        "Olá, {{customerName}}! O pedido {{orderNumber}} foi cancelado. Justificativa: {{cancellationReason}}",
+      variables
+    );
+    const ctaHref = resolveEmailHref(renderNotificationText(template?.ctaHref ?? orderUrl, variables));
+    const ctaLabel = renderNotificationText(template?.ctaLabel ?? "Ver meus pedidos", variables);
+    const html = buildBrandedEmailHtml({
+      cta: {
+        href: ctaHref,
+        label: ctaLabel
+      },
+      eyebrow: "Cancelamento de pedido",
+      footerNote: "Se tiver dúvidas sobre o cancelamento, responda este e-mail ou acesse o suporte.",
+      introHtml: `<p style="margin:0;">${formatMultilineText(body)}</p>`,
+      preheader: renderNotificationText(
+        template?.previewText ?? "Seu pedido foi cancelado com justificativa da equipe.",
+        variables
+      ),
+      sections: [
+        {
+          html: buildInfoGrid([
+            { label: "Pedido", value: order.orderNumber },
+            { label: "Total", value: formatCurrency(order.totalCents) },
+            { label: "Status", value: "Cancelado" }
+          ]),
+          title: "Resumo do pedido"
+        },
+        {
+          html: buildNoticeHtml(cancellationReason),
+          title: "Justificativa"
+        }
+      ],
+      title: `Pedido ${order.orderNumber} cancelado`
+    });
+
+    await resend.emails.send({
+      from: emailFrom,
+      html,
+      subject,
+      to: order.email
+    });
+  } catch (error) {
+    Sentry.captureException(error);
+  }
 }
 
 export async function sendPasswordResetEmail(resetToken: PasswordResetToken, baseUrl = getAppBaseUrl()): Promise<void> {
@@ -85,6 +165,24 @@ export async function sendPasswordResetEmail(resetToken: PasswordResetToken, bas
   } catch (error) {
     Sentry.captureException(error);
   }
+}
+
+async function prismaNotificationTemplate(templateKey: string) {
+  return prisma.notificationTemplate.findUnique({
+    where: { templateKey }
+  }).then((template) => template?.isActive ? template : null);
+}
+
+function renderNotificationText(value: string, variables: Record<string, string>): string {
+  return value.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_match, key: string) => variables[key] ?? "");
+}
+
+function resolveEmailHref(href: string): string {
+  if (/^https?:\/\//i.test(href)) {
+    return href;
+  }
+
+  return `${getEmailBaseUrl()}${href.startsWith("/") ? href : `/${href}`}`;
 }
 
 export async function sendShipmentOverdueAdminEmail({

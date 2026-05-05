@@ -40,7 +40,7 @@ export function ProductReviewsSection({ reviews, summary }: ProductReviewsSectio
                 <div>
                   <p className="font-semibold">{review.title ?? "Avaliação do produto"}</p>
                   <p className="text-sm text-muted-foreground">
-                    {getDisplayName(review.user.name, review.user.email)} · {formatDateTime(review.publishedAt)}
+                    {getDisplayName(review.user?.name ?? null, review.user?.email ?? null)} · {formatDateTime(review.publishedAt)}
                   </p>
                 </div>
                 <div aria-label={`${review.rating} de 5 estrelas`} className="flex text-primary">
@@ -74,10 +74,10 @@ export function ProductReviewsSection({ reviews, summary }: ProductReviewsSectio
   );
 }
 
-function getDisplayName(name: string | null, email: string): string {
+function getDisplayName(name: string | null, email: string | null): string {
   if (name?.trim()) {
     return name.trim();
   }
 
-  return email.split("@")[0] ?? "Cliente";
+  return email?.split("@")[0] ?? "Cliente";
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-import { anonymizeCustomerAccount, sendCustomerPasswordReset, updateCustomerAdminNotes } from "@/actions/admin-customers";
+import { deleteCustomerAccountByAdmin } from "@/actions/account-deletion";
+import { sendCustomerPasswordReset, updateCustomerAdminNotes } from "@/actions/admin-customers";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatOrderStatus, formatPaymentStatus } from "@/features/orders/status-labels";
@@ -44,6 +45,9 @@ export default async function AdminCustomersPage({
       ) : null}
       {readSearchParam(resolvedSearchParams?.notes) === "saved" ? (
         <SuccessMessage>Observacoes internas salvas.</SuccessMessage>
+      ) : null}
+      {readSearchParam(resolvedSearchParams?.account) === "deleted" ? (
+        <SuccessMessage>Conta excluida definitivamente. Pedidos foram preservados com snapshot do cliente.</SuccessMessage>
       ) : null}
 
       <div className="mt-6 grid gap-4 md:grid-cols-4">
@@ -162,10 +166,19 @@ function CustomerProfile({ customer }: { customer: AdminCustomer }): React.React
                 <input name="customerId" type="hidden" value={customer.id} />
                 <Button className="h-10 px-4" type="submit" variant="outline">Enviar reset de senha</Button>
               </form>
-              <form action={anonymizeCustomerAccount}>
+              <form action={deleteCustomerAccountByAdmin} className="grid gap-2 rounded-lg border border-red-200 bg-red-50/60 p-3">
                 <input name="customerId" type="hidden" value={customer.id} />
-                <Button className="h-10 border-destructive px-4 text-destructive hover:bg-destructive hover:text-destructive-foreground" type="submit" variant="outline">
-                  Remover dados pessoais
+                <label className="grid gap-1 text-xs font-semibold text-red-900">
+                  Digite EXCLUIR para apagar a conta
+                  <input
+                    className="h-9 rounded-lg border border-red-300 bg-white px-3 text-sm text-red-950"
+                    name="confirmDelete"
+                    placeholder="EXCLUIR"
+                    required
+                  />
+                </label>
+                <Button className="h-10 px-4" type="submit" variant="destructive">
+                  Excluir conta definitivamente
                 </Button>
               </form>
             </>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { Coins, Gift, History, Share2, TicketPercent, Trophy } from "lucide-react";
 
 import { convertNerdcoinsToCoupon } from "@/actions/loyalty";
 import { Button } from "@/components/ui/button";
@@ -81,27 +82,47 @@ export default async function AccountNerdcoinsPage(): Promise<React.ReactElement
   return (
     <main className="geek-page min-h-screen px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
-      <Link className="text-sm text-muted-foreground" href="/conta">Conta</Link>
-      <h1 className="geek-title mt-3 text-3xl font-bold tracking-normal">Meus Nerdcoins</h1>
-      <p className="mt-2 max-w-2xl text-muted-foreground">
-        Acompanhe saldo, histórico e converta pontos em cupons exclusivos da sua conta.
-      </p>
+      <Link className="text-sm font-semibold text-primary underline-offset-4 hover:underline" href="/conta">Conta</Link>
+      <section className="mt-3 overflow-hidden rounded-lg border border-primary/30 bg-card shadow-md">
+        <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+          <div>
+            <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+              <Coins className="mr-2 h-4 w-4" />
+              Clube NerdLingoLab
+            </span>
+            <h1 className="mt-4 text-balance text-3xl font-black tracking-normal text-foreground sm:text-4xl">
+              Seus Nerdcoins viram cupons, vantagens e progresso VIP.
+            </h1>
+            <p className="mt-3 max-w-2xl text-pretty text-muted-foreground">
+              Acompanhe saldo, historico, indicacoes e resgates em um painel unico da sua conta.
+            </p>
+          </div>
+          <div className="rounded-lg border border-primary/30 bg-primary/10 p-5">
+            <p className="text-sm font-bold text-muted-foreground">Saldo disponivel</p>
+            <p className="mt-2 text-4xl font-black text-primary">{loyaltyPoints.balance}</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">Nerdcoins</p>
+          </div>
+        </div>
+      </section>
 
       <section className="mt-6 grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card className="border-primary/35 bg-primary/10">
           <CardHeader>
-            <CardDescription>Saldo disponível</CardDescription>
+            <Coins className="h-5 w-5 text-primary" />
+            <CardDescription>Saldo disponivel</CardDescription>
             <CardTitle>{loyaltyPoints.balance} Nerdcoins</CardTitle>
           </CardHeader>
         </Card>
-        <Card>
+        <Card className="border-primary/35 bg-orange-50/80 dark:bg-orange-950/20">
           <CardHeader>
-            <CardDescription>Nível atual</CardDescription>
+            <Trophy className="h-5 w-5 text-primary" />
+            <CardDescription>Nivel atual</CardDescription>
             <CardTitle>{loyaltyTierLabels[loyaltyPoints.tier]}</CardTitle>
           </CardHeader>
         </Card>
-        <Card>
+        <Card className="border-primary/35 bg-emerald-50/80 dark:bg-emerald-950/20">
           <CardHeader>
+            <Gift className="h-5 w-5 text-emerald-700 dark:text-emerald-300" />
             <CardDescription>Total ganho</CardDescription>
             <CardTitle>{loyaltyPoints.lifetimeEarned}</CardTitle>
             <CardDescription>
@@ -149,6 +170,7 @@ export default async function AccountNerdcoinsPage(): Promise<React.ReactElement
               type="number"
             />
             <Button disabled={!settings.isEnabled || loyaltyPoints.balance < settings.minRedeemPoints} type="submit">
+              <TicketPercent className="mr-2 h-4 w-4" />
               Gerar cupom
             </Button>
           </form>
@@ -157,7 +179,10 @@ export default async function AccountNerdcoinsPage(): Promise<React.ReactElement
 
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>Indique e ganhe</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Share2 className="h-5 w-5 text-primary" />
+            Indique e ganhe
+          </CardTitle>
           <CardDescription>
             Seu convidado ganha {settings.referralInviteeBonusPoints} Nerdcoins no cadastro. Voce ganha {settings.referralInviterBonusPoints} quando a primeira compra for aprovada.
           </CardDescription>
@@ -187,7 +212,10 @@ export default async function AccountNerdcoinsPage(): Promise<React.ReactElement
       <section className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Cupons gerados</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <TicketPercent className="h-5 w-5 text-primary" />
+              Cupons gerados
+            </CardTitle>
             <CardDescription>Estes códigos são pessoais e não aparecem na vitrine pública.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -209,7 +237,10 @@ export default async function AccountNerdcoinsPage(): Promise<React.ReactElement
 
         <Card>
           <CardHeader>
-            <CardTitle>Histórico</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <History className="h-5 w-5 text-primary" />
+              Historico
+            </CardTitle>
             <CardDescription>Movimentações auditáveis do seu saldo.</CardDescription>
           </CardHeader>
           <CardContent>

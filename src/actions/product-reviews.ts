@@ -234,6 +234,10 @@ export async function publishProductReview(reviewId: string, formData: FormData)
       rewardGrantedAt = new Date();
 
       if (settings.rewardMode === ProductReviewRewardMode.COUPON && settings.couponValueCents > 0) {
+        if (!review.userId) {
+          throw new Error("Avaliação sem usuário ativo não pode receber recompensa.");
+        }
+
         const couponCode = `AVALIA${review.id.replace(/[^a-z0-9]/gi, "").slice(-8).toUpperCase()}`;
         const coupon = await tx.coupon.create({
           data: {
@@ -252,6 +256,10 @@ export async function publishProductReview(reviewId: string, formData: FormData)
       }
 
       if (settings.rewardMode === ProductReviewRewardMode.NERDCOINS && settings.nerdcoinsRewardPoints > 0) {
+        if (!review.userId) {
+          throw new Error("Avaliação sem usuário ativo não pode receber recompensa.");
+        }
+
         const current = await tx.loyaltyPoints.upsert({
           create: { userId: review.userId },
           update: {},

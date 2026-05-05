@@ -88,6 +88,31 @@ textarea {
   -webkit-tap-highlight-color: transparent;
 }
 
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  border-color: hsl(var(--primary) / 0.45);
+  border-radius: 0.75rem;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus,
+textarea:focus {
+  border-color: hsl(var(--primary));
+  outline: 2px solid hsl(var(--primary) / 0.24);
+  outline-offset: 2px;
+}
+
+form.rounded-lg,
+form.rounded-xl,
+form.rounded-2xl,
+.form-shell {
+  border: 1px solid hsl(var(--primary) / 0.34);
+  box-shadow:
+    5px 5px 0 hsl(var(--primary) / 0.07),
+    0 12px 30px hsl(var(--nl-ink) / 0.07);
+}
+
 .surface-polished {
   background:
     radial-gradient(circle at top left, hsl(var(--primary) / 0.12), transparent 34rem),
@@ -163,6 +188,58 @@ textarea {
   box-shadow:
     5px 5px 0 hsl(var(--primary) / 0.07),
     0 12px 30px hsl(var(--nl-ink) / 0.07);
+}
+
+.admin-shell {
+  background:
+    linear-gradient(90deg, hsl(var(--primary) / 0.055) 1px, transparent 1px),
+    linear-gradient(hsl(var(--secondary) / 0.035) 1px, transparent 1px),
+    hsl(var(--background));
+  background-size: 42px 42px, 42px 42px, auto;
+}
+
+.admin-shell .bg-white,
+.admin-shell .bg-background,
+.admin-shell .bg-card {
+  background-color: hsl(var(--card) / 0.94);
+}
+
+.admin-shell .text-black {
+  color: hsl(var(--foreground));
+}
+
+.admin-shell .text-\[\#4f5d65\],
+.admin-shell .text-\[\#677279\],
+.admin-shell .text-muted-foreground {
+  color: hsl(var(--muted-foreground));
+}
+
+.admin-shell .border,
+.admin-shell .border-r,
+.admin-shell .border-b,
+.admin-shell .border-t {
+  border-color: hsl(var(--primary) / 0.30);
+}
+
+.admin-shell main,
+.admin-shell section,
+.admin-shell article,
+.admin-shell aside,
+.admin-shell .rounded-lg,
+.admin-shell .rounded-xl,
+.admin-shell .rounded-2xl {
+  color: hsl(var(--foreground));
+}
+
+.admin-shell .rounded-lg.bg-white,
+.admin-shell .rounded-xl.bg-white,
+.admin-shell .rounded-2xl.bg-white,
+.admin-shell .rounded-lg.border,
+.admin-shell .rounded-xl.border,
+.admin-shell .rounded-2xl.border {
+  box-shadow:
+    5px 5px 0 hsl(var(--primary) / 0.06),
+    0 12px 30px hsl(var(--nl-ink) / 0.06);
 }
 
 .geek-title {

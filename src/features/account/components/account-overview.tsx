@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Truck } from "lucide-react";
 import { useState } from "react";
 
+import { deleteOwnCustomerAccount } from "@/actions/account-deletion";
 import {
   createCustomerAddress,
   deleteCustomerAddress,
@@ -37,7 +38,15 @@ type AddressDraft = {
 };
 
 export function AccountOverview({ account, confirmedAddressLabel }: AccountOverviewProps): React.ReactElement {
+  const initialProfileDraft = {
+    birthday: formatBirthdayInput(account.user.birthday),
+    cpf: formatCpf(account.user.cpf),
+    name: account.user.name ?? "",
+    phone: account.user.phone ?? ""
+  };
   const [displayName, setDisplayName] = useState(account.user.name ?? "Minha conta");
+  const [savedProfileDraft, setSavedProfileDraft] = useState(initialProfileDraft);
+  const [profileDraft, setProfileDraft] = useState(initialProfileDraft);
   const addresses = account.addresses;
   const isGoogleLinked = account.accounts.some((linkedAccount) => linkedAccount.provider === "google");
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(addresses.length === 0);
@@ -59,6 +68,15 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
     confirmedAddressLabel && !addresses.some((address) => address.label === confirmedAddressLabel)
       ? confirmedAddressLabel
       : draftAddressLabel;
+  const isProfileDirty =
+    profileDraft.name !== savedProfileDraft.name ||
+    profileDraft.phone !== savedProfileDraft.phone ||
+    profileDraft.cpf !== savedProfileDraft.cpf ||
+    profileDraft.birthday !== savedProfileDraft.birthday;
+
+  function updateProfileDraft(field: keyof typeof initialProfileDraft, value: string): void {
+    setProfileDraft((currentDraft) => ({ ...currentDraft, [field]: value }));
+  }
 
   function storeDraftAddress(form: HTMLFormElement): void {
     const formData = new FormData(form);
@@ -137,32 +155,55 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
             <CardDescription>{account.user.email}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <form action={updateCustomerProfile} className="grid gap-3">
+            <form
+              action={updateCustomerProfile}
+              className="grid gap-3"
+              onSubmit={() => setSavedProfileDraft(profileDraft)}
+            >
               <label className="grid gap-2 text-sm font-medium">
                 Nome
                 <Input
-                  defaultValue={account.user.name ?? ""}
                   name="name"
-                  onChange={(event) => setDisplayName(event.target.value.trim() || "Minha conta")}
+                  onChange={(event) => {
+                    updateProfileDraft("name", event.target.value);
+                    setDisplayName(event.target.value.trim() || "Minha conta");
+                  }}
                   required
+                  value={profileDraft.name}
                 />
               </label>
               <label className="grid gap-2 text-sm font-medium">
                 Telefone
-                <Input defaultValue={account.user.phone ?? ""} name="phone" />
+                <Input
+                  name="phone"
+                  onChange={(event) => updateProfileDraft("phone", event.target.value)}
+                  value={profileDraft.phone}
+                />
               </label>
               <label className="grid gap-2 text-sm font-medium">
                 CPF
-                <Input defaultValue={formatCpf(account.user.cpf)} inputMode="numeric" name="cpf" />
+                <Input
+                  inputMode="numeric"
+                  name="cpf"
+                  onChange={(event) => updateProfileDraft("cpf", event.target.value)}
+                  value={profileDraft.cpf}
+                />
               </label>
               <label className="grid gap-2 text-sm font-medium">
                 Nascimento
-                <Input defaultValue={formatBirthdayInput(account.user.birthday)} name="birthday" type="date" />
+                <Input
+                  name="birthday"
+                  onChange={(event) => updateProfileDraft("birthday", event.target.value)}
+                  type="date"
+                  value={profileDraft.birthday}
+                />
               </label>
-              <Button type="submit">Salvar dados</Button>
+              <Button type={isProfileDirty ? "submit" : "button"} variant={isProfileDirty ? "default" : "outline"}>
+                {isProfileDirty ? "Salvar dados" : "Dados salvos"}
+              </Button>
             </form>
             <form action={signOutFromCustomer} className="orange-divider pt-4">
-              <Button className="w-full" type="submit" variant="outline">
+              <Button className="w-full" type="submit" variant="destructive">
                 Sair da conta
               </Button>
             </form>
@@ -217,6 +258,25 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
             </Button>
           </CardContent>
         </Card>
+        <Card className="border-red-200 bg-red-50/70 dark:bg-red-950/20">
+          <CardHeader>
+            <CardTitle>Excluir conta</CardTitle>
+            <CardDescription>
+              Remove definitivamente seu login e dados da conta. Pedidos ficam preservados para histórico da compra.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form action={deleteOwnCustomerAccount} className="grid gap-3">
+              <label className="grid gap-2 text-sm font-medium">
+                Digite EXCLUIR para confirmar
+                <Input name="confirmDelete" placeholder="EXCLUIR" required />
+              </label>
+              <Button type="submit" variant="destructive">
+                Excluir minha conta definitivamente
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader>
             <CardTitle>Endereços de entrega</CardTitle>
@@ -253,7 +313,7 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
                       </form>
                     ) : null}
                     <form action={deleteCustomerAddress.bind(null, address.id)}>
-                      <Button size="sm" type="submit" variant="ghost">
+                      <Button size="sm" type="submit" variant="destructive">
                         Remover
                       </Button>
                     </form>

@@ -15,7 +15,7 @@ import { getProductReviewSettings } from "@/lib/reviews/settings";
 
 export type PublishedProductReview = ProductReview & {
   media: (ProductReviewMedia & { asset: MediaAsset })[];
-  user: Pick<User, "name" | "email" | "image">;
+  user: Pick<User, "name" | "email" | "image"> | null;
   variant: Pick<ProductVariant, "title" | "optionValues"> | null;
 };
 
@@ -29,7 +29,7 @@ export type AdminProductReview = ProductReview & {
   order: Pick<Order, "id" | "orderNumber" | "createdAt">;
   product: Pick<Product, "id" | "title" | "slug">;
   rewardCoupon: Pick<Coupon, "id" | "code" | "value"> | null;
-  user: Pick<User, "id" | "name" | "email">;
+  user: Pick<User, "id" | "name" | "email"> | null;
   variant: Pick<ProductVariant, "title" | "optionValues"> | null;
 };
 

@@ -58,7 +58,7 @@ export default async function AdminShippingPage(): Promise<React.ReactElement> {
                     </p>
                   </div>
                   <form action={deleteManualShippingRate.bind(null, rate.id)}>
-                    <Button className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" type="submit" variant="outline">
+                    <Button type="submit" variant="destructive">
                       Excluir frete
                     </Button>
                   </form>

@@ -172,7 +172,7 @@ function ReviewCard({ review }: { review: AdminProductReview }): React.ReactElem
           </div>
           <h3 className="mt-2 font-semibold text-pretty">{review.title ?? review.product.title}</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            {review.user.name ?? review.user.email} · pedido{" "}
+            {review.user?.name ?? review.user?.email ?? "Cliente excluído"} · pedido{" "}
             <Link className="font-medium text-primary hover:underline" href={`/admin/pedidos/${review.order.id}`}>
               {review.order.orderNumber}
             </Link>

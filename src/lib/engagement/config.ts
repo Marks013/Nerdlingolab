@@ -91,6 +91,16 @@ export const defaultNotificationTemplates = [
     cooldownHours: 1
   },
   {
+    templateKey: "order_canceled",
+    name: "Pedido cancelado",
+    subject: "Pedido {{orderNumber}} cancelado",
+    previewText: "Seu pedido foi cancelado com justificativa da equipe.",
+    body: "Olá, {{customerName}}! O pedido {{orderNumber}} foi cancelado. Justificativa: {{cancellationReason}}",
+    ctaLabel: "Ver meus pedidos",
+    ctaHref: "/conta",
+    cooldownHours: 1
+  },
+  {
     templateKey: "shipment_overdue",
     name: "Entrega em atraso",
     subject: "Estamos acompanhando o atraso do pedido {{orderNumber}}",

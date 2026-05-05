@@ -208,7 +208,7 @@ export default async function AdminLoyaltyPage({
               {dashboard.recentActivity.map((entry) => (
                 <div className="grid gap-1 p-3 text-sm md:grid-cols-[1fr_120px_160px]" key={entry.id}>
                   <div>
-                    <p className="font-medium">{entry.user.name ?? entry.user.email}</p>
+                    <p className="font-medium">{entry.user?.name ?? entry.user?.email ?? "Cliente excluído"}</p>
                     <p className="text-muted-foreground">{entry.reason}</p>
                   </div>
                   <p className={entry.pointsDelta >= 0 ? "text-emerald-700" : "text-destructive"}>

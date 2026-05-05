@@ -48,6 +48,8 @@ export function ShopFooter({
 }: {
   theme: StorefrontThemeView;
 }): React.ReactElement {
+  const securityLinks = getSecurityVerificationLinks();
+
   return (
     <footer className="bg-white text-black">
       <section className="bg-primary text-white">
@@ -113,13 +115,13 @@ export function ShopFooter({
         <div>
           <h2 className="text-sm font-semibold">Segurança e Qualidade</h2>
           <div className="mt-5 flex flex-wrap items-center gap-2">
-            <SecurityLogoBadge href="https://safeweb.norton.com/" label="Norton Secured">
+            <SecurityLogoBadge href={securityLinks.norton} label="Norton Secured">
               <NortonLogo />
             </SecurityLogoBadge>
-            <SecurityLogoBadge href="https://www.reclameaqui.com.br/" label="Reclame Aqui">
+            <SecurityLogoBadge href={securityLinks.reclameAqui} label="Reclame Aqui">
               <ReclameAquiLogo />
             </SecurityLogoBadge>
-            <SecurityLogoBadge href="https://transparencyreport.google.com/safe-browsing/search" label="Google Safe Browsing">
+            <SecurityLogoBadge href={securityLinks.googleSafeBrowsing} label="Google Safe Browsing">
               <GoogleSafeLogo />
             </SecurityLogoBadge>
           </div>
@@ -187,11 +189,52 @@ function SecurityLogoBadge({
       aria-label={label}
       className="inline-flex h-10 min-w-[104px] items-center justify-center rounded-md border border-[#d9e0e4] bg-white px-2 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md"
       href={href}
+      rel="noopener noreferrer"
+      target="_blank"
       title={label}
     >
       {children}
     </Link>
   );
+}
+
+function getSecurityVerificationLinks(): {
+  googleSafeBrowsing: string;
+  norton: string;
+  reclameAqui: string;
+} {
+  const storefrontUrl = getStorefrontUrl();
+  const encodedUrl = encodeURIComponent(storefrontUrl);
+  const encodedDomain = encodeURIComponent(new URL(storefrontUrl).hostname);
+
+  return {
+    googleSafeBrowsing: `https://transparencyreport.google.com/safe-browsing/search?url=${encodedUrl}`,
+    norton: `https://safeweb.norton.com/report/show?url=${encodedUrl}`,
+    reclameAqui: `https://www.reclameaqui.com.br/busca/?q=${encodedDomain}`
+  };
+}
+
+function getStorefrontUrl(): string {
+  const configuredUrl =
+    process.env.APP_URL ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    "https://nerdlingolab.duckdns.org";
+
+  try {
+    const url = new URL(configuredUrl);
+
+    if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+      return "https://nerdlingolab.duckdns.org";
+    }
+
+    url.hash = "";
+    url.pathname = "/";
+    url.search = "";
+
+    return url.toString();
+  } catch {
+    return "https://nerdlingolab.duckdns.org";
+  }
 }
 
 function NortonLogo(): React.ReactElement {

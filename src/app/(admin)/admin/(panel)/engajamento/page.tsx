@@ -63,7 +63,7 @@ export default async function AdminEngagementPage(): Promise<React.ReactElement>
                 <PopupForm popup={popup} />
                 <form action={deleteMarketingPopup} className="mt-3">
                   <input name="id" type="hidden" value={popup.id} />
-                  <Button size="sm" type="submit" variant="outline">Excluir popup</Button>
+                  <Button size="sm" type="submit" variant="destructive">Excluir popup</Button>
                 </form>
               </div>
             ))}
@@ -87,7 +87,7 @@ export default async function AdminEngagementPage(): Promise<React.ReactElement>
             <CardHeader>
               <CardTitle>{template.name}</CardTitle>
               <CardDescription>
-                Variáveis úteis: {"{{customerName}}"}, {"{{cartUrl}}"}, {"{{resetUrl}}"}, {"{{couponCode}}"}.
+                Variáveis úteis: {"{{customerName}}"}, {"{{orderNumber}}"}, {"{{cancellationReason}}"}, {"{{cartUrl}}"}, {"{{resetUrl}}"}, {"{{couponCode}}"}.
               </CardDescription>
             </CardHeader>
             <CardContent>

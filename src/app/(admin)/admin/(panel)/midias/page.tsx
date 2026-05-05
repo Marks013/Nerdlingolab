@@ -45,7 +45,7 @@ export default async function AdminMediaPage({ searchParams }: AdminMediaPagePro
             {deletableAssetIds.map((assetId) => (
               <input key={assetId} name="assetIds" type="hidden" value={assetId} />
             ))}
-            <Button disabled={deletableAssetIds.length === 0} type="submit" variant="outline">
+            <Button disabled={deletableAssetIds.length === 0} type="submit" variant="destructive">
               <Trash2 className="mr-2 h-4 w-4" />
               Excluir não usadas
             </Button>
@@ -147,12 +147,12 @@ export default async function AdminMediaPage({ searchParams }: AdminMediaPagePro
                   <form action={deleteMediaAssetAction} className="col-span-2">
                     <input name="assetId" type="hidden" value={asset.id} />
                     <Button
-                      className="h-9 w-full border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:border-muted disabled:bg-muted disabled:text-muted-foreground"
+                      className="h-9 w-full"
                       disabled={asset.usages.length > 0}
                       size="sm"
                       title={asset.usages.length > 0 ? "Remova os vinculos antes de excluir" : "Excluir arquivo"}
                       type="submit"
-                      variant="outline"
+                      variant="destructive"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Excluir arquivo

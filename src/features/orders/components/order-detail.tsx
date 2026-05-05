@@ -33,6 +33,7 @@ export function OrderDetail({ order }: OrderDetailProps): React.ReactElement {
         </Card>
 
         <OrderItemsCard order={order} />
+        <CancellationCard order={order} />
         <CustomerNoteCard order={order} />
         <ShippingCard order={order} />
         <LedgerCard order={order} />
@@ -55,6 +56,38 @@ export function OrderDetail({ order }: OrderDetailProps): React.ReactElement {
         <OrderActions order={order} />
       </div>
     </div>
+  );
+}
+
+function CancellationCard({ order }: OrderDetailProps): React.ReactElement | null {
+  if (!order.cancellationReason) {
+    return null;
+  }
+
+  return (
+    <Card className="border-orange-200 bg-orange-50/70 dark:bg-orange-950/20">
+      <CardHeader>
+        <CardTitle>Cancelamento</CardTitle>
+        <CardDescription>
+          {order.refundedAt
+            ? `Reembolso registrado em ${formatDateTime(order.refundedAt)}`
+            : order.canceledAt
+              ? `Cancelado em ${formatDateTime(order.canceledAt)}`
+              : "Pedido cancelado"}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-3 text-sm">
+        <p className="whitespace-pre-wrap rounded-md border bg-background p-4 leading-6">
+          {order.cancellationReason}
+        </p>
+        {order.refundStatus ? (
+          <StatusLine
+            label="Reembolso Mercado Pago"
+            value={`${order.refundStatus}${order.refundAmountCents ? ` / ${formatCurrency(order.refundAmountCents)}` : ""}`}
+          />
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
 

@@ -30,6 +30,7 @@ export type AdminOrderListItem = Order & {
 };
 
 export type AdminOrderDetail = Order & {
+  customerNote?: string | null;
   user: Pick<User, "id" | "name" | "email" | "cpf" | "phone"> | null;
   coupon: Coupon | null;
   items: OrderItem[];
@@ -45,6 +46,7 @@ export type CustomerOrderListItem = Order & {
 };
 
 export type CustomerOrderDetail = Order & {
+  customerNote?: string | null;
   items: (OrderItem & {
     review: (ProductReview & {
       media: (ProductReviewMedia & { asset: MediaAsset })[];

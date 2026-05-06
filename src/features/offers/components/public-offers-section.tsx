@@ -24,7 +24,7 @@ export function PublicOffersSection({
   }
 
   return (
-    <section id="ofertas-cupons" className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+    <section id="ofertas-cupons" className="w-full py-12">
       <div className="mb-7 rounded-lg border border-primary/25 bg-[#fff7ed] p-5 shadow-sm sm:p-7">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>

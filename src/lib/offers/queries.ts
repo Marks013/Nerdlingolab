@@ -85,9 +85,6 @@ export async function getPublicOffers({
       }),
       prisma.product.findMany({
         where: {
-          compareAtPriceCents: {
-            not: null
-          },
           status: ProductStatus.ACTIVE,
           variants: {
             some: {
@@ -97,6 +94,22 @@ export async function getPublicOffers({
               }
             }
           },
+          AND: [
+            {
+              OR: [
+                { compareAtPriceCents: { not: null } },
+                { tags: { hasSome: ["oferta", "ofertas", "promo", "promocao", "promoção"] } },
+                {
+                  category: {
+                    OR: [
+                      { name: { contains: "oferta", mode: "insensitive" } },
+                      { slug: { in: ["oferta", "ofertas", "promocoes", "promoções"] } }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
           OR: [{ categoryId: null }, { category: { isActive: true } }]
         },
         include: {
@@ -126,12 +139,43 @@ export async function getPublicOffers({
 
   return {
     coupons: eligibleCoupons.slice(0, couponLimit),
-    products: products.filter(
-      (product) =>
-        product.compareAtPriceCents !== null &&
-        product.compareAtPriceCents > product.priceCents
-    )
+    products: products.filter(isPublicOfferProduct)
   };
+}
+
+function isPublicOfferProduct(product: ProductListItem): boolean {
+  const hasPriceOffer = Boolean(
+    product.compareAtPriceCents && product.compareAtPriceCents > product.priceCents
+  );
+
+  return hasPriceOffer || isOfferCategory(product.category) || hasOfferTag(product.tags);
+}
+
+function isOfferCategory(category: ProductListItem["category"]): boolean {
+  if (!category) {
+    return false;
+  }
+
+  const categoryName = normalizeOfferText(category.name);
+  const categorySlug = normalizeOfferText(category.slug);
+
+  return categoryName.includes("oferta") || ["oferta", "ofertas", "promocao", "promocoes"].includes(categorySlug);
+}
+
+function hasOfferTag(tags: string[]): boolean {
+  return tags.some((tag) => {
+    const normalizedTag = normalizeOfferText(tag);
+
+    return ["oferta", "ofertas", "promo", "promocao", "promocoes"].includes(normalizedTag);
+  });
+}
+
+function normalizeOfferText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .trim()
+    .toLowerCase();
 }
 
 async function filterEligiblePublicCoupons<

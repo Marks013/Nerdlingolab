@@ -386,6 +386,7 @@ function formValuesToProductInput(formData: FormData): Record<string, FormDataEn
 
 function revalidateCatalogPaths(): void {
   revalidatePath("/admin/produtos");
+  revalidatePath("/ofertas");
   revalidatePath("/produtos");
 }
 

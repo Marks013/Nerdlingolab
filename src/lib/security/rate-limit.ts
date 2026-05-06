@@ -12,6 +12,7 @@ interface RateLimitBucket {
 }
 
 const buckets = new Map<string, RateLimitBucket>();
+let lastSweepAt = 0;
 
 function getClientKey(request: Request, name: string): string {
   const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
@@ -23,6 +24,9 @@ function getClientKey(request: Request, name: string): string {
 
 export function isRateLimitedKey(key: string, options: RateLimitOptions): boolean {
   const now = Date.now();
+
+  sweepExpiredBuckets(now);
+
   const currentBucket = buckets.get(key);
 
   if (!currentBucket || currentBucket.resetAt <= now) {
@@ -38,6 +42,20 @@ export function isRateLimitedKey(key: string, options: RateLimitOptions): boolea
   buckets.set(key, currentBucket);
 
   return false;
+}
+
+function sweepExpiredBuckets(now: number): void {
+  if (now - lastSweepAt < 60_000 && buckets.size < 10_000) {
+    return;
+  }
+
+  lastSweepAt = now;
+
+  for (const [key, bucket] of buckets) {
+    if (bucket.resetAt <= now) {
+      buckets.delete(key);
+    }
+  }
 }
 
 export function rateLimitRequest(

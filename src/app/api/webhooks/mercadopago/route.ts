@@ -32,28 +32,24 @@ export async function POST(request: Request): Promise<NextResponse> {
       provider: WebhookProvider.MERCADO_PAGO,
       externalEventId
     };
-    const existingWebhookEvent = await prisma.webhookEvent.findUnique({
+    const webhookEvent = await prisma.webhookEvent.upsert({
       where: {
         provider_externalEventId: webhookEventKey
+      },
+      create: {
+        provider: WebhookProvider.MERCADO_PAGO,
+        externalEventId,
+        payload: jsonPayload
+      },
+      update: {
+        payload: jsonPayload
       }
     });
 
-    if (existingWebhookEvent?.status === WebhookStatus.PROCESSED) {
+    if (webhookEvent.status === WebhookStatus.PROCESSED) {
       return NextResponse.json({ received: true, duplicate: true });
     }
 
-    const webhookEvent = existingWebhookEvent
-      ? await prisma.webhookEvent.update({
-          where: { id: existingWebhookEvent.id },
-          data: { payload: jsonPayload }
-        })
-      : await prisma.webhookEvent.create({
-          data: {
-            provider: WebhookProvider.MERCADO_PAGO,
-            externalEventId,
-            payload: jsonPayload
-          }
-        });
     const paymentId = getPaymentId(payload);
 
     if (!paymentId) {

@@ -133,7 +133,10 @@ function ProductShelf({
         <h2 className="relative pb-3 text-3xl font-medium text-black after:absolute after:bottom-0 after:left-0 after:h-1 after:w-[120px] after:rounded-full after:bg-primary">
           {title}
         </h2>
-        <Link className="text-sm font-bold text-primary hover:underline" href={href}>
+        <Link
+          className="rounded-md px-2 py-1 text-sm font-bold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          href={href}
+        >
           Ver todos
         </Link>
       </div>

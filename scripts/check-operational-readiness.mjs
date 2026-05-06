@@ -107,11 +107,11 @@ const criticalSourceContracts = [
   {
     filePath: "Dockerfile",
     snippets: [
-      ["build reproduzível", "RUN npm ci"],
+      ["build reproduzível", "npm ci"],
       ["build Next", "RUN npm run build"],
-      ["runtime sem tarefas administrativas no start", "CMD [\"npm\", \"run\", \"start\"]"],
-      ["scripts de bootstrap no runtime", "COPY --chown=node:node --from=builder /app/scripts ./scripts"],
-      ["dados Shopify no runtime", "COPY --chown=node:node --from=builder /app/data ./data"],
+      ["runtime standalone sem tarefas administrativas no start", "CMD [\"node\", \"server.js\"]"],
+      ["stage de bootstrap com scripts administrativos", "FROM base AS setup"],
+      ["stage de bootstrap gera Prisma", "RUN npm run prisma:generate"],
       ["runtime sem root", "USER node"]
     ]
   },
@@ -154,7 +154,7 @@ const criticalSourceContracts = [
     filePath: "src/app/(shop)/page.tsx",
     snippets: [
       ["home dinâmica", "export const dynamic = \"force-dynamic\""],
-      ["ofertas do banco", "getPublicOffers()"]
+      ["produtos recentes do banco", "getPublicProducts({ sort: \"recentes\" })"]
     ]
   },
   {
@@ -272,7 +272,7 @@ const criticalSourceContracts = [
   {
     filePath: "src/features/catalog/components/product-form.tsx",
     snippets: [
-      ["orienta imagem por variante", "_imageUrl=/uploads/azul.webp"]
+      ["orienta imagem por variante", "Ao vincular uma imagem, ela é aplicada nas variantes da mesma Cor + Sexo."]
     ]
   },
   {

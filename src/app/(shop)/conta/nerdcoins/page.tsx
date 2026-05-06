@@ -19,6 +19,11 @@ import { convertNerdcoinsToCoupon } from "@/actions/loyalty";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { NerdcoinsCouponForm } from "@/features/loyalty/components/nerdcoins-coupon-form";
+import {
+  AnimatedProgressMeter,
+  CopyCouponButton,
+  ShareReferralButton
+} from "@/features/loyalty/components/nerdcoins-interactions";
 import { auth } from "@/lib/auth";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { buildReferralSignupUrl, ensureReferralCode, getReferralStatusLabel } from "@/lib/loyalty/referrals";
@@ -103,7 +108,6 @@ export default async function AccountNerdcoinsPage({
   return (
     <main className="geek-page min-h-screen px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
-      <Link className="text-sm font-semibold text-primary underline-offset-4 hover:underline" href="/conta">Conta</Link>
       <section className="mt-3 overflow-hidden rounded-lg border border-primary/30 bg-card shadow-md">
         <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div>
@@ -217,8 +221,8 @@ export default async function AccountNerdcoinsPage({
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
-          <ProgressMeter label="Pedidos" value={vipProgress.orderPercent} />
-          <ProgressMeter label="Gasto acumulado" value={vipProgress.spendPercent} />
+          <AnimatedProgressMeter label="Pedidos" value={vipProgress.orderPercent} />
+          <AnimatedProgressMeter label="Gasto acumulado" value={vipProgress.spendPercent} />
         </CardContent>
       </Card>
 
@@ -256,7 +260,10 @@ export default async function AccountNerdcoinsPage({
         <CardContent className="grid gap-4">
           <div className="grid gap-2 text-sm">
             <span className="font-medium">Seu link</span>
-            <code className="overflow-x-auto rounded-lg border bg-muted px-3 py-2 text-xs">{referralUrl}</code>
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+              <code className="overflow-x-auto rounded-lg border bg-muted px-3 py-2 text-xs">{referralUrl}</code>
+              <ShareReferralButton referralUrl={referralUrl} />
+            </div>
           </div>
           <div className="divide-y rounded-lg border">
             {referralsSent.map((referral) => (
@@ -311,6 +318,7 @@ export default async function AccountNerdcoinsPage({
                       </code>
                     </div>
                     <p className="text-muted-foreground">Expira em {formatDateTime(coupon.expiresAt)}</p>
+                    <CopyCouponButton code={coupon.code} />
                     {coupon.usedCount === 0 ? (
                       <Button asChild className="w-full bg-emerald-600 text-white hover:bg-emerald-700">
                         <Link href="/carrinho">Usar no carrinho</Link>
@@ -399,20 +407,6 @@ function LedgerEntryCard({
 
 function readSearchParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function ProgressMeter({ label, value }: { label: string; value: number }): React.ReactElement {
-  return (
-    <div className="grid gap-2">
-      <div className="flex items-center justify-between text-sm">
-        <span className="font-medium">{label}</span>
-        <span className="text-muted-foreground">{value}%</span>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-primary" style={{ width: `${value}%` }} />
-      </div>
-    </div>
-  );
 }
 
 function MissionCard({

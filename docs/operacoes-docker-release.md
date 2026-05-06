@@ -43,6 +43,13 @@ Fluxo executado:
 9. Desliga manutencao se tudo passar.
 10. Grava manifesto em `ops/releases/release-YYYYMMDDHHMMSS.env`.
 
+O diretorio `ops/releases/` mantem somente os 5 manifestos mais recentes por padrao.
+Para alterar temporariamente:
+
+```bash
+RELEASE_MANIFEST_KEEP=3 nerd-build
+```
+
 Comando manual equivalente:
 
 ```bash
@@ -89,6 +96,11 @@ Rotas liberadas durante manutencao:
 - assets publicos essenciais
 
 ## Docker Compose
+
+Os servicos usam `json-file` com rotacao:
+
+- `max-size`: `10m`
+- `max-file`: `5`
 
 Ver containers:
 

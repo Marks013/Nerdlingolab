@@ -18,6 +18,7 @@ KEEP_MAINTENANCE_ON_FAILURE="${KEEP_MAINTENANCE_ON_FAILURE:-true}"
 STAMP="$(date -u +%Y%m%d%H%M%S)"
 MANIFEST_DIR="${MANIFEST_DIR:-ops/releases}"
 MANIFEST_PATH="${MANIFEST_DIR}/release-${STAMP}.env"
+RELEASE_MANIFEST_KEEP="${RELEASE_MANIFEST_KEEP:-5}"
 
 log() {
   printf '[release] %s\n' "$*"
@@ -114,6 +115,20 @@ smoke_request() {
   log "Smoke ${label}: HTTP ${status}"
 }
 
+prune_release_manifests() {
+  local keep="$1"
+
+  [[ "$keep" =~ ^[0-9]+$ ]] || keep=5
+  (( keep < 1 )) && keep=5
+
+  find "$MANIFEST_DIR" -maxdepth 1 -type f -name "release-*.env" -printf "%T@ %p\n" 2>/dev/null |
+    sort -nr |
+    awk -v keep="$keep" 'NR > keep { $1 = ""; sub(/^ /, ""); print }' |
+    while IFS= read -r old_manifest; do
+      [[ -n "$old_manifest" ]] && rm -f "$old_manifest"
+    done
+}
+
 on_error() {
   log "Release falhou."
   if [[ "$SKIP_MAINTENANCE" != "true" && "$KEEP_MAINTENANCE_ON_FAILURE" != "true" ]]; then
@@ -175,5 +190,7 @@ fi
   printf 'GIT_AFTER=%s\n' "$(git rev-parse --short HEAD 2>/dev/null || true)"
   printf 'RELEASE_FINISHED_AT=%s\n' "$(date -u +%Y%m%d%H%M%S)"
 } >> "$MANIFEST_PATH"
+
+prune_release_manifests "$RELEASE_MANIFEST_KEEP"
 
 log "Release concluida. Manifesto: ${MANIFEST_PATH}"

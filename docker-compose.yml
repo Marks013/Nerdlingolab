@@ -1,5 +1,11 @@
 name: nerdlingolab-commerce
 
+x-service-logging: &service-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 x-app-environment: &app-environment
   APP_URL: ${APP_URL:-http://localhost:3001}
   AUTH_URL: ${AUTH_URL:-${APP_URL:-http://localhost:3001}}
@@ -79,6 +85,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    logging: *service-logging
     networks:
       - commerce
 
@@ -102,6 +109,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    logging: *service-logging
     networks:
       - commerce
 
@@ -122,6 +130,7 @@ services:
         mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
         mc mb --ignore-existing "local/$$MINIO_BUCKET"
         mc anonymous set download "local/$$MINIO_BUCKET"
+    logging: *service-logging
     networks:
       - commerce
 
@@ -139,6 +148,7 @@ services:
     environment: *app-environment
     profiles:
       - setup
+    logging: *service-logging
     networks:
       - commerce
 
@@ -164,6 +174,7 @@ services:
     ports:
       - "${APP_HOST_PORT:-3001}:3000"
     restart: unless-stopped
+    logging: *service-logging
     networks:
       - commerce
 

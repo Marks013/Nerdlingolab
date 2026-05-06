@@ -49,38 +49,55 @@ export default async function AdminShippingPage(): Promise<React.ReactElement> {
               </div>
             ) : null}
             {rates.map((rate) => (
-              <div className="rounded-lg border p-4" key={rate.id}>
-                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <details className="group rounded-lg border bg-background" key={rate.id}>
+                <summary className="grid cursor-pointer list-none gap-3 p-4 transition hover:bg-muted/40 md:grid-cols-[minmax(220px,1fr)_120px_120px_minmax(180px,0.8fr)_24px] md:items-center">
                   <div className="min-w-0">
-                    <h3 className="font-semibold tracking-normal">{rate.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {rate.isActive ? "Ativo" : "Inativo"} / {formatCurrency(rate.priceCents)} / {rate.estimatedBusinessDays} dia(s) uteis
+                    <h3 className="truncate font-semibold tracking-normal">{rate.name}</h3>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {rate.description || "Sem descrição exibida no checkout"}
                     </p>
                   </div>
-                  <form action={deleteManualShippingRate.bind(null, rate.id)}>
+                  <StatusPill active={rate.isActive} />
+                  <span className="text-sm font-semibold tabular-nums">{formatCurrency(rate.priceCents)}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {rate.estimatedBusinessDays} dia(s) uteis · ordem {rate.sortOrder}
+                  </span>
+                  <span className="text-xl text-muted-foreground transition group-open:rotate-45" aria-hidden="true">
+                    +
+                  </span>
+                </summary>
+
+                <div className="border-t p-4">
+                  <div className="mb-4 grid gap-2 rounded-lg border bg-muted/20 p-3 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
+                    <Info label="Subtotal" value={formatRange(rate.minSubtotalCents, rate.maxSubtotalCents, formatCurrency)} />
+                    <Info label="Quantidade" value={formatRange(rate.minItems, rate.maxItems, String)} />
+                    <Info label="CEPs" value={rate.postalCodePrefixes.length > 0 ? rate.postalCodePrefixes.join(", ") : "Todo o Brasil"} />
+                    <Info label="Status" value={rate.isActive ? "Ativo no checkout" : "Oculto no checkout"} />
+                  </div>
+                  <ManualShippingRateForm
+                    action={updateManualShippingRate.bind(null, rate.id)}
+                    defaultValues={{
+                      description: rate.description ?? "",
+                      estimatedBusinessDays: String(rate.estimatedBusinessDays),
+                      isActive: rate.isActive,
+                      maxItems: rate.maxItems ? String(rate.maxItems) : "",
+                      maxSubtotalCents: rate.maxSubtotalCents ? moneyInputValue(rate.maxSubtotalCents) : "",
+                      minItems: rate.minItems ? String(rate.minItems) : "",
+                      minSubtotalCents: rate.minSubtotalCents ? moneyInputValue(rate.minSubtotalCents) : "",
+                      name: rate.name,
+                      postalCodePrefixes: rate.postalCodePrefixes.join(", "),
+                      priceCents: moneyInputValue(rate.priceCents),
+                      sortOrder: String(rate.sortOrder)
+                    }}
+                    submitLabel="Salvar alteracoes"
+                  />
+                  <form action={deleteManualShippingRate.bind(null, rate.id)} className="mt-4 border-t pt-4">
                     <Button type="submit" variant="destructive">
                       Excluir frete
                     </Button>
                   </form>
                 </div>
-                <ManualShippingRateForm
-                  action={updateManualShippingRate.bind(null, rate.id)}
-                  defaultValues={{
-                    description: rate.description ?? "",
-                    estimatedBusinessDays: String(rate.estimatedBusinessDays),
-                    isActive: rate.isActive,
-                    maxItems: rate.maxItems ? String(rate.maxItems) : "",
-                    maxSubtotalCents: rate.maxSubtotalCents ? moneyInputValue(rate.maxSubtotalCents) : "",
-                    minItems: rate.minItems ? String(rate.minItems) : "",
-                    minSubtotalCents: rate.minSubtotalCents ? moneyInputValue(rate.minSubtotalCents) : "",
-                    name: rate.name,
-                    postalCodePrefixes: rate.postalCodePrefixes.join(", "),
-                    priceCents: moneyInputValue(rate.priceCents),
-                    sortOrder: String(rate.sortOrder)
-                  }}
-                  submitLabel="Salvar alteracoes"
-                />
-              </div>
+              </details>
             ))}
           </div>
         </section>
@@ -178,6 +195,42 @@ function TextField({
       <Input defaultValue={defaultValue} name={name} placeholder={placeholder} required={required} type={type} />
     </label>
   );
+}
+
+function StatusPill({ active }: { active: boolean }): React.ReactElement {
+  return (
+    <span className={active
+      ? "w-fit rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800"
+      : "w-fit rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-bold text-orange-800"
+    }>
+      {active ? "Ativo" : "Inativo"}
+    </span>
+  );
+}
+
+function Info({ label, value }: { label: string; value: string }): React.ReactElement {
+  return (
+    <div className="min-w-0">
+      <p className="text-xs font-semibold uppercase text-muted-foreground">{label}</p>
+      <p className="truncate font-medium text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function formatRange(
+  minValue: number | null,
+  maxValue: number | null,
+  formatter: (value: number) => string
+): string {
+  if (minValue === null && maxValue === null) {
+    return "Sem limite";
+  }
+
+  if (minValue !== null && maxValue !== null) {
+    return `${formatter(minValue)} a ${formatter(maxValue)}`;
+  }
+
+  return minValue !== null ? `A partir de ${formatter(minValue)}` : `Até ${formatter(maxValue ?? 0)}`;
 }
 
 function moneyInputValue(cents: number): string {

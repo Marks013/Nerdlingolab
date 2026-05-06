@@ -82,7 +82,7 @@ export function MarketingPopup({ popup }: MarketingPopupProps): React.ReactEleme
           <p className="mt-4 text-sm leading-6 text-[#4f5d65]">{popup.description}</p>
           {isWelcomeOffer ? (
             <div className="mt-5 rounded-lg border border-primary/25 bg-orange-50 px-4 py-3 text-sm font-bold text-primary">
-              Cupom de R$ 10 liberado automaticamente para novos cadastros.
+              Ao concluir o cadastro, mostramos o cupom BEMVINDO10 para usar no carrinho.
             </div>
           ) : null}
 

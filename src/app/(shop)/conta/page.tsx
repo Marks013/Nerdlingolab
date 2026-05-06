@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { AccountLoginPrompt } from "@/features/account/components/account-login-prompt";
 import { AccountOverview } from "@/features/account/components/account-overview";
 import { UserRole } from "@/generated/prisma/client";
 import { sanitizeCustomerNextPath } from "@/lib/account/completion";
+import { isWelcomeCouponParam, WELCOME_COUPON_CODE } from "@/lib/account/welcome-coupon";
 import { auth } from "@/lib/auth";
 import { getCustomerAccountSummary } from "@/lib/orders/queries";
 
@@ -28,6 +30,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps): P
   const confirmedAddressLabel = normalizeSearchParam(resolvedSearchParams?.endereco);
   const googleStatus = normalizeSearchParam(resolvedSearchParams?.google);
   const checkoutFlow = normalizeSearchParam(resolvedSearchParams?.checkout) === "1";
+  const showWelcomeCoupon = isWelcomeCouponParam(normalizeSearchParam(resolvedSearchParams?.welcome));
   const requestedNextPath = sanitizeCustomerNextPath(normalizeSearchParam(resolvedSearchParams?.next), "/conta");
   const nextPath = checkoutFlow && requestedNextPath === "/checkout" ? "/checkout" : "/conta";
   const loginMessage = getLoginMessage(
@@ -63,6 +66,17 @@ export default async function AccountPage({ searchParams }: AccountPageProps): P
             <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
               Conta Google vinculada com sucesso.
             </p>
+          ) : null}
+          {showWelcomeCoupon ? (
+            <div className="mt-4 rounded-lg border border-primary/30 bg-[#fff7ed] px-4 py-4 text-sm text-[#3a2a1c]">
+              <p className="font-black text-primary">Cupom de boas-vindas liberado</p>
+              <p className="mt-1 leading-6">
+                Use o código <strong className="font-mono">{WELCOME_COUPON_CODE}</strong> no carrinho para garantir R$ 10,00 de desconto na sua primeira compra elegível.
+              </p>
+              <Link className="mt-3 inline-flex font-black text-primary underline-offset-4 hover:underline" href="/cupons">
+                Ver central de cupons
+              </Link>
+            </div>
           ) : null}
         </div>
         <AccountOverview account={account} confirmedAddressLabel={confirmedAddressLabel} />

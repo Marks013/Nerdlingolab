@@ -118,7 +118,7 @@ export function AccountLoginPrompt({
             </p>
             {isCheckoutReturn ? (
               <p>
-                Nao quer finalizar agora?{" "}
+                Não quer finalizar agora?{" "}
                 <Link className="font-bold text-primary underline" href="/produtos">
                   Continuar comprando
                 </Link>

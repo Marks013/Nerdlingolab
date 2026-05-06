@@ -136,7 +136,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps):
           </p>
           {isCheckoutReturn ? (
             <p className="mt-3 text-center text-sm text-[#4f5d65]">
-              Nao quer finalizar agora?{" "}
+              Não quer finalizar agora?{" "}
               <Link className="font-bold underline" href="/produtos">
                 Continuar comprando
               </Link>

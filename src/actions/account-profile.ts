@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 import { customerProfileSchema } from "@/lib/account/profile-schema";
 import { sanitizeCustomerNextPath } from "@/lib/account/completion";
+import { appendWelcomeCouponParam } from "@/lib/account/welcome-coupon";
 import { auth } from "@/lib/auth";
 import { getCpfLookupValues, parseBirthdayInput } from "@/lib/identity/brazil";
 import { ensureReferralCode } from "@/lib/loyalty/referrals";
@@ -153,7 +154,7 @@ export async function completeCustomerRegistration(formData: FormData): Promise<
 
   revalidatePath("/conta");
   revalidatePath("/checkout");
-  redirect(nextPath);
+  redirect(appendWelcomeCouponParam(nextPath));
 }
 
 async function requireCurrentUserId(): Promise<string> {

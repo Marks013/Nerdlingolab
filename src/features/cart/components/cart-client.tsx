@@ -99,12 +99,12 @@ export function CartClient({
 
   function handleCheckoutClick(): void {
     if (!validatedCart?.items.length) {
-      setCartMessage("Seu carrinho esta vazio. Adicione um produto antes de continuar.");
+      setCartMessage("Seu carrinho está vazio. Adicione um produto antes de continuar.");
       return;
     }
 
     if (!shippingPostalCodeRef.current.trim()) {
-      setCartMessage("Informe seu CEP e clique em Calcular para ver as opcoes de entrega.");
+      setCartMessage("Informe seu CEP e clique em Calcular para ver as opções de entrega.");
       return;
     }
 

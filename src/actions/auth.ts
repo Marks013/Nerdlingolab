@@ -8,6 +8,7 @@ import { CouponType, LoyaltyLedgerType, UserRole } from "@/generated/prisma/clie
 
 import { signIn, signOut } from "@/lib/auth";
 import { sanitizeCustomerNextPath } from "@/lib/account/completion";
+import { appendWelcomeCouponParam } from "@/lib/account/welcome-coupon";
 import { sanitizeAdminCallbackUrl } from "@/lib/admin";
 import {
   getCpfLookupValues,
@@ -325,7 +326,7 @@ export async function registerCustomer(formData: FormData): Promise<void> {
   await signIn("credentials", {
     email,
     password,
-    redirectTo: nextPath
+    redirectTo: appendWelcomeCouponParam(nextPath)
   });
 }
 

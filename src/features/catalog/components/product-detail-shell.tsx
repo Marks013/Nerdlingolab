@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Star } from "lucide-react";
+import { Palette, Ruler, ShieldCheck, Star } from "lucide-react";
 
 import { SafeImage as Image } from "@/components/media/safe-image";
 import { FavoriteButton } from "@/features/catalog/components/favorite-button";
@@ -204,21 +204,21 @@ function ProductDescription({
           <h2 className="mt-1 text-2xl font-medium text-black">Descrição</h2>
         </div>
         <span className="rounded-full border border-primary/25 bg-[#fff7ed] px-3 py-1 text-xs font-black text-primary">
-          ✨ curadoria NerdLingoLab
+          Curadoria NerdLingoLab
         </span>
       </div>
 
       <div className="mt-6 grid gap-4">
         <div className="rounded-lg border border-primary/20 bg-[#fff7ed] p-4">
           <p className="text-pretty text-base font-semibold leading-7 text-[#3a2a1c]">
-            🌟 {productTitle} chega para dar mais presença ao seu visual geek, com aquele toque divertido que combina com coleção, presente e uso no dia a dia.
+            {productTitle} chega para dar mais presença ao seu visual geek, com aquele toque divertido que combina com coleção, presente e uso no dia a dia.
           </p>
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
-          <DescriptionHighlight title="Visual" text="Arte com atitude para deixar o look menos óbvio." emoji="🎨" />
-          <DescriptionHighlight title="Escolha certa" text="Confira cor, tamanho e variação antes de finalizar." emoji="📏" />
-          <DescriptionHighlight title="Experiência" text="Pedido acompanhado, checkout seguro e suporte por perto." emoji="🛡️" />
+          <DescriptionHighlight icon={Palette} title="Visual" text="Arte com atitude para deixar o look menos óbvio." />
+          <DescriptionHighlight icon={Ruler} title="Escolha certa" text="Confira cor, tamanho e variação antes de finalizar." />
+          <DescriptionHighlight icon={ShieldCheck} title="Experiência" text="Pedido acompanhado, checkout seguro e suporte por perto." />
         </div>
 
         {hasRichHtml ? (
@@ -230,7 +230,7 @@ function ProductDescription({
           <div className="rounded-lg border bg-white p-4 text-base leading-8 text-[#4f5d65]">
             {paragraphs.map((paragraph, index) => (
               <p className="text-pretty [&:not(:last-child)]:mb-4" key={`${paragraph}-${index}`}>
-                {getParagraphEmoji(index)} {paragraph}
+                {paragraph}
               </p>
             ))}
           </div>
@@ -241,17 +241,17 @@ function ProductDescription({
 }
 
 function DescriptionHighlight({
-  emoji,
+  icon: Icon,
   text,
   title
 }: {
-  emoji: string;
+  icon: React.ComponentType<{ className?: string }>;
   text: string;
   title: string;
 }): React.ReactElement {
   return (
     <div className="rounded-lg border border-primary/15 bg-white p-4">
-      <p className="text-2xl" aria-hidden="true">{emoji}</p>
+      <Icon className="size-5 text-primary" />
       <h3 className="mt-2 font-black text-[#1c1c1c]">{title}</h3>
       <p className="mt-1 text-sm leading-6 text-[#4f5d65]">{text}</p>
     </div>
@@ -261,15 +261,11 @@ function DescriptionHighlight({
 function getDescriptionParagraphs(description: string): string[] {
   const normalized = description
     .replace(/\r/g, "")
-    .split(/\n{2,}|\n|(?<=\.)\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ])/)
+    .split(/\n{2,}|\n|(?<=\.)\s+(?=[A-Z])/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean);
 
   return normalized.length > 0 ? normalized : ["Produto selecionado pela NerdLingoLab para quem gosta de comprar com estilo, segurança e personalidade."];
-}
-
-function getParagraphEmoji(index: number): string {
-  return ["✨", "🔥", "💬", "📦"][index % 4];
 }
 
 function unique(values: Array<string | null | undefined>): string[] {

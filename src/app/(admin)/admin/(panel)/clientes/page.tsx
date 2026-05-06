@@ -47,7 +47,7 @@ export default async function AdminCustomersPage({
         <SuccessMessage>Observacoes internas salvas.</SuccessMessage>
       ) : null}
       {readSearchParam(resolvedSearchParams?.account) === "deleted" ? (
-        <SuccessMessage>Conta excluida definitivamente. Pedidos foram preservados com snapshot do cliente.</SuccessMessage>
+        <SuccessMessage>Conta excluída definitivamente. Pedidos foram preservados com os dados do cliente.</SuccessMessage>
       ) : null}
 
       <div className="mt-6 grid gap-4 md:grid-cols-4">

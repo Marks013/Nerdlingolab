@@ -35,6 +35,7 @@ function buildProductSnapshot(item: Awaited<ReturnType<typeof validateCartItems>
     variantId: item.variantId ?? null,
     title: item.title,
     variantTitle: item.variantTitle ?? null,
+    imageUrl: item.imageUrl ?? null,
     quantity: item.quantity,
     unitPriceCents: item.unitPriceCents,
     lineTotalCents: item.lineTotalCents

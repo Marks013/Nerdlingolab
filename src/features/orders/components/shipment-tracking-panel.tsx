@@ -1,8 +1,17 @@
-import { AlertTriangle, CheckCircle2, Clock, ExternalLink, PackageCheck, Truck } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  CircleDot,
+  Clock,
+  ExternalLink,
+  PackageCheck,
+  Truck
+} from "lucide-react";
 
 import type { Shipment, ShipmentEvent } from "@/generated/prisma/client";
 import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export type ShipmentWithEvents = Shipment & { events: ShipmentEvent[] };
 
@@ -12,11 +21,32 @@ interface ShipmentTrackingPanelProps {
 
 export function ShipmentTrackingPanel({ shipments }: ShipmentTrackingPanelProps): React.ReactElement {
   if (shipments.length === 0) {
-    return <p className="text-sm text-muted-foreground">Nenhum rastreamento registrado.</p>;
+    return (
+      <div className="rounded-lg border border-dashed border-orange-200 bg-orange-50/60 p-5 text-sm text-muted-foreground">
+        <p className="font-semibold text-orange-800">Rastreamento ainda não registrado.</p>
+        <p className="mt-1">Assim que o envio for criado, a linha do tempo aparecerá aqui.</p>
+      </div>
+    );
   }
 
   const latestShipment = shipments[0];
   const isOverdue = isShipmentOverdue(latestShipment);
+  const events = shipments
+    .flatMap((shipment) => shipment.events.map((event) => ({ ...event, carrierName: shipment.carrierName })))
+    .sort((eventA, eventB) => eventB.occurredAt.getTime() - eventA.occurredAt.getTime());
+  const timeline = events.length > 0
+    ? events
+    : [{
+        carrierName: latestShipment.carrierName,
+        createdAt: latestShipment.createdAt,
+        description: "Seu pedido já tem uma etiqueta vinculada. Aguardando a primeira atualização da transportadora.",
+        id: `${latestShipment.id}-created`,
+        occurredAt: latestShipment.createdAt,
+        rawPayload: {},
+        shipmentId: latestShipment.id,
+        status: latestShipment.status,
+        substatus: latestShipment.trackingNumber ?? latestShipment.externalShipmentId
+      } satisfies ShipmentEvent & { carrierName?: string | null }];
 
   return (
     <div id="rastreamento" className="space-y-5 scroll-mt-24">
@@ -34,11 +64,12 @@ export function ShipmentTrackingPanel({ shipments }: ShipmentTrackingPanelProps)
         </div>
       ) : null}
 
-      <div className="rounded-lg border bg-background p-4">
+      <div className="overflow-hidden rounded-lg border border-orange-100 bg-white shadow-sm">
+        <div className="bg-[#fffaf6] px-4 py-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="inline-flex items-center text-sm font-bold text-primary">
-              <Truck className="mr-2 h-4 w-4" />
+              <Truck className="mr-2 size-4" />
               {latestShipment.carrierName ?? formatShippingProvider(latestShipment.provider)}
             </p>
             <h3 className="mt-2 text-2xl font-black text-foreground">
@@ -50,41 +81,59 @@ export function ShipmentTrackingPanel({ shipments }: ShipmentTrackingPanelProps)
           </div>
 
           {latestShipment.carrierUrl ? (
-            <Button asChild className="shrink-0">
-              <a href={latestShipment.carrierUrl} rel="noreferrer" target="_blank">
-                <ExternalLink className="mr-2 h-4 w-4" />
+            <Button asChild className="shrink-0 bg-primary text-white hover:bg-primary/90" variant="secondary">
+              <a href={latestShipment.carrierUrl} rel="noopener noreferrer" target="_blank">
+                <ExternalLink className="mr-2 size-4" />
                 Rastrear entrega
               </a>
             </Button>
           ) : null}
         </div>
+        </div>
 
-        <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+        <div className="grid gap-3 p-4 text-sm sm:grid-cols-3">
           <TrackingMetric icon={Clock} label="Prazo estimado" value={latestShipment.estimatedDeliveryAt ? formatDateTime(latestShipment.estimatedDeliveryAt) : "Não informado"} />
           <TrackingMetric icon={PackageCheck} label="Postado em" value={latestShipment.shippedAt ? formatDateTime(latestShipment.shippedAt) : "Aguardando postagem"} />
           <TrackingMetric icon={CheckCircle2} label="Entregue em" value={latestShipment.deliveredAt ? formatDateTime(latestShipment.deliveredAt) : "Ainda em andamento"} />
         </div>
       </div>
 
-      <div>
-        <h4 className="text-sm font-black uppercase text-muted-foreground">Historico do rastreio</h4>
-        <ol className="mt-3 space-y-3">
-          {shipments.flatMap((shipment) => shipment.events).length > 0 ? (
-            shipments.flatMap((shipment) => shipment.events).map((event) => (
-              <li className="rounded-lg border bg-background p-4" key={event.id}>
-                <p className="font-semibold">{formatShipmentStatus(event.status)}</p>
-                <p className="mt-1 text-sm text-muted-foreground">
+      <div className="rounded-lg border border-orange-100 bg-white p-4 shadow-sm">
+        <h4 className="text-sm font-black uppercase text-muted-foreground">Histórico do rastreio</h4>
+        <ol className="relative mt-4 space-y-4 before:absolute before:bottom-4 before:left-[15px] before:top-4 before:w-px before:bg-orange-200">
+          {timeline.map((event, index) => (
+            <li className="relative grid grid-cols-[32px_1fr] gap-3" key={event.id}>
+              <span
+                className={cn(
+                  "relative z-10 flex size-8 items-center justify-center rounded-full border-2 bg-white shadow-sm",
+                  index === 0 ? "border-primary text-primary" : "border-orange-200 text-orange-500"
+                )}
+              >
+                {index === 0 ? <Truck className="size-4" /> : <CircleDot className="size-4" />}
+              </span>
+              <div
+                className={cn(
+                  "rounded-lg border p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-md",
+                  index === 0 ? "border-orange-200 bg-orange-50/70" : "border-orange-100 bg-white"
+                )}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <p className="font-bold text-black">{formatShipmentStatus(event.status)}</p>
+                  <span className={cn("rounded-full border px-2.5 py-1 text-xs font-bold", getShipmentStatusTone(event.status))}>
+                    {index === 0 ? "Última atualização" : "Histórico"}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm font-medium text-muted-foreground">
                   {formatDateTime(event.occurredAt)}
                   {event.substatus ? ` · ${event.substatus}` : ""}
                 </p>
-                {event.description ? <p className="mt-2 text-sm">{event.description}</p> : null}
-              </li>
-            ))
-          ) : (
-            <li className="rounded-lg border bg-background p-4 text-sm text-muted-foreground">
-              O historico sera exibido assim que a transportadora publicar novas atualizacoes.
+                {event.carrierName ? (
+                  <p className="mt-2 text-xs font-semibold uppercase text-primary">{event.carrierName}</p>
+                ) : null}
+                {event.description ? <p className="mt-2 text-sm leading-6 text-[#3a2a1c]">{event.description}</p> : null}
+              </div>
             </li>
-          )}
+          ))}
         </ol>
       </div>
     </div>
@@ -101,9 +150,9 @@ function TrackingMetric({
   value: string;
 }): React.ReactElement {
   return (
-    <div className="rounded-md border px-3 py-3">
+    <div className="rounded-md border border-orange-100 bg-orange-50/50 px-3 py-3">
       <p className="inline-flex items-center text-xs font-bold uppercase text-muted-foreground">
-        <Icon className="mr-2 h-3.5 w-3.5" />
+        <Icon className="mr-2 size-3.5" />
         {label}
       </p>
       <p className="mt-1 font-semibold">{value}</p>
@@ -132,6 +181,21 @@ export function formatShipmentStatus(status: string): string {
   };
 
   return labels[status] ?? "Status indisponível";
+}
+
+function getShipmentStatusTone(status: string): string {
+  const tones: Record<string, string> = {
+    CANCELLED: "border-red-200 bg-red-50 text-red-700",
+    DELAYED: "border-orange-300 bg-orange-50 text-orange-800",
+    DELIVERED: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    HANDLING: "border-orange-200 bg-orange-50 text-orange-700",
+    PENDING: "border-amber-200 bg-amber-50 text-amber-800",
+    READY_TO_SHIP: "border-sky-200 bg-sky-50 text-sky-700",
+    SHIPPED: "border-blue-200 bg-blue-50 text-blue-700",
+    UNKNOWN: "border-slate-200 bg-slate-50 text-slate-700"
+  };
+
+  return tones[status] ?? tones.UNKNOWN;
 }
 
 export function isShipmentOverdue(shipment: Shipment): boolean {

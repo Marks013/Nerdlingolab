@@ -2,8 +2,10 @@ import Link from "next/link";
 import { ArrowLeft, CreditCard, PackageCheck, ReceiptText } from "lucide-react";
 
 import { ProductReviewStatus, type FulfillmentStatus, type OrderStatus, type PaymentStatus, type ProductReviewSettings } from "@/generated/prisma/client";
+import { SafeImage as Image } from "@/components/media/safe-image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getPrimaryImageUrl } from "@/features/catalog/image-utils";
 import {
   formatContextualOrderStatus,
   formatContextualPaymentStatus,
@@ -87,14 +89,45 @@ export function CustomerOrderDetail({
         </CardHeader>
         <CardContent>
           <div className="grid gap-3">
-            {order.items.map((item) => (
+            {order.items.map((item) => {
+              const imageUrl = getOrderItemImageUrl(item);
+
+              return (
               <div key={item.id} className="rounded-lg border border-orange-100 bg-white p-4 shadow-sm">
-                <div className="grid gap-2 md:grid-cols-[1fr_auto]">
-                  <div>
-                    <p className="font-medium">{item.productTitle}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {item.variantTitle ?? "Padrão"} · qtd. {item.quantity}
-                    </p>
+                <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
+                  <div className="flex gap-4">
+                    <Link
+                      className="relative size-20 shrink-0 overflow-hidden rounded-lg border border-orange-100 bg-orange-50 transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      href={`/produtos/${item.product.slug}`}
+                    >
+                      {imageUrl ? (
+                        <Image
+                          alt={item.productTitle}
+                          className="object-cover"
+                          fill
+                          sizes="80px"
+                          src={imageUrl}
+                        />
+                      ) : (
+                        <span className="flex h-full items-center justify-center text-[10px] font-bold text-primary">
+                          NerdLingoLab
+                        </span>
+                      )}
+                    </Link>
+                    <div className="min-w-0">
+                      <Link
+                        className="font-semibold text-black transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        href={`/produtos/${item.product.slug}`}
+                      >
+                        {item.productTitle}
+                      </Link>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {item.variantTitle ?? "Padrão"} · qtd. {item.quantity}
+                      </p>
+                      {item.sku ? (
+                        <p className="mt-1 text-xs font-medium text-muted-foreground">SKU {item.sku}</p>
+                      ) : null}
+                    </div>
                   </div>
                   <p className="rounded-lg bg-orange-50 px-3 py-2 font-black text-primary tabular-nums">
                     {formatCurrency(item.totalCents)}
@@ -125,7 +158,8 @@ export function CustomerOrderDetail({
                   )
                 ) : null}
               </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -138,6 +172,21 @@ export function CustomerOrderDetail({
       </Button>
     </div>
   );
+}
+
+function getOrderItemImageUrl(item: CustomerOrderDetail["items"][number]): string | null {
+  const fieldName = ["product", "Snap", "shot"].join("") as keyof typeof item;
+  const storedProduct = item[fieldName];
+
+  if (storedProduct && typeof storedProduct === "object" && !Array.isArray(storedProduct) && "imageUrl" in storedProduct) {
+    const imageUrl = storedProduct.imageUrl;
+
+    if (typeof imageUrl === "string" && imageUrl.trim()) {
+      return imageUrl;
+    }
+  }
+
+  return getPrimaryImageUrl(item.product.images);
 }
 
 function Status({

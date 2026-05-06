@@ -9,6 +9,7 @@ import type {
   OrderItem,
   LoyaltyPoints,
   MediaAsset,
+  Product,
   ProductReview,
   ProductReviewMedia,
   Shipment,
@@ -48,6 +49,7 @@ export type CustomerOrderListItem = Order & {
 export type CustomerOrderDetail = Order & {
   customerNote?: string | null;
   items: (OrderItem & {
+    product: Pick<Product, "images" | "slug">;
     review: (ProductReview & {
       media: (ProductReviewMedia & { asset: MediaAsset })[];
     }) | null;
@@ -165,6 +167,12 @@ export async function getAdminOrderById(orderId: string): Promise<AdminOrderDeta
       coupon: true,
       items: {
         include: {
+          product: {
+            select: {
+              images: true,
+              slug: true
+            }
+          },
           review: {
             include: {
               media: {
@@ -302,6 +310,12 @@ export async function getCustomerOrderById({
     include: {
       items: {
         include: {
+          product: {
+            select: {
+              images: true,
+              slug: true
+            }
+          },
           review: {
             include: {
               media: {

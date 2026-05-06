@@ -1,13 +1,20 @@
 import Link from "next/link";
+import { ArrowLeft, CreditCard, PackageCheck, ReceiptText } from "lucide-react";
 
 import { ProductReviewStatus, type FulfillmentStatus, type OrderStatus, type PaymentStatus, type ProductReviewSettings } from "@/generated/prisma/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatOrderStatus, formatPaymentStatus } from "@/features/orders/status-labels";
+import {
+  formatOrderStatus,
+  formatPaymentStatus,
+  getOrderStatusTone,
+  getPaymentStatusTone
+} from "@/features/orders/status-labels";
 import { ShipmentTrackingPanel } from "@/features/orders/components/shipment-tracking-panel";
 import { ProductReviewForm } from "@/features/reviews/components/product-review-form";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import type { CustomerOrderDetail } from "@/lib/orders/queries";
+import { cn } from "@/lib/utils";
 
 interface CustomerOrderDetailProps {
   order: CustomerOrderDetail;
@@ -24,15 +31,28 @@ export function CustomerOrderDetail({
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{order.orderNumber}</CardTitle>
+      <Card className="overflow-hidden border-orange-100 shadow-sm">
+        <CardHeader className="bg-[#fffaf6]">
+          <CardTitle className="flex items-center gap-2 text-balance">
+            <ReceiptText className="size-5 text-primary" />
+            {order.orderNumber}
+          </CardTitle>
           <CardDescription>Criado em {formatDateTime(order.createdAt)}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 text-sm md:grid-cols-3">
-          <Status label="Pedido" value={formatOrderStatus(order.status)} />
-          <Status label="Pagamento" value={formatPaymentStatus(order.paymentStatus)} />
-          <Status label="Total" value={formatCurrency(order.totalCents)} />
+          <Status
+            className={getOrderStatusTone(order.status)}
+            icon={<PackageCheck className="size-4" />}
+            label="Pedido"
+            value={formatOrderStatus(order.status)}
+          />
+          <Status
+            className={getPaymentStatusTone(order.paymentStatus)}
+            icon={<CreditCard className="size-4" />}
+            label="Pagamento"
+            value={formatPaymentStatus(order.paymentStatus)}
+          />
+          <Status className="border-orange-200 bg-orange-50 text-primary" label="Total" value={formatCurrency(order.totalCents)} />
         </CardContent>
       </Card>
 
@@ -50,7 +70,7 @@ export function CustomerOrderDetail({
         </Card>
       ) : null}
 
-      <Card>
+      <Card className="border-orange-100 shadow-sm" id="rastreamento">
         <CardHeader>
           <CardTitle>Rastreamento</CardTitle>
           <CardDescription>Acompanhe o envio e o historico da entrega.</CardDescription>
@@ -60,15 +80,15 @@ export function CustomerOrderDetail({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-orange-100 shadow-sm">
         <CardHeader>
           <CardTitle>Itens</CardTitle>
           <CardDescription>Produtos incluídos neste pedido.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="divide-y rounded-md border">
+          <div className="grid gap-3">
             {order.items.map((item) => (
-              <div key={item.id} className="p-4">
+              <div key={item.id} className="rounded-lg border border-orange-100 bg-white p-4 shadow-sm">
                 <div className="grid gap-2 md:grid-cols-[1fr_auto]">
                   <div>
                     <p className="font-medium">{item.productTitle}</p>
@@ -76,7 +96,9 @@ export function CustomerOrderDetail({
                       {item.variantTitle ?? "Padrão"} · qtd. {item.quantity}
                     </p>
                   </div>
-                  <p className="font-semibold">{formatCurrency(item.totalCents)}</p>
+                  <p className="rounded-lg bg-orange-50 px-3 py-2 font-black text-primary tabular-nums">
+                    {formatCurrency(item.totalCents)}
+                  </p>
                 </div>
 
                 {reviewSettings.isEnabled && canReviewOrder ? (
@@ -108,18 +130,31 @@ export function CustomerOrderDetail({
         </CardContent>
       </Card>
 
-      <Button asChild variant="outline">
-        <Link href="/conta">Voltar para minha conta</Link>
+      <Button asChild className="border-primary/50 bg-white hover:bg-primary/10" variant="outline">
+        <Link href="/conta#pedidos">
+          <ArrowLeft className="mr-2 size-4" />
+          Voltar para meus pedidos
+        </Link>
       </Button>
     </div>
   );
 }
 
-function Status({ label, value }: { label: string; value: string }): React.ReactElement {
+function Status({
+  className,
+  icon,
+  label,
+  value
+}: {
+  className: string;
+  icon?: React.ReactNode;
+  label: string;
+  value: string;
+}): React.ReactElement {
   return (
-    <div>
-      <p className="text-muted-foreground">{label}</p>
-      <p className="font-medium">{value}</p>
+    <div className={cn("rounded-lg border p-4", className)}>
+      <p className="flex items-center gap-2 text-xs font-bold uppercase">{icon}{label}</p>
+      <p className="mt-2 text-lg font-black tabular-nums">{value}</p>
     </div>
   );
 }

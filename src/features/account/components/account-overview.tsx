@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Truck } from "lucide-react";
+import { Coins, Eye, PackageCheck, PlusCircle, Truck } from "lucide-react";
 import { useState } from "react";
 
 import { deleteOwnCustomerAccount } from "@/actions/account-deletion";
@@ -15,11 +15,17 @@ import { signOutFromCustomer } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { formatOrderStatus, formatPaymentStatus } from "@/features/orders/status-labels";
+import {
+  formatOrderStatus,
+  formatPaymentStatus,
+  getOrderStatusTone,
+  getPaymentStatusTone
+} from "@/features/orders/status-labels";
 import { GoogleSignInButton } from "@/features/auth/components/google-sign-in-button";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { formatCpf } from "@/lib/identity/brazil";
 import type { CustomerAccountSummary } from "@/lib/orders/queries";
+import { cn } from "@/lib/utils";
 
 interface AccountOverviewProps {
   account: CustomerAccountSummary;
@@ -246,15 +252,18 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-orange-100 bg-[#fffaf6] shadow-sm">
           <CardHeader>
             <CardTitle>{account.loyaltyPoints?.balance ?? 0} Nerdcoins</CardTitle>
             <CardDescription>Saldo disponível para resgate e cupons pessoais.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
             <p>Tier atual: {account.loyaltyPoints?.tier ?? "GENIN"}</p>
-            <Button asChild size="sm" variant="outline">
-              <Link href="/conta/nerdcoins">Ver Nerdcoins</Link>
+            <Button asChild className="w-full bg-primary text-white hover:bg-primary/90" size="sm" variant="secondary">
+              <Link href="/conta/nerdcoins">
+                <Coins className="mr-2 size-4" />
+                Ver NerdCoins
+              </Link>
             </Button>
           </CardContent>
         </Card>
@@ -327,8 +336,14 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
               ) : null}
             </div>
             {!isAddressFormOpen && addresses.length > 0 ? (
-              <Button className="w-full" onClick={() => setIsAddressFormOpen(true)} type="button" variant="outline">
-                Adicionar outro endereco
+              <Button
+                className="w-full border-primary bg-primary text-white hover:bg-primary/90"
+                onClick={() => setIsAddressFormOpen(true)}
+                type="button"
+                variant="secondary"
+              >
+                <PlusCircle className="mr-2 size-4" />
+                Adicionar outro endereço
               </Button>
             ) : null}
             {isAddressFormOpen ? (
@@ -449,51 +464,76 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
         </Card>
       </div>
 
-      <Card id="pedidos">
-        <CardHeader>
-          <CardTitle>Meus pedidos</CardTitle>
+      <Card className="overflow-hidden border-orange-100 shadow-sm" id="pedidos">
+        <CardHeader className="bg-[#fffaf6]">
+          <CardTitle className="flex items-center gap-2 text-balance">
+            <PackageCheck className="size-5 text-primary" />
+            Meus pedidos
+          </CardTitle>
           <CardDescription>Acompanhe suas compras recentes.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="divide-y rounded-md border">
+          <div className="grid gap-3">
             {account.orders.map((order) => {
               const latestShipment = order.shipments[0];
 
               return (
-                <div key={order.id} className="grid gap-3 p-4 md:grid-cols-[1fr_auto_auto] md:items-center">
+                <article
+                  key={order.id}
+                  className="grid gap-4 rounded-lg border border-orange-100 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md md:grid-cols-[1fr_auto_auto] md:items-center"
+                >
                   <div>
-                    <p className="font-medium">{order.orderNumber}</p>
+                    <p className="font-semibold text-black">{order.orderNumber}</p>
                     <p className="text-sm text-muted-foreground">
-                      {formatDateTime(order.createdAt)} · {formatOrderStatus(order.status)}
+                      {formatDateTime(order.createdAt)}
                     </p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatPaymentStatus(order.paymentStatus)}
-                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <StatusPill className={getOrderStatusTone(order.status)} label={formatOrderStatus(order.status)} />
+                      <StatusPill
+                        className={getPaymentStatusTone(order.paymentStatus)}
+                        label={formatPaymentStatus(order.paymentStatus)}
+                      />
+                    </div>
                   </div>
-                  <p className="font-semibold">{formatCurrency(order.totalCents)}</p>
+                  <p className="rounded-lg bg-orange-50 px-3 py-2 text-right font-black text-primary tabular-nums">
+                    {formatCurrency(order.totalCents)}
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {latestShipment ? (
-                      <Button asChild size="sm">
+                      <Button asChild className="bg-primary text-white hover:bg-primary/90" size="sm" variant="secondary">
                         <Link href={`/conta/pedidos/${order.id}#rastreamento`}>
-                          <Truck className="mr-2 h-4 w-4" />
+                          <Truck className="mr-2 size-4" />
                           Rastrear
                         </Link>
                       </Button>
                     ) : null}
-                    <Button asChild size="sm" variant="outline">
-                      <Link href={`/conta/pedidos/${order.id}`}>Ver pedido</Link>
+                    <Button asChild className="border-primary/50 bg-white hover:bg-primary/10" size="sm" variant="outline">
+                      <Link href={`/conta/pedidos/${order.id}`}>
+                        <Eye className="mr-2 size-4" />
+                        Ver pedido
+                      </Link>
                     </Button>
                   </div>
-                </div>
+                </article>
               );
             })}
             {account.orders.length === 0 ? (
-              <p className="p-4 text-sm text-muted-foreground">Você ainda não tem pedidos.</p>
+              <p className="rounded-lg border border-dashed border-orange-200 bg-orange-50/60 p-4 text-sm text-muted-foreground">
+                Você ainda não tem pedidos.
+              </p>
             ) : null}
           </div>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function StatusPill({ className, label }: { className: string; label: string }): React.ReactElement {
+  return (
+    <span className={cn("inline-flex w-fit rounded-full border px-3 py-1 text-xs font-bold", className)}>
+      {label}
+    </span>
   );
 }
 

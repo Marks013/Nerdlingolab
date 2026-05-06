@@ -13,22 +13,22 @@ if [ -z "$MODE" ]; then
 fi
 
 detect_compose_cmd() {
-  if docker compose version >/dev/null 2>&1; then
+  if docker info >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
     echo "docker compose"
     return
   fi
 
-  if sudo docker compose version >/dev/null 2>&1; then
+  if sudo docker info >/dev/null 2>&1 && sudo docker compose version >/dev/null 2>&1; then
     echo "sudo docker compose"
     return
   fi
 
-  if command -v docker-compose >/dev/null 2>&1; then
+  if docker info >/dev/null 2>&1 && command -v docker-compose >/dev/null 2>&1; then
     echo "docker-compose"
     return
   fi
 
-  if command -v sudo >/dev/null 2>&1 && sudo docker-compose version >/dev/null 2>&1; then
+  if sudo docker info >/dev/null 2>&1 && command -v sudo >/dev/null 2>&1 && sudo docker-compose version >/dev/null 2>&1; then
     echo "sudo docker-compose"
     return
   fi

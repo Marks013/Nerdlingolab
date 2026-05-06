@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { getAdminLoyaltyDashboard } from "@/lib/admin/loyalty";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { getReferralStatusLabel } from "@/lib/loyalty/referrals";
+import { RoutineSubmitButton } from "./routine-submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -36,9 +37,9 @@ export default async function AdminLoyaltyPage({
     <main className="mx-auto w-full max-w-7xl overflow-x-hidden px-4 py-8 sm:px-6 lg:px-8">
       <div>
         <p className="text-sm text-muted-foreground">Relacionamento</p>
-        <h1 className="text-3xl font-bold tracking-normal">Nerdcoins</h1>
+        <h1 className="text-3xl font-bold tracking-normal">NerdCoins</h1>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-          Saldo, historico, cupons, indicacoes e rotinas administrativas do programa.
+          Saldo, histórico, cupons, indicações e rotinas administrativas do programa.
         </p>
       </div>
 
@@ -54,9 +55,9 @@ export default async function AdminLoyaltyPage({
         <MetricCard icon={Settings} label="Desconto concedido" value={formatCurrency(dashboard.redeemedOrders._sum.loyaltyDiscountCents ?? 0)} />
       </section>
       <section className="mt-4 grid gap-4 md:grid-cols-3">
-        <MetricCard icon={Award} label="Indicacoes pendentes" value={dashboard.referralsPending.toString()} />
-        <MetricCard icon={Award} label="Indicacoes recompensadas" value={dashboard.referralsRewarded.toString()} />
-        <MetricCard icon={UserRoundPlus} label="Clientes sem codigo" value={dashboard.customersWithoutReferralCode.toString()} />
+        <MetricCard icon={Award} label="Indicações pendentes" value={dashboard.referralsPending.toString()} />
+        <MetricCard icon={Award} label="Indicações recompensadas" value={dashboard.referralsRewarded.toString()} />
+        <MetricCard icon={UserRoundPlus} label="Clientes sem código" value={dashboard.customersWithoutReferralCode.toString()} />
       </section>
 
       <section className="mt-6 grid min-w-0 gap-6 2xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
@@ -115,12 +116,12 @@ export default async function AdminLoyaltyPage({
           <Card className="min-w-0">
             <CardHeader>
               <CardTitle>Rotinas do programa</CardTitle>
-              <CardDescription>Processos idempotentes com retorno de conclusao no painel.</CardDescription>
+              <CardDescription>Processos idempotentes com retorno de conclusão no painel.</CardDescription>
             </CardHeader>
             <CardContent className="grid min-w-0 gap-3 sm:grid-cols-3">
-              <RoutineButton action={grantBirthdayNerdcoins} icon={CalendarDays} label="Aniversarios de hoje" />
+              <RoutineButton action={grantBirthdayNerdcoins} icon={CalendarDays} label="Aniversários de hoje" />
               <RoutineButton action={expireEligibleNerdcoins} icon={Hourglass} label="Expirar pontos vencidos" />
-              <RoutineButton action={backfillReferralCodes} icon={UserRoundPlus} label="Gerar codigos faltantes" />
+              <RoutineButton action={backfillReferralCodes} icon={UserRoundPlus} label="Gerar códigos faltantes" />
             </CardContent>
           </Card>
 
@@ -147,14 +148,14 @@ export default async function AdminLoyaltyPage({
 
           <Card className="min-w-0">
             <CardHeader>
-              <CardTitle>Clientes Nerdcoins</CardTitle>
-              <CardDescription>Pesquise por nome, e-mail ou codigo de indicacao e abra o historico individual.</CardDescription>
+              <CardTitle>Clientes NerdCoins</CardTitle>
+              <CardDescription>Pesquise por nome, e-mail ou código de indicação e abra o histórico individual.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
               <form className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
                 <label className="relative">
                   <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input className="pl-9" defaultValue={search} name="busca" placeholder="Buscar usuario, e-mail ou codigo" />
+                  <Input className="pl-9" defaultValue={search} name="busca" placeholder="Buscar usuário, e-mail ou código" />
                 </label>
                 <Button type="submit" variant="secondary">Pesquisar</Button>
               </form>
@@ -200,8 +201,8 @@ export default async function AdminLoyaltyPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Historico recente</CardTitle>
-            <CardDescription>Ledger auditavel de ganhos, resgates, ajustes e expiracoes.</CardDescription>
+            <CardTitle>Histórico recente</CardTitle>
+            <CardDescription>Ledger auditável de ganhos, resgates, ajustes e expirações.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="divide-y rounded-lg border">
@@ -277,7 +278,7 @@ function LoyaltyCustomerPanel({ customer }: { customer: LoyaltyCustomer }): Reac
             <div className="rounded-md border p-3 text-sm">
               <p className="font-semibold">Foi indicado por {customer.referralReceived.inviter.name ?? customer.referralReceived.inviter.email}</p>
               <p className="text-muted-foreground">
-                {getReferralStatusLabel(customer.referralReceived.status)} / codigo {customer.referralReceived.referralCode}
+                {getReferralStatusLabel(customer.referralReceived.status)} / código {customer.referralReceived.referralCode}
               </p>
             </div>
           ) : <EmptyText>Não veio por indicação.</EmptyText>}
@@ -291,7 +292,7 @@ function LoyaltyCustomerPanel({ customer }: { customer: LoyaltyCustomer }): Reac
           ))}
         </Panel>
 
-        <Panel title="Historico de pontos">
+        <Panel title="Histórico de pontos">
           {customer.loyaltyLedger.map((entry) => (
             <div className="rounded-md border p-3 text-sm" key={entry.id}>
               <div className="flex items-center justify-between gap-3">
@@ -324,10 +325,9 @@ function RoutineButton({
 }): React.ReactElement {
   return (
     <form action={action} className="min-w-0">
-      <Button className="w-full min-w-0 justify-start gap-2 whitespace-normal text-left" type="submit" variant="outline">
+      <RoutineSubmitButton label={label}>
         <Icon className="h-4 w-4" />
-        {label}
-      </Button>
+      </RoutineSubmitButton>
     </form>
   );
 }
@@ -413,10 +413,10 @@ function readSearchParam(value: string | string[] | undefined): string | undefin
 
 function formatRoutineMessage(routine: string, count: string): string {
   const labels: Record<string, string> = {
-    birthday: `Rotina de aniversarios concluida. ${count} credito(s) processado(s).`,
-    expire: `Rotina de expiracao concluida. ${count} lote(s) vencido(s) processado(s).`,
-    referrals: `Rotina de codigos de indicacao concluida. ${count} codigo(s) gerado(s).`
+    birthday: `Rotina de aniversários concluída. ${count} crédito(s) processado(s).`,
+    expire: `Rotina de expiração concluída. ${count} lote(s) vencido(s) processado(s).`,
+    referrals: `Rotina de códigos de indicação concluída. ${count} código(s) gerado(s).`
   };
 
-  return labels[routine] ?? "Rotina concluida.";
+  return labels[routine] ?? "Rotina concluída.";
 }

@@ -28,6 +28,7 @@ export async function createCoupon(formData: FormData): Promise<void> {
 
   revalidatePath("/admin/cupons");
   revalidatePath("/cupons");
+  revalidatePath("/ofertas");
   redirect("/admin/cupons?coupon=created");
 }
 
@@ -63,6 +64,7 @@ export async function updateCoupon(couponId: string, formData: FormData): Promis
 
   revalidatePath("/admin/cupons");
   revalidatePath("/cupons");
+  revalidatePath("/ofertas");
   redirect(`/admin/cupons?coupon=updated#coupon-${couponId}`);
 }
 
@@ -81,6 +83,7 @@ export async function deactivateCoupon(couponId: string): Promise<void> {
 
   revalidatePath("/admin/cupons");
   revalidatePath("/cupons");
+  revalidatePath("/ofertas");
 }
 
 export async function setCouponPublicVisibility(
@@ -101,6 +104,7 @@ export async function setCouponPublicVisibility(
 
   revalidatePath("/admin/cupons");
   revalidatePath("/cupons");
+  revalidatePath("/ofertas");
 }
 
 export async function activateCoupon(couponId: string): Promise<void> {
@@ -118,6 +122,7 @@ export async function activateCoupon(couponId: string): Promise<void> {
 
   revalidatePath("/admin/cupons");
   revalidatePath("/cupons");
+  revalidatePath("/ofertas");
 }
 
 function readCouponFormData(formData: FormData) {

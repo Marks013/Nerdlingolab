@@ -1,5 +1,6 @@
 import { CouponType } from "@/generated/prisma/client";
 import Link from "next/link";
+import { Eye, EyeOff, Flame, Gift, Percent, TicketPercent, Truck, Zap } from "lucide-react";
 
 import {
   activateCoupon,
@@ -11,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { CouponCampaignPresets } from "@/features/coupons/components/coupon-campaign-presets";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import type { AdminCouponListItem, getAdminCoupons } from "@/lib/coupons/queries";
 
@@ -25,29 +27,32 @@ export function CouponManager({ data }: CouponManagerProps): React.ReactElement 
   return (
     <div className="grid gap-6">
       <div>
-        <p className="text-sm text-muted-foreground">Comercial</p>
-        <h1 className="text-3xl font-bold tracking-normal">Cupons</h1>
-        <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+        <p className="text-sm font-black uppercase text-primary">Comercial</p>
+        <h1 className="text-balance text-3xl font-black tracking-normal text-black">Cupons e campanhas</h1>
+        <p className="mt-2 max-w-3xl text-pretty text-sm leading-6 text-muted-foreground">
           Crie campanhas, edite regras, acompanhe uso, limite por cliente, validade e cupons privados de atendimento/Nerdcoins.
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
-        <Metric label="Cadastrados" value={String(data.metrics.totalCount)} />
-        <Metric label="Ativos filtrados" value={String(data.metrics.activeCount)} />
-        <Metric label="Usos totais" value={String(data.metrics.usedCount)} />
-        <Metric label="Valor fixo usado" value={formatCurrency(data.metrics.fixedAmountCents)} />
+        <Metric icon={TicketPercent} label="Cadastrados" value={String(data.metrics.totalCount)} />
+        <Metric icon={Flame} label="Ativos filtrados" value={String(data.metrics.activeCount)} />
+        <Metric icon={Gift} label="Usos totais" value={String(data.metrics.usedCount)} />
+        <Metric icon={Percent} label="Valor fixo usado" value={formatCurrency(data.metrics.fixedAmountCents)} />
       </div>
       <div className="grid gap-4 md:grid-cols-3">
-        <Metric label="Públicos filtrados" value={String(data.metrics.publicCount)} />
-        <Metric label="Privados filtrados" value={String(data.metrics.privateCount)} />
-        <Metric label="Expirados filtrados" value={String(data.metrics.expiredCount)} />
+        <Metric icon={Eye} label="Públicos filtrados" value={String(data.metrics.publicCount)} />
+        <Metric icon={EyeOff} label="Privados filtrados" value={String(data.metrics.privateCount)} />
+        <Metric icon={Zap} label="Expirados filtrados" value={String(data.metrics.expiredCount)} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Campanhas e cupons</CardTitle>
+        <Card className="overflow-hidden border-orange-100 shadow-sm">
+          <CardHeader className="bg-[#fffaf6]">
+            <CardTitle className="flex items-center gap-2 text-balance">
+              <Flame className="size-5 text-primary" />
+              Campanhas e cupons
+            </CardTitle>
             <CardDescription>Ativos e desativados ficam separados para acompanhamento rápido.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-5">
@@ -60,10 +65,13 @@ export function CouponManager({ data }: CouponManagerProps): React.ReactElement 
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Novo cupom</CardTitle>
-            <CardDescription>Configure campanha, cupom privado ou crédito pontual.</CardDescription>
+        <Card className="overflow-hidden border-orange-100 shadow-sm">
+          <CardHeader className="bg-[#fffaf6]">
+            <CardTitle className="flex items-center gap-2 text-balance">
+              <TicketPercent className="size-5 text-primary" />
+              Novo cupom
+            </CardTitle>
+            <CardDescription>Configure campanha, cupom privado, frete especial ou crédito pontual.</CardDescription>
           </CardHeader>
           <CardContent>
             <CouponForm customers={data.customers} submitLabel="Criar cupom" />
@@ -128,8 +136,11 @@ function CouponDetails({
       </summary>
       <div className="grid gap-4 border-t p-4">
         <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-          <section className="grid content-start gap-3 rounded-lg border bg-muted/20 p-4">
-            <h3 className="font-semibold">Regras atuais</h3>
+          <section className="grid content-start gap-3 rounded-lg border border-orange-100 bg-orange-50/30 p-4">
+            <h3 className="flex items-center gap-2 font-semibold">
+              <TicketPercent className="size-4 text-primary" />
+              Regras atuais
+            </h3>
             <Info label="Subtotal mínimo" value={coupon.minSubtotalCents ? formatCurrency(coupon.minSubtotalCents) : "Sem mínimo"} />
             <Info label="Desconto máximo" value={coupon.maxDiscountCents ? formatCurrency(coupon.maxDiscountCents) : "Sem teto"} />
             <Info label="Limite global" value={coupon.usageLimit ? `${coupon.usedCount}/${coupon.usageLimit}` : "Ilimitado"} />
@@ -138,8 +149,11 @@ function CouponDetails({
             <Info label="Cliente vinculado" value={coupon.assignedUser?.name ?? coupon.assignedUser?.email ?? "Não vinculado"} />
           </section>
 
-          <section className="grid content-start gap-3 rounded-lg border bg-muted/20 p-4">
-            <h3 className="font-semibold">Uso recente</h3>
+          <section className="grid content-start gap-3 rounded-lg border border-orange-100 bg-orange-50/30 p-4">
+            <h3 className="flex items-center gap-2 font-semibold">
+              <Gift className="size-4 text-primary" />
+              Uso recente
+            </h3>
             {coupon.redemptions.map((redemption) => (
               <Link className="rounded-md border bg-background p-3 text-sm transition hover:bg-muted/40" href={`/admin/pedidos/${redemption.order.id}`} key={redemption.id}>
                 <span className="block font-semibold">{redemption.order.orderNumber}</span>
@@ -154,7 +168,7 @@ function CouponDetails({
           </section>
         </div>
 
-        <section className="rounded-lg border bg-card p-4">
+        <section className="rounded-lg border border-orange-100 bg-card p-4">
           <h3 className="font-semibold">Editar cupom</h3>
           <CouponForm coupon={coupon} customers={customers} submitLabel="Salvar alterações" />
         </section>
@@ -191,6 +205,7 @@ function CouponForm({
 }): React.ReactElement {
   return (
     <form action={coupon ? updateCoupon.bind(null, coupon.id) : createCoupon} className="mt-4 space-y-4">
+      <CouponCampaignPresets compact={Boolean(coupon)} />
       <Field defaultValue={coupon?.code ?? ""} label="Código" name="code" required />
       <label className="grid gap-2 text-sm font-medium">
         Tipo
@@ -200,6 +215,14 @@ function CouponForm({
           <option value={CouponType.FREE_SHIPPING}>Frete grátis</option>
         </select>
       </label>
+      <div className="grid gap-2 rounded-lg border border-orange-100 bg-white p-3 text-sm">
+        <p className="font-black text-black">Variações que vendem melhor</p>
+        <div className="grid gap-2 text-xs text-muted-foreground">
+          <CouponTypeTip icon={Percent} text="Percentual: ótimo para Black Friday, Dia do Consumidor e campanhas amplas." />
+          <CouponTypeTip icon={Gift} text="Valor fixo: comunica economia imediata e funciona bem em carrinhos menores." />
+          <CouponTypeTip icon={Truck} text="Frete grátis: reduz objeção de fechamento e ajuda carrinhos com ticket maior." />
+        </div>
+      </div>
       <Field defaultValue={coupon ? formatCouponValueInput(coupon) : ""} label="Valor" name="value" placeholder="10, 15% ou 25,00" required />
       <Field defaultValue={formatMoneyInput(coupon?.minSubtotalCents)} label="Subtotal mínimo" name="minSubtotal" placeholder="99,90" />
       <Field defaultValue={formatMoneyInput(coupon?.maxDiscountCents)} label="Desconto máximo" name="maxDiscount" placeholder="50,00" />
@@ -230,7 +253,7 @@ function CouponForm({
         <input defaultChecked={coupon?.isPublic ?? true} name="isPublic" type="checkbox" />
         Visível na página de cupons
       </label>
-      <Button className="w-full" type="submit">{submitLabel}</Button>
+      <Button className="w-full bg-emerald-600 text-white hover:bg-emerald-700" type="submit">{submitLabel}</Button>
     </form>
   );
 }
@@ -291,14 +314,40 @@ function Field({
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }): React.ReactElement {
+function Metric({
+  icon: Icon,
+  label,
+  value
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+}): React.ReactElement {
   return (
-    <Card>
+    <Card className="border-orange-100 shadow-sm">
       <CardContent className="p-5">
-        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          <Icon className="size-4 text-primary" />
+          {label}
+        </p>
         <p className="mt-2 text-2xl font-bold tabular-nums">{value}</p>
       </CardContent>
     </Card>
+  );
+}
+
+function CouponTypeTip({
+  icon: Icon,
+  text
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  text: string;
+}): React.ReactElement {
+  return (
+    <p className="flex items-start gap-2">
+      <Icon className="mt-0.5 size-4 shrink-0 text-primary" />
+      <span>{text}</span>
+    </p>
   );
 }
 

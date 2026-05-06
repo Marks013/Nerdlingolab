@@ -1,17 +1,14 @@
 "use client";
 
-import { Check, Copy, Share2 } from "lucide-react";
+import { Check, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { CouponCopyButton } from "@/features/coupons/components/coupon-copy-button";
 
 interface AnimatedProgressMeterProps {
   label: string;
   value: number;
-}
-
-interface CopyCouponButtonProps {
-  code: string;
 }
 
 interface ShareReferralButtonProps {
@@ -46,22 +43,7 @@ export function AnimatedProgressMeter({ label, value }: AnimatedProgressMeterPro
   );
 }
 
-export function CopyCouponButton({ code }: CopyCouponButtonProps): React.ReactElement {
-  const [copied, setCopied] = useState(false);
-
-  async function copyCode(): Promise<void> {
-    await copyText(code);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
-  }
-
-  return (
-    <Button className="w-full" onClick={() => void copyCode()} type="button" variant="outline">
-      {copied ? <Check className="mr-2 size-4" /> : <Copy className="mr-2 size-4" />}
-      {copied ? "Código copiado" : "Copiar código"}
-    </Button>
-  );
-}
+export { CouponCopyButton as CopyCouponButton };
 
 export function ShareReferralButton({ referralUrl }: ShareReferralButtonProps): React.ReactElement {
   const [shared, setShared] = useState(false);

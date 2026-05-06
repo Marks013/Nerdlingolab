@@ -2,6 +2,7 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
 import {
   CouponType,
@@ -30,6 +31,29 @@ const defaultReviewState: ProductReviewFormState = {
   ok: false
 };
 
+const productReviewSubmissionSchema = z.object({
+  assetIds: z.array(z.string().trim().regex(/^[a-z0-9]+$/i)).max(10),
+  body: z.string().trim().min(10).max(1200),
+  orderItemId: z.string().trim().min(1),
+  publicConsent: z.boolean(),
+  rating: z.coerce.number().int().min(1).max(5),
+  title: z.string().trim().max(90)
+});
+
+const productReviewSettingsSchema = z.object({
+  allowImages: z.boolean(),
+  allowVideos: z.boolean(),
+  couponExpiresInDays: z.coerce.number().int().min(1).max(365),
+  couponValueReais: z.string().trim().max(32),
+  isEnabled: z.boolean(),
+  maxImages: z.coerce.number().int().min(0).max(10),
+  maxVideoSeconds: z.coerce.number().int().min(5).max(180),
+  maxVideos: z.coerce.number().int().min(0).max(3),
+  nerdcoinsRewardPoints: z.coerce.number().int().min(0).max(10000),
+  requireDeliveredOrder: z.boolean(),
+  rewardMode: z.nativeEnum(ProductReviewRewardMode)
+});
+
 export async function submitProductReview(
   _previousState: ProductReviewFormState = defaultReviewState,
   formData: FormData
@@ -40,19 +64,20 @@ export async function submitProductReview(
     return { message: "Entre na sua conta para avaliar o produto.", ok: false };
   }
 
-  const orderItemId = String(formData.get("orderItemId") ?? "");
-  const rating = clampInteger(formData.get("rating"), 0, 1, 5);
-  const title = String(formData.get("title") ?? "").trim().slice(0, 90);
-  const body = String(formData.get("body") ?? "").trim().slice(0, 1200);
-  const publicConsent = formData.get("publicConsent") === "on";
-  const requestedAssetIds = formData
-    .getAll("assetIds")
-    .map((value) => String(value))
-    .filter((value) => /^[a-z0-9]+$/i.test(value));
+  const parsedReview = productReviewSubmissionSchema.safeParse({
+    assetIds: formData.getAll("assetIds"),
+    body: formData.get("body"),
+    orderItemId: formData.get("orderItemId"),
+    publicConsent: formData.get("publicConsent") === "on",
+    rating: formData.get("rating"),
+    title: formData.get("title") ?? ""
+  });
 
-  if (!orderItemId || rating < 1 || body.length < 10) {
+  if (!parsedReview.success) {
     return { message: "Informe uma nota e um comentário com pelo menos 10 caracteres.", ok: false };
   }
+
+  const { assetIds: requestedAssetIds, body, orderItemId, publicConsent, rating, title } = parsedReview.data;
 
   try {
     const settings = await getProductReviewSettings();
@@ -169,37 +194,37 @@ export async function submitProductReview(
 export async function updateProductReviewSettings(formData: FormData): Promise<void> {
   await requireAdmin();
 
-  const rewardMode = parseRewardMode(formData.get("rewardMode"));
-  const couponValueCents = Math.max(0, parseCurrencyToCents(String(formData.get("couponValueReais") ?? "")));
+  const parsedSettings = productReviewSettingsSchema.safeParse({
+    allowImages: formData.get("allowImages") === "on",
+    allowVideos: formData.get("allowVideos") === "on",
+    couponExpiresInDays: formData.get("couponExpiresInDays"),
+    couponValueReais: formData.get("couponValueReais") ?? "",
+    isEnabled: formData.get("isEnabled") === "on",
+    maxImages: formData.get("maxImages"),
+    maxVideoSeconds: formData.get("maxVideoSeconds"),
+    maxVideos: formData.get("maxVideos"),
+    nerdcoinsRewardPoints: formData.get("nerdcoinsRewardPoints"),
+    requireDeliveredOrder: formData.get("requireDeliveredOrder") === "on",
+    rewardMode: parseRewardMode(formData.get("rewardMode"))
+  });
+
+  if (!parsedSettings.success) {
+    throw new Error("Revise as configurações de avaliação antes de salvar.");
+  }
+
+  const { couponValueReais, ...settingsInput } = parsedSettings.data;
+  const couponValueCents = Math.max(0, parseCurrencyToCents(couponValueReais));
+  const settingsData = {
+    ...settingsInput,
+    couponValueCents
+  };
 
   await prisma.productReviewSettings.upsert({
     create: {
-      allowImages: formData.get("allowImages") === "on",
-      allowVideos: formData.get("allowVideos") === "on",
-      couponExpiresInDays: clampInteger(formData.get("couponExpiresInDays"), 30, 1, 365),
-      couponValueCents,
-      isEnabled: formData.get("isEnabled") === "on",
-      maxImages: clampInteger(formData.get("maxImages"), 3, 0, 10),
-      maxVideoSeconds: clampInteger(formData.get("maxVideoSeconds"), 30, 5, 180),
-      maxVideos: clampInteger(formData.get("maxVideos"), 1, 0, 3),
-      nerdcoinsRewardPoints: clampInteger(formData.get("nerdcoinsRewardPoints"), 50, 0, 10000),
-      requireDeliveredOrder: formData.get("requireDeliveredOrder") === "on",
-      rewardMode,
+      ...settingsData,
       singletonKey: "default"
     },
-    update: {
-      allowImages: formData.get("allowImages") === "on",
-      allowVideos: formData.get("allowVideos") === "on",
-      couponExpiresInDays: clampInteger(formData.get("couponExpiresInDays"), 30, 1, 365),
-      couponValueCents,
-      isEnabled: formData.get("isEnabled") === "on",
-      maxImages: clampInteger(formData.get("maxImages"), 3, 0, 10),
-      maxVideoSeconds: clampInteger(formData.get("maxVideoSeconds"), 30, 5, 180),
-      maxVideos: clampInteger(formData.get("maxVideos"), 1, 0, 3),
-      nerdcoinsRewardPoints: clampInteger(formData.get("nerdcoinsRewardPoints"), 50, 0, 10000),
-      requireDeliveredOrder: formData.get("requireDeliveredOrder") === "on",
-      rewardMode
-    },
+    update: settingsData,
     where: { singletonKey: "default" }
   });
 

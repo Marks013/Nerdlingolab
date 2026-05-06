@@ -165,7 +165,7 @@ function FooterColumn({
       <ul className="mt-6 grid gap-4 text-base">
         {links.map((link) => (
           <li key={link.label}>
-            <Link className="underline-offset-4 transition hover:translate-x-0.5 hover:text-primary hover:underline" href={link.href}>
+            <Link className="underline-offset-4 transition hover:translate-x-0.5 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" href={link.href}>
               {link.label}
             </Link>
           </li>
@@ -187,7 +187,7 @@ function SecurityLogoBadge({
   return (
     <Link
       aria-label={label}
-      className="inline-flex h-10 min-w-[104px] items-center justify-center rounded-md border border-[#d9e0e4] bg-white px-2 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md"
+      className="inline-flex h-10 min-w-[104px] items-center justify-center rounded-md border border-[#d9e0e4] bg-white px-2 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       href={href}
       rel="noopener noreferrer"
       target="_blank"

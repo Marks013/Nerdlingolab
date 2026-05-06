@@ -187,9 +187,9 @@ export function ProductPurchasePanel({
       </div>
 
       <a
-        className="mt-5 inline-flex h-12 w-full items-center justify-center rounded-lg border border-[#9ee8c1] bg-[#f2fff8] px-4 text-sm font-black text-[#168a4d]"
+        className="mt-5 inline-flex h-12 w-full items-center justify-center rounded-lg border border-[#9ee8c1] bg-[#f2fff8] px-4 text-sm font-black text-[#168a4d] transition hover:border-[#168a4d]/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#168a4d]"
         href={whatsappHref}
-        rel="noreferrer"
+        rel="noopener noreferrer"
         target="_blank"
       >
         <MessageCircle className="mr-2 h-5 w-5" />
@@ -197,8 +197,9 @@ export function ProductPurchasePanel({
       </a>
 
       <button
+        aria-pressed={isFavorite}
         className={[
-          "mt-5 inline-flex h-12 w-full items-center justify-center rounded-lg border-2 px-4 text-sm font-black transition",
+          "mt-5 inline-flex h-12 w-full items-center justify-center rounded-lg border-2 px-4 text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
           isFavorite
             ? "border-primary bg-primary text-white shadow-sm"
             : "border-primary/60 bg-[#fff7ed] text-primary hover:border-primary hover:bg-[#fff0e3]"

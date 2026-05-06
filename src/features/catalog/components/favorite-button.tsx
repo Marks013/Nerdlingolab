@@ -32,7 +32,8 @@ export function FavoriteButton({ product }: FavoriteButtonProps): React.ReactEle
   return (
     <button
       aria-label={isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
-      className={`inline-flex h-10 w-10 items-center justify-center rounded-full shadow-sm transition ${
+      aria-pressed={isFavorite}
+      className={`inline-flex size-10 items-center justify-center rounded-full shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
         isFavorite ? "bg-primary text-white" : "bg-white/90 text-[#1c1c1c] hover:bg-white"
       }`}
       onClick={toggleFavorite}
@@ -55,8 +56,12 @@ export function toggleFavoriteProduct(product: FavoriteProduct): boolean {
     ? favorites.filter((favorite) => favorite.id !== product.id)
     : [product, ...favorites];
 
-  window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(nextFavorites));
-  window.dispatchEvent(new Event("nerdlingolab:favorites-updated"));
+  try {
+    window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(nextFavorites));
+    window.dispatchEvent(new Event("nerdlingolab:favorites-updated"));
+  } catch {
+    return isFavorite;
+  }
 
   return !isFavorite;
 }

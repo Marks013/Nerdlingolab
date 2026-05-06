@@ -122,13 +122,25 @@ export async function cancelUnpaidOrder(orderId: string, formData: FormData): Pr
           canceledAt: new Date(),
           canceledByUserId: session?.user?.id ?? null,
           cancellationReason: parsedReason.data,
-          paymentStatus: isPaidOrder ? PaymentStatus.REFUNDED : PaymentStatus.CANCELED,
-          refundedAt: isPaidOrder ? new Date() : null,
-          refundAmountCents: refundResult?.amountCents ?? (isPaidOrder ? order.totalCents : null),
-          refundIdempotencyKey: isPaidOrder ? refundIdempotencyKey : null,
-          refundProviderId: refundResult?.providerId ?? null,
-          refundStatus: refundResult?.status ?? null,
-          status: isPaidOrder ? OrderStatus.REFUNDED : OrderStatus.CANCELED
+          ...(isPaidOrder
+            ? {
+                paymentStatus: PaymentStatus.REFUNDED,
+                refundedAt: new Date(),
+                refundAmountCents: refundResult?.amountCents ?? order.totalCents,
+                refundIdempotencyKey,
+                refundProviderId: refundResult?.providerId ?? null,
+                refundStatus: refundResult?.status ?? null,
+                status: OrderStatus.REFUNDED
+              }
+            : {
+                paymentStatus: PaymentStatus.CANCELED,
+                refundedAt: null,
+                refundAmountCents: null,
+                refundIdempotencyKey: null,
+                refundProviderId: null,
+                refundStatus: null,
+                status: OrderStatus.CANCELED
+              })
         }
       });
     });

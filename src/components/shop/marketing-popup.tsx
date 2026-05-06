@@ -20,7 +20,7 @@ export function MarketingPopup({ popup }: MarketingPopupProps): React.ReactEleme
       return undefined;
     }
 
-    const lastSeenAt = Number(window.localStorage.getItem(storageKey) ?? "0");
+    const lastSeenAt = readPopupSeenAt(storageKey);
     const canShowAt = lastSeenAt + popup.frequencyHours * 60 * 60 * 1000;
 
     if (Date.now() < canShowAt) {
@@ -39,7 +39,7 @@ export function MarketingPopup({ popup }: MarketingPopupProps): React.ReactEleme
 
   function close(): void {
     if (storageKey) {
-      window.localStorage.setItem(storageKey, String(Date.now()));
+      savePopupSeenAt(storageKey);
     }
     setIsVisible(false);
   }
@@ -47,11 +47,11 @@ export function MarketingPopup({ popup }: MarketingPopupProps): React.ReactEleme
   const isWelcomeOffer = popup.id === "welcome-nerdcoins-r10";
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/55 px-4 py-6 backdrop-blur-sm sm:items-center">
+    <div aria-modal="true" className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 px-4 py-6 sm:items-center" role="dialog">
       <section className="manga-panel relative grid w-full max-w-3xl overflow-hidden rounded-lg border-2 border-primary bg-white shadow-2xl sm:grid-cols-[0.95fr_1.05fr]">
         <button
           aria-label="Fechar anúncio"
-          className="absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-black shadow-sm transition hover:scale-105 hover:text-primary"
+          className="absolute right-3 top-3 z-10 inline-flex size-9 items-center justify-center rounded-full bg-white text-black shadow-sm transition hover:scale-105 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           onClick={close}
           type="button"
         >
@@ -88,7 +88,7 @@ export function MarketingPopup({ popup }: MarketingPopupProps): React.ReactEleme
 
           {popup.ctaHref && popup.ctaLabel ? (
             <Link
-              className="mt-6 inline-flex h-12 items-center justify-center rounded-lg bg-primary px-6 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-primary/90"
+              className="mt-6 inline-flex h-12 items-center justify-center rounded-lg bg-primary px-6 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               href={popup.ctaHref}
               onClick={close}
             >
@@ -99,4 +99,20 @@ export function MarketingPopup({ popup }: MarketingPopupProps): React.ReactEleme
       </section>
     </div>
   );
+}
+
+function readPopupSeenAt(storageKey: string): number {
+  try {
+    return Number(window.localStorage.getItem(storageKey) ?? "0");
+  } catch {
+    return 0;
+  }
+}
+
+function savePopupSeenAt(storageKey: string): void {
+  try {
+    window.localStorage.setItem(storageKey, String(Date.now()));
+  } catch {
+    // Storage can be unavailable in private modes; closing still works in memory.
+  }
 }

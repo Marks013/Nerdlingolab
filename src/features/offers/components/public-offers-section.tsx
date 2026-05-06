@@ -51,7 +51,7 @@ export function PublicOffersSection({
       {coupons.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-3">
           {coupons.map((coupon) => (
-            <article className="overflow-hidden rounded-lg border-2 border-primary/20 bg-white shadow-sm" key={coupon.code}>
+            <article className="flex min-h-[310px] flex-col overflow-hidden rounded-lg border-2 border-primary/20 bg-white shadow-sm" key={coupon.code}>
               <div className="border-b border-primary/15 bg-primary px-4 py-3 text-white">
                 <div className="flex items-center gap-2">
                   <TicketPercent className="size-5" />
@@ -59,7 +59,7 @@ export function PublicOffersSection({
                 </div>
                 <p className="mt-2 text-2xl font-black">{formatPublicCouponBenefit(coupon)}</p>
               </div>
-              <div className="p-4">
+              <div className="flex flex-1 flex-col p-4">
                 <p className="text-sm font-semibold text-[#4f5d65]">Digite no carrinho:</p>
                 <p className="mt-2 inline-flex rounded-lg border-2 border-dashed border-primary/50 bg-[#fff7ed] px-4 py-2 font-mono text-base font-black text-primary">
                   {coupon.code}
@@ -76,7 +76,7 @@ export function PublicOffersSection({
                     <p>⏳ Válido enquanto estiver ativo no site.</p>
                   )}
                 </div>
-                <Button asChild className="mt-5 w-full">
+                <Button asChild className="mt-auto w-full">
                   <Link href="/carrinho">
                     <Gift className="mr-2 size-4" />
                     Usar no carrinho

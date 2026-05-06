@@ -18,8 +18,18 @@ detect_compose_cmd() {
     return
   fi
 
+  if sudo docker compose version >/dev/null 2>&1; then
+    echo "sudo docker compose"
+    return
+  fi
+
   if command -v docker-compose >/dev/null 2>&1; then
     echo "docker-compose"
+    return
+  fi
+
+  if command -v sudo >/dev/null 2>&1 && sudo docker-compose version >/dev/null 2>&1; then
+    echo "sudo docker-compose"
     return
   fi
 

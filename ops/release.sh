@@ -34,12 +34,36 @@ detect_compose_cmd() {
     return
   fi
 
+  if sudo docker compose version >/dev/null 2>&1; then
+    echo "sudo docker compose"
+    return
+  fi
+
   if command -v docker-compose >/dev/null 2>&1; then
     echo "docker-compose"
     return
   fi
 
+  if command -v sudo >/dev/null 2>&1 && sudo docker-compose version >/dev/null 2>&1; then
+    echo "sudo docker-compose"
+    return
+  fi
+
   fail "Docker Compose nao esta disponivel no host."
+}
+
+detect_docker_cmd() {
+  if docker info >/dev/null 2>&1; then
+    echo "docker"
+    return
+  fi
+
+  if sudo docker info >/dev/null 2>&1; then
+    echo "sudo docker"
+    return
+  fi
+
+  fail "Docker nao esta disponivel no host."
 }
 
 read_env_value() {
@@ -103,12 +127,13 @@ on_error() {
 trap on_error ERR
 
 COMPOSE_CMD="$(detect_compose_cmd)"
+DOCKER_CMD="$(detect_docker_cmd)"
 mkdir -p "$MANIFEST_DIR"
 
 rollback_tag=""
-if docker image inspect "$APP_IMAGE" >/dev/null 2>&1; then
+if $DOCKER_CMD image inspect "$APP_IMAGE" >/dev/null 2>&1; then
   rollback_tag="nerdlingolab-commerce-app:rollback-${STAMP}"
-  docker tag "$APP_IMAGE" "$rollback_tag"
+  $DOCKER_CMD tag "$APP_IMAGE" "$rollback_tag"
 fi
 
 {

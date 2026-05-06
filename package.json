@@ -17,6 +17,7 @@
     "audit:images": "node scripts/audit-image-sources.mjs",
     "audit:ecommerce": "node scripts/audit-ecommerce-contracts.mjs",
     "audit:actions": "node scripts/audit-server-actions.mjs",
+    "audit:maintenance": "node scripts/audit-maintenance-mode.mjs",
     "validate:contrast": "node scripts/check-contrast.mjs",
     "import:shopify": "tsx scripts/import-shopify-products.mjs",
     "shopify:backfill-source-links": "tsx scripts/backfill-shopify-source-links.mjs",
@@ -33,6 +34,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:reset": "prisma migrate reset",
+    "release:docker": "bash ops/release.sh",
     "setup": "prisma generate && prisma migrate dev && prisma db seed"
   },
   "dependencies": {

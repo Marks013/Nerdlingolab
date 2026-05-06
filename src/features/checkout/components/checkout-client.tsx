@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CheckCircle2, CreditCard, MapPin, PackageCheck, ShieldCheck, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -162,13 +163,16 @@ export function CheckoutClient({
   if (items.length === 0) {
     if (message) {
       return (
-        <Card>
-          <CardHeader>
-            <CardTitle>Pedido criado</CardTitle>
-            <CardDescription>{message}</CardDescription>
+        <Card className="overflow-hidden border-emerald-200 shadow-sm">
+          <CardHeader className="bg-emerald-50 text-center">
+            <span className="mx-auto flex size-14 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-700">
+              <CheckCircle2 className="size-7" />
+            </span>
+            <CardTitle className="mt-3 text-balance text-2xl font-black text-emerald-900">Pedido criado</CardTitle>
+            <CardDescription className="text-pretty text-emerald-800">{message}</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button asChild>
+          <CardContent className="flex justify-center p-6">
+            <Button asChild className="bg-emerald-600 text-white hover:bg-emerald-700">
               <Link href="/produtos">Continuar comprando</Link>
             </Button>
           </CardContent>
@@ -177,13 +181,16 @@ export function CheckoutClient({
     }
 
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Carrinho vazio</CardTitle>
-          <CardDescription>Adicione produtos antes de iniciar o checkout.</CardDescription>
+      <Card className="overflow-hidden border-orange-100 shadow-sm">
+        <CardHeader className="bg-[#fffaf6] text-center">
+          <span className="mx-auto flex size-14 items-center justify-center rounded-full border border-primary/20 bg-white text-primary">
+            <ShoppingBag className="size-7" />
+          </span>
+          <CardTitle className="mt-3 text-balance text-2xl font-black text-black">Carrinho vazio</CardTitle>
+          <CardDescription className="text-pretty">Adicione produtos antes de iniciar o checkout.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Button asChild>
+        <CardContent className="flex justify-center p-6">
+          <Button asChild className="bg-primary text-white hover:bg-primary/90">
             <Link href="/produtos">Ver produtos</Link>
           </Button>
         </CardContent>
@@ -192,10 +199,24 @@ export function CheckoutClient({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Dados de entrega</CardTitle>
-        <CardDescription>Preencha seus dados para seguir para o pagamento.</CardDescription>
+    <Card className="overflow-hidden border-orange-100 shadow-sm">
+      <CardHeader className="bg-[#fffaf6]">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-balance text-2xl font-black text-black">
+              <PackageCheck className="size-6 text-primary" />
+              Dados de entrega
+            </CardTitle>
+            <CardDescription className="mt-2 text-pretty">
+              Confirme entrega, dados do pedido e siga para o ambiente protegido do Mercado Pago.
+            </CardDescription>
+          </div>
+          <div className="grid gap-2 text-sm sm:grid-cols-3 lg:w-[430px]">
+            <CheckoutTrustBadge icon={MapPin} text="Entrega conferida" />
+            <CheckoutTrustBadge icon={ShieldCheck} text="Compra protegida" />
+            <CheckoutTrustBadge icon={CreditCard} text="Mercado Pago" />
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <form action={handleSubmit} className="grid gap-4 md:grid-cols-2">
@@ -205,7 +226,7 @@ export function CheckoutClient({
               <div className="grid gap-3">
                 {addressOptions.map((address) => (
                   <label
-                    className="flex cursor-pointer gap-3 rounded-md border p-3 text-sm"
+                    className="flex cursor-pointer gap-3 rounded-lg border border-orange-100 bg-white p-3 text-sm shadow-sm transition hover:border-primary/50 hover:bg-orange-50/50"
                     key={address.id}
                   >
                     <input
@@ -227,7 +248,7 @@ export function CheckoutClient({
                     </span>
                   </label>
                 ))}
-                <label className="flex cursor-pointer gap-3 rounded-md border p-3 text-sm">
+                <label className="flex cursor-pointer gap-3 rounded-lg border border-orange-100 bg-white p-3 text-sm shadow-sm transition hover:border-primary/50 hover:bg-orange-50/50">
                   <input
                     checked={!selectedAddressId}
                     className="mt-1 h-4 w-4"
@@ -242,7 +263,7 @@ export function CheckoutClient({
             </fieldset>
           ) : null}
           {customerProfile ? (
-            <div className="rounded-lg border bg-[#fffaf6] p-4 text-sm md:col-span-2">
+            <div className="rounded-lg border border-orange-100 bg-[#fffaf6] p-4 text-sm md:col-span-2">
               <p className="font-black text-black">Dados da conta</p>
               <p className="mt-2 text-[#4f5d65]">
                 {customerName} · {customerEmail}
@@ -347,24 +368,44 @@ export function CheckoutClient({
             </>
           ) : null}
           <label className="grid gap-2 text-sm font-medium md:col-span-2">
-            Observacao do pedido
+            Observação do pedido
             <textarea
-              className="min-h-28 resize-y rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="min-h-28 resize-y rounded-md border border-orange-200 bg-white px-3 py-2 text-sm shadow-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               maxLength={1000}
               name="customerNote"
-              placeholder="Ex.: instrucoes para entrega, preferencia de contato ou alguma observacao sobre o pedido."
+              placeholder="Ex.: instruções para entrega, preferência de contato ou alguma observação sobre o pedido."
             />
             <span className="text-xs font-normal text-muted-foreground">
-              Opcional. Evite informar dados sensiveis como senhas ou dados de cartao.
+              Opcional. Evite informar dados sensíveis como senhas ou dados de cartão.
             </span>
           </label>
-          <Button className="md:col-span-2" disabled={isSubmitting} type="submit">
+          <Button className="h-12 bg-emerald-600 text-base font-black text-white hover:bg-emerald-700 md:col-span-2" disabled={isSubmitting} type="submit">
+            <CreditCard className="mr-2 size-5" />
             {isSubmitting ? "Criando pedido..." : "Pagar com Mercado Pago"}
           </Button>
-          {message ? <p className="md:col-span-2 text-sm text-muted-foreground">{message}</p> : null}
+          {message ? (
+            <p className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-900 md:col-span-2">
+              {message}
+            </p>
+          ) : null}
         </form>
       </CardContent>
     </Card>
+  );
+}
+
+function CheckoutTrustBadge({
+  icon: Icon,
+  text
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  text: string;
+}): React.ReactElement {
+  return (
+    <span className="inline-flex items-center justify-center gap-2 rounded-lg border border-orange-100 bg-white px-3 py-2 font-bold text-[#3a2a1c] shadow-sm">
+      <Icon className="size-4 text-primary" />
+      {text}
+    </span>
   );
 }
 

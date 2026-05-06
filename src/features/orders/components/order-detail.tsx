@@ -1,16 +1,25 @@
+import Link from "next/link";
+import { ClipboardList, CreditCard, FileText, MapPin, MessageSquareText, PackageCheck, ReceiptText, RotateCcw, ShieldAlert, Tag, Truck, UserRound } from "lucide-react";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { saveManualShipment, syncMelhorEnvioOrderShipment, syncMercadoEnviosOrderShipment } from "@/actions/orders";
+import { SafeImage as Image } from "@/components/media/safe-image";
+import { getPrimaryImageUrl } from "@/features/catalog/image-utils";
 import { OrderActions } from "@/features/orders/components/order-actions";
 import { ShipmentTrackingPanel } from "@/features/orders/components/shipment-tracking-panel";
 import {
+  formatContextualOrderStatus,
+  formatContextualPaymentStatus,
   formatFulfillmentStatus,
-  formatOrderStatus,
-  formatPaymentStatus
+  getFulfillmentStatusTone,
+  getOrderStatusTone,
+  getPaymentStatusTone
 } from "@/features/orders/status-labels";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import type { AdminOrderDetail } from "@/lib/orders/queries";
+import { cn } from "@/lib/utils";
 
 interface OrderDetailProps {
   order: AdminOrderDetail;
@@ -20,15 +29,33 @@ export function OrderDetail({ order }: OrderDetailProps): React.ReactElement {
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
       <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>{order.orderNumber}</CardTitle>
+        <Card className="overflow-hidden border-orange-100 shadow-sm">
+          <CardHeader className="bg-[#fffaf6]">
+            <CardTitle className="flex items-center gap-2 text-balance text-2xl font-black">
+              <ReceiptText className="size-6 text-primary" />
+              {order.orderNumber}
+            </CardTitle>
             <CardDescription>Criado em {formatDateTime(order.createdAt)}</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 text-sm md:grid-cols-3">
-            <StatusLine label="Pedido" value={formatOrderStatus(order.status)} />
-            <StatusLine label="Pagamento" value={formatPaymentStatus(order.paymentStatus)} />
-            <StatusLine label="Envio" value={formatFulfillmentStatus(order.fulfillmentStatus)} />
+            <StatusLine
+              className={getOrderStatusTone(order.status)}
+              icon={<PackageCheck className="size-4" />}
+              label="Pedido"
+              value={formatContextualOrderStatus(order.status)}
+            />
+            <StatusLine
+              className={getPaymentStatusTone(order.paymentStatus)}
+              icon={<CreditCard className="size-4" />}
+              label="Pagamento"
+              value={formatContextualPaymentStatus(order.paymentStatus)}
+            />
+            <StatusLine
+              className={getFulfillmentStatusTone(order.fulfillmentStatus)}
+              icon={<Truck className="size-4" />}
+              label="Entrega"
+              value={formatFulfillmentStatus(order.fulfillmentStatus)}
+            />
           </CardContent>
         </Card>
 
@@ -42,13 +69,16 @@ export function OrderDetail({ order }: OrderDetailProps): React.ReactElement {
       <div className="space-y-6">
         <CustomerCard order={order} />
         <TotalsCard order={order} />
-        <Card>
-          <CardHeader>
-            <CardTitle>Documentos</CardTitle>
+        <Card className="overflow-hidden border-orange-100 shadow-sm">
+          <CardHeader className="bg-[#fffaf6]">
+            <CardTitle className="flex items-center gap-2 text-balance">
+              <FileText className="size-5 text-primary" />
+              Documentos
+            </CardTitle>
             <CardDescription>Arquivos administrativos do pedido.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild className="w-full" variant="outline">
+            <Button asChild className="w-full border-primary/50 bg-white text-primary hover:bg-primary/10" variant="outline">
               <a href={`/api/admin/orders/${order.id}/invoice.pdf`}>Baixar fatura PDF</a>
             </Button>
           </CardContent>
@@ -65,9 +95,12 @@ function CancellationCard({ order }: OrderDetailProps): React.ReactElement | nul
   }
 
   return (
-    <Card className="border-orange-200 bg-orange-50/70 dark:bg-orange-950/20">
-      <CardHeader>
-        <CardTitle>Cancelamento</CardTitle>
+    <Card className="overflow-hidden border-orange-200 bg-orange-50/70 shadow-sm dark:bg-orange-950/20">
+      <CardHeader className="bg-orange-100/60">
+        <CardTitle className="flex items-center gap-2 text-balance">
+          <RotateCcw className="size-5 text-primary" />
+          Cancelamento e reembolso
+        </CardTitle>
         <CardDescription>
           {order.refundedAt
             ? `Reembolso registrado em ${formatDateTime(order.refundedAt)}`
@@ -82,6 +115,8 @@ function CancellationCard({ order }: OrderDetailProps): React.ReactElement | nul
         </p>
         {order.refundStatus ? (
           <StatusLine
+            className="border-violet-200 bg-white text-violet-700"
+            icon={<RotateCcw className="size-4" />}
             label="Reembolso Mercado Pago"
             value={`${order.refundStatus}${order.refundAmountCents ? ` / ${formatCurrency(order.refundAmountCents)}` : ""}`}
           />
@@ -97,9 +132,12 @@ function CustomerNoteCard({ order }: OrderDetailProps): React.ReactElement | nul
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Observacao do cliente</CardTitle>
+    <Card className="overflow-hidden border-orange-100 shadow-sm">
+      <CardHeader className="bg-[#fffaf6]">
+        <CardTitle className="flex items-center gap-2 text-balance">
+          <MessageSquareText className="size-5 text-primary" />
+          Observação do cliente
+        </CardTitle>
         <CardDescription>Mensagem informada no checkout.</CardDescription>
       </CardHeader>
       <CardContent>
@@ -113,9 +151,12 @@ function CustomerNoteCard({ order }: OrderDetailProps): React.ReactElement | nul
 
 function ShippingCard({ order }: OrderDetailProps): React.ReactElement {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Entrega e rastreamento</CardTitle>
+    <Card className="overflow-hidden border-orange-100 shadow-sm" id="rastreamento">
+      <CardHeader className="bg-[#fffaf6]">
+        <CardTitle className="flex items-center gap-2 text-balance">
+          <Truck className="size-5 text-primary" />
+          Entrega e rastreamento
+        </CardTitle>
         <CardDescription>
           Frete escolhido: {order.shippingServiceName ?? "Não definido"} · {formatCurrency(order.shippingCents)}
         </CardDescription>
@@ -123,28 +164,37 @@ function ShippingCard({ order }: OrderDetailProps): React.ReactElement {
       <CardContent className="space-y-6 text-sm">
         <ShipmentTrackingPanel shipments={order.shipments} />
 
-        <form action={saveManualShipment.bind(null, order.id)} className="grid gap-3 rounded-md border p-4">
-          <p className="font-medium">Registrar rastreio manual</p>
+        <form action={saveManualShipment.bind(null, order.id)} className="grid gap-3 rounded-lg border border-orange-100 bg-white p-4 shadow-sm">
+          <p className="flex items-center gap-2 font-bold text-black">
+            <ClipboardList className="size-4 text-primary" />
+            Registrar rastreio manual
+          </p>
           <Input name="carrierName" placeholder="Transportadora" required />
           <Input name="trackingNumber" placeholder="Código de rastreio" required />
           <Input name="carrierUrl" placeholder="Link de acompanhamento" />
-          <button className="rounded-md border px-3 py-2 text-sm font-medium" type="submit">
+          <button className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-black text-white transition hover:bg-emerald-700" type="submit">
             Salvar rastreamento
           </button>
         </form>
 
-        <form action={syncMercadoEnviosOrderShipment.bind(null, order.id)} className="grid gap-3 rounded-md border p-4">
-          <p className="font-medium">Sincronizar Mercado Envios</p>
+        <form action={syncMercadoEnviosOrderShipment.bind(null, order.id)} className="grid gap-3 rounded-lg border border-orange-100 bg-white p-4 shadow-sm">
+          <p className="flex items-center gap-2 font-bold text-black">
+            <ShieldAlert className="size-4 text-primary" />
+            Sincronizar Mercado Envios
+          </p>
           <Input name="externalShipmentId" placeholder="Código de envio Mercado Envios" required />
-          <button className="rounded-md border px-3 py-2 text-sm font-medium" type="submit">
+          <button className="rounded-md bg-primary px-3 py-2 text-sm font-black text-white transition hover:bg-primary/90" type="submit">
             Sincronizar entrega
           </button>
         </form>
 
-        <form action={syncMelhorEnvioOrderShipment.bind(null, order.id)} className="grid gap-3 rounded-md border p-4">
-          <p className="font-medium">Sincronizar Melhor Envio</p>
+        <form action={syncMelhorEnvioOrderShipment.bind(null, order.id)} className="grid gap-3 rounded-lg border border-orange-100 bg-white p-4 shadow-sm">
+          <p className="flex items-center gap-2 font-bold text-black">
+            <Truck className="size-4 text-primary" />
+            Sincronizar Melhor Envio
+          </p>
           <Input name="externalShipmentId" placeholder="Código da etiqueta Melhor Envio" required />
-          <button className="rounded-md border px-3 py-2 text-sm font-medium" type="submit">
+          <button className="rounded-md bg-primary px-3 py-2 text-sm font-black text-white transition hover:bg-primary/90" type="submit">
             Sincronizar rastreio
           </button>
         </form>
@@ -153,35 +203,68 @@ function ShippingCard({ order }: OrderDetailProps): React.ReactElement {
   );
 }
 
-function StatusLine({ label, value }: { label: string; value: string }): React.ReactElement {
+function StatusLine({
+  className,
+  icon,
+  label,
+  value
+}: {
+  className?: string;
+  icon?: React.ReactNode;
+  label: string;
+  value: string;
+}): React.ReactElement {
   return (
-    <div>
-      <p className="text-muted-foreground">{label}</p>
-      <p className="font-medium">{value}</p>
+    <div className={cn("rounded-lg border p-4", className ?? "border-orange-100 bg-white text-black")}>
+      <p className="flex items-center gap-2 text-xs font-bold uppercase">{icon}{label}</p>
+      <p className="mt-2 text-lg font-black tabular-nums">{value}</p>
     </div>
   );
 }
 
 function OrderItemsCard({ order }: OrderDetailProps): React.ReactElement {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Itens</CardTitle>
+    <Card className="overflow-hidden border-orange-100 shadow-sm">
+      <CardHeader className="bg-[#fffaf6]">
+        <CardTitle className="flex items-center gap-2 text-balance">
+          <PackageCheck className="size-5 text-primary" />
+          Itens
+        </CardTitle>
         <CardDescription>Itens registrados no momento da compra.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="divide-y rounded-md border">
-          {order.items.map((item) => (
-            <div key={item.id} className="grid gap-2 p-4 md:grid-cols-[1fr_auto]">
-              <div>
-                <p className="font-medium">{item.productTitle}</p>
+        <div className="grid gap-3">
+          {order.items.map((item) => {
+            const imageUrl = getPrimaryImageUrl(item.product.images);
+
+            return (
+            <div key={item.id} className="rounded-lg border border-orange-100 bg-white p-4 shadow-sm">
+              <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
+                <div className="flex gap-4">
+                  <Link
+                    className="relative size-16 shrink-0 overflow-hidden rounded-lg border border-orange-100 bg-orange-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    href={`/produtos/${item.product.slug}`}
+                  >
+                    {imageUrl ? (
+                      <Image alt={item.productTitle} className="object-cover" fill sizes="64px" src={imageUrl} />
+                    ) : (
+                      <span className="flex h-full items-center justify-center text-[10px] font-bold text-primary">NLL</span>
+                    )}
+                  </Link>
+                  <div className="min-w-0">
+                    <Link className="font-semibold text-black transition hover:text-primary" href={`/produtos/${item.product.slug}`}>
+                      {item.productTitle}
+                    </Link>
                 <p className="text-sm text-muted-foreground">
                   {item.variantTitle ?? "Padrão"} · SKU {item.sku ?? "-"} · qtd. {item.quantity}
                 </p>
+                  </div>
+                </div>
+                <p className="rounded-lg bg-orange-50 px-3 py-2 font-black text-primary tabular-nums">{formatCurrency(item.totalCents)}</p>
               </div>
-              <p className="font-semibold">{formatCurrency(item.totalCents)}</p>
             </div>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>
@@ -192,14 +275,18 @@ function CustomerCard({ order }: OrderDetailProps): React.ReactElement {
   const address = order.shippingAddress as Record<string, string | undefined>;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Cliente</CardTitle>
+    <Card className="overflow-hidden border-orange-100 shadow-sm">
+      <CardHeader className="bg-[#fffaf6]">
+        <CardTitle className="flex items-center gap-2 text-balance">
+          <UserRound className="size-5 text-primary" />
+          Cliente
+        </CardTitle>
         <CardDescription>{order.user?.email ?? order.email}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
         <p>{order.user?.name ?? order.email}</p>
-        <p className="text-muted-foreground">
+        <p className="rounded-lg border border-orange-100 bg-white p-3 text-muted-foreground">
+          <MapPin className="mb-2 size-4 text-primary" />
           {address.street}, {address.number} · {address.district}
           <br />
           {address.city}/{address.state} · {address.postalCode}
@@ -211,9 +298,12 @@ function CustomerCard({ order }: OrderDetailProps): React.ReactElement {
 
 function TotalsCard({ order }: OrderDetailProps): React.ReactElement {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Totais</CardTitle>
+    <Card className="overflow-hidden border-orange-100 shadow-sm">
+      <CardHeader className="bg-[#fffaf6]">
+        <CardTitle className="flex items-center gap-2 text-balance">
+          <Tag className="size-5 text-primary" />
+          Totais
+        </CardTitle>
         <CardDescription>{order.coupon?.code ? `Cupom ${order.coupon.code}` : "Sem cupom"}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
@@ -246,9 +336,12 @@ function MoneyLine({
 
 function LedgerCard({ order }: OrderDetailProps): React.ReactElement {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Histórico operacional</CardTitle>
+    <Card className="overflow-hidden border-orange-100 shadow-sm">
+      <CardHeader className="bg-[#fffaf6]">
+        <CardTitle className="flex items-center gap-2 text-balance">
+          <ClipboardList className="size-5 text-primary" />
+          Histórico operacional
+        </CardTitle>
         <CardDescription>Movimentos de estoque e fidelidade vinculados ao pedido.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 text-sm">

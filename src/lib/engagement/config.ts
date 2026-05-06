@@ -91,11 +91,51 @@ export const defaultNotificationTemplates = [
     cooldownHours: 1
   },
   {
+    templateKey: "order_processing",
+    name: "Pedido em preparo",
+    subject: "Pedido {{orderNumber}} em preparo",
+    previewText: "Seu pedido saiu da fila e já entrou na bancada da equipe.",
+    body: "Olá, {{customerName}}! O pedido {{orderNumber}} já está em preparo. Vamos avisar quando o rastreio estiver disponível.",
+    ctaLabel: "Acompanhar pedido",
+    ctaHref: "/conta",
+    cooldownHours: 1
+  },
+  {
+    templateKey: "order_shipped",
+    name: "Pedido enviado",
+    subject: "Pedido {{orderNumber}} enviado",
+    previewText: "Seu pedido ganhou rastreio para acompanhamento.",
+    body: "Boa notícia, {{customerName}}! O pedido {{orderNumber}} foi enviado. Acompanhe o rastreio pela sua conta.",
+    ctaLabel: "Ver rastreio",
+    ctaHref: "/conta",
+    cooldownHours: 1
+  },
+  {
+    templateKey: "order_delivered",
+    name: "Pedido entregue",
+    subject: "Pedido {{orderNumber}} entregue",
+    previewText: "A entrega foi concluída. Obrigado por comprar na NerdLingoLab.",
+    body: "Olá, {{customerName}}! O pedido {{orderNumber}} foi marcado como entregue. Esperamos que curta muito sua compra.",
+    ctaLabel: "Ver pedido",
+    ctaHref: "/conta",
+    cooldownHours: 1
+  },
+  {
     templateKey: "order_canceled",
     name: "Pedido cancelado",
     subject: "Pedido {{orderNumber}} cancelado",
     previewText: "Seu pedido foi cancelado com justificativa da equipe.",
     body: "Olá, {{customerName}}! O pedido {{orderNumber}} foi cancelado. Justificativa: {{cancellationReason}}",
+    ctaLabel: "Ver meus pedidos",
+    ctaHref: "/conta",
+    cooldownHours: 1
+  },
+  {
+    templateKey: "order_refunded",
+    name: "Pedido reembolsado",
+    subject: "Reembolso do pedido {{orderNumber}} solicitado",
+    previewText: "O cancelamento foi registrado com reembolso pelo Mercado Pago.",
+    body: "Olá, {{customerName}}! O pedido {{orderNumber}} foi cancelado e o reembolso foi solicitado pelo Mercado Pago. Justificativa: {{cancellationReason}}",
     ctaLabel: "Ver meus pedidos",
     ctaHref: "/conta",
     cooldownHours: 1

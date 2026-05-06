@@ -2,6 +2,7 @@ import { render } from "@react-email/render";
 import * as Sentry from "@sentry/nextjs";
 import { Resend } from "resend";
 
+import { OrderStatus, PaymentStatus } from "@/generated/prisma/client";
 import {
   OrderCreatedEmail,
   OrderPaidEmail,
@@ -23,6 +24,18 @@ import { prisma } from "@/lib/prisma";
 
 const emailFrom = process.env.EMAIL_FROM ?? "NerdLingoLab <no-reply@nerdlingolab.com>";
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+
+interface OrderStatusEmailCopy {
+  body: string;
+  ctaLabel: string;
+  eyebrow: string;
+  notice: string;
+  previewText: string;
+  statusLabel: string;
+  subject: string;
+  templateKey: string;
+  title: string;
+}
 
 export async function sendOrderCreatedEmail({
   checkoutUrl,
@@ -46,6 +59,85 @@ export async function sendOrderPaidEmail(orderId: string): Promise<void> {
   });
 }
 
+export async function sendOrderStatusUpdatedEmail({
+  orderId,
+  status
+}: {
+  orderId: string;
+  status: OrderStatus;
+}): Promise<void> {
+  if (!resend) {
+    return;
+  }
+
+  const statusCopy = getOrderStatusEmailCopy(status);
+
+  if (!statusCopy) {
+    return;
+  }
+
+  try {
+    const order = await getAdminOrderById(orderId);
+
+    if (!order) {
+      return;
+    }
+
+    const customerSnapshot = order.customerSnapshot as Record<string, string | undefined>;
+    const customerName = order.user?.name ?? customerSnapshot.name ?? order.email;
+    const orderUrl = `${getEmailBaseUrl()}/conta/pedidos/${order.id}`;
+    const variables = {
+      customerName,
+      orderNumber: order.orderNumber,
+      orderStatus: statusCopy.statusLabel,
+      orderTotal: formatCurrency(order.totalCents),
+      orderUrl,
+      paymentStatus: getPaymentStatusEmailLabel(order.paymentStatus),
+      supportEmail: process.env.SUPPORT_EMAIL ?? "nerdlingolab@gmail.com"
+    };
+    const template = await prismaNotificationTemplate(statusCopy.templateKey);
+    const subject = renderNotificationText(template?.subject ?? statusCopy.subject, variables);
+    const body = renderNotificationText(template?.body ?? statusCopy.body, variables);
+    const ctaHref = resolveEmailHref(renderNotificationText(template?.ctaHref ?? orderUrl, variables));
+    const ctaLabel = renderNotificationText(template?.ctaLabel ?? statusCopy.ctaLabel, variables);
+    const html = buildBrandedEmailHtml({
+      cta: {
+        href: ctaHref,
+        label: ctaLabel
+      },
+      eyebrow: statusCopy.eyebrow,
+      footerNote: "Você pode acompanhar pedido, rastreio, suporte e benefícios direto pela sua conta.",
+      introHtml: `<p style="margin:0;">${formatMultilineText(body)}</p>`,
+      preheader: renderNotificationText(template?.previewText ?? statusCopy.previewText, variables),
+      sections: [
+        {
+          html: buildInfoGrid([
+            { label: "Pedido", value: order.orderNumber },
+            { label: "Situação do pedido", value: statusCopy.statusLabel },
+            { label: "Pagamento", value: getPaymentStatusEmailLabel(order.paymentStatus) },
+            { label: "Total", value: formatCurrency(order.totalCents) }
+          ]),
+          title: "Resumo atualizado"
+        },
+        {
+          html: buildNoticeHtml(statusCopy.notice),
+          title: "O que acontece agora"
+        }
+      ],
+      title: statusCopy.title
+    });
+
+    await resend.emails.send({
+      from: emailFrom,
+      html,
+      subject,
+      to: order.email
+    });
+  } catch (error) {
+    Sentry.captureException(error);
+  }
+}
+
 export async function sendOrderCanceledEmail({
   cancellationReason,
   orderId
@@ -67,19 +159,32 @@ export async function sendOrderCanceledEmail({
     const customerSnapshot = order.customerSnapshot as Record<string, string | undefined>;
     const customerName = order.user?.name ?? customerSnapshot.name ?? order.email;
     const orderUrl = `${getEmailBaseUrl()}/conta/pedidos/${order.id}`;
+    const isRefunded = order.paymentStatus === PaymentStatus.REFUNDED || order.status === OrderStatus.REFUNDED;
+    const templateKey = isRefunded ? "order_refunded" : "order_canceled";
+    const resolutionTitle = isRefunded ? "Pedido reembolsado" : "Pedido cancelado";
+    const resolutionStatus = isRefunded ? "Reembolso solicitado" : "Cancelado";
+    const refundAmount = order.refundAmountCents ? formatCurrency(order.refundAmountCents) : formatCurrency(order.totalCents);
     const variables = {
       cancellationReason,
       customerName,
       orderNumber: order.orderNumber,
       orderTotal: formatCurrency(order.totalCents),
       orderUrl,
+      refundAmount,
+      refundStatus: order.refundStatus ?? resolutionStatus,
+      resolutionStatus,
       supportEmail: process.env.SUPPORT_EMAIL ?? "nerdlingolab@gmail.com"
     };
-    const template = await prismaNotificationTemplate("order_canceled");
-    const subject = renderNotificationText(template?.subject ?? "Pedido {{orderNumber}} cancelado", variables);
+    const template = await prismaNotificationTemplate(templateKey);
+    const subject = renderNotificationText(
+      template?.subject ?? (isRefunded ? "Reembolso do pedido {{orderNumber}} solicitado" : "Pedido {{orderNumber}} cancelado"),
+      variables
+    );
     const body = renderNotificationText(
       template?.body ??
-        "Olá, {{customerName}}! O pedido {{orderNumber}} foi cancelado. Justificativa: {{cancellationReason}}",
+        (isRefunded
+          ? "Olá, {{customerName}}! O pedido {{orderNumber}} foi cancelado e o reembolso foi solicitado pelo Mercado Pago. Justificativa: {{cancellationReason}}"
+          : "Olá, {{customerName}}! O pedido {{orderNumber}} foi cancelado. Justificativa: {{cancellationReason}}"),
       variables
     );
     const ctaHref = resolveEmailHref(renderNotificationText(template?.ctaHref ?? orderUrl, variables));
@@ -89,11 +194,13 @@ export async function sendOrderCanceledEmail({
         href: ctaHref,
         label: ctaLabel
       },
-      eyebrow: "Cancelamento de pedido",
-      footerNote: "Se tiver dúvidas sobre o cancelamento, responda este e-mail ou acesse o suporte.",
+      eyebrow: isRefunded ? "Cancelamento com reembolso" : "Cancelamento de pedido",
+      footerNote: isRefunded
+        ? "O Mercado Pago controla o prazo de retorno do valor conforme a forma de pagamento usada."
+        : "Se tiver dúvidas sobre o cancelamento, responda este e-mail ou acesse o suporte.",
       introHtml: `<p style="margin:0;">${formatMultilineText(body)}</p>`,
       preheader: renderNotificationText(
-        template?.previewText ?? "Seu pedido foi cancelado com justificativa da equipe.",
+        template?.previewText ?? (isRefunded ? "O reembolso foi solicitado pelo Mercado Pago." : "Seu pedido foi cancelado com justificativa da equipe."),
         variables
       ),
       sections: [
@@ -101,7 +208,8 @@ export async function sendOrderCanceledEmail({
           html: buildInfoGrid([
             { label: "Pedido", value: order.orderNumber },
             { label: "Total", value: formatCurrency(order.totalCents) },
-            { label: "Status", value: "Cancelado" }
+            { label: "Situação", value: resolutionStatus },
+            ...(isRefunded ? [{ label: "Valor do reembolso", value: refundAmount }] : [])
           ]),
           title: "Resumo do pedido"
         },
@@ -110,7 +218,7 @@ export async function sendOrderCanceledEmail({
           title: "Justificativa"
         }
       ],
-      title: `Pedido ${order.orderNumber} cancelado`
+      title: `${resolutionTitle}: ${order.orderNumber}`
     });
 
     await resend.emails.send({
@@ -122,6 +230,59 @@ export async function sendOrderCanceledEmail({
   } catch (error) {
     Sentry.captureException(error);
   }
+}
+
+function getOrderStatusEmailCopy(status: OrderStatus): OrderStatusEmailCopy | null {
+  const map: Partial<Record<OrderStatus, OrderStatusEmailCopy>> = {
+    DELIVERED: {
+      body: "Olá, {{customerName}}! O pedido {{orderNumber}} foi marcado como entregue. Esperamos que curta muito sua compra.",
+      ctaLabel: "Ver pedido",
+      eyebrow: "Entrega concluída",
+      notice: "Se algo não estiver certo com o produto ou a entrega, abra um atendimento pelo suporte para analisarmos com prioridade.",
+      previewText: "A entrega foi concluída. Obrigado por comprar na NerdLingoLab.",
+      statusLabel: "Pedido entregue",
+      subject: "Pedido {{orderNumber}} entregue",
+      templateKey: "order_delivered",
+      title: "Seu pedido foi entregue"
+    },
+    PROCESSING: {
+      body: "Olá, {{customerName}}! O pedido {{orderNumber}} já está em preparo. Vamos avisar quando o rastreio estiver disponível.",
+      ctaLabel: "Acompanhar pedido",
+      eyebrow: "Pedido em preparo",
+      notice: "Nossa equipe está conferindo itens, embalagem e próximos passos de envio.",
+      previewText: "Seu pedido saiu da fila e já entrou na bancada da equipe.",
+      statusLabel: "Em preparo",
+      subject: "Pedido {{orderNumber}} em preparo",
+      templateKey: "order_processing",
+      title: "Pedido em preparo"
+    },
+    SHIPPED: {
+      body: "Boa notícia, {{customerName}}! O pedido {{orderNumber}} foi enviado. Acompanhe o rastreio pela sua conta.",
+      ctaLabel: "Ver rastreio",
+      eyebrow: "Pedido enviado",
+      notice: "O rastreio pode levar algumas horas para exibir novas movimentações na transportadora.",
+      previewText: "Seu pedido ganhou rastreio para acompanhamento.",
+      statusLabel: "Pedido enviado",
+      subject: "Pedido {{orderNumber}} enviado",
+      templateKey: "order_shipped",
+      title: "Pedido enviado"
+    }
+  };
+
+  return map[status] ?? null;
+}
+
+function getPaymentStatusEmailLabel(status: PaymentStatus): string {
+  const labels: Record<PaymentStatus, string> = {
+    APPROVED: "Pagamento aprovado",
+    CANCELED: "Pagamento cancelado",
+    CHARGEBACK: "Pagamento em chargeback",
+    PENDING: "Pagamento pendente",
+    REFUNDED: "Pagamento reembolsado",
+    REJECTED: "Pagamento recusado"
+  };
+
+  return labels[status];
 }
 
 export async function sendPasswordResetEmail(resetToken: PasswordResetToken, baseUrl = getAppBaseUrl()): Promise<void> {

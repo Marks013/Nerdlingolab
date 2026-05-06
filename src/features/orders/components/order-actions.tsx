@@ -1,4 +1,5 @@
 import { OrderStatus } from "@/generated/prisma/client";
+import { Ban, CheckCircle2, PackageCheck, ShieldAlert, Truck } from "lucide-react";
 
 import {
   cancelUnpaidOrder,
@@ -29,24 +30,30 @@ export function OrderActions({ order }: OrderActionsProps): React.ReactElement {
   const canDeliver = order.status === OrderStatus.SHIPPED;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Ações</CardTitle>
-        <CardDescription>Atualize o andamento do pedido.</CardDescription>
+    <Card className="overflow-hidden border-orange-100 shadow-sm">
+      <CardHeader className="bg-[#fffaf6]">
+        <CardTitle className="flex items-center gap-2 text-balance">
+          <ShieldAlert className="size-5 text-primary" />
+          Central de ação
+        </CardTitle>
+        <CardDescription>Atualize o pedido com clareza. Cada etapa importante notifica o cliente por e-mail.</CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-2">
+      <CardContent className="grid gap-3">
         <form action={markOrderAsProcessing.bind(null, order.id)}>
-          <Button className="w-full" disabled={!canPrepare} type="submit">
+          <Button className="w-full border-orange-200 bg-orange-600 text-white hover:bg-orange-700 disabled:bg-muted disabled:text-muted-foreground" disabled={!canPrepare} type="submit">
+            <PackageCheck className="mr-2 size-4" />
             Preparar pedido
           </Button>
         </form>
         <form action={markOrderAsShipped.bind(null, order.id)}>
-          <Button className="w-full" disabled={!canShip} type="submit">
+          <Button className="w-full bg-blue-600 text-white hover:bg-blue-700 disabled:bg-muted disabled:text-muted-foreground" disabled={!canShip} type="submit">
+            <Truck className="mr-2 size-4" />
             Marcar como enviado
           </Button>
         </form>
         <form action={markOrderAsDelivered.bind(null, order.id)}>
-          <Button className="w-full" disabled={!canDeliver} type="submit">
+          <Button className="w-full bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-muted disabled:text-muted-foreground" disabled={!canDeliver} type="submit">
+            <CheckCircle2 className="mr-2 size-4" />
             Marcar como entregue
           </Button>
         </form>
@@ -67,6 +74,7 @@ export function OrderActions({ order }: OrderActionsProps): React.ReactElement {
             {cancelHelpText} O cliente receberá um e-mail automático usando o template Pedido cancelado.
           </p>
           <Button className="w-full" disabled={!canCancel} type="submit" variant="destructive">
+            <Ban className="mr-2 size-4" />
             Cancelar pedido
           </Button>
         </form>

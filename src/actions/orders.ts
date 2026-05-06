@@ -13,7 +13,7 @@ import { z } from "zod";
 
 import { requireAdmin } from "@/lib/admin";
 import { auth } from "@/lib/auth";
-import { sendOrderCanceledEmail } from "@/lib/email/transactional";
+import { sendOrderCanceledEmail, sendOrderStatusUpdatedEmail } from "@/lib/email/transactional";
 import { releaseInventoryReservations } from "@/lib/inventory/reservations";
 import { restoreInventoryForCanceledOrder } from "@/lib/payments/order-inventory";
 import { refundMercadoPagoPayment } from "@/lib/payments/mercadopago-refunds";
@@ -151,7 +151,7 @@ export async function cancelUnpaidOrder(orderId: string, formData: FormData): Pr
     });
   } catch (error) {
     Sentry.captureException(error);
-    throw new Error("Nao foi possivel cancelar o pedido.");
+    throw new Error("Não foi possível cancelar o pedido.");
   }
 
   revalidateOrderPaths(parsedOrderId);
@@ -237,27 +237,41 @@ export async function saveManualShipment(orderId: string, formData: FormData): P
       throw new Error("Informe uma URL de rastreio valida.");
     }
 
-    await prisma.shipment.create({
-      data: {
-        orderId: parsedOrderId,
-        provider: ShippingProvider.MANUAL,
-        carrierName: parsedShipment.data.carrierName,
-        carrierUrl,
-        trackingNumber: parsedShipment.data.trackingNumber,
-        status: ShipmentStatus.SHIPPED,
-        shippedAt: new Date()
-      }
-    });
-    await prisma.order.update({
+    const previousOrder = await prisma.order.findUnique({
       where: { id: parsedOrderId },
-      data: {
-        status: OrderStatus.SHIPPED,
-        fulfillmentStatus: FulfillmentStatus.FULFILLED
-      }
+      select: { status: true }
     });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.shipment.create({
+        data: {
+          orderId: parsedOrderId,
+          provider: ShippingProvider.MANUAL,
+          carrierName: parsedShipment.data.carrierName,
+          carrierUrl,
+          trackingNumber: parsedShipment.data.trackingNumber,
+          status: ShipmentStatus.SHIPPED,
+          shippedAt: new Date()
+        }
+      });
+      await tx.order.update({
+        where: { id: parsedOrderId },
+        data: {
+          status: OrderStatus.SHIPPED,
+          fulfillmentStatus: FulfillmentStatus.FULFILLED
+        }
+      });
+    });
+
+    if (previousOrder?.status !== OrderStatus.SHIPPED) {
+      await sendOrderStatusUpdatedEmail({
+        orderId: parsedOrderId,
+        status: OrderStatus.SHIPPED
+      });
+    }
   } catch (error) {
     Sentry.captureException(error);
-    throw new Error("Nao foi possivel salvar o rastreamento.");
+    throw new Error("Não foi possível salvar o rastreamento.");
   }
 
   revalidateOrderPaths(parsedOrderId);
@@ -271,16 +285,27 @@ export async function syncMercadoEnviosOrderShipment(orderId: string, formData: 
     const parsedExternalShipmentId = externalShipmentIdSchema.safeParse(formData.get("externalShipmentId"));
 
     if (!parsedExternalShipmentId.success) {
-      throw new Error("Informe o codigo de envio.");
+      throw new Error("Informe o código de envio.");
     }
+
+    const previousOrder = await prisma.order.findUnique({
+      where: { id: parsedOrderId },
+      select: { status: true }
+    });
 
     await syncMercadoEnviosShipment({
       externalShipmentId: parsedExternalShipmentId.data,
       orderId: parsedOrderId
     });
+    if (previousOrder?.status !== OrderStatus.SHIPPED) {
+      await sendOrderStatusUpdatedEmail({
+        orderId: parsedOrderId,
+        status: OrderStatus.SHIPPED
+      });
+    }
   } catch (error) {
     Sentry.captureException(error);
-    throw new Error("Nao foi possivel sincronizar o Mercado Envios.");
+    throw new Error("Não foi possível sincronizar o Mercado Envios.");
   }
 
   revalidateOrderPaths(parsedOrderId);
@@ -294,16 +319,27 @@ export async function syncMelhorEnvioOrderShipment(orderId: string, formData: Fo
     const parsedExternalShipmentId = externalShipmentIdSchema.safeParse(formData.get("externalShipmentId"));
 
     if (!parsedExternalShipmentId.success) {
-      throw new Error("Informe o codigo de envio.");
+      throw new Error("Informe o código de envio.");
     }
+
+    const previousOrder = await prisma.order.findUnique({
+      where: { id: parsedOrderId },
+      select: { status: true }
+    });
 
     await syncMelhorEnvioShipment({
       externalShipmentId: parsedExternalShipmentId.data,
       orderId: parsedOrderId
     });
+    if (previousOrder?.status !== OrderStatus.SHIPPED) {
+      await sendOrderStatusUpdatedEmail({
+        orderId: parsedOrderId,
+        status: OrderStatus.SHIPPED
+      });
+    }
   } catch (error) {
     Sentry.captureException(error);
-    throw new Error("Nao foi possivel sincronizar o Melhor Envio.");
+    throw new Error("Não foi possível sincronizar o Melhor Envio.");
   }
 
   revalidateOrderPaths(parsedOrderId);
@@ -320,13 +356,25 @@ async function updateOrderStatus(
   const parsedOrderId = parseRecordId(orderId);
 
   try {
+    const previousOrder = await prisma.order.findUnique({
+      where: { id: parsedOrderId },
+      select: { status: true }
+    });
+
     await prisma.order.update({
       where: { id: parsedOrderId },
       data
     });
+
+    if (previousOrder?.status !== data.status) {
+      await sendOrderStatusUpdatedEmail({
+        orderId: parsedOrderId,
+        status: data.status
+      });
+    }
   } catch (error) {
     Sentry.captureException(error);
-    throw new Error("Nao foi possivel atualizar o pedido.");
+    throw new Error("Não foi possível atualizar o pedido.");
   }
 
   revalidateOrderPaths(parsedOrderId);
@@ -335,13 +383,15 @@ async function updateOrderStatus(
 function revalidateOrderPaths(orderId: string): void {
   revalidatePath("/admin/pedidos");
   revalidatePath(`/admin/pedidos/${orderId}`);
+  revalidatePath(`/conta/pedidos/${orderId}`);
+  revalidatePath("/conta");
 }
 
 function parseRecordId(value: string): string {
   const parsedId = recordIdSchema.safeParse(value);
 
   if (!parsedId.success) {
-    throw new Error("Identificador invalido.");
+    throw new Error("Identificador inválido.");
   }
 
   return parsedId.data;

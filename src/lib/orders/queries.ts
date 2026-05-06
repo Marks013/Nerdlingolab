@@ -34,7 +34,9 @@ export type AdminOrderDetail = Order & {
   customerNote?: string | null;
   user: Pick<User, "id" | "name" | "email" | "cpf" | "phone"> | null;
   coupon: Coupon | null;
-  items: OrderItem[];
+  items: (OrderItem & {
+    product: Pick<Product, "images" | "slug">;
+  })[];
   couponRedemptions: CouponRedemption[];
   loyaltyLedger: LoyaltyLedger[];
   inventoryLedger: InventoryLedger[];

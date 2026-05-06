@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ShopTrustStrip } from "@/components/shop/shop-trust-strip";
 import { ProductCatalogControls } from "@/features/catalog/components/product-catalog-controls";
 import { ProductCard } from "@/features/catalog/components/product-card";
+import { ProductFilterForm } from "@/features/catalog/components/product-filter-form";
 import {
   getPublicCategories,
   getPublicProductsPage,
@@ -54,10 +55,12 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
     ? 0
     : (productPage.currentPage - 1) * productPage.perPage + 1;
   const lastVisibleProduct = firstVisibleProduct + visibleProducts.length - 1;
-  const resultLabel =
-    productPage.total === 1
-      ? "1 produto encontrado."
-      : `Mostrando ${firstVisibleProduct} - ${lastVisibleProduct} de ${productPage.total} produtos`;
+  const resultLabel = getProductResultLabel({
+    firstVisibleProduct,
+    lastVisibleProduct,
+    perPage: productPage.perPage,
+    total: productPage.total
+  });
 
   return (
     <main className="geek-page min-h-screen">
@@ -77,7 +80,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
               Filtros
             </div>
 
-            <form action="/produtos#lista-produtos" className="space-y-6">
+            <ProductFilterForm>
               <div>
                 <label className="text-sm font-bold text-black" htmlFor="busca">
                   Buscar
@@ -169,7 +172,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
                   Limpar
                 </Link>
               </div>
-            </form>
+            </ProductFilterForm>
           </aside>
 
           <section className="scroll-mt-32" id="lista-produtos">
@@ -222,6 +225,32 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
       </div>
     </main>
   );
+}
+
+function getProductResultLabel({
+  firstVisibleProduct,
+  lastVisibleProduct,
+  perPage,
+  total
+}: {
+  firstVisibleProduct: number;
+  lastVisibleProduct: number;
+  perPage: number;
+  total: number;
+}): string {
+  if (total === 0) {
+    return "Nenhum produto encontrado.";
+  }
+
+  if (total === 1) {
+    return "1 produto encontrado.";
+  }
+
+  if (total <= perPage) {
+    return `${total} produtos encontrados.`;
+  }
+
+  return `Exibindo ${firstVisibleProduct} a ${lastVisibleProduct} de ${total} produtos.`;
 }
 
 function parseCatalogFilters(searchParams?: Record<string, string | string[] | undefined>): {

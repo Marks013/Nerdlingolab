@@ -612,6 +612,7 @@ export async function getPublicProductRecommendations({
 
 function getPublicProductWhere(filters: PublicProductFilters = {}): ProductWhereInput {
   const query = filters.query?.trim();
+  const queryTagCandidates = query ? getTagSearchCandidates(query) : [];
   const conditions: ProductWhereInput[] = [
     {
       status: ProductStatus.ACTIVE,
@@ -668,7 +669,28 @@ function getPublicProductWhere(filters: PublicProductFilters = {}): ProductWhere
         { title: { contains: query, mode: "insensitive" } },
         { shortDescription: { contains: query, mode: "insensitive" } },
         { description: { contains: query, mode: "insensitive" } },
-        { brand: { contains: query, mode: "insensitive" } }
+        { brand: { contains: query, mode: "insensitive" } },
+        { tags: { hasSome: queryTagCandidates } },
+        {
+          category: {
+            OR: [
+              { name: { contains: query, mode: "insensitive" } },
+              { slug: { contains: query, mode: "insensitive" } }
+            ]
+          }
+        },
+        {
+          categories: {
+            some: {
+              category: {
+                OR: [
+                  { name: { contains: query, mode: "insensitive" } },
+                  { slug: { contains: query, mode: "insensitive" } }
+                ]
+              }
+            }
+          }
+        }
       ]
     });
   }
@@ -696,6 +718,26 @@ function getPublicProductWhere(filters: PublicProductFilters = {}): ProductWhere
   }
 
   return { AND: conditions };
+}
+
+function getTagSearchCandidates(query: string): string[] {
+  const trimmedQuery = query.trim();
+  const normalizedQuery = trimmedQuery.normalize("NFD").replace(/\p{Diacritic}/gu, "");
+  const titleCaseQuery = trimmedQuery
+    .toLowerCase()
+    .replace(/(^|[\s_-])\p{L}/gu, (match) => match.toUpperCase());
+
+  return Array.from(
+    new Set([
+      trimmedQuery,
+      trimmedQuery.toLowerCase(),
+      trimmedQuery.toUpperCase(),
+      titleCaseQuery,
+      normalizedQuery,
+      normalizedQuery.toLowerCase(),
+      normalizedQuery.toUpperCase()
+    ].filter(Boolean))
+  );
 }
 
 function getAdminProductWhere(filters: AdminProductFilters): ProductWhereInput {

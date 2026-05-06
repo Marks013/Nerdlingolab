@@ -5,8 +5,8 @@ import { ProductReviewStatus, type FulfillmentStatus, type OrderStatus, type Pay
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  formatOrderStatus,
-  formatPaymentStatus,
+  formatContextualOrderStatus,
+  formatContextualPaymentStatus,
   getOrderStatusTone,
   getPaymentStatusTone
 } from "@/features/orders/status-labels";
@@ -44,13 +44,13 @@ export function CustomerOrderDetail({
             className={getOrderStatusTone(order.status)}
             icon={<PackageCheck className="size-4" />}
             label="Pedido"
-            value={formatOrderStatus(order.status)}
+            value={formatContextualOrderStatus(order.status)}
           />
           <Status
             className={getPaymentStatusTone(order.paymentStatus)}
             icon={<CreditCard className="size-4" />}
             label="Pagamento"
-            value={formatPaymentStatus(order.paymentStatus)}
+            value={formatContextualPaymentStatus(order.paymentStatus)}
           />
           <Status className="border-orange-200 bg-orange-50 text-primary" label="Total" value={formatCurrency(order.totalCents)} />
         </CardContent>

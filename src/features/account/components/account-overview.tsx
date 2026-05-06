@@ -16,8 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
-  formatOrderStatus,
-  formatPaymentStatus,
+  formatContextualOrderStatus,
+  formatContextualPaymentStatus,
   getOrderStatusTone,
   getPaymentStatusTone
 } from "@/features/orders/status-labels";
@@ -488,10 +488,13 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
                       {formatDateTime(order.createdAt)}
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <StatusPill className={getOrderStatusTone(order.status)} label={formatOrderStatus(order.status)} />
+                      <StatusPill
+                        className={getOrderStatusTone(order.status)}
+                        label={formatContextualOrderStatus(order.status)}
+                      />
                       <StatusPill
                         className={getPaymentStatusTone(order.paymentStatus)}
-                        label={formatPaymentStatus(order.paymentStatus)}
+                        label={formatContextualPaymentStatus(order.paymentStatus)}
                       />
                     </div>
                   </div>

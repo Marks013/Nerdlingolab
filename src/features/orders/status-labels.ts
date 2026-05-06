@@ -28,6 +28,34 @@ export function formatPaymentStatus(status: PaymentStatus): string {
   return labels[status];
 }
 
+export function formatContextualOrderStatus(status: OrderStatus): string {
+  const labels: Record<OrderStatus, string> = {
+    CANCELED: "Pedido cancelado",
+    DELIVERED: "Pedido entregue",
+    DRAFT: "Pedido em rascunho",
+    PAID: "Pedido pago",
+    PENDING_PAYMENT: "Pedido aguardando pagamento",
+    PROCESSING: "Pedido em preparo",
+    REFUNDED: "Pedido reembolsado",
+    SHIPPED: "Pedido enviado"
+  };
+
+  return labels[status];
+}
+
+export function formatContextualPaymentStatus(status: PaymentStatus): string {
+  const labels: Record<PaymentStatus, string> = {
+    APPROVED: "Pagamento aprovado",
+    CANCELED: "Pagamento cancelado",
+    CHARGEBACK: "Pagamento em chargeback",
+    PENDING: "Pagamento pendente",
+    REFUNDED: "Pagamento reembolsado",
+    REJECTED: "Pagamento recusado"
+  };
+
+  return labels[status];
+}
+
 export function formatFulfillmentStatus(status: FulfillmentStatus): string {
   const labels: Record<FulfillmentStatus, string> = {
     UNFULFILLED: "Não enviado",

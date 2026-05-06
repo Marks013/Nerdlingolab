@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -298,7 +298,13 @@ export function CartClient({
           >
             Continuar para checkout
           </Button>
-          <Button className="w-full" onClick={clearCart} type="button" variant="outline">
+          <Button
+            className="w-full border-red-200 bg-red-50 font-black text-red-700 shadow-sm hover:bg-red-600 hover:text-white"
+            onClick={clearCart}
+            type="button"
+            variant="outline"
+          >
+            <Trash2 className="mr-2 size-5" />
             Limpar carrinho
           </Button>
         </CardContent>

@@ -47,6 +47,7 @@ export type CustomerOrderListItem = Order & {
 };
 
 export type CustomerOrderDetail = Order & {
+  coupon: Pick<Coupon, "code"> | null;
   customerNote?: string | null;
   items: (OrderItem & {
     product: Pick<Product, "images" | "slug">;
@@ -308,6 +309,11 @@ export async function getCustomerOrderById({
       userId
     },
     include: {
+      coupon: {
+        select: {
+          code: true
+        }
+      },
       items: {
         include: {
           product: {

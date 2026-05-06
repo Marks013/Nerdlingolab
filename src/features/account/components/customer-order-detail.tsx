@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, CreditCard, PackageCheck, ReceiptText } from "lucide-react";
+import { ArrowLeft, Coins, CreditCard, PackageCheck, ReceiptText, Tag, Truck } from "lucide-react";
 
 import { ProductReviewStatus, type FulfillmentStatus, type OrderStatus, type PaymentStatus, type ProductReviewSettings } from "@/generated/prisma/client";
 import { SafeImage as Image } from "@/components/media/safe-image";
@@ -57,6 +57,8 @@ export function CustomerOrderDetail({
           <Status className="border-orange-200 bg-orange-50 text-primary" label="Total" value={formatCurrency(order.totalCents)} />
         </CardContent>
       </Card>
+
+      <PurchaseSummaryCard order={order} />
 
       {order.customerNote ? (
         <Card>
@@ -170,6 +172,79 @@ export function CustomerOrderDetail({
           Voltar para meus pedidos
         </Link>
       </Button>
+    </div>
+  );
+}
+
+function PurchaseSummaryCard({ order }: { order: CustomerOrderDetail }): React.ReactElement {
+  const couponLabel = order.coupon?.code ?? "Nenhum cupom aplicado";
+  const shippingLabel = order.shippingServiceName ?? "Frete do pedido";
+
+  return (
+    <Card className="overflow-hidden border-orange-100 shadow-sm">
+      <CardHeader className="bg-[#fffaf6]">
+        <CardTitle className="flex items-center gap-2 text-balance">
+          <ReceiptText className="size-5 text-primary" />
+          Resumo da compra
+        </CardTitle>
+        <CardDescription>Valores, cupom e entrega registrados no fechamento do pedido.</CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-4 p-4 lg:grid-cols-[1fr_1fr]">
+        <div className="rounded-lg border border-orange-100 bg-white p-4">
+          <p className="flex items-center gap-2 text-xs font-bold uppercase text-muted-foreground">
+            <Tag className="size-4 text-primary" />
+            Cupom utilizado
+          </p>
+          <p className="mt-2 text-lg font-black text-black">{couponLabel}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Desconto do cupom: {formatCurrency(-order.discountCents)}
+          </p>
+        </div>
+        <div className="rounded-lg border border-orange-100 bg-white p-4">
+          <p className="flex items-center gap-2 text-xs font-bold uppercase text-muted-foreground">
+            <Truck className="size-4 text-primary" />
+            Entrega escolhida
+          </p>
+          <p className="mt-2 text-lg font-black text-black">{shippingLabel}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Valor do frete: {formatCurrency(order.shippingCents)}
+          </p>
+        </div>
+        <div className="rounded-lg border border-orange-100 bg-orange-50/60 p-4 lg:col-span-2">
+          <div className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-5">
+            <SummaryLine label="Produtos" value={formatCurrency(order.subtotalCents)} />
+            <SummaryLine label="Cupom" value={formatCurrency(-order.discountCents)} />
+            <SummaryLine
+              icon={<Coins className="size-4 text-primary" />}
+              label="NerdCoins"
+              value={formatCurrency(-order.loyaltyDiscountCents)}
+            />
+            <SummaryLine label="Frete" value={formatCurrency(order.shippingCents)} />
+            <SummaryLine strong label="Total do pedido" value={formatCurrency(order.totalCents)} />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SummaryLine({
+  icon,
+  label,
+  strong = false,
+  value
+}: {
+  icon?: React.ReactNode;
+  label: string;
+  strong?: boolean;
+  value: string;
+}): React.ReactElement {
+  return (
+    <div className={cn("rounded-md bg-white px-3 py-2", strong ? "border border-primary/30" : "border border-orange-100")}>
+      <p className="flex items-center gap-1 text-xs font-bold uppercase text-muted-foreground">{icon}{label}</p>
+      <p className={cn("mt-1 tabular-nums", strong ? "text-lg font-black text-primary" : "font-semibold text-black")}>
+        {value}
+      </p>
     </div>
   );
 }

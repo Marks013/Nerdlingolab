@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Coins, CreditCard, PackageCheck, ReceiptText, Tag, Truck } from "lucide-react";
+import { ArrowLeft, Coins, CreditCard, MessageSquareText, PackageCheck, ReceiptText, Route, Tag, Truck } from "lucide-react";
 
 import { ProductReviewStatus, type FulfillmentStatus, type OrderStatus, type PaymentStatus, type ProductReviewSettings } from "@/generated/prisma/client";
 import { SafeImage as Image } from "@/components/media/safe-image";
@@ -61,10 +61,13 @@ export function CustomerOrderDetail({
       <PurchaseSummaryCard order={order} />
 
       {order.customerNote ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Observacao enviada</CardTitle>
-            <CardDescription>Informacao registrada no checkout.</CardDescription>
+        <Card className="overflow-hidden border-orange-100 shadow-sm">
+          <CardHeader className="bg-[#fffaf6]">
+            <CardTitle className="flex items-center gap-2 text-balance">
+              <MessageSquareText className="size-5 text-primary" />
+              Observação enviada
+            </CardTitle>
+            <CardDescription>Informação registrada no checkout.</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="whitespace-pre-wrap rounded-md border bg-[#fffaf6] p-4 text-sm leading-6 text-[#3a2a1c]">
@@ -75,18 +78,24 @@ export function CustomerOrderDetail({
       ) : null}
 
       <Card className="border-orange-100 shadow-sm" id="rastreamento">
-        <CardHeader>
-          <CardTitle>Rastreamento</CardTitle>
-          <CardDescription>Acompanhe o envio e o historico da entrega.</CardDescription>
+        <CardHeader className="bg-[#fffaf6]">
+          <CardTitle className="flex items-center gap-2 text-balance">
+            <Route className="size-5 text-primary" />
+            Rastreamento
+          </CardTitle>
+          <CardDescription>Acompanhe o envio e o histórico da entrega.</CardDescription>
         </CardHeader>
         <CardContent>
           <ShipmentTrackingPanel shipments={order.shipments} />
         </CardContent>
       </Card>
 
-      <Card className="border-orange-100 shadow-sm">
-        <CardHeader>
-          <CardTitle>Itens</CardTitle>
+      <Card className="overflow-hidden border-orange-100 shadow-sm">
+        <CardHeader className="bg-[#fffaf6]">
+          <CardTitle className="flex items-center gap-2 text-balance">
+            <PackageCheck className="size-5 text-primary" />
+            Itens
+          </CardTitle>
           <CardDescription>Produtos incluídos neste pedido.</CardDescription>
         </CardHeader>
         <CardContent>

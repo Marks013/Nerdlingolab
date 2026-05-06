@@ -22,7 +22,7 @@ export default async function CouponsPage(): Promise<React.ReactElement> {
   return (
     <main className="geek-page min-h-screen">
       <section className="mx-auto w-full max-w-[1360px] px-5 py-10">
-        <p className="mb-6 text-sm text-[#677279]">Pagina inicial › Cupons</p>
+        <p className="mb-6 text-sm text-[#677279]">Página inicial › Cupons</p>
         <div className="rounded-lg border border-primary/25 bg-white p-6 shadow-sm sm:p-8">
           <p className="text-sm font-black uppercase text-primary">Central de cupons NerdLingoLab</p>
           <h1 className="mt-2 text-balance text-4xl font-black tracking-normal text-black">

@@ -32,10 +32,10 @@ export default async function OffersPage(): Promise<React.ReactElement> {
                 Central de ofertas NerdLingoLab
               </p>
               <h1 className="mt-4 text-balance text-4xl font-black tracking-normal text-black lg:text-5xl">
-                Descontos com cara de campanha, não de prateleira esquecida.
+                Descontos para garimpar seu próximo achado geek.
               </h1>
               <p className="mt-4 max-w-3xl text-pretty text-base leading-7 text-[#4f5d65]">
-                Aqui entram promoções de temporada, cupons públicos, frete especial e produtos com preço comparativo. Tudo pensado para deixar a decisão de compra mais fácil.
+                Reunimos cupons, frete especial e produtos com preço comparativo para você economizar sem perder tempo procurando pelo site inteiro.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <Button asChild className="bg-emerald-600 text-white hover:bg-emerald-700">
@@ -50,18 +50,18 @@ export default async function OffersPage(): Promise<React.ReactElement> {
               </div>
             </div>
             <div className="grid gap-3 rounded-lg border border-orange-100 bg-[#fff7ed] p-4">
-              <CampaignPreview icon={Percent} title="Dia do Consumidor" text="Cupom percentual, mínimo inteligente e chamada de confiança." />
-              <CampaignPreview icon={Flame} title="Black Friday" text="Campanha agressiva, escura, direta e com senso de oportunidade." />
-              <CampaignPreview icon={Truck} title="Frete especial" text="Frete grátis ou subsidiado para destravar carrinhos indecisos." />
+              <CampaignPreview icon={Percent} title="Dia do Consumidor" text="Descontos especiais para comprar com mais vantagem." />
+              <CampaignPreview icon={Flame} title="Black Friday" text="Achados de alto impacto para aproveitar antes que acabem." />
+              <CampaignPreview icon={Truck} title="Frete especial" text="Condições de entrega pensadas para deixar o carrinho mais leve." />
             </div>
           </div>
         </div>
 
         <section className="mb-8 grid gap-4 md:grid-cols-4">
-          <OfferPillar icon={TicketPercent} title="Cupom copiável" text="Cliente pega o código sem fricção e volta para o carrinho." />
-          <OfferPillar icon={PackageCheck} title="Produto com contexto" text="Ofertas aparecem com preço comparativo e vitrine dedicada." />
-          <OfferPillar icon={ShieldCheck} title="Compra segura" text="Checkout segue protegido pelo Mercado Pago e status no pedido." />
-          <OfferPillar icon={Zap} title="Campanhas rápidas" text="Presets no admin ajudam a criar ações sazonais em poucos cliques." />
+          <OfferPillar icon={TicketPercent} title="Cupom fácil" text="Copie o código, aplique no carrinho e confira o desconto antes de pagar." />
+          <OfferPillar icon={PackageCheck} title="Preço em destaque" text="Produtos com preço especial aparecem reunidos para comparação rápida." />
+          <OfferPillar icon={ShieldCheck} title="Compra segura" text="Checkout protegido pelo Mercado Pago e acompanhamento pela sua conta." />
+          <OfferPillar icon={Zap} title="Oportunidade do momento" text="Ofertas por tempo limitado para aproveitar quando a combinação fizer sentido." />
         </section>
 
         <PublicOffersSection coupons={offers.coupons} products={[]} />
@@ -70,7 +70,7 @@ export default async function OffersPage(): Promise<React.ReactElement> {
           <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm font-black uppercase text-primary">Produtos com preço especial</p>
-              <h2 className="mt-1 text-balance text-3xl font-black tracking-normal text-black">Vitrine pronta para vender</h2>
+              <h2 className="mt-1 text-balance text-3xl font-black tracking-normal text-black">Achados em destaque</h2>
             </div>
             <Button asChild className="border-primary/50 bg-white text-primary hover:bg-primary/10" variant="outline">
               <Link href="/produtos">Ver todos os produtos</Link>
@@ -90,7 +90,7 @@ export default async function OffersPage(): Promise<React.ReactElement> {
               </span>
               <h3 className="mt-5 text-balance text-2xl font-black text-black">Nenhum produto com preço riscado agora.</h3>
               <p className="mt-3 text-pretty text-sm leading-6 text-[#4f5d65]">
-                Mesmo sem itens ativos, a página continua vendendo: cupons, campanhas de frete e ações sazonais mantêm a vitrine pronta para a próxima leva.
+                Enquanto não aparece uma nova leva de produtos com preço especial, você ainda pode aproveitar cupons ativos ou explorar o catálogo completo.
               </p>
               <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
                 <Button asChild className="bg-primary text-white hover:bg-primary/90">

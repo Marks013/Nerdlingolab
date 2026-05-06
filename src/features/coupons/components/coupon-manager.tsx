@@ -129,7 +129,10 @@ function CouponDetails({
           </p>
         </div>
         <StatusPill>{getCouponStatus(coupon)}</StatusPill>
-        <StatusPill>{coupon.isPublic ? "Público" : "Privado"}</StatusPill>
+        <div className="flex flex-wrap gap-2">
+          <StatusPill>{coupon.isPublic ? "Público" : "Privado"}</StatusPill>
+          {coupon.showOnOffers ? <StatusPill>Em ofertas</StatusPill> : null}
+        </div>
         <span className="text-sm text-muted-foreground md:text-right">
           {coupon.expiresAt ? formatDateTime(coupon.expiresAt) : "Sem expiração"}
         </span>
@@ -252,6 +255,15 @@ function CouponForm({
       <label className="flex items-center gap-2 text-sm">
         <input defaultChecked={coupon?.isPublic ?? true} name="isPublic" type="checkbox" />
         Visível na página de cupons
+      </label>
+      <label className="flex items-start gap-2 rounded-lg border border-orange-100 bg-[#fff7ed] p-3 text-sm">
+        <input className="mt-1" defaultChecked={coupon?.showOnOffers ?? false} name="showOnOffers" type="checkbox" />
+        <span>
+          <span className="block font-semibold text-black">Destacar também em /ofertas</span>
+          <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+            Use para campanhas escolhidas, como Black Friday, Dia do Consumidor, frete especial ou ofertas relâmpago.
+          </span>
+        </span>
       </label>
       <Button className="w-full bg-emerald-600 text-white hover:bg-emerald-700" type="submit">{submitLabel}</Button>
     </form>

@@ -52,6 +52,7 @@ export async function updateCoupon(couponId: string, formData: FormData): Promis
         maxDiscountCents: normalizedInput.maxDiscountCents ?? null,
         minSubtotalCents: normalizedInput.minSubtotalCents ?? null,
         perCustomerLimit: normalizedInput.perCustomerLimit ?? null,
+        showOnOffers: normalizedInput.showOnOffers,
         startsAt: normalizedInput.startsAt ?? null,
         usageLimit: normalizedInput.usageLimit ?? null
       },
@@ -137,6 +138,7 @@ function readCouponFormData(formData: FormData) {
     perCustomerLimit: formData.get("perCustomerLimit")
       ? Number(formData.get("perCustomerLimit"))
       : undefined,
+    showOnOffers: formData.get("showOnOffers") === "on",
     startsAt: formData.get("startsAt"),
     type: formData.get("type"),
     usageLimit: formData.get("usageLimit") ? Number(formData.get("usageLimit")) : undefined,

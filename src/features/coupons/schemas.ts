@@ -12,6 +12,7 @@ export const couponFormSchema = z.object({
   maxDiscount: z.string().trim().optional(),
   minSubtotal: z.string().trim().optional(),
   perCustomerLimit: z.coerce.number().int().positive().optional(),
+  showOnOffers: z.boolean().default(false),
   startsAt: z.string().trim().optional(),
   type: z.enum(CouponType),
   usageLimit: z.coerce.number().int().positive().optional(),
@@ -29,6 +30,7 @@ export function normalizeCouponInput(input: CouponFormInput): {
   maxDiscountCents?: number;
   minSubtotalCents?: number;
   perCustomerLimit?: number;
+  showOnOffers: boolean;
   startsAt?: Date;
   type: CouponType;
   usageLimit?: number;
@@ -39,10 +41,11 @@ export function normalizeCouponInput(input: CouponFormInput): {
     code: input.code.toUpperCase(),
     expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
     isActive: input.isActive,
-    isPublic: input.isPublic,
+    isPublic: input.isPublic || input.showOnOffers,
     maxDiscountCents: input.maxDiscount ? parseCurrencyToCents(input.maxDiscount) : undefined,
     minSubtotalCents: input.minSubtotal ? parseCurrencyToCents(input.minSubtotal) : undefined,
     perCustomerLimit: input.perCustomerLimit,
+    showOnOffers: input.showOnOffers,
     startsAt: input.startsAt ? new Date(input.startsAt) : undefined,
     type: input.type,
     usageLimit: input.usageLimit,

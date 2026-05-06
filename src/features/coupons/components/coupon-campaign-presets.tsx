@@ -98,6 +98,7 @@ export function CouponCampaignPresets({ compact = false }: CouponCampaignPresets
     setInputValue(form, "expiresAt", toDateTimeLocal(addDays(new Date(), preset.expiresInDays)));
     setCheckboxValue(form, "isActive", true);
     setCheckboxValue(form, "isPublic", true);
+    setCheckboxValue(form, "showOnOffers", true);
     setSelectedLabel(preset.label);
   }
 

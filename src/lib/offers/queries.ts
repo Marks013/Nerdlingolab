@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
 
 export type PublicOfferCoupon = Pick<
   Coupon,
-  "code" | "type" | "value" | "minSubtotalCents" | "maxDiscountCents" | "expiresAt" | "isPublic"
+  "code" | "type" | "value" | "minSubtotalCents" | "maxDiscountCents" | "expiresAt" | "isPublic" | "showOnOffers"
 >;
 
 export interface PublicOffers {
@@ -28,6 +28,7 @@ export async function getPublicOffers(): Promise<PublicOffers> {
         where: {
           isActive: true,
           isPublic: true,
+          showOnOffers: true,
           OR: [{ startsAt: null }, { startsAt: { lte: now } }],
           AND: [
             {
@@ -42,6 +43,7 @@ export async function getPublicOffers(): Promise<PublicOffers> {
           isPublic: true,
           maxDiscountCents: true,
           minSubtotalCents: true,
+          showOnOffers: true,
           type: true,
           usageLimit: true,
           usedCount: true,

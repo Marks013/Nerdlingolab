@@ -674,6 +674,7 @@ model Coupon {
   expiresAt        DateTime?
   isActive         Boolean    @default(true)
   isPublic         Boolean    @default(true)
+  showOnOffers     Boolean    @default(false)
   createdByUserId  String?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
@@ -685,6 +686,7 @@ model Coupon {
 
   @@index([code, isActive])
   @@index([isActive, isPublic])
+  @@index([isActive, showOnOffers])
   @@index([assignedUserId])
   @@index([startsAt, expiresAt])
 }

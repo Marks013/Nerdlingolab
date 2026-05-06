@@ -50,13 +50,13 @@ export function PublicOffersSection({
       </div>
 
       {coupons.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {coupons.map((coupon) => {
             const campaign = getCouponCampaign(coupon);
 
             return (
-            <article className={`flex min-h-[340px] flex-col overflow-hidden rounded-lg border-2 bg-white shadow-sm ${campaign.borderClass}`} key={coupon.code}>
-              <div className={`border-b px-4 py-4 text-white ${campaign.headerClass}`}>
+            <article className={`flex min-h-[275px] flex-col overflow-hidden rounded-lg border-2 bg-white shadow-sm ${campaign.borderClass}`} key={coupon.code}>
+              <div className={`border-b px-4 py-3 text-white ${campaign.headerClass}`}>
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <campaign.icon className="size-5" />
@@ -66,15 +66,15 @@ export function PublicOffersSection({
                     {campaign.badge}
                   </span>
                 </div>
-                <p className="mt-2 text-2xl font-black">{formatPublicCouponBenefit(coupon)}</p>
-                <p className="mt-2 text-sm font-semibold text-white/90">{campaign.pitch}</p>
+                <p className="mt-2 text-xl font-black">{formatPublicCouponBenefit(coupon)}</p>
+                <p className="mt-1 line-clamp-2 text-xs font-semibold leading-5 text-white/90">{campaign.pitch}</p>
               </div>
-              <div className="flex flex-1 flex-col p-4">
+              <div className="flex flex-1 flex-col p-3">
                 <p className="text-sm font-semibold text-[#4f5d65]">Digite no carrinho:</p>
-                <p className="mt-2 inline-flex w-fit rounded-lg border-2 border-dashed border-primary/50 bg-[#fff7ed] px-4 py-2 font-mono text-base font-black text-primary">
+                <p className="mt-2 inline-flex w-fit rounded-lg border-2 border-dashed border-primary/50 bg-[#fff7ed] px-3 py-1.5 font-mono text-sm font-black text-primary">
                   {coupon.code}
                 </p>
-                <div className="mt-4 grid gap-2 text-sm text-[#4f5d65]">
+                <div className="mt-3 grid gap-1.5 text-xs leading-5 text-[#4f5d65]">
                   {coupon.minSubtotalCents ? (
                     <CouponRule icon={TicketPercent} text={`Pedido mínimo: ${formatCurrency(coupon.minSubtotalCents)}`} />
                   ) : (
@@ -86,7 +86,7 @@ export function PublicOffersSection({
                     <CouponRule icon={CalendarDays} text="Válido enquanto estiver ativo no site." />
                   )}
                 </div>
-                <div className="mt-auto grid gap-2 pt-5">
+                <div className="mt-auto grid gap-2 pt-4">
                   <CouponCopyButton className="w-full border-primary/50 bg-white text-primary hover:bg-primary/10" code={coupon.code} />
                   <Button asChild className="w-full bg-emerald-600 text-white hover:bg-emerald-700">
                     <Link href="/carrinho">

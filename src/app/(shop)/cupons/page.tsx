@@ -4,6 +4,7 @@ import { Coins, Gift, Sparkles, TicketPercent } from "lucide-react";
 
 import { SafeImage } from "@/components/media/safe-image";
 import { PublicOffersSection } from "@/features/offers/components/public-offers-section";
+import { auth } from "@/lib/auth";
 import { getPublicOffers } from "@/lib/offers/queries";
 
 export const metadata: Metadata = {
@@ -11,13 +12,18 @@ export const metadata: Metadata = {
     canonical: "/cupons"
   },
   description: "Cupons ativos da NerdLingoLab para economizar em camisetas, action figures e produtos geek.",
-  title: "Cupons NerdLingoLab"
+  title: "Cupons"
 };
 
 export const dynamic = "force-dynamic";
 
 export default async function CouponsPage(): Promise<React.ReactElement> {
-  const offers = await getPublicOffers();
+  const session = await auth();
+  const offers = await getPublicOffers({
+    couponLimit: 12,
+    onlyHighlightedCoupons: false,
+    userId: session?.user?.id
+  });
 
   return (
     <main className="geek-page min-h-screen">

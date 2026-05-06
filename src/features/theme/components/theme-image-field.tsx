@@ -85,8 +85,8 @@ export function ThemeImageField({ defaultValue = "", label, name }: ThemeImageFi
           </Button>
           <MediaLibraryPicker buttonLabel="Biblioteca" onSelect={setValue} />
           {value ? (
-            <Button onClick={() => setValue("")} type="button" variant="outline">
-              <Trash2 className="mr-2 h-4 w-4" />
+            <Button className="border-red-200 bg-red-50 text-red-700 hover:bg-red-600 hover:text-white" onClick={() => setValue("")} type="button" variant="outline">
+              <Trash2 className="mr-2 size-5" />
               Limpar
             </Button>
           ) : null}

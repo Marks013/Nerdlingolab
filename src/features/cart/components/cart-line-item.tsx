@@ -80,12 +80,13 @@ export function CartLineItem({
           <p className="font-semibold">{formatCurrency(item.lineTotalCents)}</p>
           <Button
             aria-label={`Remover ${item.title}`}
+            className="size-11 rounded-lg border border-red-200 bg-red-50 text-red-700 shadow-sm hover:bg-red-600 hover:text-white"
             onClick={() => onRemove(item.variantId)}
             size="icon"
             type="button"
             variant="ghost"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="size-5" />
           </Button>
         </div>
       </div>

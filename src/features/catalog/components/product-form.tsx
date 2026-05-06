@@ -782,14 +782,14 @@ export function ProductForm({
                               </Button>
                               <Button
                                 aria-label="Remover variacao"
-                                className="h-9 border-destructive px-2 text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:border-muted-foreground/20 disabled:text-muted-foreground"
+                                className="h-10 border-red-200 bg-red-50 px-3 text-red-700 hover:bg-red-600 hover:text-white disabled:border-muted-foreground/20 disabled:bg-muted disabled:text-muted-foreground"
                                 disabled={variants.length === 1}
                                 onClick={() => removeVariant(variant.id)}
                                 size="sm"
                                 type="button"
                                 variant="outline"
                               >
-                                <Trash2 className="mr-1 h-4 w-4" />
+                                <Trash2 className="mr-1.5 size-5" />
                                 Excluir
                               </Button>
                             </div>
@@ -874,13 +874,13 @@ export function ProductForm({
                         <td className="px-3 py-3">
                           <Button
                             aria-label="Remover metacampo"
-                            className="h-9 border-destructive px-2 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                            className="h-10 border-red-200 bg-red-50 px-3 text-red-700 hover:bg-red-600 hover:text-white"
                             onClick={() => removeMetafield(field.id)}
                             size="sm"
                             type="button"
                             variant="outline"
                           >
-                            <Trash2 className="mr-1 h-4 w-4" />
+                            <Trash2 className="mr-1.5 size-5" />
                             Excluir
                           </Button>
                         </td>

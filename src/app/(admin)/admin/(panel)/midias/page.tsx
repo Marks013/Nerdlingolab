@@ -147,14 +147,14 @@ export default async function AdminMediaPage({ searchParams }: AdminMediaPagePro
                   <form action={deleteMediaAssetAction} className="col-span-2">
                     <input name="assetId" type="hidden" value={asset.id} />
                     <Button
-                      className="h-9 w-full"
+                      className="h-10 w-full"
                       disabled={asset.usages.length > 0}
                       size="sm"
                       title={asset.usages.length > 0 ? "Remova os vinculos antes de excluir" : "Excluir arquivo"}
                       type="submit"
                       variant="destructive"
                     >
-                      <Trash2 className="mr-2 h-4 w-4" />
+                      <Trash2 className="mr-2 size-5" />
                       Excluir arquivo
                     </Button>
                   </form>

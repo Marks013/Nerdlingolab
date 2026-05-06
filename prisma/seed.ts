@@ -195,6 +195,7 @@ async function ensureDefaultWelcomeCoupon(): Promise<void> {
       isPublic: true,
       minSubtotalCents: 1000,
       perCustomerLimit: 1,
+      showOnOffers: false,
       type: CouponType.FIXED_AMOUNT,
       value: 1000
     },
@@ -203,6 +204,7 @@ async function ensureDefaultWelcomeCoupon(): Promise<void> {
       isPublic: true,
       minSubtotalCents: 1000,
       perCustomerLimit: 1,
+      showOnOffers: false,
       type: CouponType.FIXED_AMOUNT,
       value: 1000
     }

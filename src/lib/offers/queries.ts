@@ -1,5 +1,12 @@
-import { CouponType, ProductStatus, type Coupon } from "@/generated/prisma/client";
+import {
+  CouponType,
+  OrderStatus,
+  PaymentStatus,
+  ProductStatus,
+  type Coupon
+} from "@/generated/prisma/client";
 
+import { WELCOME_COUPON_CODE } from "@/lib/account/welcome-coupon";
 import {
   fallbackProducts,
   shouldUseCatalogFallback
@@ -9,7 +16,17 @@ import { prisma } from "@/lib/prisma";
 
 export type PublicOfferCoupon = Pick<
   Coupon,
-  "code" | "type" | "value" | "minSubtotalCents" | "maxDiscountCents" | "expiresAt" | "isPublic" | "showOnOffers"
+  | "assignedUserId"
+  | "code"
+  | "expiresAt"
+  | "id"
+  | "isPublic"
+  | "maxDiscountCents"
+  | "minSubtotalCents"
+  | "perCustomerLimit"
+  | "showOnOffers"
+  | "type"
+  | "value"
 >;
 
 export interface PublicOffers {
@@ -17,7 +34,19 @@ export interface PublicOffers {
   products: ProductListItem[];
 }
 
-export async function getPublicOffers(): Promise<PublicOffers> {
+export interface PublicOffersOptions {
+  couponLimit?: number;
+  onlyHighlightedCoupons?: boolean;
+  productLimit?: number;
+  userId?: string;
+}
+
+export async function getPublicOffers({
+  couponLimit = 3,
+  onlyHighlightedCoupons = false,
+  productLimit = 4,
+  userId
+}: PublicOffersOptions = {}): Promise<PublicOffers> {
   const now = new Date();
   let coupons: Array<PublicOfferCoupon & { usageLimit: number | null; usedCount: number }>;
   let products: ProductListItem[];
@@ -28,7 +57,7 @@ export async function getPublicOffers(): Promise<PublicOffers> {
         where: {
           isActive: true,
           isPublic: true,
-          showOnOffers: true,
+          ...(onlyHighlightedCoupons ? { showOnOffers: true } : {}),
           OR: [{ startsAt: null }, { startsAt: { lte: now } }],
           AND: [
             {
@@ -38,18 +67,21 @@ export async function getPublicOffers(): Promise<PublicOffers> {
         },
         orderBy: [{ expiresAt: "asc" }, { createdAt: "desc" }],
         select: {
+          assignedUserId: true,
           code: true,
           expiresAt: true,
+          id: true,
           isPublic: true,
           maxDiscountCents: true,
           minSubtotalCents: true,
+          perCustomerLimit: true,
           showOnOffers: true,
           type: true,
           usageLimit: true,
           usedCount: true,
           value: true
         },
-        take: 12
+        take: Math.max(couponLimit * 4, 12)
       }),
       prisma.product.findMany({
         where: {
@@ -75,7 +107,7 @@ export async function getPublicOffers(): Promise<PublicOffers> {
           }
         },
         orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
-        take: 4
+        take: productLimit
       })
     ]);
   } catch (error) {
@@ -87,16 +119,89 @@ export async function getPublicOffers(): Promise<PublicOffers> {
     products = fallbackProducts.slice(0, 4);
   }
 
+  const activeCoupons = coupons.filter(
+    (coupon) => !coupon.usageLimit || coupon.usedCount < coupon.usageLimit
+  );
+  const eligibleCoupons = await filterEligiblePublicCoupons(activeCoupons, userId);
+
   return {
-    coupons: coupons
-      .filter((coupon) => !coupon.usageLimit || coupon.usedCount < coupon.usageLimit)
-      .slice(0, 3),
+    coupons: eligibleCoupons.slice(0, couponLimit),
     products: products.filter(
       (product) =>
         product.compareAtPriceCents !== null &&
         product.compareAtPriceCents > product.priceCents
     )
   };
+}
+
+async function filterEligiblePublicCoupons<
+  TCoupon extends PublicOfferCoupon & { usageLimit: number | null; usedCount: number }
+>(coupons: TCoupon[], userId?: string): Promise<TCoupon[]> {
+  if (coupons.length === 0) {
+    return [];
+  }
+
+  const visibleToVisitor = coupons.filter(
+    (coupon) => !coupon.assignedUserId || coupon.assignedUserId === userId
+  );
+
+  if (visibleToVisitor.length === 0) {
+    return [];
+  }
+
+  if (!userId) {
+    return visibleToVisitor.filter(
+      (coupon) => !coupon.assignedUserId && coupon.code.toUpperCase() !== WELCOME_COUPON_CODE
+    );
+  }
+
+  const [redemptions, previousPaidOrderCount] = await Promise.all([
+    prisma.couponRedemption.findMany({
+      where: {
+        couponId: { in: visibleToVisitor.map((coupon) => coupon.id) },
+        userId
+      },
+      select: { couponId: true }
+    }),
+    prisma.order.count({
+      where: {
+        userId,
+        OR: [
+          { paymentStatus: PaymentStatus.APPROVED },
+          {
+            status: {
+              in: [
+                OrderStatus.PAID,
+                OrderStatus.PROCESSING,
+                OrderStatus.SHIPPED,
+                OrderStatus.DELIVERED
+              ]
+            }
+          }
+        ]
+      }
+    })
+  ]);
+  const redemptionCountByCouponId = new Map<string, number>();
+
+  for (const redemption of redemptions) {
+    redemptionCountByCouponId.set(
+      redemption.couponId,
+      (redemptionCountByCouponId.get(redemption.couponId) ?? 0) + 1
+    );
+  }
+
+  return visibleToVisitor.filter((coupon) => {
+    if (coupon.code.toUpperCase() === WELCOME_COUPON_CODE && previousPaidOrderCount > 0) {
+      return false;
+    }
+
+    if (!coupon.perCustomerLimit) {
+      return true;
+    }
+
+    return (redemptionCountByCouponId.get(coupon.id) ?? 0) < coupon.perCustomerLimit;
+  });
 }
 
 export function formatPublicCouponBenefit(coupon: PublicOfferCoupon): string {

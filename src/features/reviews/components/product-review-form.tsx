@@ -186,11 +186,11 @@ export function ProductReviewForm({
               )}
               <button
                 aria-label="Remover mídia"
-                className="absolute right-2 top-2 inline-flex size-8 items-center justify-center rounded-full bg-background/95 text-foreground shadow-sm"
+                className="absolute right-2 top-2 inline-flex size-10 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-700 shadow-sm transition hover:bg-red-600 hover:text-white"
                 onClick={() => setMedia((items) => items.filter((current) => current.assetId !== item.assetId))}
                 type="button"
               >
-                <Trash2 className="size-4" />
+                <Trash2 className="size-5" />
               </button>
             </div>
           ))}

@@ -170,8 +170,8 @@ function ProductRow({ product }: { product: ProductListItem }): React.ReactEleme
           </Button>
         </form>
         <form action={deleteProduct.bind(null, product.id)}>
-          <Button className="h-9 border-destructive px-2.5 text-xs text-destructive hover:bg-destructive hover:text-destructive-foreground" type="submit" variant="outline">
-            <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+          <Button className="h-10 border-red-200 bg-red-50 px-3 text-xs text-red-700 hover:bg-red-600 hover:text-white" type="submit" variant="outline">
+            <Trash2 className="mr-1.5 size-5" />
             Excluir
           </Button>
         </form>

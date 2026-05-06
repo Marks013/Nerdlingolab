@@ -157,8 +157,8 @@ function ProductInCategory({ product }: { product: AdminCategoryManagerItem["pro
       </div>
       <form action={removeProductFromCategory}>
         <input name="productId" type="hidden" value={product.id} />
-        <Button className="h-10 border-destructive px-3 text-destructive hover:bg-destructive hover:text-destructive-foreground" type="submit" variant="outline">
-          <Trash2 className="mr-2 h-4 w-4" />
+        <Button className="h-10 border-red-200 bg-red-50 px-3 text-red-700 hover:bg-red-600 hover:text-white" type="submit" variant="outline">
+          <Trash2 className="mr-2 size-5" />
           Remover
         </Button>
       </form>

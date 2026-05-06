@@ -5,6 +5,7 @@ import { ArrowRight, Flame, PackageCheck, Percent, ShieldCheck, TicketPercent, T
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/features/catalog/components/product-card";
 import { PublicOffersSection } from "@/features/offers/components/public-offers-section";
+import { auth } from "@/lib/auth";
 import { getPublicOffers } from "@/lib/offers/queries";
 
 export const metadata: Metadata = {
@@ -12,13 +13,17 @@ export const metadata: Metadata = {
     canonical: "/ofertas"
   },
   description: "Produtos geek em oferta na NerdLingoLab, com camisetas, colecionáveis e novidades selecionadas.",
-  title: "Ofertas NerdLingoLab"
+  title: "Ofertas"
 };
 
 export const dynamic = "force-dynamic";
 
 export default async function OffersPage(): Promise<React.ReactElement> {
-  const offers = await getPublicOffers();
+  const session = await auth();
+  const offers = await getPublicOffers({
+    onlyHighlightedCoupons: true,
+    userId: session?.user?.id
+  });
 
   return (
     <main className="geek-page min-h-screen">

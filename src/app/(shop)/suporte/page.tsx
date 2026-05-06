@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     canonical: "/suporte"
   },
   description: "Fale com o suporte da NerdLingoLab para dúvidas sobre pedidos, entrega, produtos e atendimento.",
-  title: "Suporte NerdLingoLab"
+  title: "Suporte"
 };
 
 export default async function SupportPage(): Promise<React.ReactElement> {

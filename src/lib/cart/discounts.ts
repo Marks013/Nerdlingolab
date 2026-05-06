@@ -1,5 +1,6 @@
-import { CouponType, type Coupon } from "@/generated/prisma/client";
+import { CouponType, OrderStatus, PaymentStatus, type Coupon } from "@/generated/prisma/client";
 
+import { WELCOME_COUPON_CODE } from "@/lib/account/welcome-coupon";
 import { prisma } from "@/lib/prisma";
 
 export async function validateCoupon({
@@ -69,7 +70,52 @@ async function getCouponInvalidMessage({
     return "Subtotal mínimo do cupom não atingido.";
   }
 
+  const welcomeCouponMessage = await validateWelcomeCouponFirstOrder({ coupon, userId });
+
+  if (welcomeCouponMessage) {
+    return welcomeCouponMessage;
+  }
+
   return validateCouponCustomerLimit({ coupon, userId });
+}
+
+async function validateWelcomeCouponFirstOrder({
+  coupon,
+  userId
+}: {
+  coupon: Coupon;
+  userId?: string;
+}): Promise<string | null> {
+  if (coupon.code.toUpperCase() !== WELCOME_COUPON_CODE) {
+    return null;
+  }
+
+  if (!userId) {
+    return "Entre na sua conta para usar o cupom de boas-vindas.";
+  }
+
+  const previousPaidOrderCount = await prisma.order.count({
+    where: {
+      userId,
+      OR: [
+        { paymentStatus: PaymentStatus.APPROVED },
+        {
+          status: {
+            in: [
+              OrderStatus.PAID,
+              OrderStatus.PROCESSING,
+              OrderStatus.SHIPPED,
+              OrderStatus.DELIVERED
+            ]
+          }
+        }
+      ]
+    }
+  });
+
+  return previousPaidOrderCount > 0
+    ? "Cupom de boas-vindas disponível apenas para o primeiro pedido da conta."
+    : null;
 }
 
 async function validateCouponCustomerLimit({

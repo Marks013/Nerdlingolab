@@ -205,12 +205,11 @@ function getSecurityVerificationLinks(): {
 } {
   const storefrontUrl = getStorefrontUrl();
   const encodedUrl = encodeURIComponent(storefrontUrl);
-  const encodedDomain = encodeURIComponent(new URL(storefrontUrl).hostname);
 
   return {
     googleSafeBrowsing: `https://transparencyreport.google.com/safe-browsing/search?url=${encodedUrl}`,
     norton: `https://safeweb.norton.com/report/show?url=${encodedUrl}`,
-    reclameAqui: `https://www.reclameaqui.com.br/busca/?q=${encodedDomain}`
+    reclameAqui: "https://www.reclameaqui.com.br/busca/?q=Nerdlingolab"
   };
 }
 

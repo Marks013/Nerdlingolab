@@ -1,4 +1,4 @@
-import { Crown, History, TicketPercent } from "lucide-react";
+import { BadgeCheck, Coins, Crown, Gift, Share2, Sparkles, TicketPercent, Trophy } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
 
@@ -24,19 +24,22 @@ export const metadata: Metadata = {
 
 const loyaltyBlocks = [
   {
-    title: "Ganhe pontos",
-    description: "Compras aprovadas geram pontos conforme seus benefícios atuais.",
-    icon: Crown
+    title: "Compre e acumule",
+    description: "Cada pedido aprovado vira pontos para a próxima compra.",
+    icon: Coins,
+    tone: "bg-orange-50 text-primary dark:bg-orange-950/25"
   },
   {
-    title: "Resgate no checkout",
-    description: "Pontos viram desconto confirmado antes do pagamento.",
-    icon: TicketPercent
+    title: "Troque por desconto",
+    description: "Converta NerdCoins em cupons pessoais direto na sua conta.",
+    icon: TicketPercent,
+    tone: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300"
   },
   {
-    title: "Histórico claro",
-    description: "Cada ganho, resgate, ajuste ou estorno fica disponível para consulta.",
-    icon: History
+    title: "Suba de nível",
+    description: "Quanto mais você compra, mais forte fica seu multiplicador VIP.",
+    icon: Trophy,
+    tone: "bg-amber-50 text-amber-700 dark:bg-amber-950/25 dark:text-amber-300"
   }
 ];
 
@@ -68,25 +71,58 @@ export default async function LoyaltyPage(): Promise<React.ReactElement> {
   return (
     <main className="geek-page min-h-screen px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
-      <h1 className="geek-title text-3xl font-bold tracking-normal">Programa de Fidelidade</h1>
-      <p className="mt-4 max-w-2xl text-muted-foreground">
-        Acumule {settings.programName} em compras elegíveis, acompanhe seus benefícios e use
-        recompensas em novos pedidos.
-      </p>
+      <section className="overflow-hidden rounded-lg border border-primary/35 bg-card shadow-md">
+        <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+          <div>
+            <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-black uppercase text-primary">
+              <Sparkles className="mr-2 h-4 w-4" />
+              Programa oficial da NerdLingoLab
+            </span>
+            <h1 className="mt-4 text-balance text-4xl font-black tracking-normal text-foreground sm:text-5xl">
+              NerdCoins: sua compra volta em forma de desconto.
+            </h1>
+            <p className="mt-4 max-w-2xl text-pretty text-base leading-7 text-muted-foreground">
+              Entre no clube, ganhe pontos em compras aprovadas, avance nos níveis VIP e transforme seu saldo em cupons para novas compras geek.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button asChild size="lg">
+                <Link href={session?.user?.id ? "/conta/nerdcoins" : "/cadastro"}>{session?.user?.id ? "Ver meus NerdCoins" : "Criar conta e começar"}</Link>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link href="/produtos">Comprar e acumular</Link>
+              </Button>
+            </div>
+          </div>
+          <div className="rounded-lg border border-primary/30 bg-primary/10 p-5 shadow-inner">
+            <p className="text-sm font-black uppercase text-primary">Conversão ativa</p>
+            <div className="mt-4 grid gap-3">
+              <HeroStat label="Você ganha" value={`${settings.pointsPerReal} pts`} detail="a cada R$ 1 em pedido aprovado" />
+              <HeroStat label="Resgate mínimo" value={`${settings.minRedeemPoints} pts`} detail={`equivale a ${formatCurrency(minCouponValue)}`} />
+              <HeroStat label="Bônus de cadastro" value={`${settings.signupBonusPoints} pts`} detail="liberado ao completar a conta" />
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div className="mt-8 grid gap-4 md:grid-cols-3">
         {loyaltyBlocks.map((block) => (
-          <Card key={block.title}>
+          <Card className="border-primary/30 bg-card" key={block.title}>
             <CardHeader>
-              <block.icon className="h-5 w-5 text-primary" />
+              <div className={`mb-1 flex h-11 w-11 items-center justify-center rounded-lg border border-primary/20 ${block.tone}`}>
+                <block.icon className="h-5 w-5" />
+              </div>
               <CardTitle>{block.title}</CardTitle>
               <CardDescription>{block.description}</CardDescription>
             </CardHeader>
           </Card>
         ))}
       </div>
-      <Card className="mt-8">
+      <Card className="mt-8 border-primary/35 bg-orange-50/80 dark:bg-orange-950/20">
         <CardHeader>
-          <CardTitle>{loyaltyPoints?.balance ?? 0} Nerdcoins disponíveis</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-2xl">
+            <Crown className="h-6 w-6 text-primary" />
+            {loyaltyPoints?.balance ?? 0} NerdCoins disponíveis
+          </CardTitle>
           <CardDescription>
             Nível atual: {loyaltyPoints ? loyaltyTierLabels[loyaltyPoints.tier] : "Genin"} · {settings.pointsPerReal} pontos por R$ 1 ·
             resgate mínimo {settings.minRedeemPoints} pontos ({formatCurrency(minCouponValue)})
@@ -108,6 +144,23 @@ export default async function LoyaltyPage(): Promise<React.ReactElement> {
           </CardContent>
         ) : null}
       </Card>
+      <section className="mt-8 grid gap-4 md:grid-cols-3">
+        <MarketingCard
+          icon={Gift}
+          title="Cadastro com recompensa"
+          text={`Complete sua conta e comece com ${settings.signupBonusPoints} NerdCoins para entrar no jogo já com saldo.`}
+        />
+        <MarketingCard
+          icon={Share2}
+          title="Indicação vale ponto"
+          text={`Convide alguém: quem entra recebe ${settings.referralInviteeBonusPoints} pontos e você pode ganhar ${settings.referralInviterBonusPoints}.`}
+        />
+        <MarketingCard
+          icon={BadgeCheck}
+          title="Tudo auditável"
+          text="Ganhos, resgates, expiração e estornos ficam registrados para você acompanhar sem surpresa."
+        />
+      </section>
       <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_1fr]">
         <Card>
           <CardHeader>
@@ -151,6 +204,34 @@ export default async function LoyaltyPage(): Promise<React.ReactElement> {
       ) : null}
       </div>
     </main>
+  );
+}
+
+function HeroStat({ detail, label, value }: { detail: string; label: string; value: string }): React.ReactElement {
+  return (
+    <div className="rounded-lg border border-primary/25 bg-background p-4">
+      <p className="text-xs font-bold uppercase text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl font-black text-primary">{value}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{detail}</p>
+    </div>
+  );
+}
+
+function MarketingCard({
+  icon: Icon,
+  text,
+  title
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  text: string;
+  title: string;
+}): React.ReactElement {
+  return (
+    <div className="rounded-lg border border-primary/30 bg-card p-5 shadow-sm">
+      <Icon className="h-6 w-6 text-primary" />
+      <h2 className="mt-3 text-lg font-black">{title}</h2>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">{text}</p>
+    </div>
   );
 }
 

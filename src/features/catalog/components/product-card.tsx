@@ -18,6 +18,7 @@ export function ProductCard({ imagePriority = false, product, variant = "grid" }
   const imageUrl = getPrimaryImageUrl(product.images);
   const hasDiscount = Boolean(product.compareAtPriceCents && product.compareAtPriceCents > product.priceCents);
   const badges = getProductBadges(product);
+  const categoryName = product.category?.name ?? product.categories[0]?.category.name ?? "Produto NerdLingoLab";
 
   if (variant === "list") {
     return (
@@ -49,7 +50,7 @@ export function ProductCard({ imagePriority = false, product, variant = "grid" }
               {product.title}
             </h3>
             <p className="mt-1 truncate text-xs font-semibold text-[#677279]">
-              {product.category?.name ?? "Produto NerdLingoLab"}
+              {categoryName}
             </p>
           </Link>
 

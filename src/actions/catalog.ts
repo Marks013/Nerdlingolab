@@ -81,6 +81,11 @@ export async function createProduct(formData: FormData): Promise<void> {
           compareAtPriceCents: productInput.compareAtPriceCents,
           publishedAt: productInput.status === ProductStatus.ACTIVE ? new Date() : null,
           categoryId: productInput.categoryId,
+          categories: {
+            create: productInput.categoryIdsArray.map((categoryId) => ({
+              categoryId
+            }))
+          },
           variants: {
             create: productInput.variantsArray.map((variant) => ({
               barcode: variant.barcode,
@@ -176,7 +181,13 @@ export async function updateProduct(productId: string, formData: FormData): Prom
           priceCents: productInput.priceCents,
           compareAtPriceCents: productInput.compareAtPriceCents ?? null,
           publishedAt: productInput.status === ProductStatus.ACTIVE ? new Date() : null,
-          categoryId: productInput.categoryId ?? null
+          categoryId: productInput.categoryId ?? null,
+          categories: {
+            deleteMany: {},
+            create: productInput.categoryIdsArray.map((categoryId) => ({
+              categoryId
+            }))
+          }
         }
       });
 
@@ -323,8 +334,26 @@ export async function assignProductToCategory(formData: FormData): Promise<void>
     productId: formData.get("productId")
   });
 
+  const product = await prisma.product.findUnique({
+    select: { categoryId: true },
+    where: { id: parsedInput.productId }
+  });
+
   await prisma.product.update({
-    data: { categoryId: parsedInput.categoryId },
+    data: {
+      categoryId: product?.categoryId ? undefined : parsedInput.categoryId,
+      categories: {
+        connectOrCreate: {
+          create: { categoryId: parsedInput.categoryId },
+          where: {
+            productId_categoryId: {
+              categoryId: parsedInput.categoryId,
+              productId: parsedInput.productId
+            }
+          }
+        }
+      }
+    },
     where: { id: parsedInput.productId }
   });
 
@@ -334,11 +363,45 @@ export async function assignProductToCategory(formData: FormData): Promise<void>
 
 export async function removeProductFromCategory(formData: FormData): Promise<void> {
   await requireAdmin();
-  const productId = z.string().min(1).parse(formData.get("productId"));
+  const parsedInput = z.object({
+    categoryId: z.string().min(1),
+    productId: z.string().min(1)
+  }).parse({
+    categoryId: formData.get("categoryId"),
+    productId: formData.get("productId")
+  });
 
-  await prisma.product.update({
-    data: { categoryId: null },
-    where: { id: productId }
+  await prisma.$transaction(async (tx) => {
+    const product = await tx.product.findUnique({
+      select: {
+        categoryId: true,
+        categories: {
+          select: { categoryId: true },
+          where: {
+            categoryId: {
+              not: parsedInput.categoryId
+            }
+          },
+          take: 1
+        }
+      },
+      where: { id: parsedInput.productId }
+    });
+    const nextPrimaryCategoryId = product?.categoryId === parsedInput.categoryId
+      ? product.categories[0]?.categoryId ?? null
+      : product?.categoryId;
+
+    await tx.product.update({
+      data: {
+        categoryId: nextPrimaryCategoryId,
+        categories: {
+          deleteMany: {
+            categoryId: parsedInput.categoryId
+          }
+        }
+      },
+      where: { id: parsedInput.productId }
+    });
   });
 
   revalidateCatalogPaths();
@@ -371,6 +434,7 @@ function formValuesToProductInput(formData: FormData): Record<string, FormDataEn
     shortDescription: formData.get("shortDescription"),
     description: formData.get("description"),
     categoryId: formData.get("categoryId"),
+    categoryIds: formData.getAll("categoryIds").join(","),
     brand: formData.get("brand"),
     tags: formData.get("tags"),
     metafields: formData.get("metafields"),

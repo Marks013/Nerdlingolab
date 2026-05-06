@@ -23,6 +23,7 @@ export const productFormSchema = z.object({
   shortDescription: optionalStringSchema.optional(),
   description: z.string().trim().min(10, "Descreva melhor o produto.").max(50_000, "A descricao esta muito longa."),
   categoryId: optionalStringSchema.optional(),
+  categoryIds: z.string().trim().optional(),
   brand: optionalStringSchema.optional(),
   tags: z.string().trim().optional(),
   metafields: z.string().trim().optional(),
@@ -65,6 +66,7 @@ export function normalizeProductInput(input: ProductFormInput): ProductFormInput
   slug: string;
   priceCents: number;
   compareAtPriceCents?: number;
+  categoryIdsArray: string[];
   tagsArray: string[];
   imagesArray: string[];
   metafieldsObject: Record<string, string>;
@@ -80,11 +82,16 @@ export function normalizeProductInput(input: ProductFormInput): ProductFormInput
     description: sanitizeRichTextHtml(input.description),
     priceCents: parseCurrencyToCents(input.price),
     compareAtPriceCents: compareAtPriceCents && compareAtPriceCents > 0 ? compareAtPriceCents : undefined,
+    categoryIdsArray: normalizeCategoryIds(input.categoryId, input.categoryIds),
     tagsArray: splitLinesOrCommas(input.tags),
     imagesArray: splitLinesOrCommas(input.imageUrls),
     metafieldsObject: parseMetafields(input.metafields),
     variantsArray: parseProductVariants(input)
   };
+}
+
+function normalizeCategoryIds(primaryCategoryId: string | undefined, categoryIds: string | undefined): string[] {
+  return Array.from(new Set([primaryCategoryId, ...splitLinesOrCommas(categoryIds)].filter(Boolean) as string[]));
 }
 
 function parseProductVariants(input: ProductFormInput): NormalizedProductVariantInput[] {

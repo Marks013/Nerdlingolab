@@ -4,6 +4,7 @@ import {
   ProductStatus,
   type Category,
   type Product,
+  type ProductCategory,
   type ProductVariant
 } from "@/generated/prisma/client";
 import type {
@@ -48,6 +49,7 @@ export interface AdminProductFilters {
 
 export type ProductListItem = Product & {
   category: Category | null;
+  categories: Array<ProductCategory & { category: Category }>;
   variants: ProductVariant[];
 };
 
@@ -104,30 +106,50 @@ export async function getAdminProductShippingPresets(): Promise<ProductShippingP
 }
 
 export async function getAdminCategoryManagerData(): Promise<AdminCategoryManagerItem[]> {
-  return prisma.category.findMany({
+  const categories = await prisma.category.findMany({
     include: {
       _count: {
         select: {
           children: true,
-          products: true
+          catalogProducts: true
         }
       },
-      products: {
+      catalogProducts: {
         include: {
-          variants: true
+          product: {
+            include: {
+              variants: true
+            }
+          }
         },
-        orderBy: { title: "asc" },
+        orderBy: {
+          product: {
+            title: "asc"
+          }
+        },
         take: 30
       }
     },
     orderBy: [{ position: "asc" }, { name: "asc" }]
   });
+
+  return categories.map((category) => ({
+    ...category,
+    _count: {
+      children: category._count.children,
+      products: category._count.catalogProducts
+    },
+    products: category.catalogProducts.map((productCategory) => productCategory.product)
+  }));
 }
 
 export async function getAdminProducts(filters: AdminProductFilters = {}): Promise<ProductListItem[]> {
   return prisma.product.findMany({
     include: {
       category: true,
+      categories: {
+        include: { category: true }
+      },
       variants: true
     },
     where: getAdminProductWhere(filters),
@@ -140,6 +162,9 @@ export async function getAdminProductById(id: string): Promise<ProductListItem |
     where: { id },
     include: {
       category: true,
+      categories: {
+        include: { category: true }
+      },
       variants: true
     }
   });
@@ -150,9 +175,20 @@ export async function getPublicCategories(): Promise<Category[]> {
     return await prisma.category.findMany({
       where: {
         isActive: true,
-        products: {
-          some: getPublicProductWhere()
-        }
+        OR: [
+          {
+            products: {
+              some: getPublicProductWhere()
+            }
+          },
+          {
+            catalogProducts: {
+              some: {
+                product: getPublicProductWhere()
+              }
+            }
+          }
+        ]
       },
       orderBy: [{ position: "asc" }, { name: "asc" }]
     });
@@ -175,6 +211,9 @@ export async function getPublicProducts(filters: PublicProductFilters = {}): Pro
       where: getPublicProductWhere(filters),
       include: {
         category: true,
+        categories: {
+          include: { category: true }
+        },
         variants: {
           where: { isActive: true },
           orderBy: { createdAt: "asc" }
@@ -226,6 +265,9 @@ export async function getPublicProductsPage(
           where,
           include: {
             category: true,
+            categories: {
+              include: { category: true }
+            },
             variants: {
               where: { isActive: true },
               orderBy: { createdAt: "asc" }
@@ -271,6 +313,14 @@ export async function getPublicProductSearchSuggestions(take = 120): Promise<Pro
         category: {
           select: { name: true }
         },
+        categories: {
+          select: {
+            category: {
+              select: { name: true }
+            }
+          },
+          take: 1
+        },
         id: true,
         images: true,
         priceCents: true,
@@ -282,7 +332,7 @@ export async function getPublicProductSearchSuggestions(take = 120): Promise<Pro
     });
 
     return products.map((product) => ({
-      categoryName: product.category?.name ?? null,
+      categoryName: product.category?.name ?? product.categories[0]?.category.name ?? null,
       id: product.id,
       imageUrl: getFirstImageUrl(product.images),
       priceCents: product.priceCents,
@@ -292,7 +342,7 @@ export async function getPublicProductSearchSuggestions(take = 120): Promise<Pro
   } catch (error) {
     if (shouldUseCatalogFallback(error)) {
       return fallbackProducts.slice(0, take).map((product) => ({
-        categoryName: product.category?.name ?? null,
+        categoryName: product.category?.name ?? product.categories[0]?.category.name ?? null,
         id: product.id,
         imageUrl: getFirstImageUrl(product.images),
         priceCents: product.priceCents,
@@ -312,6 +362,9 @@ async function getPublicProductsSortedBySales(filters: PublicProductFilters): Pr
       where,
       include: {
         category: true,
+        categories: {
+          include: { category: true }
+        },
         variants: {
           where: { isActive: true },
           orderBy: { createdAt: "asc" }
@@ -383,6 +436,9 @@ export async function getPublicBestSellingProducts(take = 6): Promise<ProductLis
       },
       include: {
         category: true,
+        categories: {
+          include: { category: true }
+        },
         variants: {
           where: { isActive: true },
           orderBy: { createdAt: "asc" }
@@ -421,6 +477,9 @@ export async function getPublicNewProducts(take = 6, now = new Date()): Promise<
       },
       include: {
         category: true,
+        categories: {
+          include: { category: true }
+        },
         variants: {
           where: { isActive: true },
           orderBy: { createdAt: "asc" }
@@ -447,6 +506,9 @@ export async function getPublicProductBySlug(slug: string): Promise<ProductListI
       },
       include: {
         category: true,
+        categories: {
+          include: { category: true }
+        },
         variants: {
           where: { isActive: true },
           orderBy: { createdAt: "asc" }
@@ -483,6 +545,9 @@ export async function getPublicProductRecommendations({
   };
   const include = {
     category: true,
+    categories: {
+      include: { category: true }
+    },
     variants: {
       where: { isActive: true },
       orderBy: { createdAt: "asc" }
@@ -498,7 +563,14 @@ export async function getPublicProductRecommendations({
             AND: [
               baseWhere,
               {
-                categoryId
+                OR: [
+                  { categoryId },
+                  {
+                    categories: {
+                      some: { categoryId }
+                    }
+                  }
+                ]
               }
             ]
           },
@@ -553,16 +625,40 @@ function getPublicProductWhere(filters: PublicProductFilters = {}): ProductWhere
       }
     },
     {
-      OR: [{ categoryId: null }, { category: { isActive: true } }]
+      OR: [
+        { categoryId: null },
+        { category: { isActive: true } },
+        {
+          categories: {
+            some: {
+              category: { isActive: true }
+            }
+          }
+        }
+      ]
     }
   ];
 
   if (filters.categorySlug) {
     conditions.push({
-      category: {
-        isActive: true,
-        slug: filters.categorySlug
-      }
+      OR: [
+        {
+          category: {
+            isActive: true,
+            slug: filters.categorySlug
+          }
+        },
+        {
+          categories: {
+            some: {
+              category: {
+                isActive: true,
+                slug: filters.categorySlug
+              }
+            }
+          }
+        }
+      ]
     });
   }
 
@@ -611,7 +707,16 @@ function getAdminProductWhere(filters: AdminProductFilters): ProductWhereInput {
   }
 
   if (filters.categoryId) {
-    conditions.push({ categoryId: filters.categoryId });
+    conditions.push({
+      OR: [
+        { categoryId: filters.categoryId },
+        {
+          categories: {
+            some: { categoryId: filters.categoryId }
+          }
+        }
+      ]
+    });
   }
 
   if (query) {

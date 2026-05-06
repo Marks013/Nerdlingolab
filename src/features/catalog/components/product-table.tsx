@@ -133,6 +133,7 @@ function ProductRow({ product }: { product: ProductListItem }): React.ReactEleme
   const imageUrl = getPrimaryProductImage(product);
   const availableStock = getAvailableStock(product);
   const metafieldCount = getMetafieldCount(product.metafields);
+  const categoryLabel = getProductCategoryLabel(product);
 
   return (
     <div className="grid min-w-0 gap-4 p-4 lg:grid-cols-[minmax(260px,1fr)_110px_110px_110px_minmax(180px,auto)] lg:items-center">
@@ -145,7 +146,7 @@ function ProductRow({ product }: { product: ProductListItem }): React.ReactEleme
             {product.title}
           </Link>
           <p className="mt-1 text-sm text-muted-foreground">
-            {product.category?.name ?? "Sem colecao"} / {product.brand ?? "Sem marca"}
+            {categoryLabel} / {product.brand ?? "Sem marca"}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {product.variants.length} variacoes / {product.tags.length} tags / {metafieldCount} metacampos
@@ -250,4 +251,15 @@ function getMetafieldCount(value: unknown): number {
   }
 
   return Object.keys(value).length;
+}
+
+function getProductCategoryLabel(product: ProductListItem): string {
+  const categoryNames = Array.from(
+    new Set([
+      product.category?.name,
+      ...product.categories.map((productCategory) => productCategory.category.name)
+    ].filter(Boolean))
+  );
+
+  return categoryNames.length > 0 ? categoryNames.join(", ") : "Sem colecao";
 }

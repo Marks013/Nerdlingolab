@@ -16,7 +16,10 @@ interface CategoryManagerProps {
 }
 
 export function CategoryManager({ categories, products }: CategoryManagerProps): React.ReactElement {
-  const unassignedProducts = products.filter((product) => !product.categoryId);
+  const sortedProducts = [...products].sort((left, right) => left.title.localeCompare(right.title));
+  const unassignedProducts = sortedProducts.filter(
+    (product) => !product.categoryId && product.categories.length === 0
+  );
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -27,7 +30,7 @@ export function CategoryManager({ categories, products }: CategoryManagerProps):
         </CardHeader>
         <CardContent className="grid gap-3">
           {categories.map((category) => (
-            <CategoryCard category={category} key={category.id} products={products} />
+          <CategoryCard category={category} key={category.id} products={sortedProducts} />
           ))}
           {categories.length === 0 ? (
             <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">Nenhuma categoria cadastrada.</p>
@@ -130,7 +133,7 @@ function CategoryCard({ category, products }: { category: AdminCategoryManagerIt
 
         <div className="grid gap-3 lg:grid-cols-2">
           {category.products.map((product) => (
-            <ProductInCategory key={product.id} product={product} />
+            <ProductInCategory categoryId={category.id} key={product.id} product={product} />
           ))}
           {category.products.length === 0 ? (
             <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">Nenhum produto neste catálogo.</p>
@@ -141,7 +144,13 @@ function CategoryCard({ category, products }: { category: AdminCategoryManagerIt
   );
 }
 
-function ProductInCategory({ product }: { product: AdminCategoryManagerItem["products"][number] }): React.ReactElement {
+function ProductInCategory({
+  categoryId,
+  product
+}: {
+  categoryId: string;
+  product: AdminCategoryManagerItem["products"][number];
+}): React.ReactElement {
   const imageUrl = getImageUrls(product.images)[0];
   const stock = product.variants.reduce((total, variant) => total + variant.stockQuantity, 0);
 
@@ -156,6 +165,7 @@ function ProductInCategory({ product }: { product: AdminCategoryManagerItem["pro
         <p className="text-sm font-semibold">{formatCurrency(product.priceCents)}</p>
       </div>
       <form action={removeProductFromCategory}>
+        <input name="categoryId" type="hidden" value={categoryId} />
         <input name="productId" type="hidden" value={product.id} />
         <Button className="h-10 border-red-200 bg-red-50 px-3 text-red-700 hover:bg-red-600 hover:text-white" type="submit" variant="outline">
           <Trash2 className="mr-2 size-5" />

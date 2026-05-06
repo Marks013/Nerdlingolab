@@ -159,6 +159,10 @@ export function ProductForm({
   const variantGroups = useMemo(() => groupVariantsByPrimaryOption(variants), [variants]);
   const variantsPayload = useMemo(() => serializeVariants(variants), [variants]);
   const metafieldsPayload = useMemo(() => serializeMetafields(metafields), [metafields]);
+  const selectedCategoryIds = new Set([
+    product?.categoryId,
+    ...(product?.categories.map((productCategory) => productCategory.category.id) ?? [])
+  ].filter(Boolean));
 
   function syncDescriptionFromEditor(): void {
     const nextDescription = descriptionEditorRef.current?.innerHTML ?? "";
@@ -914,7 +918,7 @@ export function ProductForm({
             <SectionHeading icon={Tags} title="Organizacao" />
             <div className="mt-4 grid gap-4">
               <label className="grid gap-2 text-sm font-medium">
-                Colecao / categoria
+                Categoria principal
                 <select className="h-10 rounded-md border bg-background px-3 text-sm" defaultValue={product?.categoryId ?? ""} name="categoryId">
                   <option value="">Sem colecao</option>
                   {categories.map((category) => (
@@ -922,6 +926,26 @@ export function ProductForm({
                   ))}
                 </select>
               </label>
+              <fieldset className="grid gap-2 text-sm font-medium">
+                <legend>Catálogos extras</legend>
+                <div className="grid max-h-56 gap-2 overflow-auto rounded-lg border bg-white p-3">
+                  {categories.map((category) => (
+                    <label className="flex min-h-9 items-center gap-2 rounded-md border border-orange-100 px-3 text-sm" key={category.id}>
+                      <input
+                        className="size-4 accent-primary"
+                        defaultChecked={selectedCategoryIds.has(category.id)}
+                        name="categoryIds"
+                        type="checkbox"
+                        value={category.id}
+                      />
+                      {category.name}
+                    </label>
+                  ))}
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  Use para manter o produto em mais de um catálogo, como Camisetas e Ofertas ao mesmo tempo.
+                </span>
+              </fieldset>
               <label className="grid gap-2 text-sm font-medium">
                 Tags
                 <Input defaultValue={product?.tags.join(", ") ?? ""} name="tags" placeholder="anime, camiseta, premium" />

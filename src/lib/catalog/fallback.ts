@@ -70,6 +70,14 @@ export const fallbackProducts: ProductListItem[] = fallbackTitles.map(([title, p
     brand: "NerdLingoLab",
     category: fallbackCategories[index % fallbackCategories.length] ?? null,
     categoryId: fallbackCategories[index % fallbackCategories.length]?.id ?? null,
+    categories: fallbackCategories[index % fallbackCategories.length]
+      ? [{
+          category: fallbackCategories[index % fallbackCategories.length],
+          categoryId: fallbackCategories[index % fallbackCategories.length]?.id ?? "",
+          createdAt: fallbackDate,
+          productId: id
+        }]
+      : [],
     compareAtPriceCents: priceCents + 1200,
     createdAt: fallbackDate,
     description:

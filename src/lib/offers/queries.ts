@@ -106,14 +106,39 @@ export async function getPublicOffers({
                       { slug: { in: ["oferta", "ofertas", "promocoes", "promoções"] } }
                     ]
                   }
+                },
+                {
+                  categories: {
+                    some: {
+                      category: {
+                        OR: [
+                          { name: { contains: "oferta", mode: "insensitive" } },
+                          { slug: { in: ["oferta", "ofertas", "promocoes", "promoções"] } }
+                        ]
+                      }
+                    }
+                  }
                 }
               ]
             }
           ],
-          OR: [{ categoryId: null }, { category: { isActive: true } }]
+          OR: [
+            { categoryId: null },
+            { category: { isActive: true } },
+            {
+              categories: {
+                some: {
+                  category: { isActive: true }
+                }
+              }
+            }
+          ]
         },
         include: {
           category: true,
+          categories: {
+            include: { category: true }
+          },
           variants: {
             where: { isActive: true },
             orderBy: { createdAt: "asc" }
@@ -148,7 +173,12 @@ function isPublicOfferProduct(product: ProductListItem): boolean {
     product.compareAtPriceCents && product.compareAtPriceCents > product.priceCents
   );
 
-  return hasPriceOffer || isOfferCategory(product.category) || hasOfferTag(product.tags);
+  return (
+    hasPriceOffer ||
+    isOfferCategory(product.category) ||
+    product.categories.some((productCategory) => isOfferCategory(productCategory.category)) ||
+    hasOfferTag(product.tags)
+  );
 }
 
 function isOfferCategory(category: ProductListItem["category"]): boolean {

@@ -1,4 +1,4 @@
-import { TicketPercent } from "lucide-react";
+import { Gift, ShoppingBag, Sparkles, TicketPercent } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -25,36 +25,64 @@ export function PublicOffersSection({
 
   return (
     <section id="ofertas-cupons" className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm font-medium text-primary">Seleção especial</p>
-          <h2 className="mt-2 text-2xl font-bold tracking-normal">Ofertas NerdLingoLab</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Produtos e cupons ativos, com valores conferidos novamente no carrinho.
-          </p>
+      <div className="mb-7 rounded-lg border border-primary/25 bg-[#fff7ed] p-5 shadow-sm sm:p-7">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-black uppercase text-primary">
+              <Sparkles className="mr-1.5 size-3.5" />
+              Garimpo de economia
+            </p>
+            <h2 className="mt-3 text-balance text-3xl font-black tracking-normal text-[#1c1c1c]">
+              Cupons para transformar vontade em carrinho.
+            </h2>
+            <p className="mt-2 max-w-2xl text-pretty text-sm leading-6 text-[#4f5d65]">
+              Use os códigos ativos no checkout e confira o desconto antes do pagamento. Os valores são validados novamente no carrinho.
+            </p>
+          </div>
+          <Button asChild variant="outline">
+            <Link href="/produtos">
+              <ShoppingBag className="mr-2 size-4" />
+              Ver catálogo
+            </Link>
+          </Button>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/produtos">Ver catálogo</Link>
-        </Button>
       </div>
 
       {coupons.length > 0 ? (
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-3">
           {coupons.map((coupon) => (
-            <article className="rounded-md border bg-card p-4" key={coupon.code}>
-              <div className="flex items-center gap-2 text-primary">
-                <TicketPercent className="h-5 w-5" />
-                <p className="font-semibold">{formatPublicCouponBenefit(coupon)}</p>
+            <article className="overflow-hidden rounded-lg border-2 border-primary/20 bg-white shadow-sm" key={coupon.code}>
+              <div className="border-b border-primary/15 bg-primary px-4 py-3 text-white">
+                <div className="flex items-center gap-2">
+                  <TicketPercent className="size-5" />
+                  <p className="text-sm font-black uppercase">Cupom ativo</p>
+                </div>
+                <p className="mt-2 text-2xl font-black">{formatPublicCouponBenefit(coupon)}</p>
               </div>
-              <p className="mt-3 text-sm text-muted-foreground">Use o cupom no carrinho:</p>
-              <p className="mt-2 w-fit rounded-md border bg-background px-3 py-2 font-mono text-sm font-semibold">
-                {coupon.code}
-              </p>
-              {coupon.minSubtotalCents ? (
-                <p className="mt-3 text-xs text-muted-foreground">
-                  Pedido mínimo: {formatCurrency(coupon.minSubtotalCents)}
+              <div className="p-4">
+                <p className="text-sm font-semibold text-[#4f5d65]">Digite no carrinho:</p>
+                <p className="mt-2 inline-flex rounded-lg border-2 border-dashed border-primary/50 bg-[#fff7ed] px-4 py-2 font-mono text-base font-black text-primary">
+                  {coupon.code}
                 </p>
-              ) : null}
+                <div className="mt-4 grid gap-2 text-sm text-[#4f5d65]">
+                  {coupon.minSubtotalCents ? (
+                    <p>🎯 Pedido mínimo: {formatCurrency(coupon.minSubtotalCents)}</p>
+                  ) : (
+                    <p>🎯 Sem pedido mínimo configurado.</p>
+                  )}
+                  {coupon.expiresAt ? (
+                    <p>⏳ Válido até {coupon.expiresAt.toLocaleDateString("pt-BR")}.</p>
+                  ) : (
+                    <p>⏳ Válido enquanto estiver ativo no site.</p>
+                  )}
+                </div>
+                <Button asChild className="mt-5 w-full">
+                  <Link href="/carrinho">
+                    <Gift className="mr-2 size-4" />
+                    Usar no carrinho
+                  </Link>
+                </Button>
+              </div>
             </article>
           ))}
         </div>

@@ -21,8 +21,14 @@ export default async function CouponsPage(): Promise<React.ReactElement> {
     <main className="geek-page min-h-screen">
       <section className="mx-auto w-full max-w-[1360px] px-5 py-10">
         <p className="mb-6 text-sm text-[#677279]">Pagina inicial › Cupons</p>
-        <div className="text-center">
-          <h1 className="geek-title text-4xl font-medium tracking-normal text-black">Cupons disponíveis</h1>
+        <div className="rounded-lg border border-primary/25 bg-white p-6 shadow-sm sm:p-8">
+          <p className="text-sm font-black uppercase text-primary">Central de cupons NerdLingoLab</p>
+          <h1 className="mt-2 text-balance text-4xl font-black tracking-normal text-black">
+            Desconto bom não fica escondido.
+          </h1>
+          <p className="mt-3 max-w-2xl text-pretty text-base leading-7 text-[#4f5d65]">
+            Pegue um código ativo, coloque no carrinho e acompanhe o desconto antes de fechar o pagamento.
+          </p>
         </div>
         {offers.coupons.length > 0 ? (
           <PublicOffersSection coupons={offers.coupons} products={[]} />

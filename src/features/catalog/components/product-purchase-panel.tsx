@@ -1,10 +1,11 @@
 "use client";
 
-import { BadgePercent, ChevronDown, CreditCard, Heart, MessageCircle, Minus, Plus, Zap } from "lucide-react";
+import { BadgePercent, ChevronDown, CreditCard, Heart, MessageCircle, Minus, Plus, ShieldCheck, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { PaymentBadge, PaymentBadgeStrip, pixPaymentMethod } from "@/components/shop/payment-badges";
+import { toggleFavoriteProduct, useFavorites } from "@/features/catalog/components/favorite-button";
 import { useCartStore } from "@/features/cart/cart-store";
 import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
 import type { CartItem } from "@/features/cart/types";
@@ -57,6 +58,7 @@ export function ProductPurchasePanel({
   variants
 }: ProductPurchasePanelProps): React.ReactElement | null {
   const addItem = useCartStore((state) => state.addItem);
+  const favorites = useFavorites();
   const router = useRouter();
   const [localSelectedVariantId, setLocalSelectedVariantId] = useState(variants[0]?.id ?? "");
   const [quantity, setQuantity] = useState(1);
@@ -90,6 +92,14 @@ export function ProductPurchasePanel({
     unitPriceCents: selectedVariant.priceCents,
     quantity
   };
+  const favoriteProduct = {
+    id: productId,
+    imageUrl,
+    priceCents: selectedVariant.priceCents,
+    slug: productSlug,
+    title: productTitle
+  };
+  const isFavorite = favorites.some((favorite) => favorite.id === productId);
   const whatsappHref = buildProductWhatsappHref({
     color: getVariantColor(selectedVariant),
     gender: getVariantGender(selectedVariant),
@@ -187,12 +197,30 @@ export function ProductPurchasePanel({
       </a>
 
       <button
-        className="mt-5 inline-flex h-12 w-full items-center justify-center rounded-lg border border-black bg-white px-4 text-sm text-red-600"
+        className={[
+          "mt-5 inline-flex h-12 w-full items-center justify-center rounded-lg border-2 px-4 text-sm font-black transition",
+          isFavorite
+            ? "border-primary bg-primary text-white shadow-sm"
+            : "border-primary/60 bg-[#fff7ed] text-primary hover:border-primary hover:bg-[#fff0e3]"
+        ].join(" ")}
+        onClick={() => toggleFavoriteProduct(favoriteProduct)}
         type="button"
       >
-        <Heart className="mr-2 h-5 w-5 fill-black text-black" />
-        Adicionar à lista de desejos
+        <Heart className={`mr-2 h-5 w-5 ${isFavorite ? "fill-current" : ""}`} />
+        {isFavorite ? "Salvo na NerdList" : "Adicionar à NerdList"}
       </button>
+
+      <div className="mt-5 rounded-lg border border-[#d6ebff] bg-[#f4faff] p-4 text-sm text-[#24465f]">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#1d72b8]" />
+          <div>
+            <p className="font-black">Checkout com segurança Mercado Pago</p>
+            <p className="mt-1 leading-6">
+              Pagamento processado pelo Mercado Pago. Ao pagar logado na sua conta Mercado Pago e em uma forma de pagamento elegível, a compra pode contar com Compra Garantida conforme regras da plataforma.
+            </p>
+          </div>
+        </div>
+      </div>
 
       <ShippingEstimator
         freeShippingThresholdCents={freeShippingThresholdCents}

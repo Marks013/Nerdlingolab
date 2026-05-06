@@ -26,13 +26,7 @@ export function FavoriteButton({ product }: FavoriteButtonProps): React.ReactEle
   const isFavorite = favorites.some((favorite) => favorite.id === product.id);
 
   const toggleFavorite = () => {
-    const favorites = readFavorites();
-    const nextFavorites = favorites.some((favorite) => favorite.id === product.id)
-      ? favorites.filter((favorite) => favorite.id !== product.id)
-      : [product, ...favorites];
-
-    window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(nextFavorites));
-    window.dispatchEvent(new Event("nerdlingolab:favorites-updated"));
+    toggleFavoriteProduct(product);
   };
 
   return (
@@ -48,6 +42,23 @@ export function FavoriteButton({ product }: FavoriteButtonProps): React.ReactEle
       <Star className={`h-5 w-5 ${isFavorite ? "fill-current" : ""}`} />
     </button>
   );
+}
+
+export function toggleFavoriteProduct(product: FavoriteProduct): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const favorites = readFavorites();
+  const isFavorite = favorites.some((favorite) => favorite.id === product.id);
+  const nextFavorites = isFavorite
+    ? favorites.filter((favorite) => favorite.id !== product.id)
+    : [product, ...favorites];
+
+  window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(nextFavorites));
+  window.dispatchEvent(new Event("nerdlingolab:favorites-updated"));
+
+  return !isFavorite;
 }
 
 export function useFavorites(): FavoriteProduct[] {

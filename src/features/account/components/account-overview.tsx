@@ -449,7 +449,7 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
         </Card>
       </div>
 
-      <Card>
+      <Card id="pedidos">
         <CardHeader>
           <CardTitle>Meus pedidos</CardTitle>
           <CardDescription>Acompanhe suas compras recentes.</CardDescription>

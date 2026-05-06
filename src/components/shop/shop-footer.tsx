@@ -6,7 +6,7 @@ import { NewsletterForm } from "@/features/newsletter/components/newsletter-form
 import type { StorefrontThemeView } from "@/lib/theme/storefront";
 
 const categories = [
-  { href: "/produtos", label: "Todos nossos produtos" },
+  { href: "/produtos", label: "Todos os produtos" },
   { href: "/#mais-vendidos", label: "Mais Vendidos" },
   { href: "/produtos?categoria=temporada", label: "Temporadas" },
   { href: "/produtos?categoria=action-figures", label: "Action Figures" }
@@ -15,9 +15,9 @@ const categories = [
 const institutional = [
   { href: "/", label: "Página inicial" },
   { href: "/suporte", label: "Entrar em contato" },
-  { href: "/suporte", label: "Rastrear meu Pedido" },
+  { href: "/conta#pedidos", label: "Meus pedidos e rastreio" },
   { href: "/termos-de-uso", label: "Termos de Uso" },
-  { href: "/politica-de-privacidade", label: "Politica de Privacidade" }
+  { href: "/politica-de-privacidade", label: "Política de Privacidade" }
 ];
 
 const serviceItems = [
@@ -28,8 +28,8 @@ const serviceItems = [
   },
   {
     icon: ShoppingCart,
-    title: "Devolução ou Reembolso",
-    description: "Caso haja algo, devolvemos seu dinheiro com velocidade"
+    title: "Compra acompanhada",
+    description: "Pedidos com histórico, rastreio e suporte para resolver qualquer imprevisto."
   },
   {
     icon: Headphones,
@@ -38,8 +38,8 @@ const serviceItems = [
   },
   {
     icon: LockKeyhole,
-    title: "Pagamento seguro",
-    description: "Ambiente seguro para pagamentos online"
+    title: "Checkout Mercado Pago",
+    description: "Pagamento online com tecnologia Mercado Pago e Compra Garantida para compras elegíveis."
   }
 ];
 

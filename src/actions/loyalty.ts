@@ -439,6 +439,7 @@ export async function convertNerdcoinsToCoupon(formData: FormData): Promise<void
 
   revalidatePath("/conta/nerdcoins");
   revalidatePath("/programa-de-fidelidade");
+  redirect("/conta/nerdcoins?cupom=gerado#cupons-gerados");
 }
 
 function getSafeNerdcoinsConversionMessage(error: unknown): string {

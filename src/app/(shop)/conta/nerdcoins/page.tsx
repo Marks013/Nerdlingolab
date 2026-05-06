@@ -1,12 +1,24 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { BadgeCheck, Coins, Gift, History, Rocket, Share2, Sparkles, TicketPercent, Trophy } from "lucide-react";
+import {
+  ArrowDownCircle,
+  ArrowUpCircle,
+  BadgeCheck,
+  Coins,
+  Gift,
+  History,
+  Rocket,
+  Share2,
+  Sparkles,
+  TicketPercent,
+  Trophy
+} from "lucide-react";
 
 import { convertNerdcoinsToCoupon } from "@/actions/loyalty";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { NerdcoinsCouponForm } from "@/features/loyalty/components/nerdcoins-coupon-form";
 import { auth } from "@/lib/auth";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { buildReferralSignupUrl, ensureReferralCode, getReferralStatusLabel } from "@/lib/loyalty/referrals";
@@ -17,6 +29,7 @@ import {
   loyaltyTierLabels
 } from "@/lib/loyalty/settings";
 import { prisma } from "@/lib/prisma";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   robots: {
@@ -28,13 +41,18 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function AccountNerdcoinsPage(): Promise<React.ReactElement> {
+export default async function AccountNerdcoinsPage({
+  searchParams
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<React.ReactElement> {
   const session = await auth();
 
   if (!session?.user?.id) {
     redirect("/entrar");
   }
 
+  const resolvedSearchParams = await searchParams;
   const [settings, loyaltyPoints, ledger, coupons, nextExpiringLedger, referralCode, referralsSent] = await Promise.all([
     getLoyaltyProgramSettings(),
     prisma.loyaltyPoints.upsert({
@@ -80,6 +98,7 @@ export default async function AccountNerdcoinsPage(): Promise<React.ReactElement
     tier: loyaltyPoints.tier
   });
   const referralUrl = buildReferralSignupUrl(process.env.APP_URL ?? "http://localhost:3000", referralCode);
+  const couponWasGenerated = readSearchParam(resolvedSearchParams?.cupom) === "gerado";
 
   return (
     <main className="geek-page min-h-screen px-4 py-10 sm:px-6 lg:px-8">
@@ -124,6 +143,13 @@ export default async function AccountNerdcoinsPage(): Promise<React.ReactElement
           </div>
         </div>
       </section>
+
+      {couponWasGenerated ? (
+        <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 shadow-sm">
+          <p className="font-black">Cupom gerado com sucesso.</p>
+          <p className="mt-1">Ele já aparece em Cupons gerados e pode ser usado no carrinho.</p>
+        </div>
+      ) : null}
 
       <section className="mt-6 grid gap-4 md:grid-cols-3">
         <Card className="border-primary/35 bg-primary/10">
@@ -207,19 +233,13 @@ export default async function AccountNerdcoinsPage(): Promise<React.ReactElement
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={convertNerdcoinsToCoupon} className="grid gap-3 sm:grid-cols-[220px_auto]">
-            <Input
-              defaultValue={settings.minRedeemPoints}
-              max={loyaltyPoints.balance}
-              min={settings.minRedeemPoints}
-              name="points"
-              type="number"
-            />
-            <Button disabled={!settings.isEnabled || loyaltyPoints.balance < settings.minRedeemPoints} type="submit">
-              <TicketPercent className="mr-2 h-4 w-4" />
-              Gerar meu cupom
-            </Button>
-          </form>
+          <NerdcoinsCouponForm
+            action={convertNerdcoinsToCoupon}
+            balance={loyaltyPoints.balance}
+            currentCouponValueLabel={formatCurrency(currentCouponValue)}
+            isEnabled={settings.isEnabled}
+            minRedeemPoints={settings.minRedeemPoints}
+          />
         </CardContent>
       </Card>
 
@@ -256,54 +276,75 @@ export default async function AccountNerdcoinsPage(): Promise<React.ReactElement
       </Card>
 
       <section className="mt-6 grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
+        <Card className="overflow-hidden border-orange-100 shadow-sm" id="cupons-gerados">
+          <CardHeader className="bg-[#fffaf6]">
             <CardTitle className="flex items-center gap-2">
               <TicketPercent className="h-5 w-5 text-primary" />
               Cupons gerados
             </CardTitle>
-            <CardDescription>Estes códigos são pessoais e não aparecem na vitrine pública.</CardDescription>
+            <CardDescription>Seus descontos pessoais ficam aqui, prontos para usar no carrinho.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="divide-y rounded-lg border">
+            <div className="grid gap-3">
               {coupons.map((coupon) => (
-                <div className="grid gap-1 p-3 text-sm" key={coupon.id}>
-                  <p className="font-mono font-semibold">{coupon.code}</p>
-                  <p className="text-muted-foreground">
-                    {formatCurrency(coupon.value)} · {coupon.usedCount > 0 ? "Usado" : "Disponível"} · expira {formatDateTime(coupon.expiresAt)}
-                  </p>
-                </div>
+                <article
+                  className={cn(
+                    "overflow-hidden rounded-lg border bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md",
+                    coupon.usedCount > 0 ? "border-slate-200" : "border-primary/35"
+                  )}
+                  key={coupon.id}
+                >
+                  <div className={cn("px-4 py-3 text-white", coupon.usedCount > 0 ? "bg-slate-600" : "bg-primary")}>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs font-black uppercase">Cupom pessoal</p>
+                      <span className="rounded-full bg-white/20 px-2.5 py-1 text-xs font-bold">
+                        {coupon.usedCount > 0 ? "Usado" : "Disponível"}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-2xl font-black">{formatCurrency(coupon.value)} de desconto</p>
+                  </div>
+                  <div className="grid gap-3 p-4 text-sm">
+                    <div>
+                      <p className="text-xs font-bold uppercase text-muted-foreground">Digite no carrinho</p>
+                      <code className="mt-1 inline-flex rounded-full border border-orange-100 bg-orange-50 px-3 py-2 font-mono text-sm font-black text-primary">
+                        {coupon.code}
+                      </code>
+                    </div>
+                    <p className="text-muted-foreground">Expira em {formatDateTime(coupon.expiresAt)}</p>
+                    {coupon.usedCount === 0 ? (
+                      <Button asChild className="w-full bg-emerald-600 text-white hover:bg-emerald-700">
+                        <Link href="/carrinho">Usar no carrinho</Link>
+                      </Button>
+                    ) : null}
+                  </div>
+                </article>
               ))}
               {coupons.length === 0 ? (
-                <p className="p-3 text-sm text-muted-foreground">Nenhum cupom gerado ainda.</p>
+                <p className="rounded-lg border border-dashed border-orange-200 bg-orange-50/60 p-4 text-sm text-muted-foreground">
+                  Nenhum cupom gerado ainda. Quando converter seus pontos, o código aparece aqui.
+                </p>
               ) : null}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
+        <Card className="overflow-hidden border-orange-100 shadow-sm">
+          <CardHeader className="bg-[#fffaf6]">
             <CardTitle className="flex items-center gap-2">
               <History className="h-5 w-5 text-primary" />
               Histórico
             </CardTitle>
-            <CardDescription>Movimentações auditáveis do seu saldo.</CardDescription>
+            <CardDescription>Entradas ficam em verde. Usos e saídas ficam em vermelho.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="divide-y rounded-lg border">
+            <div className="grid gap-3">
               {ledger.map((entry) => (
-                <div className="grid gap-1 p-3 text-sm" key={entry.id}>
-                  <p className="font-medium">
-                    {entry.pointsDelta > 0 ? "+" : ""}{entry.pointsDelta} NerdCoins
-                  </p>
-                  <p className="text-muted-foreground">
-                    {entry.reason} · {formatDateTime(entry.createdAt)}
-                    {entry.expiresAt ? ` · expira ${formatDateTime(entry.expiresAt)}` : ""}
-                  </p>
-                </div>
+                <LedgerEntryCard entry={entry} key={entry.id} />
               ))}
               {ledger.length === 0 ? (
-                <p className="p-3 text-sm text-muted-foreground">Nenhuma movimentação ainda.</p>
+                <p className="rounded-lg border border-dashed border-orange-200 bg-orange-50/60 p-4 text-sm text-muted-foreground">
+                  Nenhuma movimentação ainda.
+                </p>
               ) : null}
             </div>
           </CardContent>
@@ -312,6 +353,52 @@ export default async function AccountNerdcoinsPage(): Promise<React.ReactElement
       </div>
     </main>
   );
+}
+
+function LedgerEntryCard({
+  entry
+}: {
+  entry: {
+    createdAt: Date;
+    expiresAt: Date | null;
+    pointsDelta: number;
+    reason: string;
+  };
+}): React.ReactElement {
+  const isGain = entry.pointsDelta > 0;
+  const Icon = isGain ? ArrowUpCircle : ArrowDownCircle;
+  const tone = isGain
+    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+    : "border-red-200 bg-red-50 text-red-800";
+
+  return (
+    <article className={cn("rounded-lg border p-4 shadow-sm", tone)}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex gap-3">
+          <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-white/75">
+            <Icon className="size-5" />
+          </span>
+          <div>
+            <p className="font-black">
+              {isGain ? "+" : ""}{entry.pointsDelta} NerdCoins
+            </p>
+            <p className="mt-1 text-sm font-medium">{entry.reason}</p>
+          </div>
+        </div>
+        <span className="rounded-full bg-white/75 px-2.5 py-1 text-xs font-bold">
+          {isGain ? "Ganho" : "Uso"}
+        </span>
+      </div>
+      <p className="mt-3 text-xs font-medium opacity-80">
+        {formatDateTime(entry.createdAt)}
+        {entry.expiresAt ? ` · expira ${formatDateTime(entry.expiresAt)}` : ""}
+      </p>
+    </article>
+  );
+}
+
+function readSearchParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 function ProgressMeter({ label, value }: { label: string; value: number }): React.ReactElement {

@@ -130,6 +130,7 @@ export function ShopHeader({
             >
               <Search className="mr-3 h-5 w-5 text-[#1c1c1c]" />
               <input
+                aria-label="Buscar produtos"
                 className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#9aa1a6]"
                 maxLength={80}
                 name="busca"

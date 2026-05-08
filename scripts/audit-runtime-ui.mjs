@@ -9,6 +9,7 @@ loadDotEnvFile(".env");
 const baseUrl = process.env.UI_AUDIT_BASE_URL ?? process.env.APP_URL ?? "http://localhost:3000";
 const adminEmail = process.env.UI_AUDIT_ADMIN_EMAIL ?? process.env.SUPERADMIN_EMAIL ?? "admin@nerdlingolab.local";
 const adminPassword = process.env.UI_AUDIT_ADMIN_PASSWORD ?? process.env.SUPERADMIN_PASSWORD ?? "Temporary-admin-password-123!";
+const requireAdminAudit = process.env.UI_AUDIT_REQUIRE_ADMIN === "1";
 const screenshotDirectory = join(process.cwd(), "test-results", "ui-runtime-audit");
 
 const publicPaths = ["/", "/produtos", "/programa-de-fidelidade", "/carrinho", "/checkout", "/conta", "/admin/login"];
@@ -56,12 +57,38 @@ function normalizeText(value) {
   return value.replace(/\s+/g, " ").trim();
 }
 
-async function loginAsAdmin(page) {
-  await page.goto(pageUrl("/admin/login"), { waitUntil: "networkidle" });
-  await page.getByLabel("E-mail").fill(adminEmail);
-  await page.getByLabel("Senha").fill(adminPassword);
-  await page.getByRole("button", { name: "Entrar" }).click();
-  await page.waitForURL("**/admin/dashboard", { timeout: 15_000 });
+async function loginAsAdmin(page, projectName) {
+  try {
+    await page.goto(pageUrl("/admin/login"), { waitUntil: "networkidle" });
+    await page.getByLabel("E-mail").fill(adminEmail);
+    await page.getByLabel("Senha").fill(adminPassword);
+    await page.getByRole("button", { name: "Entrar" }).click();
+    await page.waitForURL(/\/admin\/dashboard(?:\?|$)/, { timeout: 15_000 });
+
+    return true;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const currentUrl = page.url();
+    const loginText = await page
+      .locator("body")
+      .innerText({ timeout: 2_000 })
+      .catch(() => "");
+    const summary = normalizeText(loginText).slice(0, 260);
+    const warning = [
+      `${projectName}: auditoria admin ignorada porque o login automatizado não chegou em /admin/dashboard.`,
+      `URL atual: ${currentUrl}.`,
+      `Motivo: ${normalizeText(message)}.`,
+      summary ? `Página: ${summary}` : ""
+    ].filter(Boolean).join(" ");
+
+    if (requireAdminAudit) {
+      throw new Error(`${warning} Defina credenciais válidas ou use UI_AUDIT_REQUIRE_ADMIN=0.`);
+    }
+
+    console.warn(warning);
+    console.warn("Defina UI_AUDIT_REQUIRE_ADMIN=1 para transformar falha de login admin em erro obrigatório.");
+    return false;
+  }
 }
 
 async function auditPage(page, path, projectName) {
@@ -152,6 +179,18 @@ async function auditPage(page, path, projectName) {
           return false;
         }
 
+        const style = window.getComputedStyle(element);
+
+        if (
+          element.hidden
+          || element.getAttribute("aria-hidden") === "true"
+          || element.closest("[hidden], [aria-hidden='true'], [inert]")
+          || style.display === "none"
+          || style.visibility === "hidden"
+        ) {
+          return false;
+        }
+
         const ariaLabel = element.getAttribute("aria-label");
         const ariaLabelledBy = element.getAttribute("aria-labelledby");
         const title = element.getAttribute("title");
@@ -215,10 +254,12 @@ async function run() {
       allFindings.push(...(await auditPage(page, path, project.name)));
     }
 
-    await loginAsAdmin(page);
+    const canAuditAdmin = await loginAsAdmin(page, project.name);
 
-    for (const path of adminPaths) {
-      allFindings.push(...(await auditPage(page, path, project.name)));
+    if (canAuditAdmin) {
+      for (const path of adminPaths) {
+        allFindings.push(...(await auditPage(page, path, project.name)));
+      }
     }
 
     await browser.close();

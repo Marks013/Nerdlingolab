@@ -46,14 +46,17 @@ interface AdminShellProps {
 export function AdminShell({ children, shippingAlertCount = 0 }: AdminShellProps): React.ReactElement {
   return (
     <div className="admin-shell min-h-screen overflow-x-hidden bg-background">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-primary/30 bg-card p-4 shadow-lg lg:flex">
-        <a className="block shrink-0 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-lg font-bold tracking-normal text-foreground" href="/admin/dashboard">
-          NerdLingoLab
+      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-primary/30 bg-card/95 p-4 shadow-lg lg:flex">
+        <a className="block shrink-0 rounded-lg border border-primary/35 bg-gradient-to-br from-primary/18 via-card to-secondary/10 px-3 py-3 text-foreground" href="/admin/dashboard">
+          <span className="block text-lg font-black tracking-normal">NerdLingoLab</span>
+          <span className="mt-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Centro de comando
+          </span>
         </a>
         <nav className="mt-6 grid min-h-0 flex-1 gap-5 overflow-y-auto pr-1">
           {adminNavigationGroups.map((group) => (
             <div className="grid gap-1" key={group.label}>
-              <p className="px-2 text-[11px] font-bold uppercase text-muted-foreground">{group.label}</p>
+              <p className="px-2 text-[11px] font-black uppercase tracking-wide text-primary">{group.label}</p>
               {group.links.map((link) => (
                 <AdminNavLink
                   href={link.href}
@@ -76,7 +79,7 @@ export function AdminShell({ children, shippingAlertCount = 0 }: AdminShellProps
         </div>
       </aside>
       <div className="min-w-0 overflow-x-hidden lg:pl-64">
-        <header className="sticky top-0 z-30 border-b border-primary/30 bg-card/95 px-4 py-3 backdrop-blur lg:hidden">
+        <header className="sticky top-0 z-30 border-b border-primary/30 bg-card/95 px-4 py-3 shadow-sm backdrop-blur lg:hidden">
           <div className="flex items-center justify-between">
             <a className="font-bold" href="/admin/dashboard">
               NerdLingoLab
@@ -93,7 +96,7 @@ export function AdminShell({ children, shippingAlertCount = 0 }: AdminShellProps
           <nav className="mt-3 flex gap-1 overflow-x-auto">
             {adminLinks.map((link) => (
               <a
-                className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-primary/25 px-3 text-sm font-medium text-foreground transition hover:border-primary hover:bg-primary/10"
+                className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-background/70 px-3 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:bg-primary/10 hover:text-primary"
                 href={link.href}
                 key={link.href}
               >
@@ -107,7 +110,9 @@ export function AdminShell({ children, shippingAlertCount = 0 }: AdminShellProps
             ))}
           </nav>
         </header>
-        {children}
+        <div className="relative">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -127,7 +132,7 @@ function AdminNavLink({
   return (
     <a
       className={cn(
-        "flex h-9 min-w-0 items-center rounded-lg border border-transparent px-2 text-sm font-medium text-foreground transition hover:border-primary/35 hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        "flex h-9 min-w-0 items-center rounded-lg border border-transparent px-2 text-sm font-semibold text-foreground transition hover:border-primary/35 hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       )}
       href={href}
     >

@@ -6,8 +6,8 @@ import { Clock3, Mail, ShieldCheck, Sparkles, Wrench } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Manutencao programada | NerdLingoLab",
-  description: "A NerdLingoLab esta em manutencao programada para liberar melhorias na loja.",
+  title: "Manutenção programada | NerdLingoLab",
+  description: "A NerdLingoLab está em manutenção programada para liberar melhorias na loja.",
   robots: {
     follow: false,
     index: false
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 const defaultMessage =
-  "Estamos ajustando a loja para deixar pedidos, pagamentos, cupons e entregas mais estaveis.";
+  "Estamos ajustando a loja para deixar pedidos, pagamentos, cupons e entregas mais estáveis.";
 
 export default function MaintenancePage() {
   const supportEmail = process.env.SUPPORT_EMAIL?.trim() || "nerdlingolab@gmail.com";
@@ -29,11 +29,11 @@ export default function MaintenancePage() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-[#7c1fe6] shadow-sm">
               <Wrench className="size-4" aria-hidden="true" />
-              Modo manutencao ativo
+              Modo manutenção ativo
             </div>
 
             <h1 className="mt-8 max-w-[12ch] text-balance text-4xl font-black leading-tight sm:text-5xl">
-              Laboratorio em ajustes.
+              Laboratório em ajustes.
             </h1>
 
             <p className="mt-5 max-w-[36rem] text-pretty text-base font-medium leading-7 text-white/90">

@@ -581,9 +581,9 @@ export function ProductForm({
                     Salve peso e dimensoes frequentes para preencher rapidamente as variantes e calcular o frete com mais precisao.
                   </p>
                 </div>
-                <div className="grid gap-2 sm:grid-cols-[minmax(180px,1fr)_auto]">
+                <div className="grid w-full gap-2 sm:grid-cols-[minmax(0,1fr)_auto] xl:max-w-xl">
                   <select
-                    className="h-10 rounded-md border bg-background px-3 text-sm"
+                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                     onChange={(event) => setSelectedShippingPresetId(event.target.value)}
                     value={selectedShippingPresetId}
                   >
@@ -596,6 +596,7 @@ export function ProductForm({
                     ))}
                   </select>
                   <Button
+                    className="w-full sm:w-auto"
                     disabled={!selectedShippingPresetId}
                     onClick={() => {
                       const preset = shippingPresets.find((item) => item.id === selectedShippingPresetId);
@@ -611,34 +612,49 @@ export function ProductForm({
                   </Button>
                 </div>
               </div>
-              <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(180px,1fr)_110px_90px_90px_90px_90px_110px_auto]">
-                <Input
-                  aria-label="Nome do novo atalho logistico"
-                  onChange={(event) => setNewShippingPresetName(event.target.value)}
-                  placeholder="Ex.: Camiseta basica"
-                  value={newShippingPresetName}
-                />
-                <Input
-                  aria-label="Peso do novo atalho"
-                  min={1}
-                  onChange={(event) => setNewShippingPresetWeight(event.target.value)}
-                  placeholder="250"
-                  value={newShippingPresetWeight}
-                />
-                <select
-                  aria-label="Unidade do peso"
-                  className="h-10 rounded-md border bg-background px-3 text-sm"
-                  onChange={(event) => setNewShippingPresetWeightUnit(event.target.value === "kg" ? "kg" : "g")}
-                  value={newShippingPresetWeightUnit}
-                >
-                  <option value="g">g</option>
-                  <option value="kg">kg</option>
-                </select>
-                <Input aria-label="Comprimento em centimetros" min={1} onChange={(event) => setNewShippingPresetLength(event.target.value)} placeholder="30" type="number" value={newShippingPresetLength} />
-                <Input aria-label="Largura em centimetros" min={1} onChange={(event) => setNewShippingPresetWidth(event.target.value)} placeholder="25" type="number" value={newShippingPresetWidth} />
-                <Input aria-label="Altura em centimetros" min={1} onChange={(event) => setNewShippingPresetHeight(event.target.value)} placeholder="3" type="number" value={newShippingPresetHeight} />
-                <Input aria-label="Dias adicionais ao prazo de frete" min={0} onChange={(event) => setNewShippingPresetLeadTimeDays(event.target.value)} placeholder="+ dias" type="number" value={newShippingPresetLeadTimeDays} />
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(180px,1fr)_110px_90px_90px_90px_90px_110px_auto]">
+                <Field label="Nome">
+                  <Input
+                    aria-label="Nome do novo atalho logistico"
+                    onChange={(event) => setNewShippingPresetName(event.target.value)}
+                    placeholder="Ex.: Camiseta basica"
+                    value={newShippingPresetName}
+                  />
+                </Field>
+                <Field label="Peso">
+                  <Input
+                    aria-label="Peso do novo atalho"
+                    min={1}
+                    onChange={(event) => setNewShippingPresetWeight(event.target.value)}
+                    placeholder="250"
+                    value={newShippingPresetWeight}
+                  />
+                </Field>
+                <Field label="Unidade">
+                  <select
+                    aria-label="Unidade do peso"
+                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                    onChange={(event) => setNewShippingPresetWeightUnit(event.target.value === "kg" ? "kg" : "g")}
+                    value={newShippingPresetWeightUnit}
+                  >
+                    <option value="g">g</option>
+                    <option value="kg">kg</option>
+                  </select>
+                </Field>
+                <Field label="Compr.">
+                  <Input aria-label="Comprimento em centimetros" min={1} onChange={(event) => setNewShippingPresetLength(event.target.value)} placeholder="30" type="number" value={newShippingPresetLength} />
+                </Field>
+                <Field label="Largura">
+                  <Input aria-label="Largura em centimetros" min={1} onChange={(event) => setNewShippingPresetWidth(event.target.value)} placeholder="25" type="number" value={newShippingPresetWidth} />
+                </Field>
+                <Field label="Altura">
+                  <Input aria-label="Altura em centimetros" min={1} onChange={(event) => setNewShippingPresetHeight(event.target.value)} placeholder="3" type="number" value={newShippingPresetHeight} />
+                </Field>
+                <Field label="+ dias">
+                  <Input aria-label="Dias adicionais ao prazo de frete" min={0} onChange={(event) => setNewShippingPresetLeadTimeDays(event.target.value)} placeholder="+ dias" type="number" value={newShippingPresetLeadTimeDays} />
+                </Field>
                 <Button
+                  className="w-full self-end sm:col-span-2 xl:col-span-1"
                   disabled={isSavingShippingPreset}
                   onClick={() => void createShippingPreset()}
                   type="button"
@@ -928,7 +944,7 @@ export function ProductForm({
               </label>
               <fieldset className="grid gap-2 text-sm font-medium">
                 <legend>Catálogos extras</legend>
-                <div className="grid max-h-56 gap-2 overflow-auto rounded-lg border bg-white p-3">
+                <div className="grid max-h-56 gap-2 overflow-auto rounded-lg border bg-background p-3">
                   {categories.map((category) => (
                     <label className="flex min-h-9 items-center gap-2 rounded-md border border-orange-100 px-3 text-sm" key={category.id}>
                       <input

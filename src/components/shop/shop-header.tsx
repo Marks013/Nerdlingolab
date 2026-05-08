@@ -44,6 +44,9 @@ const drawerCatalogLinks = [
   { href: "/programa-de-fidelidade", label: "NerdCoins" }
 ];
 
+const headerActionClass =
+  "group relative inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-md px-2 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary xl:gap-2 xl:px-2.5";
+
 export function ShopHeader({
   announcementText = "FRETE GRÁTIS em compras acima de R$99,90",
   isAuthenticated = false,
@@ -100,7 +103,7 @@ export function ShopHeader({
       </div>
 
       <div className="bg-[#f6f7f8] text-[#677279]">
-        <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-5 px-5 py-6 lg:grid-cols-[340px_minmax(300px,1fr)_auto] lg:items-center lg:gap-7 xl:gap-8">
+        <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-5 px-5 py-6 lg:grid-cols-[300px_minmax(280px,360px)_minmax(0,1fr)] lg:items-center lg:gap-5 xl:grid-cols-[330px_minmax(320px,390px)_minmax(0,1fr)] xl:gap-6">
           <Link className="group flex min-w-0 items-center justify-center gap-3 text-[#111827] lg:justify-start" href="/">
             <Image
               alt="NerdLingoLab"
@@ -121,7 +124,7 @@ export function ShopHeader({
             </span>
           </Link>
 
-          <div className={isAuthenticated ? "relative mx-auto w-full max-w-[500px]" : "relative mx-auto w-full max-w-[550px]"}>
+          <div className="relative mx-auto w-full max-w-[550px] lg:max-w-none">
             <form
               action="/produtos"
               className="search-arcade flex h-12 w-full items-center rounded-full border-2 border-primary bg-white px-4 shadow-sm"
@@ -201,14 +204,14 @@ export function ShopHeader({
             ) : null}
           </div>
 
-          <nav className="flex flex-wrap items-center justify-center gap-3 lg:justify-end">
+          <nav className="flex flex-wrap content-center items-center justify-center gap-3 lg:justify-end lg:gap-1 xl:flex-nowrap xl:gap-2">
             {headerLinks.map((link) => {
               const Icon = link.icon;
 
               if (link.href === "/conta" && !isAuthenticated) {
                 return (
                   <button
-                    className="group relative inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className={headerActionClass}
                     key={link.label}
                     onClick={() => setIsLoginModalOpen(true)}
                     type="button"
@@ -222,7 +225,7 @@ export function ShopHeader({
               return (
                 <Fragment key={link.label}>
                   <Link
-                    className="group relative inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className={headerActionClass}
                     href={link.href}
                   >
                     <Icon className="h-5 w-5 text-primary transition group-hover:scale-110" />
@@ -240,7 +243,7 @@ export function ShopHeader({
                   </Link>
                   {link.href === "/favoritos" && isAuthenticated && nerdcoinsBalance !== null ? (
                     <Link
-                      className="group relative inline-flex h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      className={headerActionClass}
                       href="/conta/nerdcoins"
                     >
                       <span className="relative h-6 w-6 overflow-hidden rounded-md">
@@ -264,7 +267,7 @@ export function ShopHeader({
             {isAuthenticated ? (
               <form action={signOutFromCustomer}>
                 <button
-                  className="inline-flex h-10 items-center gap-2 rounded-md border border-primary/25 bg-white px-3 text-sm font-semibold text-primary transition duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-md border border-primary/25 bg-white px-2.5 text-sm font-semibold text-primary transition duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary xl:px-3"
                   type="submit"
                 >
                   Sair

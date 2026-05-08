@@ -12,6 +12,10 @@
       window.localStorage.setItem(adminThemeKey, theme);
     }
 
+    if (isAdminRoute) {
+      document.cookie = adminThemeKey + "=" + theme + "; Max-Age=31536000; Path=/admin; SameSite=Lax";
+    }
+
     window.localStorage.removeItem(legacyThemeKey);
 
     root.classList.toggle("light", theme === "light");

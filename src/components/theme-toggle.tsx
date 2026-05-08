@@ -19,6 +19,7 @@ function applyTheme(themeMode: ThemeMode): void {
   root.style.colorScheme = themeMode;
   window.localStorage.setItem(adminThemeStorageKey, themeMode);
   window.localStorage.removeItem(legacyThemeStorageKey);
+  document.cookie = `${adminThemeStorageKey}=${themeMode}; Max-Age=31536000; Path=/admin; SameSite=Lax`;
 }
 
 interface ThemeToggleProps {

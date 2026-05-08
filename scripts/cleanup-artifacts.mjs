@@ -6,21 +6,26 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const args = new Set(process.argv.slice(2));
 const dryRun = args.has("--dry-run") || process.env.ARTIFACT_CLEANUP_DRY_RUN === "true";
 const keepLimit = readPositiveInt(readArgValue("keep") ?? process.env.ARTIFACT_KEEP_LIMIT, 5);
+const cleanupProfile = readCleanupProfile();
 
-const removableDirs = [
+const buildRemovableDirs = [
   ".next/cache",
   ".turbo",
   ".cache",
   ".tmp",
   "tmp",
-  "temp",
+  "temp"
+];
+
+const fullRemovableDirs = [
+  ...buildRemovableDirs,
   "coverage",
   "test-results",
   "playwright-report",
   "blob-report"
 ];
 
-const rotatedDirs = [
+const fullRotatedDirs = [
   ".deploy",
   "deploy-artifacts",
   "artifacts",
@@ -29,6 +34,9 @@ const rotatedDirs = [
   "logs",
   "ops/releases"
 ];
+
+const removableDirs = cleanupProfile === "build" ? buildRemovableDirs : fullRemovableDirs;
+const rotatedDirs = cleanupProfile === "build" ? [] : fullRotatedDirs;
 
 const summary = {
   missing: 0,
@@ -47,6 +55,16 @@ function readArgValue(name) {
 function readPositiveInt(value, fallback) {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function readCleanupProfile() {
+  const profile = readArgValue("profile") ?? process.env.ARTIFACT_CLEANUP_PROFILE ?? "full";
+
+  if (profile === "build" || profile === "full") {
+    return profile;
+  }
+
+  throw new Error(`Invalid artifact cleanup profile: ${profile}. Use "build" or "full".`);
 }
 
 function safeResolve(relativePath) {
@@ -194,7 +212,7 @@ function cleanupRotatedDirs() {
 
 try {
   console.log(`artifact cleanup root: ${root}`);
-  console.log(`mode: ${dryRun ? "dry-run" : "apply"} | keep rotated entries: ${keepLimit}`);
+  console.log(`mode: ${dryRun ? "dry-run" : "apply"} | profile: ${cleanupProfile} | keep rotated entries: ${keepLimit}`);
   cleanupRemovableDirs();
   cleanupRotatedDirs();
   console.log(

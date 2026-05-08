@@ -19,6 +19,8 @@
     "audit:actions": "node scripts/audit-server-actions.mjs",
     "audit:maintenance": "node scripts/audit-maintenance-mode.mjs",
     "validate:contrast": "node scripts/check-contrast.mjs",
+    "cleanup:artifacts": "node scripts/cleanup-artifacts.mjs",
+    "cleanup:artifacts:dry": "node scripts/cleanup-artifacts.mjs --dry-run",
     "import:shopify": "tsx scripts/import-shopify-products.mjs",
     "shopify:backfill-source-links": "tsx scripts/backfill-shopify-source-links.mjs",
     "media:import-external": "prisma migrate deploy && tsx scripts/import-external-media.ts",

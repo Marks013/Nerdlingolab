@@ -100,7 +100,7 @@ export function ShopHeader({
       </div>
 
       <div className="bg-[#f6f7f8] text-[#677279]">
-        <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-4 px-5 py-6 lg:grid-cols-[320px_1fr_auto] lg:items-center">
+        <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-5 px-5 py-6 lg:grid-cols-[340px_minmax(300px,1fr)_auto] lg:items-center lg:gap-7 xl:gap-8">
           <Link className="group flex min-w-0 items-center justify-center gap-3 text-[#111827] lg:justify-start" href="/">
             <Image
               alt="NerdLingoLab"
@@ -121,7 +121,7 @@ export function ShopHeader({
             </span>
           </Link>
 
-          <div className="relative mx-auto w-full max-w-[550px]">
+          <div className={isAuthenticated ? "relative mx-auto w-full max-w-[500px]" : "relative mx-auto w-full max-w-[550px]"}>
             <form
               action="/produtos"
               className="search-arcade flex h-12 w-full items-center rounded-full border-2 border-primary bg-white px-4 shadow-sm"

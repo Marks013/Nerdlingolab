@@ -1,4 +1,5 @@
 import { resetStorefrontTheme, updateStorefrontTheme } from "@/actions/storefront-theme";
+import { AdminFeedbackForm } from "@/components/admin/admin-feedback-form";
 import { SafeImage as Image } from "@/components/media/safe-image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,7 +27,13 @@ export default async function AdminThemePage(): Promise<React.ReactElement> {
         </form>
       </div>
 
-      <form action={updateStorefrontTheme} className="mt-6 grid gap-6">
+      <AdminFeedbackForm
+        action={updateStorefrontTheme}
+        className="mt-6 grid gap-6"
+        savedLabel="Tema salvo"
+        submitLabel="Salvar tema"
+        successMessage="Tema da vitrine salvo com sucesso."
+      >
         <Card>
           <CardHeader>
             <CardTitle>Identidade do tema</CardTitle>
@@ -100,10 +107,7 @@ export default async function AdminThemePage(): Promise<React.ReactElement> {
           title="Slideshow secundario"
         />
 
-        <div className="sticky bottom-4 z-20 flex justify-end">
-          <Button className="shadow-lg" size="lg" type="submit">Salvar tema</Button>
-        </div>
-      </form>
+      </AdminFeedbackForm>
     </main>
   );
 }

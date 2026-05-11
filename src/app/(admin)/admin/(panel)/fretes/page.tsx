@@ -1,4 +1,5 @@
 import { createManualShippingRate, deleteManualShippingRate, updateManualShippingRate } from "@/actions/shipping";
+import { AdminFeedbackForm } from "@/components/admin/admin-feedback-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { requireAdmin } from "@/lib/admin";
@@ -144,7 +145,15 @@ function ManualShippingRateForm({
   };
 
   return (
-    <form action={action} className="mt-4 grid gap-4">
+    <AdminFeedbackForm
+      action={action}
+      allowPristineSubmit={!defaultValues}
+      className="mt-4 grid gap-4"
+      onSuccessReset={!defaultValues}
+      savedLabel="Salvo"
+      submitLabel={submitLabel}
+      successMessage={defaultValues ? "Frete manual salvo com sucesso." : "Frete manual criado com sucesso."}
+    >
       <div className="grid gap-4 lg:grid-cols-3">
         <TextField defaultValue={values.name} label="Nome" name="name" placeholder="Entrega padrao" required />
         <TextField defaultValue={values.priceCents} label="Valor" name="priceCents" placeholder="14,90" required />
@@ -166,11 +175,8 @@ function ManualShippingRateForm({
           <input defaultChecked={values.isActive} name="isActive" type="checkbox" />
           Frete ativo
         </label>
-        <Button className="w-full sm:w-auto" type="submit">
-          {submitLabel}
-        </Button>
       </div>
-    </form>
+    </AdminFeedbackForm>
   );
 }
 
@@ -200,8 +206,8 @@ function TextField({
 function StatusPill({ active }: { active: boolean }): React.ReactElement {
   return (
     <span className={active
-      ? "w-fit rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800"
-      : "w-fit rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-bold text-orange-800"
+      ? "w-fit rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/25 dark:text-emerald-100"
+      : "w-fit rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-bold text-orange-800 dark:border-orange-500/40 dark:bg-orange-950/25 dark:text-orange-100"
     }>
       {active ? "Ativo" : "Inativo"}
     </span>

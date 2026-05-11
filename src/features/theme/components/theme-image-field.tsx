@@ -1,7 +1,7 @@
 "use client";
 
 import { ImagePlus, Trash2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { SafeImage as Image } from "@/components/media/safe-image";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,17 @@ export function ThemeImageField({ defaultValue = "", label, name }: ThemeImageFi
   const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
+  const isFirstValueRender = useRef(true);
+
+  useEffect(() => {
+    if (isFirstValueRender.current) {
+      isFirstValueRender.current = false;
+      return;
+    }
+
+    hiddenInputRef.current?.dispatchEvent(new Event("input", { bubbles: true }));
+  }, [value]);
 
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>): Promise<void> {
     const file = event.target.files?.[0];
@@ -61,7 +72,7 @@ export function ThemeImageField({ defaultValue = "", label, name }: ThemeImageFi
   return (
     <div className="grid min-w-0 gap-2 text-sm font-medium">
       <span>{label}</span>
-      <input name={name} type="hidden" value={value} />
+      <input name={name} ref={hiddenInputRef} type="hidden" value={value} />
       <div className="grid gap-3 rounded-lg border bg-muted/20 p-3">
         <div className="relative aspect-[16/7] overflow-hidden rounded-md bg-muted">
           {value ? (

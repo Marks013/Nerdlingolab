@@ -10,6 +10,7 @@ import {
 } from "@/lib/inventory/reservations";
 import { assertMercadoPagoConfigured, mercadoPagoPreference } from "@/lib/mercadopago";
 import { generateOrderNumber } from "@/lib/orders/number";
+import { getPendingPaymentExpiresAt } from "@/lib/orders/pending-payment-expiration";
 import { prisma } from "@/lib/prisma";
 
 interface CreateCheckoutInput extends CheckoutRequestInput {
@@ -242,6 +243,8 @@ async function createMercadoPagoPreference({
   const shouldSendShippingSeparately = shippingCents > 0 && productAmountCents > 0;
   const preference = await mercadoPagoPreference.create({
     body: {
+      expires: true,
+      expiration_date_to: getPendingPaymentExpiresAt(new Date()).toISOString(),
       items: [
         {
           id: orderId,

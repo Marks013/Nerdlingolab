@@ -30,8 +30,8 @@ export function OrderActions({ order }: OrderActionsProps): React.ReactElement {
   const canDeliver = order.status === OrderStatus.SHIPPED;
 
   return (
-    <Card className="overflow-hidden border-orange-100 shadow-sm">
-      <CardHeader className="bg-[#fffaf6]">
+    <Card className="overflow-hidden border-orange-100 shadow-sm dark:border-orange-500/30">
+      <CardHeader className="bg-orange-50/80 dark:bg-orange-950/20">
         <CardTitle className="flex items-center gap-2 text-balance">
           <ShieldAlert className="size-5 text-primary" />
           Central de ação
@@ -57,7 +57,7 @@ export function OrderActions({ order }: OrderActionsProps): React.ReactElement {
             Marcar como entregue
           </Button>
         </form>
-        <form action={cancelUnpaidOrder.bind(null, order.id)} className="grid gap-2 rounded-lg border border-red-200 bg-red-50/60 p-3 dark:bg-red-950/20">
+        <form action={cancelUnpaidOrder.bind(null, order.id)} className="grid gap-2 rounded-lg border border-red-200 bg-red-50/60 p-3 dark:border-red-500/40 dark:bg-red-950/20">
           <label className="grid gap-2 text-sm font-medium">
             Justificativa do cancelamento
             <Textarea

@@ -99,6 +99,18 @@ export async function processApprovedMercadoPagoPayment({
       return;
     }
 
+    if (order.status === OrderStatus.CANCELED || order.status === OrderStatus.REFUNDED) {
+      await tx.webhookEvent.update({
+        where: { id: webhookEventId },
+        data: {
+          status: WebhookStatus.IGNORED,
+          processedAt: new Date(),
+          errorMessage: "Pagamento aprovado recebido para pedido ja cancelado ou reembolsado."
+        }
+      });
+      return;
+    }
+
     if (!isPaymentAmountValid(payment, order.totalCents)) {
       await tx.webhookEvent.update({
         where: { id: webhookEventId },

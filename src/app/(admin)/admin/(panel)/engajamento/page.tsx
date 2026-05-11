@@ -1,4 +1,5 @@
 import { deleteMarketingPopup, saveMarketingPopup, saveNotificationTemplate } from "@/actions/engagement";
+import { AdminFeedbackForm } from "@/components/admin/admin-feedback-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -91,7 +92,12 @@ export default async function AdminEngagementPage(): Promise<React.ReactElement>
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form action={saveNotificationTemplate} className="grid gap-3">
+              <AdminFeedbackForm
+                action={saveNotificationTemplate}
+                savedLabel="Salvo"
+                submitLabel="Salvar template"
+                successMessage={`Template "${template.name}" salvo com sucesso.`}
+              >
                 <input name="id" type="hidden" value={template.id} />
                 <label className="flex items-center gap-2 text-sm font-medium">
                   <input defaultChecked={template.isActive} name="isActive" type="checkbox" />
@@ -106,8 +112,7 @@ export default async function AdminEngagementPage(): Promise<React.ReactElement>
                 <TextField defaultValue={template.ctaLabel ?? ""} label="Texto do botão" name="ctaLabel" />
                 <TextField defaultValue={template.ctaHref ?? ""} label="Link do botão" name="ctaHref" />
                 <TextField defaultValue={String(template.cooldownHours)} label="Intervalo entre alertas (horas)" name="cooldownHours" type="number" />
-                <Button type="submit">Salvar template</Button>
-              </form>
+              </AdminFeedbackForm>
             </CardContent>
           </Card>
         ))}
@@ -152,7 +157,14 @@ function PopupForm({
   };
 }): React.ReactElement {
   return (
-    <form action={saveMarketingPopup} className="grid gap-3">
+    <AdminFeedbackForm
+      action={saveMarketingPopup}
+      allowPristineSubmit={!popup}
+      onSuccessReset={!popup}
+      savedLabel="Salvo"
+      submitLabel={popup ? "Salvar popup" : "Criar popup"}
+      successMessage={popup ? "Popup salvo e pronto para aparecer conforme as regras." : "Popup criado com sucesso."}
+    >
       {popup ? <input name="id" type="hidden" value={popup.id} /> : null}
       <label className="flex items-center gap-2 text-sm font-medium">
         <input defaultChecked={popup?.isActive ?? false} name="isActive" type="checkbox" />
@@ -178,8 +190,7 @@ function PopupForm({
       <input name="placement" type="hidden" value={popup?.placement ?? "GLOBAL"} />
       <input name="themeTone" type="hidden" value={popup?.themeTone ?? "ORANGE"} />
       <input name="triggerType" type="hidden" value={popup?.triggerType ?? "DELAY"} />
-      <Button type="submit">{popup ? "Salvar popup" : "Criar popup"}</Button>
-    </form>
+    </AdminFeedbackForm>
   );
 }
 

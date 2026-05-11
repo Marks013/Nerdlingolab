@@ -166,12 +166,12 @@ function CustomerProfile({ customer }: { customer: AdminCustomer }): React.React
                 <input name="customerId" type="hidden" value={customer.id} />
                 <Button className="h-10 px-4" type="submit" variant="outline">Enviar reset de senha</Button>
               </form>
-              <form action={deleteCustomerAccountByAdmin} className="grid gap-2 rounded-lg border border-red-200 bg-red-50/60 p-3">
+              <form action={deleteCustomerAccountByAdmin} className="grid gap-2 rounded-lg border border-red-200 bg-red-50/60 p-3 dark:border-red-500/40 dark:bg-red-950/20">
                 <input name="customerId" type="hidden" value={customer.id} />
-                <label className="grid gap-1 text-xs font-semibold text-red-900">
+                <label className="grid gap-1 text-xs font-semibold text-red-900 dark:text-red-100">
                   Digite EXCLUIR para apagar a conta
                   <input
-                    className="h-9 rounded-lg border border-red-300 bg-white px-3 text-sm text-red-950"
+                    className="h-9 rounded-lg border border-red-300 bg-white px-3 text-sm text-red-950 dark:border-red-500/40 dark:bg-card dark:text-red-100"
                     name="confirmDelete"
                     placeholder="EXCLUIR"
                     required
@@ -205,7 +205,7 @@ function readSearchParam(value: string | string[] | undefined): string | undefin
 
 function SuccessMessage({ children }: { children: React.ReactNode }): React.ReactElement {
   return (
-    <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">
+    <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/25 dark:text-emerald-100">
       {children}
     </p>
   );

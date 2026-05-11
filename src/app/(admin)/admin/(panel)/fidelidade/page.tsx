@@ -8,6 +8,7 @@ import {
   grantBirthdayNerdcoins,
   updateLoyaltySettings
 } from "@/actions/loyalty";
+import { AdminFeedbackForm } from "@/components/admin/admin-feedback-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -67,7 +68,13 @@ export default async function AdminLoyaltyPage({
             <CardDescription>Pontos, resgate, validade de cupons e niveis VIP.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form action={updateLoyaltySettings} className="grid gap-4">
+            <AdminFeedbackForm
+              action={updateLoyaltySettings}
+              className="grid gap-4"
+              savedLabel="Configurações salvas"
+              submitLabel="Salvar fidelidade"
+              successMessage="Configurações do NerdCoins salvas com sucesso."
+            >
               <label className="grid gap-2 text-sm font-medium">
                 Nome do programa
                 <Input defaultValue={settings.programName} name="programName" />
@@ -107,8 +114,7 @@ export default async function AdminLoyaltyPage({
                 <input defaultChecked={settings.showPendingPoints} name="showPendingPoints" type="checkbox" />
                 Mostrar previsao de pontos
               </label>
-              <Button type="submit">Salvar fidelidade</Button>
-            </form>
+            </AdminFeedbackForm>
           </CardContent>
         </Card>
 
@@ -212,7 +218,7 @@ export default async function AdminLoyaltyPage({
                     <p className="font-medium">{entry.user?.name ?? entry.user?.email ?? "Cliente excluído"}</p>
                     <p className="text-muted-foreground">{entry.reason}</p>
                   </div>
-                  <p className={entry.pointsDelta >= 0 ? "text-emerald-700" : "text-destructive"}>
+                  <p className={entry.pointsDelta >= 0 ? "text-emerald-700 dark:text-emerald-200" : "text-destructive"}>
                     {entry.pointsDelta > 0 ? "+" : ""}{entry.pointsDelta}
                   </p>
                   <p className="text-muted-foreground">{formatDateTime(entry.createdAt)}</p>
@@ -297,7 +303,7 @@ function LoyaltyCustomerPanel({ customer }: { customer: LoyaltyCustomer }): Reac
             <div className="rounded-md border p-3 text-sm" key={entry.id}>
               <div className="flex items-center justify-between gap-3">
                 <p className="font-semibold">{entry.reason}</p>
-                <p className={entry.pointsDelta >= 0 ? "font-semibold text-emerald-700" : "font-semibold text-destructive"}>
+                <p className={entry.pointsDelta >= 0 ? "font-semibold text-emerald-700 dark:text-emerald-200" : "font-semibold text-destructive"}>
                   {entry.pointsDelta > 0 ? "+" : ""}{entry.pointsDelta}
                 </p>
               </div>
@@ -401,7 +407,7 @@ function EmptyRow({ children }: { children: React.ReactNode }): React.ReactEleme
 
 function SuccessMessage({ children }: { children: React.ReactNode }): React.ReactElement {
   return (
-    <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">
+    <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/25 dark:text-emerald-100">
       {children}
     </p>
   );

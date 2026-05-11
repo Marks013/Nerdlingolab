@@ -25,12 +25,16 @@ interface OrderDetailProps {
   order: AdminOrderDetail;
 }
 
+const orderCardHeaderClass = "bg-orange-50/80 dark:bg-orange-950/20";
+const orderPanelClass = "border-orange-100 bg-card text-card-foreground dark:border-orange-500/30 dark:bg-card/95";
+const orderSoftPanelClass = "border-orange-100 bg-orange-50/70 text-foreground dark:border-orange-500/30 dark:bg-orange-950/20";
+
 export function OrderDetail({ order }: OrderDetailProps): React.ReactElement {
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
       <div className="space-y-6">
-        <Card className="overflow-hidden border-orange-100 shadow-sm">
-          <CardHeader className="bg-[#fffaf6]">
+        <Card className="overflow-hidden border-orange-100 shadow-sm dark:border-orange-500/30">
+          <CardHeader className={orderCardHeaderClass}>
             <CardTitle className="flex items-center gap-2 text-balance text-2xl font-black">
               <ReceiptText className="size-6 text-primary" />
               {order.orderNumber}
@@ -69,8 +73,8 @@ export function OrderDetail({ order }: OrderDetailProps): React.ReactElement {
       <div className="space-y-6">
         <CustomerCard order={order} />
         <TotalsCard order={order} />
-        <Card className="overflow-hidden border-orange-100 shadow-sm">
-          <CardHeader className="bg-[#fffaf6]">
+        <Card className="overflow-hidden border-orange-100 shadow-sm dark:border-orange-500/30">
+          <CardHeader className={orderCardHeaderClass}>
             <CardTitle className="flex items-center gap-2 text-balance">
               <FileText className="size-5 text-primary" />
               Documentos
@@ -78,7 +82,7 @@ export function OrderDetail({ order }: OrderDetailProps): React.ReactElement {
             <CardDescription>Arquivos administrativos do pedido.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild className="w-full border-primary/50 bg-white text-primary hover:bg-primary/10" variant="outline">
+            <Button asChild className="w-full border-primary/50 bg-card text-primary hover:bg-primary/10" variant="outline">
               <a href={`/api/admin/orders/${order.id}/invoice.pdf`}>Baixar fatura PDF</a>
             </Button>
           </CardContent>
@@ -96,7 +100,7 @@ function CancellationCard({ order }: OrderDetailProps): React.ReactElement | nul
 
   return (
     <Card className="overflow-hidden border-orange-200 bg-orange-50/70 shadow-sm dark:bg-orange-950/20">
-      <CardHeader className="bg-orange-100/60">
+      <CardHeader className="bg-orange-100/60 dark:bg-orange-950/30">
         <CardTitle className="flex items-center gap-2 text-balance">
           <RotateCcw className="size-5 text-primary" />
           Cancelamento e reembolso
@@ -115,7 +119,7 @@ function CancellationCard({ order }: OrderDetailProps): React.ReactElement | nul
         </p>
         {order.refundStatus ? (
           <StatusLine
-            className="border-violet-200 bg-white text-violet-700"
+            className="border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/40 dark:bg-violet-950/30 dark:text-violet-200"
             icon={<RotateCcw className="size-4" />}
             label="Reembolso Mercado Pago"
             value={`${order.refundStatus}${order.refundAmountCents ? ` / ${formatCurrency(order.refundAmountCents)}` : ""}`}
@@ -132,8 +136,8 @@ function CustomerNoteCard({ order }: OrderDetailProps): React.ReactElement | nul
   }
 
   return (
-    <Card className="overflow-hidden border-orange-100 shadow-sm">
-      <CardHeader className="bg-[#fffaf6]">
+    <Card className="overflow-hidden border-orange-100 shadow-sm dark:border-orange-500/30">
+      <CardHeader className={orderCardHeaderClass}>
         <CardTitle className="flex items-center gap-2 text-balance">
           <MessageSquareText className="size-5 text-primary" />
           Observação do cliente
@@ -141,7 +145,7 @@ function CustomerNoteCard({ order }: OrderDetailProps): React.ReactElement | nul
         <CardDescription>Mensagem informada no checkout.</CardDescription>
       </CardHeader>
       <CardContent>
-        <p className="whitespace-pre-wrap rounded-md border bg-[#fffaf6] p-4 text-sm leading-6 text-[#3a2a1c]">
+        <p className={cn("whitespace-pre-wrap rounded-md border p-4 text-sm leading-6", orderSoftPanelClass)}>
           {order.customerNote}
         </p>
       </CardContent>
@@ -151,8 +155,8 @@ function CustomerNoteCard({ order }: OrderDetailProps): React.ReactElement | nul
 
 function ShippingCard({ order }: OrderDetailProps): React.ReactElement {
   return (
-    <Card className="overflow-hidden border-orange-100 shadow-sm" id="rastreamento">
-      <CardHeader className="bg-[#fffaf6]">
+    <Card className="overflow-hidden border-orange-100 shadow-sm dark:border-orange-500/30" id="rastreamento">
+      <CardHeader className={orderCardHeaderClass}>
         <CardTitle className="flex items-center gap-2 text-balance">
           <Truck className="size-5 text-primary" />
           Entrega e rastreamento
@@ -164,8 +168,8 @@ function ShippingCard({ order }: OrderDetailProps): React.ReactElement {
       <CardContent className="space-y-6 text-sm">
         <ShipmentTrackingPanel shipments={order.shipments} />
 
-        <form action={saveManualShipment.bind(null, order.id)} className="grid gap-3 rounded-lg border border-orange-100 bg-white p-4 shadow-sm">
-          <p className="flex items-center gap-2 font-bold text-black">
+        <form action={saveManualShipment.bind(null, order.id)} className={cn("grid gap-3 rounded-lg border p-4 shadow-sm", orderPanelClass)}>
+          <p className="flex items-center gap-2 font-bold text-foreground">
             <ClipboardList className="size-4 text-primary" />
             Registrar rastreio manual
           </p>
@@ -177,8 +181,8 @@ function ShippingCard({ order }: OrderDetailProps): React.ReactElement {
           </button>
         </form>
 
-        <form action={syncMercadoEnviosOrderShipment.bind(null, order.id)} className="grid gap-3 rounded-lg border border-orange-100 bg-white p-4 shadow-sm">
-          <p className="flex items-center gap-2 font-bold text-black">
+        <form action={syncMercadoEnviosOrderShipment.bind(null, order.id)} className={cn("grid gap-3 rounded-lg border p-4 shadow-sm", orderPanelClass)}>
+          <p className="flex items-center gap-2 font-bold text-foreground">
             <ShieldAlert className="size-4 text-primary" />
             Sincronizar Mercado Envios
           </p>
@@ -188,8 +192,8 @@ function ShippingCard({ order }: OrderDetailProps): React.ReactElement {
           </button>
         </form>
 
-        <form action={syncMelhorEnvioOrderShipment.bind(null, order.id)} className="grid gap-3 rounded-lg border border-orange-100 bg-white p-4 shadow-sm">
-          <p className="flex items-center gap-2 font-bold text-black">
+        <form action={syncMelhorEnvioOrderShipment.bind(null, order.id)} className={cn("grid gap-3 rounded-lg border p-4 shadow-sm", orderPanelClass)}>
+          <p className="flex items-center gap-2 font-bold text-foreground">
             <Truck className="size-4 text-primary" />
             Sincronizar Melhor Envio
           </p>
@@ -215,7 +219,7 @@ function StatusLine({
   value: string;
 }): React.ReactElement {
   return (
-    <div className={cn("rounded-lg border p-4", className ?? "border-orange-100 bg-white text-black")}>
+    <div className={cn("rounded-lg border p-4", className ?? orderPanelClass)}>
       <p className="flex items-center gap-2 text-xs font-bold uppercase">{icon}{label}</p>
       <p className="mt-2 text-lg font-black tabular-nums">{value}</p>
     </div>
@@ -224,8 +228,8 @@ function StatusLine({
 
 function OrderItemsCard({ order }: OrderDetailProps): React.ReactElement {
   return (
-    <Card className="overflow-hidden border-orange-100 shadow-sm">
-      <CardHeader className="bg-[#fffaf6]">
+    <Card className="overflow-hidden border-orange-100 shadow-sm dark:border-orange-500/30">
+      <CardHeader className={orderCardHeaderClass}>
         <CardTitle className="flex items-center gap-2 text-balance">
           <PackageCheck className="size-5 text-primary" />
           Itens
@@ -238,11 +242,11 @@ function OrderItemsCard({ order }: OrderDetailProps): React.ReactElement {
             const imageUrl = getPrimaryImageUrl(item.product.images);
 
             return (
-            <div key={item.id} className="rounded-lg border border-orange-100 bg-white p-4 shadow-sm">
+            <div key={item.id} className={cn("rounded-lg border p-4 shadow-sm", orderPanelClass)}>
               <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
                 <div className="flex gap-4">
                   <Link
-                    className="relative size-16 shrink-0 overflow-hidden rounded-lg border border-orange-100 bg-orange-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="relative size-16 shrink-0 overflow-hidden rounded-lg border border-orange-100 bg-orange-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:border-orange-500/30 dark:bg-orange-950/20"
                     href={`/produtos/${item.product.slug}`}
                   >
                     {imageUrl ? (
@@ -252,7 +256,7 @@ function OrderItemsCard({ order }: OrderDetailProps): React.ReactElement {
                     )}
                   </Link>
                   <div className="min-w-0">
-                    <Link className="font-semibold text-black transition hover:text-primary" href={`/produtos/${item.product.slug}`}>
+                    <Link className="font-semibold text-foreground transition hover:text-primary" href={`/produtos/${item.product.slug}`}>
                       {item.productTitle}
                     </Link>
                 <p className="text-sm text-muted-foreground">
@@ -260,7 +264,7 @@ function OrderItemsCard({ order }: OrderDetailProps): React.ReactElement {
                 </p>
                   </div>
                 </div>
-                <p className="rounded-lg bg-orange-50 px-3 py-2 font-black text-primary tabular-nums">{formatCurrency(item.totalCents)}</p>
+                <p className="rounded-lg bg-orange-50 px-3 py-2 font-black text-primary tabular-nums dark:bg-orange-950/30">{formatCurrency(item.totalCents)}</p>
               </div>
             </div>
             );
@@ -275,8 +279,8 @@ function CustomerCard({ order }: OrderDetailProps): React.ReactElement {
   const address = order.shippingAddress as Record<string, string | undefined>;
 
   return (
-    <Card className="overflow-hidden border-orange-100 shadow-sm">
-      <CardHeader className="bg-[#fffaf6]">
+    <Card className="overflow-hidden border-orange-100 shadow-sm dark:border-orange-500/30">
+      <CardHeader className={orderCardHeaderClass}>
         <CardTitle className="flex items-center gap-2 text-balance">
           <UserRound className="size-5 text-primary" />
           Cliente
@@ -285,7 +289,7 @@ function CustomerCard({ order }: OrderDetailProps): React.ReactElement {
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
         <p>{order.user?.name ?? order.email}</p>
-        <p className="rounded-lg border border-orange-100 bg-white p-3 text-muted-foreground">
+        <p className={cn("rounded-lg border p-3 text-muted-foreground", orderPanelClass)}>
           <MapPin className="mb-2 size-4 text-primary" />
           {address.street}, {address.number} · {address.district}
           <br />
@@ -298,8 +302,8 @@ function CustomerCard({ order }: OrderDetailProps): React.ReactElement {
 
 function TotalsCard({ order }: OrderDetailProps): React.ReactElement {
   return (
-    <Card className="overflow-hidden border-orange-100 shadow-sm">
-      <CardHeader className="bg-[#fffaf6]">
+    <Card className="overflow-hidden border-orange-100 shadow-sm dark:border-orange-500/30">
+      <CardHeader className={orderCardHeaderClass}>
         <CardTitle className="flex items-center gap-2 text-balance">
           <Tag className="size-5 text-primary" />
           Totais
@@ -336,8 +340,8 @@ function MoneyLine({
 
 function LedgerCard({ order }: OrderDetailProps): React.ReactElement {
   return (
-    <Card className="overflow-hidden border-orange-100 shadow-sm">
-      <CardHeader className="bg-[#fffaf6]">
+    <Card className="overflow-hidden border-orange-100 shadow-sm dark:border-orange-500/30">
+      <CardHeader className={orderCardHeaderClass}>
         <CardTitle className="flex items-center gap-2 text-balance">
           <ClipboardList className="size-5 text-primary" />
           Histórico operacional

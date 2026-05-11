@@ -20,6 +20,7 @@ import { OrderStatus, PaymentStatus } from "@/generated/prisma/client";
 import type { OrderWhereInput } from "@/generated/prisma/models/Order";
 
 import { prisma } from "@/lib/prisma";
+import { expireStalePendingPaymentOrders } from "@/lib/orders/pending-payment-expiration";
 
 export type AdminOrderListItem = Order & {
   user: Pick<User, "id" | "name" | "email"> | null;
@@ -115,6 +116,7 @@ export function resolveAdminOrderFilters(filters: Partial<AdminOrderFilters> = {
 }
 
 export async function getAdminOrders(filters: Partial<AdminOrderFilters> = {}): Promise<AdminOrderListItem[]> {
+  await expireStalePendingPaymentOrders();
   const resolvedFilters = resolveAdminOrderFilters(filters);
 
   return prisma.order.findMany({
@@ -155,6 +157,10 @@ export async function getAdminOrders(filters: Partial<AdminOrderFilters> = {}): 
 }
 
 export async function getAdminOrderById(orderId: string): Promise<AdminOrderDetail | null> {
+  await expireStalePendingPaymentOrders({
+    limit: 10
+  });
+
   return prisma.order.findUnique({
     where: { id: orderId },
     include: {
@@ -213,6 +219,10 @@ export async function getAdminOrderById(orderId: string): Promise<AdminOrderDeta
 export async function getCustomerAccountSummary(
   userId: string
 ): Promise<CustomerAccountSummary | null> {
+  await expireStalePendingPaymentOrders({
+    limit: 10
+  });
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -305,6 +315,10 @@ export async function getCustomerOrderById({
   orderId: string;
   userId: string;
 }): Promise<CustomerOrderDetail | null> {
+  await expireStalePendingPaymentOrders({
+    limit: 10
+  });
+
   return prisma.order.findFirst({
     where: {
       id: orderId,

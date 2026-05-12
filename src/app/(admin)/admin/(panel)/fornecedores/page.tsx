@@ -380,7 +380,7 @@ function statusLabel(status: SupplierSourceStatus): string {
     OUT_OF_STOCK: "Sem estoque",
     UNKNOWN: "Nao checado",
     ERROR: "Erro",
-    CONFIG_REQUIRED: "Configurar"
+    CONFIG_REQUIRED: "Manual"
   };
 
   return labels[status];

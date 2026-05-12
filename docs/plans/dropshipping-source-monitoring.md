@@ -14,7 +14,7 @@
 
 ### Mercado Livre
 
-O Mercado Livre entra como leitura publica referencial para links de terceiros. Isto nao usa credencial de seller e nao deve ser tratado como controle oficial de estoque do fornecedor. O dado serve como sinal operacional: preco publico, status publico, quantidade referencial e variacoes publicas.
+O Mercado Livre entra como leitura publica referencial quando ela estiver disponivel. Como os links sao de terceiros, isto nao usa credencial de vendedor e nao deve ser tratado como controle real de estoque do fornecedor. Se a leitura publica for bloqueada, o item cai em modo assistido/manual.
 
 Fontes:
 
@@ -114,7 +114,7 @@ Nao misturar a logica de dropshipping diretamente com o cadastro base de produto
 1. Buscar produtos com `originalProductUrl`.
 2. Resolver fornecedor pelo dominio.
 3. Normalizar o ID externo quando possivel.
-4. Mercado Livre: tentar leitura publica referencial.
+4. Mercado Livre: tentar leitura publica referencial; se bloquear, marcar como assistido/manual.
 5. Shopee: marcar como assistido/manual.
 5. Salvar snapshot.
 6. Comparar com snapshot anterior.
@@ -228,7 +228,7 @@ Essa interface evita acoplar o admin ao formato de cada marketplace.
 
 - Criar tabelas de fornecedor, origem, snapshots e alertas.
 - Migrar `originalProductUrl` para `ProductSource`.
-- Criar conector Mercado Livre.
+- Criar leitura referencial Mercado Livre com fallback assistido/manual.
 - Criar tela de auditoria com sync manual.
 
 ### Fase 2
@@ -258,4 +258,4 @@ Essa interface evita acoplar o admin ao formato de cada marketplace.
 
 ## Recomendacao final
 
-Comecar pelo Mercado Livre e pela estrutura comum de fornecedores. Depois plugar Shopee. O ganho maior vem de ter modelo, snapshots, alertas e margem bem desenhados. O conector e so uma peca trocavel.
+Comecar pela estrutura comum de fornecedores e pelo modo assistido/manual. Mercado Livre pode complementar com leitura publica quando funcionar; Shopee permanece manual ate existir uma fonte externa confiavel. O ganho maior vem de ter modelo, snapshots, alertas e margem bem desenhados.

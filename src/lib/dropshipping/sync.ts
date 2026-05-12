@@ -186,7 +186,7 @@ export async function syncDueProductSources(limit = 25): Promise<{ attempted: nu
   for (const source of sources) {
     const result = await syncProductSource(source.id);
 
-    if (result.status === SupplierSourceStatus.ERROR || result.status === SupplierSourceStatus.CONFIG_REQUIRED) {
+    if (result.status === SupplierSourceStatus.ERROR) {
       failed += 1;
     }
   }

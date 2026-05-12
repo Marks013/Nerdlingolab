@@ -6,7 +6,7 @@ Os links atuais sao de anuncios de terceiros. Portanto o sistema nao deve depend
 
 Modo padrao:
 
-- Mercado Livre: leitura publica referencial quando o ID MLB estiver disponivel.
+- Mercado Livre: leitura publica referencial quando o ID MLB estiver disponivel e a origem permitir; caso contrario, manual assistido.
 - Shopee: validacao assistida/manual.
 - Checkout: nao bloqueia por falha de monitoramento, salvo se `DROPSHIPPING_CHECKOUT_STRICT=true` e houver indisponibilidade comprovada.
 
@@ -90,4 +90,3 @@ Comecar sem custo:
 3. Medir por 15 a 30 dias quantos produtos realmente exigem correcao diaria.
 4. Se o volume de manutencao ficar alto, testar Apify primeiro por ser mais simples para prova de conceito.
 5. Se virar processo critico, avaliar Bright Data ou Oxylabs.
-

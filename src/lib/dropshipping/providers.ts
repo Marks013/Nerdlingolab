@@ -70,6 +70,25 @@ async function fetchMercadoLivreSnapshot(externalId: string | null): Promise<Sup
     throw new SupplierSyncError("Produto nao encontrado no Mercado Livre.", SupplierSourceStatus.DELETED);
   }
 
+  if (response.status === 401 || response.status === 403) {
+    return {
+      provider: SupplierProvider.MERCADO_LIVRE,
+      externalId,
+      title: null,
+      status: SupplierSourceStatus.CONFIG_REQUIRED,
+      priceCents: null,
+      currency: "BRL",
+      stockQuantity: null,
+      variants: [],
+      rawSummary: {
+        mode: "third_party_assisted",
+        reason: `Leitura publica do Mercado Livre retornou HTTP ${response.status}. Use validacao manual.`,
+        externalId
+      },
+      fetchedAt: new Date()
+    };
+  }
+
   if (!response.ok) {
     throw new SupplierSyncError(`Mercado Livre retornou HTTP ${response.status}.`, SupplierSourceStatus.ERROR);
   }

@@ -261,6 +261,70 @@ export async function sendLoyaltyPointsExpiringEmail({
   }
 }
 
+export async function sendNewsletterCampaignEmail({
+  body,
+  ctaHref,
+  ctaLabel,
+  email,
+  eyebrow,
+  previewText,
+  subject,
+  unsubscribeToken
+}: {
+  body: string;
+  ctaHref?: string | null;
+  ctaLabel?: string | null;
+  email: string;
+  eyebrow?: string | null;
+  previewText?: string | null;
+  subject: string;
+  unsubscribeToken: string;
+}): Promise<{ error?: string; ok: boolean }> {
+  if (!resend) {
+    return { error: "Envio de e-mail não configurado.", ok: false };
+  }
+
+  try {
+    const unsubscribeUrl = `${getEmailBaseUrl()}/newsletter/descadastrar?token=${encodeURIComponent(unsubscribeToken)}`;
+    const resolvedCtaHref = ctaHref?.trim()
+      ? resolveEmailHref(ctaHref.trim())
+      : `${getEmailBaseUrl()}/produtos`;
+    const html = buildBrandedEmailHtml({
+      cta: {
+        href: resolvedCtaHref,
+        label: ctaLabel?.trim() || "Ver novidades"
+      },
+      eyebrow: eyebrow?.trim() || "Newsletter NerdLingoLab",
+      footerNote: `Você recebeu este e-mail porque se cadastrou na newsletter da NerdLingoLab. Para sair da lista, acesse: ${unsubscribeUrl}`,
+      introHtml: `<p style="margin:0;">${formatMultilineText(body)}</p>`,
+      preheader: previewText?.trim() || subject,
+      sections: [
+        {
+          html: buildNoticeHtml("Novidades, cupons e campanhas selecionadas para quem acompanha a NerdLingoLab de perto."),
+          title: "Mensagem para inscritos"
+        }
+      ],
+      title: subject
+    });
+
+    await resend.emails.send({
+      from: emailFrom,
+      html,
+      subject,
+      to: email
+    });
+
+    return { ok: true };
+  } catch (error) {
+    Sentry.captureException(error);
+
+    return {
+      error: error instanceof Error ? error.message : "Falha ao enviar newsletter.",
+      ok: false
+    };
+  }
+}
+
 export async function sendOrderStatusUpdatedEmail({
   orderId,
   status

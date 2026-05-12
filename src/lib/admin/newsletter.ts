@@ -19,19 +19,34 @@ export async function getAdminNewsletterDashboard(filters: AdminNewsletterFilter
       : {})
   };
 
-  const [activeCount, inactiveCount, subscribers] = await Promise.all([
+  const [activeCount, inactiveCount, sentCampaignCount, failedDeliveryCount, subscribers, campaigns] = await Promise.all([
     prisma.newsletterSubscriber.count({ where: { isActive: true } }),
     prisma.newsletterSubscriber.count({ where: { isActive: false } }),
+    prisma.newsletterCampaign.count({ where: { status: { in: ["SENT", "SENT_WITH_ERRORS"] } } }),
+    prisma.newsletterCampaignDelivery.count({ where: { status: "FAILED" } }),
     prisma.newsletterSubscriber.findMany({
       orderBy: { createdAt: "desc" },
       take: 150,
       where
+    }),
+    prisma.newsletterCampaign.findMany({
+      include: {
+        deliveries: {
+          orderBy: { createdAt: "desc" },
+          take: 5
+        }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 12
     })
   ]);
 
   return {
     activeCount,
+    campaigns,
+    failedDeliveryCount,
     inactiveCount,
+    sentCampaignCount,
     subscribers
   };
 }

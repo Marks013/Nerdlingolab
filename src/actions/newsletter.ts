@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireAdmin } from "@/lib/admin";
+import { sendNewsletterCampaignEmail } from "@/lib/email/transactional";
 import { prisma } from "@/lib/prisma";
 
 export interface NewsletterState {
@@ -15,6 +16,17 @@ export interface NewsletterState {
 const newsletterSchema = z.object({
   email: z.string().trim().toLowerCase().email("Informe um e-mail válido.").max(160),
   website: z.string().trim().max(0).optional()
+});
+
+const campaignSchema = z.object({
+  body: z.string().trim().min(20, "Escreva uma mensagem com pelo menos 20 caracteres.").max(4000),
+  ctaHref: z.string().trim().max(240).optional(),
+  ctaLabel: z.string().trim().max(40).optional(),
+  eyebrow: z.string().trim().max(60).optional(),
+  name: z.string().trim().min(3).max(80),
+  previewText: z.string().trim().max(160).optional(),
+  sendNow: z.boolean(),
+  subject: z.string().trim().min(5).max(120)
 });
 
 export async function subscribeNewsletter(
@@ -44,7 +56,8 @@ export async function subscribeNewsletter(
       },
       update: {
         isActive: true,
-        source: "footer"
+        source: "footer",
+        unsubscribedAt: null
       }
     });
   } catch (error) {
@@ -72,6 +85,162 @@ export async function subscribeNewsletter(
     message: "Inscrição confirmada.",
     ok: true
   };
+}
+
+export async function createNewsletterCampaign(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const parsedCampaign = campaignSchema.safeParse({
+    body: formData.get("body"),
+    ctaHref: normalizeOptionalFormText(formData.get("ctaHref")),
+    ctaLabel: normalizeOptionalFormText(formData.get("ctaLabel")),
+    eyebrow: normalizeOptionalFormText(formData.get("eyebrow")),
+    name: formData.get("name"),
+    previewText: normalizeOptionalFormText(formData.get("previewText")),
+    sendNow: formData.get("sendNow") === "on",
+    subject: formData.get("subject")
+  });
+
+  if (!parsedCampaign.success) {
+    throw new Error(parsedCampaign.error.issues[0]?.message ?? "Revise a campanha da newsletter.");
+  }
+
+  const { sendNow, ...campaignData } = parsedCampaign.data;
+  const campaign = await prisma.newsletterCampaign.create({
+    data: {
+      ...campaignData,
+      ctaHref: campaignData.ctaHref || null,
+      ctaLabel: campaignData.ctaLabel || null,
+      eyebrow: campaignData.eyebrow || null,
+      previewText: campaignData.previewText || null,
+      status: sendNow ? "SENDING" : "DRAFT"
+    }
+  });
+
+  if (sendNow) {
+    await sendNewsletterCampaign(campaign.id);
+  }
+
+  revalidatePath("/admin/newsletter");
+}
+
+export async function sendNewsletterCampaign(campaignId: string): Promise<void> {
+  await requireAdmin();
+
+  const campaign = await prisma.newsletterCampaign.findUnique({
+    where: { id: campaignId }
+  });
+
+  if (!campaign) {
+    throw new Error("Campanha não encontrada.");
+  }
+
+  if (campaign.status === "SENT") {
+    throw new Error("Esta campanha já foi enviada.");
+  }
+
+  const subscribers = await prisma.newsletterSubscriber.findMany({
+    orderBy: { createdAt: "desc" },
+    where: { isActive: true }
+  });
+  let sentCount = 0;
+  let failedCount = 0;
+
+  await prisma.newsletterCampaign.update({
+    where: { id: campaign.id },
+    data: {
+      recipientCount: subscribers.length,
+      status: "SENDING"
+    }
+  });
+
+  for (const subscriber of subscribers) {
+    const result = await sendNewsletterCampaignEmail({
+      body: campaign.body,
+      ctaHref: campaign.ctaHref,
+      ctaLabel: campaign.ctaLabel,
+      email: subscriber.email,
+      eyebrow: campaign.eyebrow,
+      previewText: campaign.previewText,
+      subject: campaign.subject,
+      unsubscribeToken: subscriber.unsubscribeToken
+    });
+    const now = new Date();
+
+    if (result.ok) {
+      sentCount += 1;
+      await prisma.newsletterSubscriber.update({
+        where: { id: subscriber.id },
+        data: { lastSentAt: now }
+      });
+    } else {
+      failedCount += 1;
+    }
+
+    await prisma.newsletterCampaignDelivery.upsert({
+      where: {
+        campaignId_subscriberId: {
+          campaignId: campaign.id,
+          subscriberId: subscriber.id
+        }
+      },
+      create: {
+        campaignId: campaign.id,
+        email: subscriber.email,
+        errorMessage: result.error ?? null,
+        sentAt: result.ok ? now : null,
+        status: result.ok ? "SENT" : "FAILED",
+        subscriberId: subscriber.id
+      },
+      update: {
+        email: subscriber.email,
+        errorMessage: result.error ?? null,
+        sentAt: result.ok ? now : null,
+        status: result.ok ? "SENT" : "FAILED"
+      }
+    });
+  }
+
+  await prisma.newsletterCampaign.update({
+    where: { id: campaign.id },
+    data: {
+      failedCount,
+      recipientCount: subscribers.length,
+      sentAt: new Date(),
+      sentCount,
+      status: failedCount > 0 ? "SENT_WITH_ERRORS" : "SENT"
+    }
+  });
+
+  revalidatePath("/admin/newsletter");
+  revalidatePath("/admin/dashboard");
+}
+
+export async function unsubscribeNewsletterByToken(token: string): Promise<boolean> {
+  const normalizedToken = token.trim();
+
+  if (!normalizedToken) {
+    return false;
+  }
+
+  const subscriber = await prisma.newsletterSubscriber.findUnique({
+    where: { unsubscribeToken: normalizedToken }
+  });
+
+  if (!subscriber) {
+    return false;
+  }
+
+  await prisma.newsletterSubscriber.update({
+    where: { id: subscriber.id },
+    data: {
+      isActive: false,
+      unsubscribedAt: new Date()
+    }
+  });
+  revalidatePath("/admin/newsletter");
+  revalidatePath("/admin/dashboard");
+
+  return true;
 }
 
 export async function setNewsletterSubscriberStatus(subscriberId: string, isActive: boolean): Promise<void> {
@@ -106,6 +275,12 @@ function getNewsletterFailureMessage(error: unknown): string {
   }
 
   return "Não foi possível confirmar sua inscrição agora. Tente novamente em instantes.";
+}
+
+function normalizeOptionalFormText(value: FormDataEntryValue | null): string | undefined {
+  const text = typeof value === "string" ? value.trim() : "";
+
+  return text.length > 0 ? text : undefined;
 }
 
 function isMissingNewsletterStorage(error: unknown): boolean {

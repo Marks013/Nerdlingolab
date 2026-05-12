@@ -14,6 +14,7 @@ import {
   syncProductSource,
   updateManualProductSourceSnapshot
 } from "@/lib/dropshipping/sync";
+import { importSupplierSnapshotCsv } from "@/lib/dropshipping/import";
 import { prisma } from "@/lib/prisma";
 
 const sourceIdSchema = z.string().min(1);
@@ -95,6 +96,33 @@ export async function updateManualSourceSnapshotAction(formData: FormData): Prom
 
   revalidatePath("/admin/fornecedores");
   redirect(`/admin/fornecedores?notice=${encodeURIComponent("Validacao manual salva. Preco sugerido recalculado.")}`);
+}
+
+export async function importSupplierSnapshotsAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const file = formData.get("file");
+
+  if (!(file instanceof File)) {
+    throw new Error("Envie um arquivo CSV valido.");
+  }
+
+  if (file.size > 2_000_000) {
+    throw new Error("Arquivo muito grande. Envie um CSV de ate 2 MB.");
+  }
+
+  const result = await importSupplierSnapshotCsv(await file.text());
+  const details = [
+    `${result.imported} importado(s)`,
+    `${result.skipped} ignorado(s)`,
+    `${result.missing} sem origem localizada`
+  ].join(", ");
+  const suffix = result.errors.length ? ` Primeiros erros: ${result.errors.slice(0, 3).join(" | ")}` : "";
+
+  revalidatePath("/admin/fornecedores");
+  revalidatePath("/admin/produtos");
+  revalidatePath("/produtos");
+  redirect(`/admin/fornecedores?notice=${encodeURIComponent(`Importacao assistida concluida: ${details}.${suffix}`)}`);
 }
 
 export async function updateGlobalPricingRuleAction(formData: FormData): Promise<void> {

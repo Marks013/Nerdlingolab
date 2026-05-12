@@ -27,6 +27,8 @@ blob-report/
 .vercel/
 .cache/
 .parcel-cache/
+.tmp/
+data/dropshipping/*.csv
 
 # Logs
 *.log

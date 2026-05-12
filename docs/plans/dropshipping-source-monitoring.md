@@ -142,6 +142,25 @@ O admin deve ter tres modos:
 
 Para o inicio, usar `Assistido`. E o melhor equilibrio entre robustez e controle.
 
+### Coleta assistida por navegador
+
+Quando Mercado Livre ou Shopee bloquearem API/metadados no servidor, use o coletor local para gerar CSV de manutencao:
+
+```bash
+npm run suppliers:collect -- --headed --limit 20
+```
+
+Padroes:
+
+- Entrada: `data/shopify/products_export_1.csv`.
+- Saida: `data/dropshipping/supplier-snapshots-YYYY-MM-DD.csv`.
+- Perfil do navegador: `.tmp/supplier-collector-profile`.
+
+O coletor abre os links em um navegador real, tenta capturar preco, estoque e status visiveis e grava um CSV com colunas `url`, `provider`, `title`, `price`, `stock`, `status`, `note` e `checkedAt`.
+Se aparecer login, captcha ou validacao, resolva manualmente na janela aberta e rode novamente. O script nao burla validacao.
+
+Depois importe o CSV em `/admin/fornecedores`, no card `Importacao assistida`.
+
 ## UI administrativa recomendada
 
 Tela principal: `/admin/fornecedores/dropshipping`

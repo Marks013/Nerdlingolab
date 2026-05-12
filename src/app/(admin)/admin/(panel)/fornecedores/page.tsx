@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2, ExternalLink, RefreshCw, Search, Settings2, ShieldAlert, TrendingUp } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ExternalLink, RefreshCw, Search, Settings2, ShieldAlert, TrendingUp, Upload } from "lucide-react";
 
 import {
   acknowledgeSourceAlertAction,
@@ -7,6 +7,7 @@ import {
   bootstrapDropshippingSourcesAction,
   syncDropshippingBatchAction,
   syncDropshippingSourceAction,
+  importSupplierSnapshotsAction,
   updateManualSourceSnapshotAction,
   updateGlobalPricingRuleAction
 } from "@/actions/dropshipping";
@@ -179,6 +180,27 @@ export default async function AdminSuppliersPage({
                 O lote tenta consultar dados publicos. Se o fornecedor exigir login, captcha ou verificacao, o produto continua em modo manual com calculo de margem assim que voce preencher o preco de origem.
               </CardDescription>
             </CardHeader>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="size-5" />
+                Importacao assistida
+              </CardTitle>
+              <CardDescription>
+                Importe CSV do coletor ou planilha manual com colunas: url, price, stock, status, title e note.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form action={importSupplierSnapshotsAction} className="grid gap-3">
+                <Input accept=".csv,text/csv" name="file" required type="file" />
+                <Button type="submit" variant="outline">
+                  <Upload className="mr-2 size-4" />
+                  Importar CSV
+                </Button>
+              </form>
+            </CardContent>
           </Card>
         </aside>
       </section>

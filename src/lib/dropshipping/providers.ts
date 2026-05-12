@@ -43,17 +43,17 @@ export async function fetchSupplierSnapshot(params: {
   originalUrl: string;
 }): Promise<SupplierProductSnapshot> {
   if (params.provider === SupplierProvider.MERCADO_LIVRE) {
-    return fetchMercadoLivreSnapshot(params.externalId);
+    return fetchMercadoLivreSnapshot(params.externalId, params.originalUrl);
   }
 
   if (params.provider === SupplierProvider.SHOPEE) {
-    return buildAssistedShopeeSnapshot(params);
+    return fetchShopeeSnapshot(params);
   }
 
   throw new SupplierSyncError("Fornecedor sem conector automatico configurado.", SupplierSourceStatus.CONFIG_REQUIRED);
 }
 
-async function fetchMercadoLivreSnapshot(externalId: string | null): Promise<SupplierProductSnapshot> {
+async function fetchMercadoLivreSnapshot(externalId: string | null, originalUrl: string): Promise<SupplierProductSnapshot> {
   if (!externalId) {
     throw new SupplierSyncError("Link do Mercado Livre sem ID MLB valido.", SupplierSourceStatus.ERROR);
   }
@@ -67,10 +67,32 @@ async function fetchMercadoLivreSnapshot(externalId: string | null): Promise<Sup
   });
 
   if (response.status === 404) {
+    const pageSnapshot = await fetchPublicProductPageSnapshot({
+      blockedReason: "API do Mercado Livre retornou 404.",
+      externalId,
+      originalUrl,
+      provider: SupplierProvider.MERCADO_LIVRE
+    });
+
+    if (pageSnapshot) {
+      return pageSnapshot;
+    }
+
     throw new SupplierSyncError("Produto nao encontrado no Mercado Livre.", SupplierSourceStatus.DELETED);
   }
 
   if (response.status === 401 || response.status === 403) {
+    const pageSnapshot = await fetchPublicProductPageSnapshot({
+      blockedReason: `API do Mercado Livre retornou HTTP ${response.status}.`,
+      externalId,
+      originalUrl,
+      provider: SupplierProvider.MERCADO_LIVRE
+    });
+
+    if (pageSnapshot) {
+      return pageSnapshot;
+    }
+
     return {
       provider: SupplierProvider.MERCADO_LIVRE,
       externalId,
@@ -82,7 +104,7 @@ async function fetchMercadoLivreSnapshot(externalId: string | null): Promise<Sup
       variants: [],
       rawSummary: {
         mode: "third_party_assisted",
-        reason: `Leitura publica do Mercado Livre retornou HTTP ${response.status}. Use validacao manual.`,
+        reason: `Leitura publica do Mercado Livre retornou HTTP ${response.status} e a pagina nao expos preco estruturado. Use validacao manual.`,
         externalId
       },
       fetchedAt: new Date()
@@ -120,6 +142,26 @@ async function fetchMercadoLivreSnapshot(externalId: string | null): Promise<Sup
   };
 }
 
+async function fetchShopeeSnapshot(params: {
+  externalId: string | null;
+  externalShopId?: string | null;
+  originalUrl: string;
+}): Promise<SupplierProductSnapshot> {
+  if (!params.externalId || !params.externalShopId) {
+    throw new SupplierSyncError("Link da Shopee sem shop_id/item_id validos.", SupplierSourceStatus.ERROR);
+  }
+
+  const pageSnapshot = await fetchPublicProductPageSnapshot({
+    blockedReason: "Shopee sem API publica confiavel para anuncio de terceiro.",
+    externalId: params.externalId,
+    externalShopId: params.externalShopId,
+    originalUrl: params.originalUrl,
+    provider: SupplierProvider.SHOPEE
+  });
+
+  return pageSnapshot ?? buildAssistedShopeeSnapshot(params);
+}
+
 function buildAssistedShopeeSnapshot(params: {
   externalId: string | null;
   externalShopId?: string | null;
@@ -146,6 +188,249 @@ function buildAssistedShopeeSnapshot(params: {
     },
     fetchedAt: new Date()
   };
+}
+
+async function fetchPublicProductPageSnapshot(params: {
+  blockedReason: string;
+  externalId: string | null;
+  externalShopId?: string | null;
+  originalUrl: string;
+  provider: SupplierProvider;
+}): Promise<SupplierProductSnapshot | null> {
+  try {
+    const response = await fetch(params.originalUrl, {
+      headers: {
+        accept: "text/html,application/xhtml+xml",
+        "accept-language": "pt-BR,pt;q=0.9,en;q=0.6",
+        "user-agent": "Mozilla/5.0 (compatible; NerdLingoLabSupplierMonitor/1.0; +https://nerdlingolab.com)"
+      },
+      next: { revalidate: 0 },
+      redirect: "follow"
+    });
+
+    const html = await response.text();
+
+    if (!response.ok || isVerificationPage(response.url, html)) {
+      return null;
+    }
+
+    const structured = extractStructuredProductData(html);
+
+    if (!structured.priceCents && !structured.availability) {
+      return null;
+    }
+
+    return {
+      provider: params.provider,
+      externalId: params.externalId,
+      externalShopId: params.externalShopId,
+      title: structured.title,
+      status: statusFromStructuredAvailability(structured.availability, structured.priceCents),
+      priceCents: structured.priceCents,
+      currency: structured.currency ?? "BRL",
+      stockQuantity: structured.stockQuantity,
+      variants: [],
+      rawSummary: {
+        mode: "public_page_structured_data",
+        reason: params.blockedReason,
+        pageUrl: response.url,
+        source: structured.source
+      },
+      fetchedAt: new Date()
+    };
+  } catch {
+    return null;
+  }
+}
+
+function isVerificationPage(url: string, html: string): boolean {
+  return /account-verification|captcha|robot|challenge|verificacao|verifica[cç][aã]o/i.test(`${url}\n${html.slice(0, 4000)}`);
+}
+
+function extractStructuredProductData(html: string): {
+  availability: string | null;
+  currency: string | null;
+  priceCents: number | null;
+  source: string | null;
+  stockQuantity: number | null;
+  title: string | null;
+} {
+  const jsonLdProduct = extractJsonLdProducts(html)
+    .map((product) => normalizeJsonLdProduct(product))
+    .find((product) => product.priceCents || product.title || product.availability);
+
+  if (jsonLdProduct) {
+    return { ...jsonLdProduct, source: "json_ld" };
+  }
+
+  const price = readMetaContent(html, ["product:price:amount", "price", "twitter:data1"]);
+  const currency = readMetaContent(html, ["product:price:currency", "priceCurrency"]);
+  const title = readMetaContent(html, ["og:title", "twitter:title"]) ?? extractHtmlTitle(html);
+  const availability = readMetaContent(html, ["product:availability", "availability"]);
+
+  return {
+    availability,
+    currency,
+    priceCents: parsePriceToCents(price),
+    source: price || title || availability ? "meta_tags" : null,
+    stockQuantity: availability && /outofstock|esgotado|indispon/i.test(availability) ? 0 : null,
+    title
+  };
+}
+
+function extractJsonLdProducts(html: string): unknown[] {
+  const blocks = [...html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
+  const products: unknown[] = [];
+
+  for (const block of blocks) {
+    const rawJson = decodeHtmlEntities(block[1]?.trim() ?? "");
+
+    if (!rawJson) {
+      continue;
+    }
+
+    try {
+      collectProductNodes(JSON.parse(rawJson), products);
+    } catch {
+      continue;
+    }
+  }
+
+  return products;
+}
+
+function collectProductNodes(value: unknown, products: unknown[]): void {
+  if (!value || typeof value !== "object") {
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectProductNodes(item, products);
+    }
+    return;
+  }
+
+  const record = value as Record<string, unknown>;
+  const type = record["@type"];
+  const typeText = Array.isArray(type) ? type.join(" ") : String(type ?? "");
+
+  if (/Product/i.test(typeText)) {
+    products.push(record);
+  }
+
+  for (const key of ["@graph", "mainEntity", "itemListElement"]) {
+    collectProductNodes(record[key], products);
+  }
+}
+
+function normalizeJsonLdProduct(product: unknown): {
+  availability: string | null;
+  currency: string | null;
+  priceCents: number | null;
+  stockQuantity: number | null;
+  title: string | null;
+} {
+  const record = product && typeof product === "object" && !Array.isArray(product) ? product as Record<string, unknown> : {};
+  const offers = normalizeOffer(record.offers);
+  const availability = offers.availability;
+
+  return {
+    availability,
+    currency: offers.currency,
+    priceCents: offers.priceCents,
+    stockQuantity: availability && /OutOfStock|Discontinued/i.test(availability) ? 0 : null,
+    title: firstString(record.name, record.title)
+  };
+}
+
+function normalizeOffer(value: unknown): { availability: string | null; currency: string | null; priceCents: number | null } {
+  const offer = Array.isArray(value) ? value[0] : value;
+  const record = offer && typeof offer === "object" && !Array.isArray(offer) ? offer as Record<string, unknown> : {};
+
+  return {
+    availability: firstString(record.availability),
+    currency: firstString(record.priceCurrency),
+    priceCents: parsePriceToCents(firstString(record.price, record.lowPrice, record.highPrice))
+  };
+}
+
+function readMetaContent(html: string, names: string[]): string | null {
+  for (const name of names) {
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const propertyMatch = html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${escaped}["'][^>]+content=["']([^"']+)["'][^>]*>`, "i"));
+    const contentFirstMatch = html.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${escaped}["'][^>]*>`, "i"));
+    const content = propertyMatch?.[1] ?? contentFirstMatch?.[1];
+
+    if (content) {
+      return decodeHtmlEntities(content.trim());
+    }
+  }
+
+  return null;
+}
+
+function extractHtmlTitle(html: string): string | null {
+  const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  const title = decodeHtmlEntities(match?.[1]?.replace(/\s+/g, " ").trim() ?? "");
+
+  return title || null;
+}
+
+function firstString(...values: unknown[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return String(value);
+    }
+  }
+
+  return null;
+}
+
+function parsePriceToCents(value: string | null): number | null {
+  if (!value) {
+    return null;
+  }
+
+  const cleaned = value.replace(/[^\d,.-]/g, "").trim();
+
+  if (!cleaned) {
+    return null;
+  }
+
+  const normalized = cleaned.includes(",")
+    ? cleaned.replace(/\./g, "").replace(",", ".")
+    : cleaned;
+  const numberValue = Number(normalized);
+
+  return Number.isFinite(numberValue) ? Math.round(numberValue * 100) : null;
+}
+
+function decodeHtmlEntities(value: string): string {
+  return value
+    .replace(/&quot;/g, "\"")
+    .replace(/&#34;/g, "\"")
+    .replace(/&apos;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+function statusFromStructuredAvailability(availability: string | null, priceCents: number | null): SupplierSourceStatus {
+  if (availability && /OutOfStock|SoldOut|Discontinued|esgotado|indisponivel/i.test(availability)) {
+    return SupplierSourceStatus.OUT_OF_STOCK;
+  }
+
+  if (availability && /InStock|LimitedAvailability|PreOrder|dispon/i.test(availability)) {
+    return SupplierSourceStatus.ACTIVE;
+  }
+
+  return priceCents ? SupplierSourceStatus.ACTIVE : SupplierSourceStatus.UNKNOWN;
 }
 
 function normalizeMercadoLivreVariation(variation: MercadoLivreVariation, currency: unknown): SupplierVariantSnapshot {

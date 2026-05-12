@@ -114,8 +114,8 @@ Nao misturar a logica de dropshipping diretamente com o cadastro base de produto
 1. Buscar produtos com `originalProductUrl`.
 2. Resolver fornecedor pelo dominio.
 3. Normalizar o ID externo quando possivel.
-4. Mercado Livre: tentar leitura publica referencial; se bloquear, marcar como assistido/manual.
-5. Shopee: marcar como assistido/manual.
+4. Mercado Livre: tentar API publica referencial; se bloquear, tentar metadados publicos estruturados da pagina do anuncio; se tambem bloquear, marcar como assistido/manual.
+5. Shopee: tentar metadados publicos estruturados da pagina do anuncio; se nao houver preco/estoque exposto, marcar como assistido/manual.
 5. Salvar snapshot.
 6. Comparar com snapshot anterior.
 7. Gerar alertas.
@@ -215,6 +215,7 @@ Essa interface evita acoplar o admin ao formato de cada marketplace.
 
 ## Riscos e protecoes
 
+- Mercado Livre e Shopee podem exigir login, captcha ou validacao para anuncios de terceiros. Mitigacao: nao tentar burlar bloqueio; usar modo assistido/manual e conector isolado apenas se uma fonte de dados autorizada for contratada.
 - Shopee pode nao oferecer dado confiavel de produto de terceiro sem fonte externa. Mitigacao: modo assistido/manual e conector isolado apenas se uma fonte de dados for contratada.
 - Estoque de marketplace pode ser referencial. Mitigacao: nao prometer estoque exato; usar checagem no checkout.
 - Preco pode mudar entre sync e compra. Mitigacao: revalidacao no checkout.

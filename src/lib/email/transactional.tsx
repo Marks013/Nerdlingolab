@@ -261,6 +261,207 @@ export async function sendLoyaltyPointsExpiringEmail({
   }
 }
 
+export async function sendLoyaltyRedeemableCouponEmail({
+  balance,
+  minRedeemPoints,
+  userId,
+  valueCents
+}: {
+  balance: number;
+  minRedeemPoints: number;
+  userId: string;
+  valueCents: number;
+}): Promise<{ error?: string; ok: boolean }> {
+  if (!resend) {
+    return { ok: false, error: "Resend não configurado." };
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true }
+    });
+
+    if (!user) {
+      return { ok: false, error: "Usuário não encontrado." };
+    }
+
+    const accountUrl = `${getEmailBaseUrl()}/conta/nerdcoins`;
+    const html = buildBrandedEmailHtml({
+      cta: {
+        href: accountUrl,
+        label: "Gerar meu cupom"
+      },
+      eyebrow: "Cupom pronto para gerar",
+      footerNote: "O cupom é pessoal e só nasce quando você converte seus NerdCoins dentro da conta.",
+      introHtml: `
+        <p style="margin:0 0 10px;">Olá${user.name ? `, ${escapeHtml(user.name)}` : ""}.</p>
+        <p style="margin:0;">Seu saldo de <strong>${balance} NerdCoins</strong> já libera um cupom de até <strong>${formatCurrency(valueCents)}</strong>.</p>
+      `,
+      preheader: `Você já tem NerdCoins suficientes para gerar cupom.`,
+      sections: [
+        {
+          html: buildInfoGrid([
+            { label: "Saldo atual", value: `${balance} NerdCoins` },
+            { label: "Mínimo de resgate", value: `${minRedeemPoints} NerdCoins` },
+            { label: "Desconto estimado", value: formatCurrency(valueCents) }
+          ]),
+          title: "Benefício disponível"
+        }
+      ],
+      title: "Seu próximo desconto já está no saldo"
+    });
+
+    await resend.emails.send({
+      from: emailFrom,
+      html,
+      subject: "Você já pode gerar um cupom NerdCoins",
+      to: user.email
+    });
+
+    return { ok: true };
+  } catch (error) {
+    Sentry.captureException(error);
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Falha ao enviar e-mail."
+    };
+  }
+}
+
+export async function sendLoyaltyNearTierEmail({
+  nextTierLabel,
+  ordersRemaining,
+  spendRemainingCents,
+  userId
+}: {
+  nextTierLabel: string;
+  ordersRemaining: number;
+  spendRemainingCents: number;
+  userId: string;
+}): Promise<{ error?: string; ok: boolean }> {
+  if (!resend) {
+    return { ok: false, error: "Resend não configurado." };
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true }
+    });
+
+    if (!user) {
+      return { ok: false, error: "Usuário não encontrado." };
+    }
+
+    const productsUrl = `${getEmailBaseUrl()}/produtos`;
+    const html = buildBrandedEmailHtml({
+      cta: {
+        href: productsUrl,
+        label: "Comprar e avançar"
+      },
+      eyebrow: "Nível NerdCoins quase lá",
+      footerNote: "O nível é recalculado a partir dos pedidos aprovados e do gasto acumulado no programa.",
+      introHtml: `
+        <p style="margin:0 0 10px;">Olá${user.name ? `, ${escapeHtml(user.name)}` : ""}.</p>
+        <p style="margin:0;">Você está perto de chegar ao nível <strong>${escapeHtml(nextTierLabel)}</strong>, que pode melhorar seu multiplicador de pontos nas próximas compras.</p>
+      `,
+      preheader: `Falta pouco para subir para ${nextTierLabel}.`,
+      sections: [
+        {
+          html: buildInfoGrid([
+            { label: "Próximo nível", value: nextTierLabel },
+            { label: "Pedidos restantes", value: String(ordersRemaining) },
+            { label: "Ou gasto restante", value: formatCurrency(spendRemainingCents) }
+          ]),
+          title: "Rumo ao próximo nível"
+        }
+      ],
+      title: "Sua conta está perto de evoluir"
+    });
+
+    await resend.emails.send({
+      from: emailFrom,
+      html,
+      subject: `Falta pouco para o nível ${nextTierLabel}`,
+      to: user.email
+    });
+
+    return { ok: true };
+  } catch (error) {
+    Sentry.captureException(error);
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Falha ao enviar e-mail."
+    };
+  }
+}
+
+export async function sendLoyaltyInactiveBalanceEmail({
+  balance,
+  userId,
+  valueCents
+}: {
+  balance: number;
+  userId: string;
+  valueCents: number;
+}): Promise<{ error?: string; ok: boolean }> {
+  if (!resend) {
+    return { ok: false, error: "Resend não configurado." };
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true }
+    });
+
+    if (!user) {
+      return { ok: false, error: "Usuário não encontrado." };
+    }
+
+    const accountUrl = `${getEmailBaseUrl()}/conta/nerdcoins`;
+    const html = buildBrandedEmailHtml({
+      cta: {
+        href: accountUrl,
+        label: "Reativar minha carteira"
+      },
+      eyebrow: "Saldo NerdCoins parado",
+      footerNote: "A carteira mostra o histórico completo, cupons pessoais e próximas metas do programa.",
+      introHtml: `
+        <p style="margin:0 0 10px;">Olá${user.name ? `, ${escapeHtml(user.name)}` : ""}.</p>
+        <p style="margin:0;">Seu saldo de <strong>${balance} NerdCoins</strong> continua guardado. Ele pode ajudar a reduzir o valor da próxima compra.</p>
+      `,
+      preheader: `Seu saldo NerdCoins ainda pode virar desconto.`,
+      sections: [
+        {
+          html: buildInfoGrid([
+            { label: "Saldo guardado", value: `${balance} NerdCoins` },
+            { label: "Valor potencial", value: formatCurrency(valueCents) }
+          ]),
+          title: "Carteira em pausa"
+        }
+      ],
+      title: "Tem desconto esperando por você"
+    });
+
+    await resend.emails.send({
+      from: emailFrom,
+      html,
+      subject: "Seus NerdCoins ainda estão esperando por você",
+      to: user.email
+    });
+
+    return { ok: true };
+  } catch (error) {
+    Sentry.captureException(error);
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Falha ao enviar e-mail."
+    };
+  }
+}
+
 export async function sendNewsletterCampaignEmail({
   body,
   ctaHref,

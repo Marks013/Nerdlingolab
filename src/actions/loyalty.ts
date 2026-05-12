@@ -12,9 +12,16 @@ import { parseCurrencyToCents } from "@/lib/format";
 import {
   calculateCouponValueCents,
   getLoyaltyProgramSettings,
-  getPointsExpirationDate
+  getPointsExpirationDate,
+  getVipProgress
 } from "@/lib/loyalty/settings";
-import { sendLoyaltyCouponGeneratedEmail, sendLoyaltyPointsExpiringEmail } from "@/lib/email/transactional";
+import {
+  sendLoyaltyCouponGeneratedEmail,
+  sendLoyaltyInactiveBalanceEmail,
+  sendLoyaltyNearTierEmail,
+  sendLoyaltyPointsExpiringEmail,
+  sendLoyaltyRedeemableCouponEmail
+} from "@/lib/email/transactional";
 import { ensureReferralCode } from "@/lib/loyalty/referrals";
 import { prisma } from "@/lib/prisma";
 
@@ -558,6 +565,178 @@ export async function notifyExpiringNerdcoins(): Promise<void> {
 
   revalidatePath("/admin/fidelidade");
   redirect(`/admin/fidelidade?routine=expiring&count=${processedCount}`);
+}
+
+export async function notifyRedeemableNerdcoins(): Promise<void> {
+  await requireAdmin();
+  const settings = await getLoyaltyProgramSettings();
+  let processedCount = 0;
+
+  if (!settings.isEnabled) {
+    throw new Error("Ative o programa antes de enviar alertas.");
+  }
+
+  const customers = await prisma.loyaltyPoints.findMany({
+    include: {
+      user: { select: { email: true, id: true } }
+    },
+    take: 500,
+    where: {
+      balance: { gte: settings.minRedeemPoints },
+      user: { is: { role: UserRole.CUSTOMER } }
+    }
+  });
+
+  for (const customer of customers) {
+    const idempotencyKey = `loyalty:redeemable:${customer.userId}:${customer.balance}:${settings.minRedeemPoints}`;
+    const existingNotice = await prisma.loyaltyNotification.findUnique({ where: { idempotencyKey } });
+
+    if (existingNotice) {
+      continue;
+    }
+
+    const result = await sendLoyaltyRedeemableCouponEmail({
+      balance: customer.balance,
+      minRedeemPoints: settings.minRedeemPoints,
+      userId: customer.userId,
+      valueCents: calculateCouponValueCents(customer.balance, settings.redeemCentsPerPoint)
+    });
+
+    await prisma.loyaltyNotification.create({
+      data: {
+        email: customer.user.email,
+        errorMessage: result.error ?? null,
+        idempotencyKey,
+        status: result.ok ? "SENT" : "FAILED",
+        type: "REDEEMABLE_COUPON",
+        userId: customer.userId
+      }
+    });
+    processedCount += 1;
+  }
+
+  revalidatePath("/admin/fidelidade");
+  redirect(`/admin/fidelidade?routine=redeemable&count=${processedCount}`);
+}
+
+export async function notifyNearTierNerdcoins(): Promise<void> {
+  await requireAdmin();
+  const settings = await getLoyaltyProgramSettings();
+  let processedCount = 0;
+
+  if (!settings.isEnabled) {
+    throw new Error("Ative o programa antes de enviar alertas.");
+  }
+
+  const customers = await prisma.loyaltyPoints.findMany({
+    include: {
+      user: { select: { email: true, id: true } }
+    },
+    take: 500,
+    where: {
+      user: { is: { role: UserRole.CUSTOMER } }
+    }
+  });
+
+  for (const customer of customers) {
+    const progress = getVipProgress({
+      orderCount: customer.tierOrderCount,
+      settings,
+      spendCents: customer.tierSpendCents,
+      tier: customer.tier
+    });
+
+    if (progress.isMaxTier || Math.max(progress.orderPercent, progress.spendPercent) < 80 || !progress.nextLabel) {
+      continue;
+    }
+
+    const idempotencyKey = `loyalty:near-tier:${customer.userId}:${customer.tier}:${progress.orderPercent}:${progress.spendPercent}`;
+    const existingNotice = await prisma.loyaltyNotification.findUnique({ where: { idempotencyKey } });
+
+    if (existingNotice) {
+      continue;
+    }
+
+    const result = await sendLoyaltyNearTierEmail({
+      nextTierLabel: progress.nextLabel,
+      ordersRemaining: progress.ordersRemaining,
+      spendRemainingCents: progress.spendRemainingCents,
+      userId: customer.userId
+    });
+
+    await prisma.loyaltyNotification.create({
+      data: {
+        email: customer.user.email,
+        errorMessage: result.error ?? null,
+        idempotencyKey,
+        status: result.ok ? "SENT" : "FAILED",
+        type: "NEAR_NEXT_TIER",
+        userId: customer.userId
+      }
+    });
+    processedCount += 1;
+  }
+
+  revalidatePath("/admin/fidelidade");
+  redirect(`/admin/fidelidade?routine=near-tier&count=${processedCount}`);
+}
+
+export async function notifyInactiveBalanceNerdcoins(): Promise<void> {
+  await requireAdmin();
+  const settings = await getLoyaltyProgramSettings();
+  const inactiveSince = new Date(Date.now() - 45 * 86_400_000);
+  const monthKey = new Intl.DateTimeFormat("en-CA", {
+    month: "2-digit",
+    timeZone: "America/Sao_Paulo",
+    year: "numeric"
+  }).format(new Date());
+  let processedCount = 0;
+
+  if (!settings.isEnabled) {
+    throw new Error("Ative o programa antes de enviar alertas.");
+  }
+
+  const customers = await prisma.loyaltyPoints.findMany({
+    include: {
+      user: { select: { email: true, id: true } }
+    },
+    take: 500,
+    where: {
+      balance: { gt: 0 },
+      updatedAt: { lt: inactiveSince },
+      user: { is: { role: UserRole.CUSTOMER } }
+    }
+  });
+
+  for (const customer of customers) {
+    const idempotencyKey = `loyalty:inactive-balance:${monthKey}:${customer.userId}:${customer.balance}`;
+    const existingNotice = await prisma.loyaltyNotification.findUnique({ where: { idempotencyKey } });
+
+    if (existingNotice) {
+      continue;
+    }
+
+    const result = await sendLoyaltyInactiveBalanceEmail({
+      balance: customer.balance,
+      userId: customer.userId,
+      valueCents: calculateCouponValueCents(customer.balance, settings.redeemCentsPerPoint)
+    });
+
+    await prisma.loyaltyNotification.create({
+      data: {
+        email: customer.user.email,
+        errorMessage: result.error ?? null,
+        idempotencyKey,
+        status: result.ok ? "SENT" : "FAILED",
+        type: "INACTIVE_BALANCE",
+        userId: customer.userId
+      }
+    });
+    processedCount += 1;
+  }
+
+  revalidatePath("/admin/fidelidade");
+  redirect(`/admin/fidelidade?routine=inactive-balance&count=${processedCount}`);
 }
 
 export async function convertNerdcoinsToCoupon(formData: FormData): Promise<void> {

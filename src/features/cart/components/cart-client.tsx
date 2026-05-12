@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/features/cart/cart-store";
 import { CartLineItem } from "@/features/cart/components/cart-line-item";
 import type { CartValidationResponse } from "@/features/cart/types";
+import { LoyaltyTracker } from "@/features/loyalty/components/loyalty-tracker";
 import { FreeShippingProgress } from "@/features/shipping/components/free-shipping-progress";
 import { formatCurrency } from "@/lib/format";
 import { parseFriendlyResponse } from "@/lib/http/friendly-response";
@@ -283,6 +284,14 @@ export function CartClient({
           </div>
           {validatedCart?.loyaltyEarnPreview.estimatedPoints ? (
             <div className="rounded-lg border border-primary/25 bg-[#fff7ed] p-3 text-sm text-[#3a2a1c]">
+              <LoyaltyTracker
+                eventName="loyalty_points_previewed"
+                properties={{
+                  estimatedPoints: validatedCart.loyaltyEarnPreview.estimatedPoints,
+                  itemCount: validatedCart.itemCount,
+                  surface: "cart"
+                }}
+              />
               <div className="flex items-start gap-3">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white text-primary">
                   <Coins className="size-4" />

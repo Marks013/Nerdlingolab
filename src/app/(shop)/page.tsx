@@ -11,6 +11,8 @@ import {
   getPublicProducts,
   type ProductListItem
 } from "@/lib/catalog/queries";
+import { estimateProductCardNerdcoins } from "@/lib/loyalty/product-preview";
+import { getLoyaltyProgramSettings } from "@/lib/loyalty/settings";
 import { getStorefrontTheme } from "@/lib/theme/storefront";
 
 export const dynamic = "force-dynamic";
@@ -26,11 +28,12 @@ export const metadata: Metadata = {
 };
 
 export default async function ShopHomePage(): Promise<React.ReactElement> {
-  const [bestSellingProducts, newProducts, products, theme] = await Promise.all([
+  const [bestSellingProducts, newProducts, products, theme, loyaltySettings] = await Promise.all([
     getPublicBestSellingProducts(6),
     getPublicNewProducts(6),
     getPublicProducts({ sort: "recentes" }),
-    getStorefrontTheme()
+    getStorefrontTheme(),
+    getLoyaltyProgramSettings()
   ]);
   const storefrontSections = [
     {
@@ -80,6 +83,7 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
             imagePriority={sectionIndex === 0}
             key={section.title}
             emptyMessage={section.emptyMessage}
+            loyaltySettings={loyaltySettings}
             products={section.products}
             title={section.title}
           />
@@ -114,12 +118,14 @@ function ProductShelf({
   emptyMessage,
   href,
   imagePriority,
+  loyaltySettings,
   products,
   title
 }: {
   emptyMessage?: string;
   href: string;
   imagePriority?: boolean;
+  loyaltySettings: Awaited<ReturnType<typeof getLoyaltyProgramSettings>>;
   products: ProductListItem[];
   title: string;
 }): React.ReactElement | null {
@@ -146,6 +152,7 @@ function ProductShelf({
             <ProductCard
               imagePriority={Boolean(imagePriority && productIndex < 4)}
               key={`${title}-${product.id}`}
+              nerdcoinsEstimate={estimateProductCardNerdcoins(product.priceCents, loyaltySettings)}
               product={product}
             />
           ))}

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { CouponCopyButton } from "@/features/coupons/components/coupon-copy-button";
+import { trackLoyaltyEvent } from "@/features/loyalty/components/loyalty-tracker";
 
 interface AnimatedProgressMeterProps {
   label: string;
@@ -59,6 +60,7 @@ export function ShareReferralButton({ referralUrl }: ShareReferralButtonProps): 
       await copyText(referralUrl);
     }
 
+    trackLoyaltyEvent("loyalty_referral_link_shared", { surface: "account_nerdcoins" });
     setShared(true);
     window.setTimeout(() => setShared(false), 1800);
   }

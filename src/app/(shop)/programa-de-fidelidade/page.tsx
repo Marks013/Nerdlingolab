@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { LoyaltyTracker } from "@/features/loyalty/components/loyalty-tracker";
 import { auth } from "@/lib/auth";
 import { formatCurrency } from "@/lib/format";
 import {
@@ -77,6 +78,16 @@ export default async function LoyaltyPage(): Promise<React.ReactElement> {
 
   return (
     <main className="geek-page min-h-screen px-4 py-12 sm:px-6 lg:px-8">
+      <LoyaltyTracker
+        eventName="loyalty_campaign_viewed"
+        properties={{
+          activeCampaignCount: activeCampaigns.length,
+          isLoggedIn: Boolean(session?.user?.id),
+          minRedeemPoints: settings.minRedeemPoints,
+          pointsPerReal: settings.pointsPerReal,
+          surface: "loyalty_program"
+        }}
+      />
       <div className="mx-auto max-w-5xl">
       <section className="overflow-hidden rounded-lg border border-primary/35 bg-card shadow-md">
         <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
@@ -125,19 +136,19 @@ export default async function LoyaltyPage(): Promise<React.ReactElement> {
         ))}
       </div>
       {activeCampaigns.length > 0 ? (
-        <section className="mt-8 rounded-lg border border-primary/30 bg-white p-6 shadow-sm sm:p-8">
-          <p className="inline-flex items-center rounded-full bg-[#fff7ed] px-3 py-1 text-xs font-black uppercase text-primary">
+        <section className="mt-8 rounded-lg border border-primary/30 bg-card p-6 shadow-sm sm:p-8">
+          <p className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-black uppercase text-primary">
             <Sparkles className="mr-1.5 size-3.5" />
             Campanhas ativas
           </p>
-          <h2 className="mt-3 text-balance text-3xl font-black tracking-normal text-black">
+          <h2 className="mt-3 text-balance text-3xl font-black tracking-normal text-foreground">
             Missões temporárias para ganhar mais NerdCoins.
           </h2>
           <div className="mt-5 grid gap-3 md:grid-cols-2">
             {activeCampaigns.map((campaign) => (
-              <div className="rounded-lg border border-primary/20 bg-[#fff7ed] p-4" key={campaign.id}>
-                <p className="font-black text-black">{campaign.name}</p>
-                <p className="mt-1 text-sm leading-6 text-[#4f5d65]">
+              <div className="rounded-lg border border-primary/20 bg-primary/10 p-4" key={campaign.id}>
+                <p className="font-black text-foreground">{campaign.name}</p>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">
                   {campaign.description || "Campanha especial válida enquanto estiver ativa no site."}
                 </p>
                 <p className="mt-3 text-sm font-black text-primary">
@@ -148,22 +159,22 @@ export default async function LoyaltyPage(): Promise<React.ReactElement> {
           </div>
         </section>
       ) : null}
-      <section className="mt-8 rounded-lg border border-primary/30 bg-[#fff7ed] p-6 shadow-sm sm:p-8">
+      <section className="mt-8 rounded-lg border border-primary/30 bg-primary/10 p-6 shadow-sm sm:p-8">
         <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:items-center">
           <div>
-            <p className="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-black uppercase text-primary">
+            <p className="inline-flex items-center rounded-full bg-background px-3 py-1 text-xs font-black uppercase text-primary">
               <TicketPercent className="mr-1.5 size-3.5" />
               Exemplo real de benefício
             </p>
-            <h2 className="mt-3 text-balance text-3xl font-black tracking-normal text-black">
+            <h2 className="mt-3 text-balance text-3xl font-black tracking-normal text-foreground">
               Compre hoje, alimente o próximo cupom.
             </h2>
-            <p className="mt-3 text-pretty text-sm leading-6 text-[#4f5d65]">
+            <p className="mt-3 text-pretty text-sm leading-6 text-muted-foreground">
               Em uma compra aprovada de {formatCurrency(examplePurchaseCents)}, um cliente Genin acumula cerca de {exampleBasePoints} NerdCoins,
               que podem virar {formatCurrency(exampleBaseCouponCents)} em desconto quando convertidos. Nos níveis VIP, esse retorno fica ainda maior.
             </p>
           </div>
-          <div className="grid gap-2 rounded-lg border border-primary/20 bg-white p-4">
+          <div className="grid gap-2 rounded-lg border border-primary/20 bg-background p-4">
             <RuleLine label="Genin" value={`${exampleBasePoints} pts · ${formatCurrency(exampleBaseCouponCents)}`} />
             <RuleLine label="Chunin" value={`${Math.floor((exampleBasePoints * settings.chuninMultiplier) / 100)} pts`} />
             <RuleLine label="Jonin" value={`${Math.floor((exampleBasePoints * settings.joninMultiplier) / 100)} pts`} />
@@ -247,13 +258,23 @@ export default async function LoyaltyPage(): Promise<React.ReactElement> {
         </Card>
       </section>
       {ledger.length > 0 ? (
-        <Card className="mt-4">
+        <Card className="mt-4 border-primary/30 bg-card">
           <CardHeader>
             <CardTitle>Histórico recente</CardTitle>
-            <CardDescription>
-              {ledger.map((entry) => `${entry.pointsDelta > 0 ? "+" : ""}${entry.pointsDelta} · ${entry.reason}`).join(" | ")}
+            <CardDescription className="text-pretty">
+              Últimos movimentos da sua carteira, com ganhos, usos e ajustes separados para ficar fácil de acompanhar.
             </CardDescription>
           </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-2">
+            {ledger.slice(0, 6).map((entry) => (
+              <div className="rounded-lg border bg-background p-3 text-sm" key={entry.id}>
+                <p className={entry.pointsDelta >= 0 ? "font-black text-emerald-700 dark:text-emerald-300" : "font-black text-destructive"}>
+                  {entry.pointsDelta > 0 ? "+" : ""}{entry.pointsDelta} NerdCoins
+                </p>
+                <p className="mt-1 text-muted-foreground">{entry.reason}</p>
+              </div>
+            ))}
+          </CardContent>
         </Card>
       ) : null}
       </div>

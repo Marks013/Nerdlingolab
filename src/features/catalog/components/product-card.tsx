@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Coins } from "lucide-react";
 
 import { SafeImage as Image } from "@/components/media/safe-image";
 import { getPrimaryImageUrl } from "@/features/catalog/image-utils";
@@ -10,15 +11,17 @@ import { FavoriteButton } from "./favorite-button";
 
 interface ProductCardProps {
   imagePriority?: boolean;
+  nerdcoinsEstimate?: number;
   product: ProductListItem;
   variant?: "grid" | "list";
 }
 
-export function ProductCard({ imagePriority = false, product, variant = "grid" }: ProductCardProps): React.ReactElement {
+export function ProductCard({ imagePriority = false, nerdcoinsEstimate = 0, product, variant = "grid" }: ProductCardProps): React.ReactElement {
   const imageUrl = getPrimaryImageUrl(product.images);
   const hasDiscount = Boolean(product.compareAtPriceCents && product.compareAtPriceCents > product.priceCents);
   const badges = getProductBadges(product);
   const categoryName = product.category?.name ?? product.categories[0]?.category.name ?? "Produto NerdLingoLab";
+  const showNerdcoinsBadge = nerdcoinsEstimate > 0;
 
   if (variant === "list") {
     return (
@@ -59,12 +62,13 @@ export function ProductCard({ imagePriority = false, product, variant = "grid" }
               <p className="text-[11px] font-semibold uppercase text-[#4f5d65]">Preço</p>
               <div className="mt-1 flex flex-wrap items-baseline gap-2">
                 <p className="text-lg font-black leading-none text-primary sm:text-xl">{formatCurrency(product.priceCents)}</p>
-                {hasDiscount ? (
-                  <p className="text-xs font-semibold text-[#677279] line-through">
-                    {formatCurrency(product.compareAtPriceCents ?? 0)}
-                  </p>
-                ) : null}
+              {hasDiscount ? (
+                <p className="text-xs font-semibold text-[#677279] line-through">
+                  {formatCurrency(product.compareAtPriceCents ?? 0)}
+                </p>
+              ) : null}
               </div>
+              {showNerdcoinsBadge ? <NerdcoinsBadge points={nerdcoinsEstimate} compact /> : null}
             </div>
             <FavoriteButton
               product={{
@@ -120,6 +124,7 @@ export function ProductCard({ imagePriority = false, product, variant = "grid" }
                 </p>
               ) : null}
             </div>
+            {showNerdcoinsBadge ? <NerdcoinsBadge points={nerdcoinsEstimate} /> : null}
           </div>
         </div>
       </Link>
@@ -135,5 +140,19 @@ export function ProductCard({ imagePriority = false, product, variant = "grid" }
         />
       </span>
     </article>
+  );
+}
+
+function NerdcoinsBadge({ compact = false, points }: { compact?: boolean; points: number }): React.ReactElement {
+  return (
+    <span
+      className={`mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border border-primary/25 bg-orange-50 px-2.5 py-1 font-black text-primary shadow-sm ${
+        compact ? "text-[11px]" : "text-xs"
+      }`}
+      title={`Esta compra pode render ${points} NerdCoins`}
+    >
+      <Coins className="size-3.5 shrink-0" />
+      <span className="truncate">+{points} NerdCoins</span>
+    </span>
   );
 }

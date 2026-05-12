@@ -24,6 +24,7 @@ import {
   CopyCouponButton,
   ShareReferralButton
 } from "@/features/loyalty/components/nerdcoins-interactions";
+import { LoyaltyTracker } from "@/features/loyalty/components/loyalty-tracker";
 import { auth } from "@/lib/auth";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { buildReferralSignupUrl, ensureReferralCode, getReferralStatusLabel } from "@/lib/loyalty/referrals";
@@ -112,6 +113,25 @@ export default async function AccountNerdcoinsPage({
 
   return (
     <main className="geek-page min-h-screen px-4 py-10 sm:px-6 lg:px-8">
+      <LoyaltyTracker
+        eventName="loyalty_wallet_viewed"
+        properties={{
+          balance: loyaltyPoints.balance,
+          couponCount: coupons.length,
+          generatedCoupon: couponWasGenerated,
+          tier: loyaltyPoints.tier
+        }}
+      />
+      {couponWasGenerated ? (
+        <LoyaltyTracker
+          eventName="loyalty_coupon_generated_viewed"
+          properties={{
+            balance: loyaltyPoints.balance,
+            couponCount: coupons.length,
+            surface: "account_nerdcoins"
+          }}
+        />
+      ) : null}
       <div className="mx-auto max-w-5xl">
       <section className="mt-3 overflow-hidden rounded-lg border border-primary/30 bg-card shadow-md">
         <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">

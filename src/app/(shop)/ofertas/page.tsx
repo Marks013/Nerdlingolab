@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/features/catalog/components/product-card";
 import { PublicOffersSection } from "@/features/offers/components/public-offers-section";
 import { auth } from "@/lib/auth";
+import { estimateProductCardNerdcoins } from "@/lib/loyalty/product-preview";
+import { getLoyaltyProgramSettings } from "@/lib/loyalty/settings";
 import { getPublicOffers } from "@/lib/offers/queries";
 
 export const metadata: Metadata = {
@@ -20,10 +22,13 @@ export const dynamic = "force-dynamic";
 
 export default async function OffersPage(): Promise<React.ReactElement> {
   const session = await auth();
-  const offers = await getPublicOffers({
-    onlyHighlightedCoupons: true,
-    userId: session?.user?.id
-  });
+  const [offers, loyaltySettings] = await Promise.all([
+    getPublicOffers({
+      onlyHighlightedCoupons: true,
+      userId: session?.user?.id
+    }),
+    getLoyaltyProgramSettings()
+  ]);
 
   return (
     <main className="geek-page min-h-screen">
@@ -84,7 +89,12 @@ export default async function OffersPage(): Promise<React.ReactElement> {
         {offers.products.length > 0 ? (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
             {offers.products.map((product, productIndex) => (
-              <ProductCard imagePriority={productIndex < 4} key={product.id} product={product} />
+              <ProductCard
+                imagePriority={productIndex < 4}
+                key={product.id}
+                nerdcoinsEstimate={estimateProductCardNerdcoins(product.priceCents, loyaltySettings)}
+                product={product}
+              />
             ))}
           </div>
         ) : (

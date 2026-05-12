@@ -1,4 +1,4 @@
-import { Award, CalendarDays, Coins, Hourglass, Search, Settings, TicketPercent, UserRoundPlus } from "lucide-react";
+import { Award, CalendarDays, Coins, Hourglass, Search, Settings, TicketPercent, Trophy, UserRoundPlus } from "lucide-react";
 import Link from "next/link";
 
 import {
@@ -7,7 +7,10 @@ import {
   createLoyaltyCampaign,
   expireEligibleNerdcoins,
   grantBirthdayNerdcoins,
+  notifyInactiveBalanceNerdcoins,
   notifyExpiringNerdcoins,
+  notifyNearTierNerdcoins,
+  notifyRedeemableNerdcoins,
   updateLoyaltyCampaign,
   updateLoyaltySettings
 } from "@/actions/loyalty";
@@ -37,6 +40,7 @@ export default async function AdminLoyaltyPage({
   const routine = readSearchParam(resolvedSearchParams?.routine);
   const routineCount = readSearchParam(resolvedSearchParams?.count) ?? "0";
   const potentialDiscountCents = dashboard.pointsInCirculation * settings.redeemCentsPerPoint;
+  const redeemablePotentialCents = dashboard.opportunities.redeemableMembers * settings.minRedeemPoints * settings.redeemCentsPerPoint;
   const redemptionRate = dashboard.pointsEarned > 0
     ? Math.round((dashboard.pointsRedeemed / dashboard.pointsEarned) * 100)
     : 0;
@@ -76,6 +80,49 @@ export default async function AdminLoyaltyPage({
         <MetricCard icon={UserRoundPlus} label="Membros ativos 30 dias" value={dashboard.activeMemberCount30d.toString()} />
         <MetricCard icon={TicketPercent} label="Pedidos com resgate" value={dashboard.couponConversionOrders.toString()} />
         <MetricCard icon={Award} label="Campanhas ativas" value={dashboard.campaigns.filter((campaign) => campaign.isActive).length.toString()} />
+      </section>
+
+      <section className="mt-6 rounded-lg border border-primary/25 bg-card p-5 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-black uppercase text-primary">Oportunidades do programa</p>
+            <h2 className="mt-1 text-2xl font-black tracking-normal">Clientes prontos para voltar ao carrinho</h2>
+            <p className="mt-2 max-w-3xl text-pretty text-sm text-muted-foreground">
+              Use estes sinais para acionar e-mails com idempotência, sem mandar a mesma campanha duas vezes para o mesmo contexto.
+            </p>
+          </div>
+          <StatusPill>{formatCurrency(redeemablePotentialCents)} em potencial mínimo</StatusPill>
+        </div>
+        <div className="mt-5 grid gap-4 md:grid-cols-4">
+          <OpportunityCard
+            action={notifyRedeemableNerdcoins}
+            icon={TicketPercent}
+            label="Prontos para cupom"
+            value={dashboard.opportunities.redeemableMembers.toString()}
+            helper="Clientes com saldo acima do mínimo de resgate."
+          />
+          <OpportunityCard
+            action={notifyExpiringNerdcoins}
+            icon={Hourglass}
+            label="Vencendo em 30 dias"
+            value={`${dashboard.opportunities.expiringSoonPoints} pts`}
+            helper={`${dashboard.opportunities.expiringSoonLots} lote(s) com prazo próximo.`}
+          />
+          <OpportunityCard
+            action={notifyNearTierNerdcoins}
+            icon={Trophy}
+            label="Quase subindo nível"
+            value={dashboard.opportunities.nearNextTierCount.toString()}
+            helper="Clientes acima de 80% do próximo nível VIP."
+          />
+          <OpportunityCard
+            action={notifyInactiveBalanceNerdcoins}
+            icon={Coins}
+            label="Saldo parado"
+            value={dashboard.opportunities.inactiveMembersWithBalance.toString()}
+            helper="Clientes com pontos e sem movimento recente."
+          />
+        </div>
       </section>
 
       <section className="mt-6 grid min-w-0 gap-6 2xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
@@ -145,6 +192,9 @@ export default async function AdminLoyaltyPage({
               <RoutineButton action={grantBirthdayNerdcoins} icon={CalendarDays} label="Aniversários de hoje" />
               <RoutineButton action={expireEligibleNerdcoins} icon={Hourglass} label="Expirar pontos vencidos" />
               <RoutineButton action={notifyExpiringNerdcoins} icon={Hourglass} label="Avisar pontos vencendo" />
+              <RoutineButton action={notifyRedeemableNerdcoins} icon={TicketPercent} label="Avisar cupom disponível" />
+              <RoutineButton action={notifyNearTierNerdcoins} icon={Award} label="Avisar próximo nível" />
+              <RoutineButton action={notifyInactiveBalanceNerdcoins} icon={Coins} label="Reativar saldo parado" />
               <RoutineButton action={backfillReferralCodes} icon={UserRoundPlus} label="Gerar códigos faltantes" />
             </CardContent>
           </Card>
@@ -510,6 +560,36 @@ function RoutineButton({
   );
 }
 
+function OpportunityCard({
+  action,
+  helper,
+  icon: Icon,
+  label,
+  value
+}: {
+  action: () => Promise<void>;
+  helper: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+}): React.ReactElement {
+  return (
+    <div className="grid min-h-48 gap-3 rounded-lg border border-primary/20 bg-background p-4">
+      <div>
+        <Icon className="h-5 w-5 text-primary" />
+        <p className="mt-3 text-sm font-semibold text-muted-foreground">{label}</p>
+        <p className="mt-1 text-3xl font-black tabular-nums">{value}</p>
+        <p className="mt-2 text-pretty text-xs leading-5 text-muted-foreground">{helper}</p>
+      </div>
+      <form action={action} className="self-end">
+        <RoutineSubmitButton label="Enviar alerta">
+          <Icon className="h-4 w-4" />
+        </RoutineSubmitButton>
+      </form>
+    </div>
+  );
+}
+
 function MetricCard({
   icon: Icon,
   label,
@@ -721,6 +801,9 @@ function formatRoutineMessage(routine: string, count: string): string {
     birthday: `Rotina de aniversários concluída. ${count} crédito(s) processado(s).`,
     expire: `Rotina de expiração concluída. ${count} lote(s) vencido(s) processado(s).`,
     expiring: `Rotina de aviso de vencimento concluída. ${count} alerta(s) processado(s).`,
+    "inactive-balance": `Rotina de reativação concluída. ${count} alerta(s) processado(s).`,
+    "near-tier": `Rotina de próximo nível concluída. ${count} alerta(s) processado(s).`,
+    redeemable: `Rotina de cupom disponível concluída. ${count} alerta(s) processado(s).`,
     referrals: `Rotina de códigos de indicação concluída. ${count} código(s) gerado(s).`
   };
 

@@ -13,6 +13,8 @@ import {
   type PublicProductSort
 } from "@/lib/catalog/queries";
 import { formatCurrency, parseCurrencyToCents } from "@/lib/format";
+import { estimateProductCardNerdcoins } from "@/lib/loyalty/product-preview";
+import { getLoyaltyProgramSettings } from "@/lib/loyalty/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -46,9 +48,10 @@ const storefrontTags = [
 export default async function ProductsPage({ searchParams }: ProductsPageProps): Promise<React.ReactElement> {
   const resolvedSearchParams = await searchParams;
   const filters = parseCatalogFilters(resolvedSearchParams);
-  const [categories, productPage] = await Promise.all([
+  const [categories, productPage, loyaltySettings] = await Promise.all([
     getPublicCategories(),
-    getPublicProductsPage(filters, filters.page, filters.perPage)
+    getPublicProductsPage(filters, filters.page, filters.perPage),
+    getLoyaltyProgramSettings()
   ]);
   const visibleProducts = productPage.products;
   const firstVisibleProduct = productPage.total === 0
@@ -190,6 +193,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
                 <ProductCard
                   imagePriority={productIndex < 4}
                   key={product.id}
+                  nerdcoinsEstimate={estimateProductCardNerdcoins(product.priceCents, loyaltySettings)}
                   product={product}
                   variant={filters.view}
                 />

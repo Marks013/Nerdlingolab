@@ -1,10 +1,14 @@
 import { LoyaltyLedgerType, PaymentStatus, ReferralStatus, UserRole } from "@/generated/prisma/client";
 
-import { getLoyaltyProgramSettings } from "@/lib/loyalty/settings";
+import { getLoyaltyProgramSettings, getVipProgress } from "@/lib/loyalty/settings";
 import { prisma } from "@/lib/prisma";
 
 export async function getAdminLoyaltyDashboard(search = "") {
   const normalizedSearch = search.trim();
+  const settings = await getLoyaltyProgramSettings();
+  const now = new Date();
+  const thirtyDaysFromNow = new Date(now.getTime() + 30 * 86_400_000);
+  const inactiveSince = new Date(now.getTime() - 45 * 86_400_000);
   const customerWhere = normalizedSearch
     ? {
         role: UserRole.CUSTOMER,
@@ -16,7 +20,6 @@ export async function getAdminLoyaltyDashboard(search = "") {
       }
     : { role: UserRole.CUSTOMER };
   const [
-    settings,
     totals,
     customers,
     recentActivity,
@@ -31,9 +34,12 @@ export async function getAdminLoyaltyDashboard(search = "") {
     categories,
     notifications,
     activeMembers,
-    couponConversionOrders
+    couponConversionOrders,
+    redeemableMembers,
+    expiringSoonLots,
+    inactiveMembersWithBalance,
+    loyaltyPointRows
   ] = await Promise.all([
-      getLoyaltyProgramSettings(),
       prisma.loyaltyLedger.groupBy({
         by: ["type"],
         _sum: { pointsDelta: true }
@@ -180,10 +186,51 @@ export async function getAdminLoyaltyDashboard(search = "") {
           loyaltyPointsRedeemed: { gt: 0 },
           paymentStatus: PaymentStatus.APPROVED
         }
+      }),
+      prisma.loyaltyPoints.count({
+        where: {
+          balance: { gte: settings.minRedeemPoints }
+        }
+      }),
+      prisma.loyaltyLedger.aggregate({
+        _count: true,
+        _sum: { pointsDelta: true },
+        where: {
+          expiresAt: {
+            gt: now,
+            lte: thirtyDaysFromNow
+          },
+          pointsDelta: { gt: 0 },
+          type: LoyaltyLedgerType.EARN
+        }
+      }),
+      prisma.loyaltyPoints.count({
+        where: {
+          balance: { gt: 0 },
+          updatedAt: { lt: inactiveSince }
+        }
+      }),
+      prisma.loyaltyPoints.findMany({
+        select: {
+          balance: true,
+          tier: true,
+          tierOrderCount: true,
+          tierSpendCents: true
+        }
       })
     ]);
   const pointsByType = new Map(totals.map((entry) => [entry.type, entry._sum.pointsDelta ?? 0]));
   const referralsByStatus = new Map(referralTotals.map((entry) => [entry.status, entry._count]));
+  const nearNextTierCount = loyaltyPointRows.filter((points) => {
+    const progress = getVipProgress({
+      orderCount: points.tierOrderCount,
+      settings,
+      spendCents: points.tierSpendCents,
+      tier: points.tier
+    });
+
+    return !progress.isMaxTier && Math.max(progress.orderPercent, progress.spendPercent) >= 80;
+  }).length;
 
   return {
     customers,
@@ -199,6 +246,13 @@ export async function getAdminLoyaltyDashboard(search = "") {
     pointsInCirculation: pointsBalance._sum.balance ?? 0,
     pointsExpired: Math.abs(pointsByType.get(LoyaltyLedgerType.EXPIRE) ?? 0),
     pointsRedeemed: Math.abs(pointsByType.get(LoyaltyLedgerType.REDEEM) ?? 0),
+    opportunities: {
+      expiringSoonLots: expiringSoonLots._count,
+      expiringSoonPoints: expiringSoonLots._sum.pointsDelta ?? 0,
+      inactiveMembersWithBalance,
+      nearNextTierCount,
+      redeemableMembers
+    },
     referralsPending: referralsByStatus.get(ReferralStatus.PENDING) ?? 0,
     referralsRewarded: referralsByStatus.get(ReferralStatus.REWARDED) ?? 0,
     recentReferrals,

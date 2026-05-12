@@ -9,6 +9,7 @@ import { toggleFavoriteProduct, useFavorites } from "@/features/catalog/componen
 import { useCartStore } from "@/features/cart/cart-store";
 import { AddToCartButton } from "@/features/cart/components/add-to-cart-button";
 import type { CartItem } from "@/features/cart/types";
+import { LoyaltyTracker } from "@/features/loyalty/components/loyalty-tracker";
 import { ShippingEstimator } from "@/features/shipping/components/shipping-estimator";
 import { formatCurrency } from "@/lib/format";
 import {
@@ -141,6 +142,17 @@ export function ProductPurchasePanel({
       />
 
       <div className="mt-8">
+        {estimatedNerdcoins > 0 ? (
+          <LoyaltyTracker
+            eventName="loyalty_points_previewed"
+            properties={{
+              campaignId: loyaltyProgram.campaign?.id,
+              estimatedPoints: estimatedNerdcoins,
+              productId,
+              surface: "product_detail"
+            }}
+          />
+        ) : null}
         <p aria-label="Valor selecionado" className="text-4xl font-black text-primary">
           {formatCurrency(selectedVariant.priceCents)}
         </p>

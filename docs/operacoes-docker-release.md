@@ -212,6 +212,37 @@ Auditoria esperando manutencao ativa:
 EXPECT_MAINTENANCE=true AUDIT_BASE_URL=http://127.0.0.1:3001 npm run audit:maintenance
 ```
 
+## Cron de Fornecedores
+
+A central de fornecedores usa `/api/cron/dropshipping` para tentar atualizar links de origem sem expor segredo.
+No servidor atual, existe um agendamento diario:
+
+```bash
+30 11 * * * /home/ubuntu/nerdlingolab-dropshipping-cron.sh
+```
+
+Esse horario equivale a 08:30 no Brasil quando o servidor esta em UTC.
+O script le `CRON_SECRET`, `AUTH_SECRET` ou `NEXTAUTH_SECRET` do `.env` e chama a rota interna:
+
+```bash
+/home/ubuntu/nerdlingolab-dropshipping-cron.sh
+```
+
+Script versionado de referencia:
+
+```bash
+ops/dropshipping-cron.sh
+```
+
+Logs temporarios:
+
+```bash
+tail -n 20 /tmp/nerdlingolab-dropshipping-cron.out
+tail -n 20 /tmp/nerdlingolab-dropshipping-cron.err
+```
+
+Importante: Mercado Livre e Shopee podem exigir login, captcha ou verificacao para anuncios de terceiros. Nesses casos, a rotina marca o item como manual assistido, preserva a loja funcionando e evita inventar preco/estoque.
+
 ## Rollback
 
 O `nerd-build` salva manifesto em `ops/releases/`.

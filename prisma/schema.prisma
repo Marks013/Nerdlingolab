@@ -135,6 +135,65 @@ enum SupportTicketStatus {
   CLOSED
 }
 
+enum SupplierProvider {
+  MERCADO_LIVRE
+  SHOPEE
+  MANUAL
+  CUSTOM
+}
+
+enum SupplierSourceStatus {
+  ACTIVE
+  PAUSED
+  CLOSED
+  DELETED
+  OUT_OF_STOCK
+  UNKNOWN
+  ERROR
+  CONFIG_REQUIRED
+}
+
+enum SupplierAlertType {
+  PRICE_INCREASE
+  PRICE_DECREASE
+  OUT_OF_STOCK
+  SOURCE_PAUSED
+  SOURCE_CLOSED
+  SOURCE_DELETED
+  VARIANT_MISSING
+  LINK_INVALID
+  API_ERROR
+  CONFIG_REQUIRED
+  MARGIN_BELOW_MIN
+}
+
+enum SupplierAlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum SupplierAlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  IGNORED
+}
+
+enum PricingRuleScope {
+  GLOBAL
+  SUPPLIER
+  CATEGORY
+  PRODUCT
+}
+
+enum PricingRoundingMode {
+  NONE
+  END_90
+  END_99
+  INTEGER
+}
+
 model User {
   id                String    @id @default(cuid())
   name              String?
@@ -329,6 +388,8 @@ model Product {
   inventoryLedger InventoryLedger[]
   mediaUsages     MediaAssetUsage[]
   reviews         ProductReview[]
+  supplierSources ProductSource[]
+  pricingRules    PricingRule[]
 
   @@index([status, publishedAt])
   @@index([categoryId])
@@ -371,8 +432,142 @@ model ProductVariant {
   orderItems      OrderItem[]
   inventoryLedger InventoryLedger[]
   reviews         ProductReview[]
+  supplierVariants ProductSourceVariant[]
 
   @@index([productId, isActive])
+}
+
+model Supplier {
+  id             String           @id @default(cuid())
+  name           String
+  provider       SupplierProvider
+  isActive       Boolean          @default(true)
+  apiBaseUrl     String?
+  notes          String?          @db.Text
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  sources      ProductSource[]
+  pricingRules PricingRule[]
+
+  @@unique([provider, name])
+  @@index([provider, isActive])
+}
+
+model ProductSource {
+  id                 String               @id @default(cuid())
+  productId          String
+  supplierId         String
+  provider           SupplierProvider
+  originalUrl        String               @db.Text
+  externalId         String?
+  externalShopId     String?
+  externalVariantId  String?
+  title              String?
+  status             SupplierSourceStatus @default(UNKNOWN)
+  lastPriceCents     Int?
+  lastCurrency       String?
+  lastStockQuantity  Int?
+  lastCheckedAt      DateTime?
+  lastSuccessfulSyncAt DateTime?
+  lastError          String?              @db.Text
+  syncEnabled        Boolean              @default(true)
+  checkoutPolicy     SupplierSourceStatus @default(UNKNOWN)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplier  Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  snapshots ProductSourceSnapshot[]
+  variants  ProductSourceVariant[]
+  alerts    SourceAlert[]
+
+  @@unique([productId, supplierId, originalUrl])
+  @@index([provider, externalId])
+  @@index([status, lastCheckedAt])
+  @@index([syncEnabled, lastCheckedAt])
+}
+
+model ProductSourceSnapshot {
+  id                 String               @id @default(cuid())
+  productSourceId    String
+  status             SupplierSourceStatus
+  title              String?
+  priceCents         Int?
+  currency           String?
+  stockQuantity      Int?
+  variantCount       Int                  @default(0)
+  rawSummary         Json                 @default("{}")
+  fetchedAt          DateTime             @default(now())
+
+  productSource ProductSource @relation(fields: [productSourceId], references: [id], onDelete: Cascade)
+
+  @@index([productSourceId, fetchedAt])
+}
+
+model ProductSourceVariant {
+  id                 String               @id @default(cuid())
+  productSourceId    String
+  variantId          String?
+  externalVariantId  String?
+  title              String?
+  optionValues       Json                 @default("{}")
+  priceCents         Int?
+  currency           String?
+  stockQuantity      Int?
+  imageUrl           String?              @db.Text
+  status             SupplierSourceStatus @default(UNKNOWN)
+  lastCheckedAt      DateTime?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  productSource ProductSource   @relation(fields: [productSourceId], references: [id], onDelete: Cascade)
+  variant       ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@unique([productSourceId, externalVariantId])
+  @@index([variantId])
+  @@index([status])
+}
+
+model PricingRule {
+  id                 String              @id @default(cuid())
+  scope              PricingRuleScope
+  supplierId         String?
+  productId          String?
+  categoryId         String?
+  marginPercent      Decimal             @default(35) @db.Decimal(8, 2)
+  marginFixedCents   Int                 @default(0)
+  minimumMarginCents Int                 @default(1000)
+  roundingMode       PricingRoundingMode @default(END_90)
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  supplier Supplier? @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  product  Product?  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([scope, isActive])
+  @@index([supplierId])
+  @@index([productId])
+  @@index([categoryId])
+}
+
+model SourceAlert {
+  id              String                @id @default(cuid())
+  productSourceId String
+  type            SupplierAlertType
+  severity        SupplierAlertSeverity @default(WARNING)
+  status          SupplierAlertStatus   @default(OPEN)
+  message         String
+  metadata        Json                  @default("{}")
+  resolvedAt      DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  productSource ProductSource @relation(fields: [productSourceId], references: [id], onDelete: Cascade)
+
+  @@index([status, severity, createdAt])
+  @@index([productSourceId, status])
 }
 
 model ProductShippingPreset {

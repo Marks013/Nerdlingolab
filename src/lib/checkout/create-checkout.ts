@@ -3,6 +3,7 @@ import { OrderStatus, PaymentStatus, type Prisma } from "@/generated/prisma/clie
 import type { CheckoutRequestInput } from "@/features/checkout/schemas";
 import type { CustomerAddressInput } from "@/lib/addresses/schema";
 import { validateCartItems } from "@/lib/cart/validation";
+import { assertDropshippingCheckoutAvailability } from "@/lib/dropshipping/checkout";
 import { sendOrderCreatedEmail } from "@/lib/email/transactional";
 import {
   releaseInventoryReservations,
@@ -86,6 +87,8 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Create
   if (!validatedCart.selectedShippingOption) {
     throw new Error("Selecione uma opção de entrega antes do pagamento.");
   }
+
+  await assertDropshippingCheckoutAvailability(validatedCart.items);
 
   const selectedShippingOption = validatedCart.selectedShippingOption;
 

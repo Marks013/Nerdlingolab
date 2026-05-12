@@ -28,7 +28,7 @@ export function CouponManager({ data }: CouponManagerProps): React.ReactElement 
     <div className="grid gap-6">
       <div>
         <p className="text-sm font-black uppercase text-primary">Comercial</p>
-        <h1 className="text-balance text-3xl font-black tracking-normal text-black">Cupons e campanhas</h1>
+        <h1 className="text-balance text-3xl font-black tracking-normal text-foreground">Cupons e campanhas</h1>
         <p className="mt-2 max-w-3xl text-pretty text-sm leading-6 text-muted-foreground">
           Crie campanhas, edite regras, acompanhe uso, limite por cliente, validade e cupons privados de atendimento/Nerdcoins.
         </p>
@@ -47,8 +47,8 @@ export function CouponManager({ data }: CouponManagerProps): React.ReactElement 
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <Card className="overflow-hidden border-orange-100 shadow-sm">
-          <CardHeader className="bg-[#fffaf6]">
+        <Card className="overflow-hidden border-primary/20 shadow-sm">
+          <CardHeader className="border-b border-primary/10 bg-muted/20">
             <CardTitle className="flex items-center gap-2 text-balance">
               <Flame className="size-5 text-primary" />
               Campanhas e cupons
@@ -65,8 +65,8 @@ export function CouponManager({ data }: CouponManagerProps): React.ReactElement 
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden border-orange-100 shadow-sm">
-          <CardHeader className="bg-[#fffaf6]">
+        <Card className="overflow-hidden border-primary/20 shadow-sm">
+          <CardHeader className="border-b border-primary/10 bg-muted/20">
             <CardTitle className="flex items-center gap-2 text-balance">
               <TicketPercent className="size-5 text-primary" />
               Novo cupom
@@ -139,7 +139,7 @@ function CouponDetails({
       </summary>
       <div className="grid gap-4 border-t p-4">
         <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-          <section className="grid content-start gap-3 rounded-lg border border-orange-100 bg-orange-50/30 p-4">
+          <section className="grid content-start gap-3 rounded-lg border border-primary/20 bg-muted/20 p-4">
             <h3 className="flex items-center gap-2 font-semibold">
               <TicketPercent className="size-4 text-primary" />
               Regras atuais
@@ -152,7 +152,7 @@ function CouponDetails({
             <Info label="Cliente vinculado" value={coupon.assignedUser?.name ?? coupon.assignedUser?.email ?? "Não vinculado"} />
           </section>
 
-          <section className="grid content-start gap-3 rounded-lg border border-orange-100 bg-orange-50/30 p-4">
+          <section className="grid content-start gap-3 rounded-lg border border-primary/20 bg-muted/20 p-4">
             <h3 className="flex items-center gap-2 font-semibold">
               <Gift className="size-4 text-primary" />
               Uso recente
@@ -171,7 +171,7 @@ function CouponDetails({
           </section>
         </div>
 
-        <section className="rounded-lg border border-orange-100 bg-card p-4">
+        <section className="rounded-lg border border-primary/20 bg-card p-4">
           <h3 className="font-semibold">Editar cupom</h3>
           <CouponForm coupon={coupon} customers={customers} submitLabel="Salvar alterações" />
         </section>
@@ -218,8 +218,8 @@ function CouponForm({
           <option value={CouponType.FREE_SHIPPING}>Frete grátis</option>
         </select>
       </label>
-      <div className="grid gap-2 rounded-lg border border-orange-100 bg-white p-3 text-sm">
-        <p className="font-black text-black">Variações que vendem melhor</p>
+      <div className="grid gap-2 rounded-lg border border-primary/20 bg-muted/20 p-3 text-sm">
+        <p className="font-black text-foreground">Variações que vendem melhor</p>
         <div className="grid gap-2 text-xs text-muted-foreground">
           <CouponTypeTip icon={Percent} text="Percentual: ótimo para Black Friday, Dia do Consumidor e campanhas amplas." />
           <CouponTypeTip icon={Gift} text="Valor fixo: comunica economia imediata e funciona bem em carrinhos menores." />
@@ -256,10 +256,10 @@ function CouponForm({
         <input defaultChecked={coupon?.isPublic ?? true} name="isPublic" type="checkbox" />
         Visível na página de cupons
       </label>
-      <label className="flex items-start gap-2 rounded-lg border border-orange-100 bg-[#fff7ed] p-3 text-sm">
+      <label className="flex items-start gap-2 rounded-lg border border-primary/20 bg-muted/20 p-3 text-sm">
         <input className="mt-1" defaultChecked={coupon?.showOnOffers ?? false} name="showOnOffers" type="checkbox" />
         <span>
-          <span className="block font-semibold text-black">Destacar também em /ofertas</span>
+          <span className="block font-semibold text-foreground">Destacar também em /ofertas</span>
           <span className="mt-1 block text-xs leading-5 text-muted-foreground">
             Use para campanhas escolhidas, como Black Friday, Dia do Consumidor, frete especial ou ofertas relâmpago.
           </span>
@@ -336,7 +336,7 @@ function Metric({
   value: string;
 }): React.ReactElement {
   return (
-    <Card className="border-orange-100 shadow-sm">
+    <Card className="border-primary/20 shadow-sm">
       <CardContent className="p-5">
         <p className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
           <Icon className="size-4 text-primary" />

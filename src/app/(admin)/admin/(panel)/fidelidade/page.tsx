@@ -273,8 +273,8 @@ export default async function AdminLoyaltyPage({
         </div>
       </section>
 
-      <section className="mt-6 grid gap-6 xl:grid-cols-4">
-        <Card>
+      <section className="mt-6 grid gap-6 lg:grid-cols-2 2xl:grid-cols-4">
+        <Card className="min-w-0">
           <CardHeader>
             <CardTitle>Indicacoes recentes</CardTitle>
             <CardDescription>Quem indicou quem, pedido qualificador e pontos de recompensa.</CardDescription>
@@ -300,7 +300,7 @@ export default async function AdminLoyaltyPage({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader>
             <CardTitle>Cupons pessoais recentes</CardTitle>
             <CardDescription>Cupons gerados por NerdCoins, com dono, valor e validade.</CardDescription>
@@ -326,7 +326,7 @@ export default async function AdminLoyaltyPage({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader>
             <CardTitle>Alertas enviados</CardTitle>
             <CardDescription>Histórico de notificações do programa para evitar duplicidade.</CardDescription>
@@ -350,23 +350,45 @@ export default async function AdminLoyaltyPage({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0 lg:col-span-2 2xl:col-span-2">
           <CardHeader>
             <CardTitle>Histórico recente</CardTitle>
-            <CardDescription>Ledger auditável de ganhos, resgates, ajustes e expirações.</CardDescription>
+            <CardDescription className="max-w-2xl text-pretty">
+              Ledger auditável de ganhos, resgates, ajustes e expirações.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="divide-y rounded-lg border">
+            <div className="grid max-h-[520px] gap-3 overflow-y-auto pr-1">
               {dashboard.recentActivity.map((entry) => (
-                <div className="grid gap-1 p-3 text-sm md:grid-cols-[1fr_120px_160px]" key={entry.id}>
-                  <div>
-                    <p className="font-medium">{entry.user?.name ?? entry.user?.email ?? "Cliente excluído"}</p>
-                    <p className="text-muted-foreground">{entry.reason}</p>
+                <div
+                  className="grid min-w-0 gap-3 rounded-lg border bg-background/70 p-3 text-sm shadow-sm sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start"
+                  key={entry.id}
+                >
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <p className="min-w-0 max-w-full truncate font-semibold text-foreground">
+                        {entry.user?.name ?? entry.user?.email ?? "Cliente excluído"}
+                      </p>
+                      <span className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                        Saldo {entry.balanceAfter}
+                      </span>
+                    </div>
+                    <p className="max-w-2xl break-words text-muted-foreground">
+                      {entry.reason}
+                    </p>
+                    <p className="text-xs text-muted-foreground tabular-nums">{formatDateTime(entry.createdAt)}</p>
                   </div>
-                  <p className={entry.pointsDelta >= 0 ? "text-emerald-700 dark:text-emerald-200" : "text-destructive"}>
-                    {entry.pointsDelta > 0 ? "+" : ""}{entry.pointsDelta}
-                  </p>
-                  <p className="text-muted-foreground">{formatDateTime(entry.createdAt)}</p>
+                  <div className="flex items-center gap-2 sm:justify-end">
+                    <span
+                      className={
+                        entry.pointsDelta >= 0
+                          ? "rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-sm font-black text-emerald-700 tabular-nums dark:text-emerald-200"
+                          : "rounded-full border border-destructive/30 bg-destructive/10 px-3 py-1 text-sm font-black text-destructive tabular-nums"
+                      }
+                    >
+                      {entry.pointsDelta > 0 ? "+" : ""}{entry.pointsDelta}
+                    </span>
+                  </div>
                 </div>
               ))}
               {dashboard.recentActivity.length === 0 ? <EmptyRow>Nenhum movimento ainda.</EmptyRow> : null}

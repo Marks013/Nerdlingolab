@@ -103,34 +103,34 @@ export function CouponCampaignPresets({ compact = false }: CouponCampaignPresets
   }
 
   return (
-    <section className="grid gap-3 rounded-lg border border-orange-100 bg-[#fff7ed] p-4">
+    <section className="grid gap-3 rounded-lg border border-primary/20 bg-muted/20 p-4">
       <div>
         <p className="flex items-center gap-2 text-sm font-black uppercase text-primary">
           <TicketPercent className="size-4" />
           Presets de campanha
         </p>
-        <p className="mt-1 text-pretty text-xs leading-5 text-[#4f5d65]">
+        <p className="mt-1 text-pretty text-xs leading-5 text-muted-foreground">
           Escolha uma campanha base e ajuste valores antes de salvar.
         </p>
       </div>
       <div className={compact ? "grid gap-2" : "grid gap-2 sm:grid-cols-2"}>
         {campaignPresets.map((preset) => (
           <button
-            className="rounded-lg border border-orange-100 bg-white p-3 text-left shadow-sm transition hover:border-primary/40 hover:bg-orange-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="rounded-lg border border-primary/20 bg-card p-3 text-left shadow-sm transition hover:border-primary/40 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             key={preset.codePrefix}
             onClick={(event) => applyPreset(preset, event)}
             type="button"
           >
-            <span className="flex items-center gap-2 font-black text-black">
+            <span className="flex items-center gap-2 font-black text-foreground">
               <preset.icon className="size-4 text-primary" />
               {preset.label}
             </span>
-            <span className="mt-1 block text-pretty text-xs leading-5 text-[#4f5d65]">{preset.description}</span>
+            <span className="mt-1 block text-pretty text-xs leading-5 text-muted-foreground">{preset.description}</span>
           </button>
         ))}
       </div>
       {selectedLabel ? (
-        <p className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800">
+        <p className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-200">
           <CalendarDays className="size-4" />
           Preset aplicado: {selectedLabel}. Revise datas, valores e limites.
         </p>

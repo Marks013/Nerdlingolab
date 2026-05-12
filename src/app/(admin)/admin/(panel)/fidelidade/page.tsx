@@ -273,7 +273,7 @@ export default async function AdminLoyaltyPage({
         </div>
       </section>
 
-      <section className="mt-6 grid gap-6 lg:grid-cols-2 2xl:grid-cols-4">
+      <section className="mt-6 grid gap-6 xl:grid-cols-3">
         <Card className="min-w-0">
           <CardHeader>
             <CardTitle>Indicacoes recentes</CardTitle>
@@ -350,18 +350,23 @@ export default async function AdminLoyaltyPage({
           </CardContent>
         </Card>
 
-        <Card className="min-w-0 lg:col-span-2 2xl:col-span-2">
+        <Card className="min-w-0 xl:col-span-3">
           <CardHeader>
-            <CardTitle>Histórico recente</CardTitle>
-            <CardDescription className="max-w-2xl text-pretty">
-              Ledger auditável de ganhos, resgates, ajustes e expirações.
-            </CardDescription>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <CardTitle>Histórico recente</CardTitle>
+                <CardDescription className="mt-1 max-w-2xl text-pretty">
+                  Ledger auditável de ganhos, resgates, ajustes e expirações.
+                </CardDescription>
+              </div>
+              <StatusPill>{dashboard.recentActivity.length} movimentos</StatusPill>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="grid max-h-[520px] gap-3 overflow-y-auto pr-1">
+            <div className="grid max-h-[560px] gap-3 overflow-y-auto pr-1 lg:grid-cols-2">
               {dashboard.recentActivity.map((entry) => (
                 <div
-                  className="grid min-w-0 gap-3 rounded-lg border bg-background/70 p-3 text-sm shadow-sm sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start"
+                  className="grid min-h-24 min-w-0 gap-3 rounded-lg border bg-background/70 p-3 text-sm shadow-sm sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start"
                   key={entry.id}
                 >
                   <div className="min-w-0 space-y-1">

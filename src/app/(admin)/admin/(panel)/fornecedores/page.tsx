@@ -87,7 +87,7 @@ export default async function AdminSuppliersPage({
         <MetricCard label="Criticos" tone="critical" value={dashboard.totals.criticalStatuses} />
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[1fr_360px]">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
         <Card className="overflow-hidden">
           <CardHeader className="border-b bg-muted/30">
             <CardTitle>Produtos monitorados</CardTitle>
@@ -95,34 +95,15 @@ export default async function AdminSuppliersPage({
           </CardHeader>
           <CardContent className="space-y-4 p-4">
             <FilterBar filters={filters} />
-            <div className="overflow-x-auto rounded-lg border">
-              <table className="w-full min-w-[1100px] text-left text-sm">
-                <thead className="bg-muted/60 text-xs uppercase text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3">Produto</th>
-                    <th className="px-4 py-3">Fornecedor</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Fornecedor</th>
-                    <th className="px-4 py-3">Loja</th>
-                    <th className="px-4 py-3">Sugerido</th>
-                    <th className="px-4 py-3">Estoque</th>
-                    <th className="px-4 py-3">Alertas</th>
-                    <th className="px-4 py-3 text-right">Acoes</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {dashboard.items.map((item) => (
-                    <SupplierRow item={item} key={item.id} />
-                  ))}
-                  {dashboard.items.length === 0 ? (
-                    <tr>
-                      <td className="px-4 py-8 text-center text-muted-foreground" colSpan={9}>
-                        Nenhuma origem encontrada para os filtros atuais.
-                      </td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
+            <div className="grid gap-3">
+              {dashboard.items.map((item) => (
+                <SupplierRow item={item} key={item.id} />
+              ))}
+              {dashboard.items.length === 0 ? (
+                <div className="rounded-lg border px-4 py-8 text-center text-sm text-muted-foreground">
+                  Nenhuma origem encontrada para os filtros atuais.
+                </div>
+              ) : null}
             </div>
           </CardContent>
         </Card>
@@ -140,12 +121,12 @@ export default async function AdminSuppliersPage({
                   <Input defaultValue={globalRule?.marginPercent ?? "35"} name="marginPercent" type="number" step="0.01" min="0" />
                 </label>
                 <label className="grid gap-1 text-sm font-semibold">
-                  Acrescimo fixo em centavos
-                  <Input defaultValue={globalRule?.marginFixedCents ?? 0} name="marginFixedCents" type="number" min="0" />
+                  Acrescimo fixo
+                  <CurrencyInput defaultValue={globalRule?.marginFixedCents ?? 0} name="marginFixed" />
                 </label>
                 <label className="grid gap-1 text-sm font-semibold">
-                  Margem minima em centavos
-                  <Input defaultValue={globalRule?.minimumMarginCents ?? 1000} name="minimumMarginCents" type="number" min="0" />
+                  Margem minima
+                  <CurrencyInput defaultValue={globalRule?.minimumMarginCents ?? 1000} name="minimumMargin" />
                 </label>
                 <label className="grid gap-1 text-sm font-semibold">
                   Arredondamento
@@ -223,63 +204,35 @@ function SupplierRow({ item }: { item: DropshippingDashboardItem }): React.React
   const sourcePriceChanged = item.suggestedPriceCents !== null && item.suggestedPriceCents !== item.storePriceCents;
 
   return (
-    <tr className="align-top">
-      <td className="max-w-[280px] px-4 py-4">
-        <Link className="font-bold text-foreground hover:text-primary" href={`/admin/produtos/${item.productId}/editar`}>
-          {item.productTitle}
-        </Link>
-        <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
-          <a className="inline-flex items-center gap-1 hover:text-primary" href={item.originalUrl} rel="noreferrer" target="_blank">
-            Origem <ExternalLink className="size-3" />
-          </a>
-          <Link className="hover:text-primary" href={`/produtos/${item.productSlug}`} target="_blank">Vitrine</Link>
-        </div>
-      </td>
-      <td className="px-4 py-4">
-        <span className="rounded-full border px-2 py-1 text-xs font-bold">{providerLabel(item.provider)}</span>
-      </td>
-      <td className="px-4 py-4">
-        <StatusPill status={item.status} />
-        <p className="mt-2 text-xs text-muted-foreground">{formatDate(item.lastCheckedAt)}</p>
-        {item.lastError ? <p className="mt-1 max-w-[220px] text-xs text-red-700">{item.lastError}</p> : null}
-      </td>
-      <td className="px-4 py-4">
-        <p className="font-bold">{formatOptionalCurrency(item.lastPriceCents)}</p>
-        <p className="text-xs text-muted-foreground">preco origem</p>
-      </td>
-      <td className="px-4 py-4">
-        <p className="font-bold">{formatOptionalCurrency(item.storePriceCents)}</p>
-        <p className="text-xs text-muted-foreground">preco loja</p>
-      </td>
-      <td className="px-4 py-4">
-        <p className={cn("font-bold", sourcePriceChanged && "text-primary")}>{formatOptionalCurrency(item.suggestedPriceCents)}</p>
-        <p className="text-xs text-muted-foreground">{item.suggestedRuleLabel ?? "sem regra"}</p>
-      </td>
-      <td className="px-4 py-4">
-        <p className="font-bold">{item.lastStockQuantity ?? "-"}</p>
-        <p className="text-xs text-muted-foreground">{item.unavailableVariantCount}/{item.variantCount} variacoes indisponiveis</p>
-      </td>
-      <td className="max-w-[260px] px-4 py-4">
-        {item.openAlerts.length ? (
-          <div className="grid gap-2">
-            {item.openAlerts.map((alert) => (
-              <form action={acknowledgeSourceAlertAction} className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-950" key={alert.id}>
-                <input name="alertId" type="hidden" value={alert.id} />
-                <p className="font-bold">{alert.type}</p>
-                <p>{alert.message}</p>
-                <button className="mt-1 text-xs font-bold text-amber-800 underline" type="submit">Marcar visto</button>
-              </form>
-            ))}
+    <article className="rounded-xl border bg-background p-4 shadow-sm">
+      <div className="grid gap-4 xl:grid-cols-[minmax(280px,1.3fr)_minmax(420px,2fr)_minmax(280px,0.9fr)]">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full border px-2 py-1 text-xs font-bold">{providerLabel(item.provider)}</span>
+            <StatusPill status={item.status} />
           </div>
-        ) : (
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
-            <CheckCircle2 className="size-4" />
-            Sem alerta aberto
-          </span>
-        )}
-      </td>
-      <td className="px-4 py-4">
-        <div className="flex justify-end gap-2">
+          <Link className="mt-3 block text-base font-black leading-snug text-foreground hover:text-primary" href={`/admin/produtos/${item.productId}/editar`}>
+            {item.productTitle}
+          </Link>
+          <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold text-muted-foreground">
+            <a className="inline-flex items-center gap-1 hover:text-primary" href={item.originalUrl} rel="noreferrer" target="_blank">
+              Abrir origem <ExternalLink className="size-3" />
+            </a>
+            <Link className="hover:text-primary" href={`/produtos/${item.productSlug}`} target="_blank">Ver vitrine</Link>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">Ultima checagem: {formatDate(item.lastCheckedAt)}</p>
+          {item.lastError ? <p className="mt-2 rounded-lg bg-red-50 p-2 text-xs leading-5 text-red-700">{item.lastError}</p> : null}
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
+          <InfoTile label="Preco origem" value={formatOptionalCurrency(item.lastPriceCents)} />
+          <InfoTile label="Preco loja" value={formatOptionalCurrency(item.storePriceCents)} />
+          <InfoTile highlight={sourcePriceChanged} label="Preco sugerido" value={formatOptionalCurrency(item.suggestedPriceCents)} detail={item.suggestedRuleLabel ?? "sem regra"} />
+          <InfoTile label="Estoque origem" value={item.lastStockQuantity ?? "-"} detail={`${item.unavailableVariantCount}/${item.variantCount} variacoes indisponiveis`} />
+        </div>
+
+        <div className="grid gap-3">
+          <div className="flex flex-wrap justify-start gap-2 xl:justify-end">
           <form action={syncDropshippingSourceAction.bind(null, item.id)}>
             <Button className="h-9" type="submit" variant="outline">
               <RefreshCw className="mr-2 size-4" />
@@ -292,25 +245,77 @@ function SupplierRow({ item }: { item: DropshippingDashboardItem }): React.React
             </Button>
           </form>
         </div>
-        <details className="mt-2 rounded-lg border bg-muted/30 p-2 text-left">
+          <AlertList item={item} />
+        </div>
+      </div>
+
+      <details className="mt-4 rounded-lg border bg-muted/30 p-3 text-left">
           <summary className="cursor-pointer text-xs font-bold text-foreground">Validacao manual</summary>
-          <form action={updateManualSourceSnapshotAction} className="mt-3 grid gap-2">
+          <form action={updateManualSourceSnapshotAction} className="mt-3 grid gap-2 md:grid-cols-[180px_160px_140px_minmax(180px,1fr)_150px]">
             <input name="sourceId" type="hidden" value={item.id} />
-            <select className="h-9 rounded-md border bg-background px-2 text-xs" defaultValue={item.status} name="status">
+            <select className="h-10 rounded-md border bg-background px-2 text-sm" defaultValue={item.status} name="status">
               {Object.values(SupplierSourceStatus).map((status) => (
                 <option key={status} value={status}>{statusLabel(status)}</option>
               ))}
             </select>
-            <div className="grid grid-cols-2 gap-2">
-              <Input className="h-9 text-xs" defaultValue={item.lastPriceCents ? (item.lastPriceCents / 100).toFixed(2).replace(".", ",") : ""} name="price" placeholder="Preco R$" />
-              <Input className="h-9 text-xs" defaultValue={item.lastStockQuantity ?? ""} name="stockQuantity" placeholder="Estoque" type="number" />
-            </div>
-            <Input className="h-9 text-xs" defaultValue={item.lastError ?? ""} name="note" placeholder="Observacao interna" />
-            <Button className="h-9 text-xs" type="submit" variant="outline">Salvar validacao</Button>
+            <CurrencyInput defaultValue={item.lastPriceCents ?? 0} name="price" placeholder="Preco fornecedor" />
+            <Input className="h-10 text-sm" defaultValue={item.lastStockQuantity ?? ""} name="stockQuantity" placeholder="Estoque" type="number" />
+            <Input className="h-10 text-sm" defaultValue={item.lastError ?? ""} name="note" placeholder="Observacao interna" />
+            <Button className="h-10 text-sm" type="submit" variant="outline">Salvar</Button>
           </form>
         </details>
-      </td>
-    </tr>
+    </article>
+  );
+}
+
+function InfoTile({ detail, highlight = false, label, value }: { detail?: string; highlight?: boolean; label: string; value: React.ReactNode }): React.ReactElement {
+  return (
+    <div className={cn("min-w-0 rounded-lg border bg-muted/30 p-3", highlight && "border-primary/40 bg-primary/10")}>
+      <p className="text-[11px] font-black uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={cn("mt-1 break-words text-base font-black text-foreground", highlight && "text-primary")}>{value}</p>
+      {detail ? <p className="mt-1 text-xs leading-5 text-muted-foreground">{detail}</p> : null}
+    </div>
+  );
+}
+
+function AlertList({ item }: { item: DropshippingDashboardItem }): React.ReactElement {
+  if (!item.openAlerts.length) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
+        <CheckCircle2 className="size-4" />
+        Sem alerta aberto
+      </span>
+    );
+  }
+
+  return (
+    <div className="grid gap-2">
+      {item.openAlerts.map((alert) => (
+        <form action={acknowledgeSourceAlertAction} className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-950" key={alert.id}>
+          <input name="alertId" type="hidden" value={alert.id} />
+          <p className="font-bold">{alert.type}</p>
+          <p className="leading-5">{alert.message}</p>
+          <button className="mt-1 text-xs font-bold text-amber-800 underline" type="submit">Marcar visto</button>
+        </form>
+      ))}
+    </div>
+  );
+}
+
+function CurrencyInput({
+  defaultValue,
+  name,
+  placeholder = "R$ 0,00"
+}: {
+  defaultValue: number;
+  name: string;
+  placeholder?: string;
+}): React.ReactElement {
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute left-3 top-2.5 text-sm font-bold text-muted-foreground">R$</span>
+      <Input className="h-10 pl-9 text-sm" defaultValue={formatCurrencyInput(defaultValue)} inputMode="decimal" name={name} placeholder={placeholder} />
+    </div>
   );
 }
 
@@ -395,4 +400,12 @@ function formatDate(value: Date | null): string {
     dateStyle: "short",
     timeStyle: "short"
   }).format(value);
+}
+
+function formatCurrencyInput(value: number): string {
+  if (!value) {
+    return "";
+  }
+
+  return (value / 100).toFixed(2).replace(".", ",");
 }

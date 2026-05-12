@@ -24,9 +24,9 @@ const manualSnapshotSchema = z.object({
   stockQuantity: z.string().trim().optional()
 });
 const pricingFormSchema = z.object({
-  marginFixedCents: z.coerce.number().int().min(0).max(100_000),
+  marginFixed: z.string().trim().optional(),
   marginPercent: z.coerce.number().min(0).max(500),
-  minimumMarginCents: z.coerce.number().int().min(0).max(100_000),
+  minimumMargin: z.string().trim().optional(),
   roundingMode: z.nativeEnum(PricingRoundingMode)
 });
 
@@ -94,9 +94,9 @@ export async function updateGlobalPricingRuleAction(formData: FormData): Promise
   await requireAdmin();
 
   const parsed = pricingFormSchema.safeParse({
-    marginFixedCents: formData.get("marginFixedCents"),
+    marginFixed: formData.get("marginFixed"),
     marginPercent: formData.get("marginPercent"),
-    minimumMarginCents: formData.get("minimumMarginCents"),
+    minimumMargin: formData.get("minimumMargin"),
     roundingMode: formData.get("roundingMode")
   });
 
@@ -104,19 +104,22 @@ export async function updateGlobalPricingRuleAction(formData: FormData): Promise
     throw new Error(parsed.error.issues[0]?.message ?? "Regra de margem invalida.");
   }
 
+  const marginFixedCents = parseCurrencyToCents(parsed.data.marginFixed) ?? 0;
+  const minimumMarginCents = parseCurrencyToCents(parsed.data.minimumMargin) ?? 0;
+
   await prisma.pricingRule.upsert({
     create: {
       id: "pricing_global_default",
       scope: "GLOBAL",
       marginPercent: parsed.data.marginPercent,
-      marginFixedCents: parsed.data.marginFixedCents,
-      minimumMarginCents: parsed.data.minimumMarginCents,
+      marginFixedCents,
+      minimumMarginCents,
       roundingMode: parsed.data.roundingMode
     },
     update: {
       marginPercent: parsed.data.marginPercent,
-      marginFixedCents: parsed.data.marginFixedCents,
-      minimumMarginCents: parsed.data.minimumMarginCents,
+      marginFixedCents,
+      minimumMarginCents,
       roundingMode: parsed.data.roundingMode
     },
     where: { id: "pricing_global_default" }

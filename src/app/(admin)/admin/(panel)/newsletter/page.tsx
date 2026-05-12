@@ -1,4 +1,4 @@
-import { Megaphone, MailCheck, MailX, Send, UsersRound } from "lucide-react";
+import { BarChart3, Eye, Link2, Megaphone, MailCheck, MailX, Send, UsersRound } from "lucide-react";
 import Link from "next/link";
 
 import { createNewsletterCampaign, sendNewsletterCampaign, setNewsletterSubscriberStatus } from "@/actions/newsletter";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { getAdminNewsletterDashboard, type AdminNewsletterFilters } from "@/lib/admin/newsletter";
 import { formatDateTime } from "@/lib/format";
+import { getNewsletterAudienceLabel, newsletterAudienceOptions } from "@/lib/newsletter/audience";
 
 export const dynamic = "force-dynamic";
 
@@ -34,11 +35,34 @@ export default async function AdminNewsletterPage({
         </Button>
       </div>
 
-      <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
         <MetricCard icon={MailCheck} label="Ativos" value={dashboard.activeCount.toString()} />
         <MetricCard icon={MailX} label="Inativos" value={dashboard.inactiveCount.toString()} />
         <MetricCard icon={Megaphone} label="Campanhas enviadas" value={dashboard.sentCampaignCount.toString()} />
         <MetricCard icon={Send} label="Falhas registradas" value={dashboard.failedDeliveryCount.toString()} />
+        <MetricCard icon={Eye} label="Aberturas rastreadas" value={dashboard.openedDeliveryCount.toString()} />
+        <MetricCard icon={Link2} label="Cliques rastreados" value={dashboard.clickedDeliveryCount.toString()} />
+      </section>
+
+      <section className="mt-6 rounded-lg border border-primary/20 bg-card p-5 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-black uppercase text-primary">Segmentação</p>
+            <h2 className="mt-1 text-2xl font-black tracking-normal">Públicos prontos para campanha</h2>
+            <p className="mt-2 max-w-3xl text-pretty text-sm text-muted-foreground">
+              Escolha o público no formulário e use campanhas mais direcionadas: compra, inatividade, saldo NerdCoins ou resgate disponível.
+            </p>
+          </div>
+          <BarChart3 className="size-6 text-primary" />
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {dashboard.audienceSummaries.map((audience) => (
+            <div className="rounded-lg border bg-background p-4" key={audience.value}>
+              <p className="text-sm font-semibold text-muted-foreground">{audience.label}</p>
+              <p className="mt-1 text-3xl font-black tabular-nums">{audience.count}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
@@ -64,6 +88,16 @@ export default async function AdminNewsletterPage({
                 <TextField label="Nome interno" name="name" placeholder="Semana Anime Maio" />
                 <TextField label="Assunto do e-mail" name="subject" placeholder="Novidades geek chegaram" />
               </div>
+              <label className="grid gap-2 text-sm font-medium">
+                Público
+                <select className="h-10 rounded-md border bg-background px-3 text-sm" defaultValue="ACTIVE_SUBSCRIBERS" name="audience">
+                  {newsletterAudienceOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <div className="grid gap-3 md:grid-cols-2">
                 <TextField label="Etiqueta" name="eyebrow" placeholder="Oferta especial" />
                 <TextField label="Prévia da caixa de entrada" name="previewText" placeholder="Produtos, cupons e NerdCoins em destaque." />
@@ -140,6 +174,11 @@ export default async function AdminNewsletterPage({
                     Criada em {formatDateTime(campaign.createdAt)}
                     {campaign.sentAt ? ` · enviada em ${formatDateTime(campaign.sentAt)}` : ""}
                   </p>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <SmallMetric label="Público" value={getNewsletterAudienceLabel(campaign.audience)} />
+                    <SmallMetric label="Aberturas" value={campaign.openCount.toString()} />
+                    <SmallMetric label="Cliques" value={campaign.clickCount.toString()} />
+                  </div>
                   <p className="rounded-lg border bg-muted/20 p-3 text-muted-foreground">{campaign.body}</p>
                   <div className="grid gap-2">
                     {campaign.deliveries.map((delivery) => (
@@ -240,6 +279,15 @@ function MetricCard({
         <CardTitle>{value}</CardTitle>
       </CardHeader>
     </Card>
+  );
+}
+
+function SmallMetric({ label, value }: { label: string; value: string }): React.ReactElement {
+  return (
+    <div className="rounded-lg border bg-muted/20 p-3">
+      <p className="text-xs font-semibold uppercase text-muted-foreground">{label}</p>
+      <p className="mt-1 truncate text-sm font-black">{value}</p>
+    </div>
   );
 }
 

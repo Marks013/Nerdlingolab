@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getNewsletterAudienceSummaries } from "@/lib/newsletter/audience";
 
 export interface AdminNewsletterFilters {
   query?: string;
@@ -19,11 +20,23 @@ export async function getAdminNewsletterDashboard(filters: AdminNewsletterFilter
       : {})
   };
 
-  const [activeCount, inactiveCount, sentCampaignCount, failedDeliveryCount, subscribers, campaigns] = await Promise.all([
+  const [
+    activeCount,
+    inactiveCount,
+    sentCampaignCount,
+    failedDeliveryCount,
+    openedDeliveryCount,
+    clickedDeliveryCount,
+    subscribers,
+    campaigns,
+    audienceSummaries
+  ] = await Promise.all([
     prisma.newsletterSubscriber.count({ where: { isActive: true } }),
     prisma.newsletterSubscriber.count({ where: { isActive: false } }),
     prisma.newsletterCampaign.count({ where: { status: { in: ["SENT", "SENT_WITH_ERRORS"] } } }),
     prisma.newsletterCampaignDelivery.count({ where: { status: "FAILED" } }),
+    prisma.newsletterCampaignDelivery.count({ where: { openedAt: { not: null } } }),
+    prisma.newsletterCampaignDelivery.count({ where: { clickedAt: { not: null } } }),
     prisma.newsletterSubscriber.findMany({
       orderBy: { createdAt: "desc" },
       take: 150,
@@ -38,14 +51,18 @@ export async function getAdminNewsletterDashboard(filters: AdminNewsletterFilter
       },
       orderBy: { createdAt: "desc" },
       take: 12
-    })
+    }),
+    getNewsletterAudienceSummaries()
   ]);
 
   return {
     activeCount,
+    audienceSummaries,
     campaigns,
+    clickedDeliveryCount,
     failedDeliveryCount,
     inactiveCount,
+    openedDeliveryCount,
     sentCampaignCount,
     subscribers
   };

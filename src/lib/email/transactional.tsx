@@ -466,6 +466,7 @@ export async function sendNewsletterCampaignEmail({
   body,
   ctaHref,
   ctaLabel,
+  deliveryId,
   email,
   eyebrow,
   previewText,
@@ -475,6 +476,7 @@ export async function sendNewsletterCampaignEmail({
   body: string;
   ctaHref?: string | null;
   ctaLabel?: string | null;
+  deliveryId?: string | null;
   email: string;
   eyebrow?: string | null;
   previewText?: string | null;
@@ -486,18 +488,25 @@ export async function sendNewsletterCampaignEmail({
   }
 
   try {
-    const unsubscribeUrl = `${getEmailBaseUrl()}/newsletter/descadastrar?token=${encodeURIComponent(unsubscribeToken)}`;
+    const baseUrl = getEmailBaseUrl();
+    const unsubscribeUrl = `${baseUrl}/newsletter/descadastrar?token=${encodeURIComponent(unsubscribeToken)}`;
     const resolvedCtaHref = ctaHref?.trim()
       ? resolveEmailHref(ctaHref.trim())
-      : `${getEmailBaseUrl()}/produtos`;
+      : `${baseUrl}/produtos`;
+    const trackedCtaHref = deliveryId
+      ? `${baseUrl}/api/newsletter/click/${encodeURIComponent(deliveryId)}?to=${encodeURIComponent(resolvedCtaHref)}`
+      : resolvedCtaHref;
+    const trackingPixelHtml = deliveryId
+      ? `<img src="${baseUrl}/api/newsletter/open/${encodeURIComponent(deliveryId)}" width="1" height="1" alt="" style="display:block;border:0;outline:none;width:1px;height:1px;opacity:0;" />`
+      : "";
     const html = buildBrandedEmailHtml({
       cta: {
-        href: resolvedCtaHref,
+        href: trackedCtaHref,
         label: ctaLabel?.trim() || "Ver novidades"
       },
       eyebrow: eyebrow?.trim() || "Newsletter NerdLingoLab",
       footerNote: `Você recebeu este e-mail porque se cadastrou na newsletter da NerdLingoLab. Para sair da lista, acesse: ${unsubscribeUrl}`,
-      introHtml: `<p style="margin:0;">${formatMultilineText(body)}</p>`,
+      introHtml: `<p style="margin:0;">${formatMultilineText(body)}</p>${trackingPixelHtml}`,
       preheader: previewText?.trim() || subject,
       sections: [
         {

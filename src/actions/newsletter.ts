@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { requireAdmin } from "@/lib/admin";
 import { sendNewsletterCampaignEmail } from "@/lib/email/transactional";
+import { getNewsletterAudienceSubscribers, isNewsletterAudience } from "@/lib/newsletter/audience";
 import { prisma } from "@/lib/prisma";
 
 export interface NewsletterState {
@@ -25,6 +26,7 @@ const campaignSchema = z.object({
   eyebrow: z.string().trim().max(60).optional(),
   name: z.string().trim().min(3).max(80),
   previewText: z.string().trim().max(160).optional(),
+  audience: z.string().trim().refine((value) => isNewsletterAudience(value), "Escolha um público válido."),
   sendNow: z.boolean(),
   subject: z.string().trim().min(5).max(120)
 });
@@ -96,6 +98,7 @@ export async function createNewsletterCampaign(formData: FormData): Promise<void
     eyebrow: normalizeOptionalFormText(formData.get("eyebrow")),
     name: formData.get("name"),
     previewText: normalizeOptionalFormText(formData.get("previewText")),
+    audience: formData.get("audience") || "ACTIVE_SUBSCRIBERS",
     sendNow: formData.get("sendNow") === "on",
     subject: formData.get("subject")
   });
@@ -138,10 +141,7 @@ export async function sendNewsletterCampaign(campaignId: string): Promise<void> 
     throw new Error("Esta campanha já foi enviada.");
   }
 
-  const subscribers = await prisma.newsletterSubscriber.findMany({
-    orderBy: { createdAt: "desc" },
-    where: { isActive: true }
-  });
+  const subscribers = await getNewsletterAudienceSubscribers(campaign.audience);
   let sentCount = 0;
   let failedCount = 0;
 
@@ -154,10 +154,30 @@ export async function sendNewsletterCampaign(campaignId: string): Promise<void> 
   });
 
   for (const subscriber of subscribers) {
+    const pendingDelivery = await prisma.newsletterCampaignDelivery.upsert({
+      where: {
+        campaignId_subscriberId: {
+          campaignId: campaign.id,
+          subscriberId: subscriber.id
+        }
+      },
+      create: {
+        campaignId: campaign.id,
+        email: subscriber.email,
+        status: "PENDING",
+        subscriberId: subscriber.id
+      },
+      update: {
+        email: subscriber.email,
+        errorMessage: null,
+        status: "PENDING"
+      }
+    });
     const result = await sendNewsletterCampaignEmail({
       body: campaign.body,
       ctaHref: campaign.ctaHref,
       ctaLabel: campaign.ctaLabel,
+      deliveryId: pendingDelivery.id,
       email: subscriber.email,
       eyebrow: campaign.eyebrow,
       previewText: campaign.previewText,

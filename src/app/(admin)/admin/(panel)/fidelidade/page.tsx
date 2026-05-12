@@ -4,8 +4,11 @@ import Link from "next/link";
 import {
   adjustCustomerNerdcoins,
   backfillReferralCodes,
+  createLoyaltyCampaign,
   expireEligibleNerdcoins,
   grantBirthdayNerdcoins,
+  notifyExpiringNerdcoins,
+  updateLoyaltyCampaign,
   updateLoyaltySettings
 } from "@/actions/loyalty";
 import { AdminFeedbackForm } from "@/components/admin/admin-feedback-form";
@@ -33,6 +36,10 @@ export default async function AdminLoyaltyPage({
   const settings = dashboard.settings;
   const routine = readSearchParam(resolvedSearchParams?.routine);
   const routineCount = readSearchParam(resolvedSearchParams?.count) ?? "0";
+  const potentialDiscountCents = dashboard.pointsInCirculation * settings.redeemCentsPerPoint;
+  const redemptionRate = dashboard.pointsEarned > 0
+    ? Math.round((dashboard.pointsRedeemed / dashboard.pointsEarned) * 100)
+    : 0;
 
   return (
     <main className="mx-auto w-full max-w-7xl overflow-x-hidden px-4 py-8 sm:px-6 lg:px-8">
@@ -60,6 +67,16 @@ export default async function AdminLoyaltyPage({
         <MetricCard icon={Award} label="Indicações recompensadas" value={dashboard.referralsRewarded.toString()} />
         <MetricCard icon={UserRoundPlus} label="Clientes sem código" value={dashboard.customersWithoutReferralCode.toString()} />
       </section>
+      <section className="mt-4 grid gap-4 md:grid-cols-3">
+        <MetricCard icon={Coins} label="Pontos em circulação" value={dashboard.pointsInCirculation.toString()} />
+        <MetricCard icon={TicketPercent} label="Desconto potencial" value={formatCurrency(potentialDiscountCents)} />
+        <MetricCard icon={Hourglass} label="Taxa de resgate" value={`${redemptionRate}%`} />
+      </section>
+      <section className="mt-4 grid gap-4 md:grid-cols-3">
+        <MetricCard icon={UserRoundPlus} label="Membros ativos 30 dias" value={dashboard.activeMemberCount30d.toString()} />
+        <MetricCard icon={TicketPercent} label="Pedidos com resgate" value={dashboard.couponConversionOrders.toString()} />
+        <MetricCard icon={Award} label="Campanhas ativas" value={dashboard.campaigns.filter((campaign) => campaign.isActive).length.toString()} />
+      </section>
 
       <section className="mt-6 grid min-w-0 gap-6 2xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
         <Card className="min-w-0">
@@ -85,8 +102,8 @@ export default async function AdminLoyaltyPage({
                 <NumberField defaultValue={settings.birthdayBonusPoints} label="Bonus de aniversario" name="birthdayBonusPoints" />
                 <NumberField defaultValue={settings.referralInviterBonusPoints} label="Bonus para quem indica" name="referralInviterBonusPoints" />
                 <NumberField defaultValue={settings.referralInviteeBonusPoints} label="Bonus para convidado" name="referralInviteeBonusPoints" />
-                <NumberField defaultValue={settings.referralMinOrderCents} label="Pedido minimo indicado" name="referralMinOrderCents" />
-                <NumberField defaultValue={settings.redeemCentsPerPoint} label="Centavos por ponto" name="redeemCentsPerPoint" />
+                <MoneyField defaultValue={settings.referralMinOrderCents} label="Pedido mínimo indicado (R$)" name="referralMinOrderCents" />
+                <MoneyField defaultValue={settings.redeemCentsPerPoint} label="Valor de cada ponto (R$)" name="redeemCentsPerPoint" />
                 <NumberField defaultValue={settings.minRedeemPoints} label="Minimo de resgate" name="minRedeemPoints" />
                 <NumberField defaultValue={settings.maxRedeemPoints ?? ""} label="Maximo por resgate" name="maxRedeemPoints" />
                 <NumberField defaultValue={settings.couponExpiresInDays} label="Validade do cupom" name="couponExpiresInDays" />
@@ -96,13 +113,13 @@ export default async function AdminLoyaltyPage({
                 <p className="text-sm font-semibold">Niveis VIP</p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <NumberField defaultValue={settings.chuninOrderThreshold} label="Chunin pedidos" name="chuninOrderThreshold" />
-                  <NumberField defaultValue={settings.chuninSpendThresholdCents} label="Chunin gasto em centavos" name="chuninSpendThresholdCents" />
+                  <MoneyField defaultValue={settings.chuninSpendThresholdCents} label="Chunin gasto (R$)" name="chuninSpendThresholdCents" />
                   <NumberField defaultValue={settings.chuninMultiplier} label="Chunin bonus %" name="chuninMultiplier" />
                   <NumberField defaultValue={settings.joninOrderThreshold} label="Jonin pedidos" name="joninOrderThreshold" />
-                  <NumberField defaultValue={settings.joninSpendThresholdCents} label="Jonin gasto em centavos" name="joninSpendThresholdCents" />
+                  <MoneyField defaultValue={settings.joninSpendThresholdCents} label="Jonin gasto (R$)" name="joninSpendThresholdCents" />
                   <NumberField defaultValue={settings.joninMultiplier} label="Jonin bonus %" name="joninMultiplier" />
                   <NumberField defaultValue={settings.hokageOrderThreshold} label="Hokage pedidos" name="hokageOrderThreshold" />
-                  <NumberField defaultValue={settings.hokageSpendThresholdCents} label="Hokage gasto em centavos" name="hokageSpendThresholdCents" />
+                  <MoneyField defaultValue={settings.hokageSpendThresholdCents} label="Hokage gasto (R$)" name="hokageSpendThresholdCents" />
                   <NumberField defaultValue={settings.hokageMultiplier} label="Hokage bonus %" name="hokageMultiplier" />
                 </div>
               </div>
@@ -124,10 +141,88 @@ export default async function AdminLoyaltyPage({
               <CardTitle>Rotinas do programa</CardTitle>
               <CardDescription>Processos idempotentes com retorno de conclusão no painel.</CardDescription>
             </CardHeader>
-            <CardContent className="grid min-w-0 gap-3 sm:grid-cols-3">
+            <CardContent className="grid min-w-0 gap-3 sm:grid-cols-4">
               <RoutineButton action={grantBirthdayNerdcoins} icon={CalendarDays} label="Aniversários de hoje" />
               <RoutineButton action={expireEligibleNerdcoins} icon={Hourglass} label="Expirar pontos vencidos" />
+              <RoutineButton action={notifyExpiringNerdcoins} icon={Hourglass} label="Avisar pontos vencendo" />
               <RoutineButton action={backfillReferralCodes} icon={UserRoundPlus} label="Gerar códigos faltantes" />
+            </CardContent>
+          </Card>
+
+          <Card className="min-w-0">
+            <CardHeader>
+              <CardTitle>Campanhas temporárias</CardTitle>
+              <CardDescription>Pontos em dobro, bônus por categoria, tags ou ações sazonais.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <AdminFeedbackForm
+                action={createLoyaltyCampaign}
+                className="grid gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4"
+                savedLabel="Campanha criada"
+                submitLabel="Criar campanha"
+                successMessage="Campanha de NerdCoins criada."
+              >
+                <div className="grid gap-3 md:grid-cols-2">
+                  <TextField label="Nome da campanha" name="name" placeholder="Semana Anime em dobro" />
+                  <NumberField defaultValue={200} label="Multiplicador %" name="pointsMultiplier" />
+                  <NumberField defaultValue={0} label="Bônus fixo de pontos" name="bonusPoints" />
+                  <MoneyField defaultValue="" label="Pedido mínimo (R$)" name="minSubtotalCents" />
+                  <DateTimeField label="Início" name="startsAt" />
+                  <DateTimeField label="Fim" name="endsAt" />
+                </div>
+                <TextField label="Descrição curta" name="description" placeholder="Pontos extras em produtos selecionados." />
+                <TextField label="Tags de produto" name="productTags" placeholder="anime, black friday, geek" />
+                <CategorySelect categories={dashboard.categories} selectedIds={[]} />
+                <div className="flex flex-wrap gap-4">
+                  <CheckboxField defaultChecked label="Campanha ativa" name="isActive" />
+                  <CheckboxField defaultChecked label="Mostrar na loja" name="showOnStorefront" />
+                </div>
+              </AdminFeedbackForm>
+
+              <div className="grid gap-3">
+                {dashboard.campaigns.map((campaign) => (
+                  <details className="rounded-lg border bg-background" key={campaign.id}>
+                    <summary className="grid cursor-pointer list-none gap-2 p-4 md:grid-cols-[1fr_120px_160px] md:items-center">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold">{campaign.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {campaign.pointsMultiplier}% dos pontos{campaign.bonusPoints > 0 ? ` + ${campaign.bonusPoints} fixos` : ""}
+                        </p>
+                      </div>
+                      <StatusPill>{campaign.isActive ? "Ativa" : "Pausada"}</StatusPill>
+                      <span className="text-sm text-muted-foreground md:text-right">
+                        {campaign.endsAt ? `até ${formatDateTime(campaign.endsAt)}` : "sem fim"}
+                      </span>
+                    </summary>
+                    <form action={updateLoyaltyCampaign} className="grid gap-3 border-t p-4">
+                      <input name="campaignId" type="hidden" value={campaign.id} />
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <TextField defaultValue={campaign.name} label="Nome da campanha" name="name" />
+                        <NumberField defaultValue={campaign.pointsMultiplier} label="Multiplicador %" name="pointsMultiplier" />
+                        <NumberField defaultValue={campaign.bonusPoints} label="Bônus fixo de pontos" name="bonusPoints" />
+                        <MoneyField defaultValue={campaign.minSubtotalCents ?? ""} label="Pedido mínimo (R$)" name="minSubtotalCents" />
+                        <DateTimeField defaultValue={formatDateForInput(campaign.startsAt)} label="Início" name="startsAt" />
+                        <DateTimeField defaultValue={formatDateForInput(campaign.endsAt)} label="Fim" name="endsAt" />
+                      </div>
+                      <TextField defaultValue={campaign.description ?? ""} label="Descrição curta" name="description" />
+                      <TextField defaultValue={campaign.productTags.join(", ")} label="Tags de produto" name="productTags" />
+                      <CategorySelect categories={dashboard.categories} selectedIds={campaign.categoryIds} />
+                      <div className="flex flex-wrap gap-4">
+                        <CheckboxField defaultChecked={campaign.isActive} label="Campanha ativa" name="isActive" />
+                        <CheckboxField defaultChecked={campaign.showOnStorefront} label="Mostrar na loja" name="showOnStorefront" />
+                      </div>
+                      <Button className="w-fit bg-emerald-600 text-white hover:bg-emerald-700" type="submit">
+                        Salvar campanha
+                      </Button>
+                    </form>
+                  </details>
+                ))}
+                {dashboard.campaigns.length === 0 ? (
+                  <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                    Nenhuma campanha criada ainda.
+                  </p>
+                ) : null}
+              </div>
             </CardContent>
           </Card>
 
@@ -178,7 +273,7 @@ export default async function AdminLoyaltyPage({
         </div>
       </section>
 
-      <section className="mt-6 grid gap-6 xl:grid-cols-2">
+      <section className="mt-6 grid gap-6 xl:grid-cols-4">
         <Card>
           <CardHeader>
             <CardTitle>Indicacoes recentes</CardTitle>
@@ -201,6 +296,56 @@ export default async function AdminLoyaltyPage({
                 </div>
               ))}
               {dashboard.recentReferrals.length === 0 ? <EmptyRow>Nenhuma indicacao registrada ainda.</EmptyRow> : null}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Cupons pessoais recentes</CardTitle>
+            <CardDescription>Cupons gerados por NerdCoins, com dono, valor e validade.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y rounded-lg border">
+              {dashboard.generatedCoupons.map((coupon) => (
+                <div className="grid gap-1 p-3 text-sm" key={coupon.id}>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-mono font-semibold">{coupon.code}</p>
+                    <p className="font-black text-primary">{formatCurrency(coupon.value)}</p>
+                  </div>
+                  <p className="truncate text-muted-foreground">
+                    {coupon.assignedUser?.name ?? coupon.assignedUser?.email ?? "Cliente não vinculado"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {coupon.usedCount > 0 ? "Usado" : coupon.expiresAt ? `Expira ${formatDateTime(coupon.expiresAt)}` : "Sem validade"}
+                  </p>
+                </div>
+              ))}
+              {dashboard.generatedCoupons.length === 0 ? <EmptyRow>Nenhum cupom pessoal gerado ainda.</EmptyRow> : null}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Alertas enviados</CardTitle>
+            <CardDescription>Histórico de notificações do programa para evitar duplicidade.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y rounded-lg border">
+              {dashboard.notifications.map((notification) => (
+                <div className="grid gap-1 p-3 text-sm" key={notification.id}>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-semibold">{notification.type}</p>
+                    <StatusPill>{notification.status}</StatusPill>
+                  </div>
+                  <p className="truncate text-muted-foreground">
+                    {notification.user?.name ?? notification.user?.email ?? notification.email ?? "Cliente não vinculado"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{formatDateTime(notification.sentAt)}</p>
+                </div>
+              ))}
+              {dashboard.notifications.length === 0 ? <EmptyRow>Nenhum alerta enviado ainda.</EmptyRow> : null}
             </div>
           </CardContent>
         </Card>
@@ -375,6 +520,133 @@ function NumberField({
   );
 }
 
+function TextField({
+  defaultValue = "",
+  label,
+  name,
+  placeholder
+}: {
+  defaultValue?: string;
+  label: string;
+  name: string;
+  placeholder?: string;
+}): React.ReactElement {
+  return (
+    <label className="grid gap-2 text-sm font-medium">
+      {label}
+      <Input defaultValue={defaultValue} name={name} placeholder={placeholder} />
+    </label>
+  );
+}
+
+function MoneyField({
+  defaultValue,
+  label,
+  name
+}: {
+  defaultValue: number | string;
+  label: string;
+  name: string;
+}): React.ReactElement {
+  return (
+    <label className="grid gap-2 text-sm font-medium">
+      {label}
+      <Input
+        defaultValue={formatMoneyInput(defaultValue)}
+        inputMode="decimal"
+        min={0}
+        name={name}
+        placeholder="0,00"
+        type="text"
+      />
+    </label>
+  );
+}
+
+function DateTimeField({
+  defaultValue = "",
+  label,
+  name
+}: {
+  defaultValue?: string;
+  label: string;
+  name: string;
+}): React.ReactElement {
+  return (
+    <label className="grid gap-2 text-sm font-medium">
+      {label}
+      <Input defaultValue={defaultValue} name={name} type="datetime-local" />
+    </label>
+  );
+}
+
+function CheckboxField({
+  defaultChecked = false,
+  label,
+  name
+}: {
+  defaultChecked?: boolean;
+  label: string;
+  name: string;
+}): React.ReactElement {
+  return (
+    <label className="inline-flex items-center gap-2 text-sm font-medium">
+      <input defaultChecked={defaultChecked} name={name} type="checkbox" />
+      {label}
+    </label>
+  );
+}
+
+function CategorySelect({
+  categories,
+  selectedIds
+}: {
+  categories: Array<{ id: string; name: string }>;
+  selectedIds: string[];
+}): React.ReactElement {
+  return (
+    <label className="grid gap-2 text-sm font-medium">
+      Categorias elegíveis
+      <select
+        className="min-h-32 rounded-md border bg-background px-3 py-2 text-sm"
+        defaultValue={selectedIds}
+        multiple
+        name="categoryIds"
+      >
+        {categories.map((category) => (
+          <option key={category.id} value={category.id}>
+            {category.name}
+          </option>
+        ))}
+      </select>
+      <span className="text-xs text-muted-foreground">
+        Sem categoria e sem tag significa campanha global.
+      </span>
+    </label>
+  );
+}
+
+function formatMoneyInput(value: number | string): string {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return (value / 100).toLocaleString("pt-BR", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2
+  });
+}
+
+function formatDateForInput(date: Date | null): string {
+  if (!date) {
+    return "";
+  }
+
+  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+
+  return offsetDate.toISOString().slice(0, 16);
+}
+
 function Panel({ children, title }: { children: React.ReactNode; title: string }): React.ReactElement {
   return (
     <section className="grid content-start gap-3 rounded-lg border bg-muted/20 p-4 xl:first:col-span-1 xl:last:col-span-3">
@@ -421,6 +693,7 @@ function formatRoutineMessage(routine: string, count: string): string {
   const labels: Record<string, string> = {
     birthday: `Rotina de aniversários concluída. ${count} crédito(s) processado(s).`,
     expire: `Rotina de expiração concluída. ${count} lote(s) vencido(s) processado(s).`,
+    expiring: `Rotina de aviso de vencimento concluída. ${count} alerta(s) processado(s).`,
     referrals: `Rotina de códigos de indicação concluída. ${count} código(s) gerado(s).`
   };
 

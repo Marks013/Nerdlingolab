@@ -241,10 +241,10 @@ export function ShopHeader({
                     ) : null}
                     {link.label}
                   </Link>
-                  {link.href === "/favoritos" && isAuthenticated && nerdcoinsBalance !== null ? (
+                  {link.href === "/favoritos" ? (
                     <Link
                       className={headerActionClass}
-                      href="/conta/nerdcoins"
+                      href={isAuthenticated ? "/conta/nerdcoins" : "/programa-de-fidelidade"}
                     >
                       <span className="relative h-6 w-6 overflow-hidden rounded-md">
                         <Image
@@ -256,9 +256,11 @@ export function ShopHeader({
                         />
                       </span>
                       NerdCoins
-                      <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[#111827] px-1.5 text-[10px] font-black leading-none text-white">
-                        {nerdcoinsBalance > 9999 ? "9999+" : nerdcoinsBalance}
-                      </span>
+                      {isAuthenticated && nerdcoinsBalance !== null ? (
+                        <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[#111827] px-1.5 text-[10px] font-black leading-none text-white">
+                          {nerdcoinsBalance > 9999 ? "9999+" : nerdcoinsBalance}
+                        </span>
+                      ) : null}
                     </Link>
                   ) : null}
                 </Fragment>

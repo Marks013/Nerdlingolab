@@ -17,6 +17,7 @@ import {
   getEmailBaseUrl
 } from "@/lib/email/branded-template";
 import { formatCurrency, formatDateTime } from "@/lib/format";
+import { loyaltyTierLabels } from "@/lib/loyalty/settings";
 import { getAdminOrderById } from "@/lib/orders/queries";
 import type { PasswordResetToken } from "@/lib/password-reset";
 import { getAppBaseUrl } from "@/lib/password-reset";
@@ -57,6 +58,207 @@ export async function sendOrderPaidEmail(orderId: string): Promise<void> {
     orderId,
     subjectPrefix: "Pagamento aprovado"
   });
+}
+
+export async function sendLoyaltyOrderEarnedEmail(orderId: string): Promise<void> {
+  if (!resend) {
+    return;
+  }
+
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        loyaltyLedger: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          where: { idempotencyKey: `loyalty:earn:${orderId}` }
+        },
+        user: {
+          include: {
+            loyaltyPoints: true
+          }
+        }
+      }
+    });
+
+    if (!order?.user || order.loyaltyPointsEarned <= 0) {
+      return;
+    }
+
+    const customerName = order.user.name ?? order.email;
+    const tierAfter = order.loyaltyLedger[0]?.tierAfter ?? order.user.loyaltyPoints?.tier ?? null;
+    const tierBefore = order.loyaltyLedger[0]?.tierBefore ?? tierAfter;
+    const changedTier = tierAfter && tierBefore && tierAfter !== tierBefore;
+    const accountUrl = `${getEmailBaseUrl()}/conta/nerdcoins`;
+    const html = buildBrandedEmailHtml({
+      cta: {
+        href: accountUrl,
+        label: "Ver meus NerdCoins"
+      },
+      eyebrow: changedTier ? "Nível NerdCoins atualizado" : "NerdCoins liberados",
+      footerNote: "Os pontos aparecem no histórico da sua conta e podem ser convertidos em cupom quando atingirem o mínimo configurado.",
+      introHtml: `
+        <p style="margin:0 0 10px;">Olá, ${escapeHtml(customerName)}.</p>
+        <p style="margin:0;">Seu pedido ${escapeHtml(order.orderNumber)} foi aprovado e rendeu <strong>${order.loyaltyPointsEarned} NerdCoins</strong>.</p>
+      `,
+      preheader: `Você ganhou ${order.loyaltyPointsEarned} NerdCoins no pedido ${order.orderNumber}.`,
+      sections: [
+        {
+          html: buildInfoGrid([
+            { label: "Pedido", value: order.orderNumber },
+            { label: "NerdCoins ganhos", value: String(order.loyaltyPointsEarned) },
+            { label: "Saldo atual", value: `${order.user.loyaltyPoints?.balance ?? order.loyaltyPointsEarned} NerdCoins` },
+            { label: "Nível atual", value: tierAfter ? loyaltyTierLabels[tierAfter] : "Genin" }
+          ]),
+          title: "Resumo da recompensa"
+        },
+        ...(changedTier && tierAfter
+          ? [{
+              html: buildNoticeHtml(`Você subiu para o nível ${loyaltyTierLabels[tierAfter]}. As próximas compras podem render ainda mais pontos conforme a configuração ativa do programa.`),
+              title: "Novo nível liberado"
+            }]
+          : [])
+      ],
+      title: changedTier ? "Sua conta subiu de nível" : "Você ganhou NerdCoins"
+    });
+
+    await resend.emails.send({
+      from: emailFrom,
+      html,
+      subject: `${order.loyaltyPointsEarned} NerdCoins liberados · ${order.orderNumber}`,
+      to: order.email
+    });
+  } catch (error) {
+    Sentry.captureException(error);
+  }
+}
+
+export async function sendLoyaltyCouponGeneratedEmail({
+  couponCode,
+  expiresAt,
+  userId,
+  valueCents
+}: {
+  couponCode: string;
+  expiresAt: Date;
+  userId: string;
+  valueCents: number;
+}): Promise<void> {
+  if (!resend) {
+    return;
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true }
+    });
+
+    if (!user) {
+      return;
+    }
+
+    const cartUrl = `${getEmailBaseUrl()}/carrinho`;
+    const html = buildBrandedEmailHtml({
+      cta: {
+        href: cartUrl,
+        label: "Usar no carrinho"
+      },
+      eyebrow: "Cupom NerdCoins",
+      footerNote: "O cupom é pessoal, de uso único, e continua visível na sua carteira NerdCoins enquanto estiver válido.",
+      introHtml: `
+        <p style="margin:0 0 10px;">Olá${user.name ? `, ${escapeHtml(user.name)}` : ""}.</p>
+        <p style="margin:0;">Seu saldo virou um cupom de <strong>${formatCurrency(valueCents)}</strong>. Use o código abaixo no carrinho antes do vencimento.</p>
+      `,
+      preheader: `Cupom ${couponCode} gerado na sua carteira NerdCoins.`,
+      sections: [
+        {
+          html: buildInfoGrid([
+            { label: "Código", value: couponCode },
+            { label: "Desconto", value: formatCurrency(valueCents) },
+            { label: "Validade", value: formatDateTime(expiresAt) }
+          ]),
+          title: "Cupom gerado"
+        }
+      ],
+      title: "Seu cupom NerdCoins está pronto"
+    });
+
+    await resend.emails.send({
+      from: emailFrom,
+      html,
+      subject: `Cupom NerdCoins gerado · ${couponCode}`,
+      to: user.email
+    });
+  } catch (error) {
+    Sentry.captureException(error);
+  }
+}
+
+export async function sendLoyaltyPointsExpiringEmail({
+  expiresAt,
+  points,
+  userId
+}: {
+  expiresAt: Date;
+  points: number;
+  userId: string;
+}): Promise<{ error?: string; ok: boolean }> {
+  if (!resend) {
+    return { ok: false, error: "Resend não configurado." };
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true }
+    });
+
+    if (!user) {
+      return { ok: false, error: "Usuário não encontrado." };
+    }
+
+    const accountUrl = `${getEmailBaseUrl()}/conta/nerdcoins`;
+    const html = buildBrandedEmailHtml({
+      cta: {
+        href: accountUrl,
+        label: "Ver minha carteira"
+      },
+      eyebrow: "NerdCoins perto do vencimento",
+      footerNote: "Acesse sua carteira para acompanhar saldo, cupons e histórico antes do vencimento.",
+      introHtml: `
+        <p style="margin:0 0 10px;">Olá${user.name ? `, ${escapeHtml(user.name)}` : ""}.</p>
+        <p style="margin:0;">Você tem <strong>${points} NerdCoins</strong> com vencimento próximo. Use sua carteira para transformar saldo em cupom antes de perder esse benefício.</p>
+      `,
+      preheader: `${points} NerdCoins estão próximos do vencimento.`,
+      sections: [
+        {
+          html: buildInfoGrid([
+            { label: "NerdCoins em alerta", value: String(points) },
+            { label: "Vencimento", value: formatDateTime(expiresAt) }
+          ]),
+          title: "Saldo em atenção"
+        }
+      ],
+      title: "Não deixe seus NerdCoins expirarem"
+    });
+
+    await resend.emails.send({
+      from: emailFrom,
+      html,
+      subject: `${points} NerdCoins perto do vencimento`,
+      to: user.email
+    });
+
+    return { ok: true };
+  } catch (error) {
+    Sentry.captureException(error);
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Falha ao enviar e-mail."
+    };
+  }
 }
 
 export async function sendOrderStatusUpdatedEmail({

@@ -81,6 +81,18 @@ export function calculateEarnedPoints({
   return Math.floor((basePoints * getTierMultiplierPercent(tier, settings)) / 100);
 }
 
+export function getOrderRewardBaseCents({
+  discountCents,
+  loyaltyDiscountCents,
+  subtotalCents
+}: {
+  discountCents: number;
+  loyaltyDiscountCents?: number | null;
+  subtotalCents: number;
+}): number {
+  return Math.max(0, subtotalCents - discountCents - (loyaltyDiscountCents ?? 0));
+}
+
 export function calculateCouponValueCents(points: number, redeemCentsPerPoint: number): number {
   return Math.max(0, Math.floor(points) * Math.max(1, redeemCentsPerPoint));
 }

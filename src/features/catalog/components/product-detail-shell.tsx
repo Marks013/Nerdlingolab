@@ -17,6 +17,19 @@ interface ProductDetailShellProps {
   description: string;
   freeShippingThresholdCents: number;
   images: string[];
+  loyaltyProgram: {
+    campaign: {
+      bonusPoints: number;
+      id: string;
+      name: string;
+      pointsMultiplier: number;
+    } | null;
+    isEnabled: boolean;
+    minRedeemPoints: number;
+    pointsPerReal: number;
+    redeemCentsPerPoint: number;
+    tierMultiplierPercent: number;
+  };
   paymentTerms: PaymentTerms;
   primaryImage: string | null;
   productBadges: ProductBadge[];
@@ -35,6 +48,7 @@ export function ProductDetailShell({
   description,
   freeShippingThresholdCents,
   images,
+  loyaltyProgram,
   paymentTerms,
   primaryImage,
   productBadges,
@@ -148,6 +162,7 @@ export function ProductDetailShell({
             productTitle={productTitle}
             productUrl={productUrl}
             freeShippingThresholdCents={freeShippingThresholdCents}
+            loyaltyProgram={loyaltyProgram}
             paymentTerms={paymentTerms}
             selectedVariantId={selectedVariant?.id ?? selectedVariantId}
             variants={variants}

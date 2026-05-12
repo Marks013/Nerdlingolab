@@ -25,7 +25,13 @@ export async function getAdminLoyaltyDashboard(search = "") {
     customersWithoutReferralCode,
     generatedCoupons,
     referralTotals,
-    recentReferrals
+    recentReferrals,
+    pointsBalance,
+    campaigns,
+    categories,
+    notifications,
+    activeMembers,
+    couponConversionOrders
   ] = await Promise.all([
       getLoyaltyProgramSettings(),
       prisma.loyaltyLedger.groupBy({
@@ -138,6 +144,42 @@ export async function getAdminLoyaltyDashboard(search = "") {
         },
         orderBy: { createdAt: "desc" },
         take: 12
+      }),
+      prisma.loyaltyPoints.aggregate({
+        _sum: {
+          balance: true
+        }
+      }),
+      prisma.loyaltyCampaign.findMany({
+        orderBy: [{ isActive: "desc" }, { createdAt: "desc" }],
+        take: 30
+      }),
+      prisma.category.findMany({
+        orderBy: [{ position: "asc" }, { name: "asc" }],
+        select: { id: true, name: true },
+        where: { isActive: true }
+      }),
+      prisma.loyaltyNotification.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        include: {
+          user: { select: { email: true, name: true } }
+        }
+      }),
+      prisma.loyaltyLedger.groupBy({
+        by: ["userId"],
+        where: {
+          createdAt: {
+            gte: new Date(Date.now() - 30 * 86_400_000)
+          },
+          userId: { not: null }
+        }
+      }),
+      prisma.order.count({
+        where: {
+          loyaltyPointsRedeemed: { gt: 0 },
+          paymentStatus: PaymentStatus.APPROVED
+        }
       })
     ]);
   const pointsByType = new Map(totals.map((entry) => [entry.type, entry._sum.pointsDelta ?? 0]));
@@ -145,10 +187,16 @@ export async function getAdminLoyaltyDashboard(search = "") {
 
   return {
     customers,
+    categories,
+    campaigns,
+    couponConversionOrders,
     customersWithoutReferralCode,
     generatedCoupons,
     memberCount,
+    notifications,
+    activeMemberCount30d: activeMembers.length,
     pointsEarned: pointsByType.get(LoyaltyLedgerType.EARN) ?? 0,
+    pointsInCirculation: pointsBalance._sum.balance ?? 0,
     pointsExpired: Math.abs(pointsByType.get(LoyaltyLedgerType.EXPIRE) ?? 0),
     pointsRedeemed: Math.abs(pointsByType.get(LoyaltyLedgerType.REDEEM) ?? 0),
     referralsPending: referralsByStatus.get(ReferralStatus.PENDING) ?? 0,

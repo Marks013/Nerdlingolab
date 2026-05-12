@@ -8,44 +8,68 @@ import { z } from "zod";
 
 import { requireAdmin } from "@/lib/admin";
 import { auth } from "@/lib/auth";
+import { parseCurrencyToCents } from "@/lib/format";
 import {
   calculateCouponValueCents,
   getLoyaltyProgramSettings,
   getPointsExpirationDate
 } from "@/lib/loyalty/settings";
+import { sendLoyaltyCouponGeneratedEmail, sendLoyaltyPointsExpiringEmail } from "@/lib/email/transactional";
 import { ensureReferralCode } from "@/lib/loyalty/referrals";
 import { prisma } from "@/lib/prisma";
+
+const moneyToCents = z.preprocess((value) => {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  return parseCurrencyToCents(value);
+}, z.number().int().min(0));
 
 const settingsSchema = z.object({
   birthdayBonusPoints: z.coerce.number().int().min(0).max(1_000_000),
   couponExpiresInDays: z.coerce.number().int().min(1).max(365),
   hokageMultiplier: z.coerce.number().int().min(100).max(500),
   hokageOrderThreshold: z.coerce.number().int().min(1).max(500),
-  hokageSpendThresholdCents: z.coerce.number().int().min(0).max(100_000_000),
+  hokageSpendThresholdCents: moneyToCents.pipe(z.number().int().max(100_000_000)),
   isEnabled: z.boolean(),
   joninMultiplier: z.coerce.number().int().min(100).max(500),
   joninOrderThreshold: z.coerce.number().int().min(1).max(500),
-  joninSpendThresholdCents: z.coerce.number().int().min(0).max(100_000_000),
+  joninSpendThresholdCents: moneyToCents.pipe(z.number().int().max(100_000_000)),
   maxRedeemPoints: z.coerce.number().int().min(1).optional(),
   minRedeemPoints: z.coerce.number().int().min(1).max(1_000_000),
   pointsExpireInDays: z.coerce.number().int().min(1).max(3650).optional(),
   pointsPerReal: z.coerce.number().int().min(0).max(1000),
   programName: z.string().trim().min(3).max(40),
-  redeemCentsPerPoint: z.coerce.number().int().min(1).max(100),
+  redeemCentsPerPoint: moneyToCents.pipe(z.number().int().min(1).max(100)),
   referralInviteeBonusPoints: z.coerce.number().int().min(0).max(1_000_000),
   referralInviterBonusPoints: z.coerce.number().int().min(0).max(1_000_000),
-  referralMinOrderCents: z.coerce.number().int().min(0).max(100_000_000),
+  referralMinOrderCents: moneyToCents.pipe(z.number().int().max(100_000_000)),
   signupBonusPoints: z.coerce.number().int().min(0).max(1_000_000),
   showPendingPoints: z.boolean(),
   chuninMultiplier: z.coerce.number().int().min(100).max(500),
   chuninOrderThreshold: z.coerce.number().int().min(1).max(500),
-  chuninSpendThresholdCents: z.coerce.number().int().min(0).max(100_000_000)
+  chuninSpendThresholdCents: moneyToCents.pipe(z.number().int().max(100_000_000))
 });
 
 const adjustmentSchema = z.object({
   points: z.coerce.number().int().min(-1_000_000).max(1_000_000).refine((value) => value !== 0),
   reason: z.string().trim().min(5).max(160),
   userId: z.string().min(1)
+});
+
+const campaignSchema = z.object({
+  bonusPoints: z.coerce.number().int().min(0).max(1_000_000),
+  categoryIds: z.array(z.string().trim().min(1)).max(50),
+  description: z.string().trim().max(240).optional(),
+  endsAt: z.string().trim().optional(),
+  isActive: z.boolean(),
+  minSubtotalCents: moneyToCents.pipe(z.number().int().max(100_000_000)).optional(),
+  name: z.string().trim().min(3).max(80),
+  pointsMultiplier: z.coerce.number().int().min(100).max(1000),
+  productTags: z.array(z.string().trim().min(1).max(40)).max(30),
+  showOnStorefront: z.boolean(),
+  startsAt: z.string().trim().optional()
 });
 
 export async function updateLoyaltySettings(formData: FormData): Promise<void> {
@@ -366,6 +390,176 @@ export async function adjustCustomerNerdcoins(formData: FormData): Promise<void>
   redirect("/admin/fidelidade?adjust=saved");
 }
 
+export async function createLoyaltyCampaign(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const parsedCampaign = campaignSchema.safeParse({
+    bonusPoints: formData.get("bonusPoints"),
+    categoryIds: formData.getAll("categoryIds").map(String).filter(Boolean),
+    description: String(formData.get("description") ?? "").trim() || undefined,
+    endsAt: String(formData.get("endsAt") ?? "").trim() || undefined,
+    isActive: formData.get("isActive") === "on",
+    minSubtotalCents: String(formData.get("minSubtotalCents") ?? "").trim() || undefined,
+    name: formData.get("name"),
+    pointsMultiplier: formData.get("pointsMultiplier"),
+    productTags: splitTags(String(formData.get("productTags") ?? "")),
+    showOnStorefront: formData.get("showOnStorefront") === "on",
+    startsAt: String(formData.get("startsAt") ?? "").trim() || undefined
+  });
+
+  if (!parsedCampaign.success) {
+    throw new Error("Revise a campanha de NerdCoins.");
+  }
+
+  const { endsAt, startsAt, ...campaign } = parsedCampaign.data;
+
+  await prisma.loyaltyCampaign.create({
+    data: {
+      ...campaign,
+      endsAt: parseOptionalDate(endsAt),
+      startsAt: parseOptionalDate(startsAt)
+    }
+  });
+
+  revalidatePath("/admin/fidelidade");
+  revalidatePath("/programa-de-fidelidade");
+  revalidatePath("/produtos");
+}
+
+export async function updateLoyaltyCampaign(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = z.string().min(1).parse(formData.get("campaignId"));
+  const parsedCampaign = campaignSchema.safeParse({
+    bonusPoints: formData.get("bonusPoints"),
+    categoryIds: formData.getAll("categoryIds").map(String).filter(Boolean),
+    description: String(formData.get("description") ?? "").trim() || undefined,
+    endsAt: String(formData.get("endsAt") ?? "").trim() || undefined,
+    isActive: formData.get("isActive") === "on",
+    minSubtotalCents: String(formData.get("minSubtotalCents") ?? "").trim() || undefined,
+    name: formData.get("name"),
+    pointsMultiplier: formData.get("pointsMultiplier"),
+    productTags: splitTags(String(formData.get("productTags") ?? "")),
+    showOnStorefront: formData.get("showOnStorefront") === "on",
+    startsAt: String(formData.get("startsAt") ?? "").trim() || undefined
+  });
+
+  if (!parsedCampaign.success) {
+    throw new Error("Revise a campanha de NerdCoins.");
+  }
+
+  const { endsAt, startsAt, ...campaign } = parsedCampaign.data;
+
+  await prisma.loyaltyCampaign.update({
+    data: {
+      ...campaign,
+      endsAt: parseOptionalDate(endsAt),
+      startsAt: parseOptionalDate(startsAt)
+    },
+    where: { id }
+  });
+
+  revalidatePath("/admin/fidelidade");
+  revalidatePath("/programa-de-fidelidade");
+  revalidatePath("/produtos");
+}
+
+export async function notifyExpiringNerdcoins(): Promise<void> {
+  await requireAdmin();
+  const now = new Date();
+  const limitDate = new Date(now.getTime() + 7 * 86_400_000);
+  let processedCount = 0;
+
+  const users = await prisma.user.findMany({
+    select: { id: true },
+    where: {
+      loyaltyLedger: {
+        some: {
+          expiresAt: { gt: now, lte: limitDate },
+          pointsDelta: { gt: 0 },
+          type: LoyaltyLedgerType.EARN
+        }
+      },
+      loyaltyPoints: { balance: { gt: 0 } }
+    }
+  });
+
+  for (const user of users) {
+    const [current, ledger] = await Promise.all([
+      prisma.loyaltyPoints.findUnique({ where: { userId: user.id } }),
+      prisma.loyaltyLedger.findMany({
+        orderBy: { createdAt: "asc" },
+        select: {
+          createdAt: true,
+          expiresAt: true,
+          id: true,
+          pointsDelta: true,
+          type: true,
+          user: { select: { email: true } }
+        },
+        where: { userId: user.id }
+      })
+    ]);
+
+    if (!current || current.balance <= 0) {
+      continue;
+    }
+
+    const lots = ledger
+      .filter((entry) => entry.pointsDelta > 0)
+      .map((entry) => ({
+        email: entry.user?.email ?? null,
+        expiresAt: entry.expiresAt,
+        id: entry.id,
+        remaining: entry.pointsDelta,
+        type: entry.type
+      }));
+
+    for (const entry of ledger.filter((ledgerEntry) => ledgerEntry.pointsDelta < 0)) {
+      let pointsToConsume = Math.abs(entry.pointsDelta);
+
+      for (const lot of lots) {
+        if (pointsToConsume <= 0) {
+          break;
+        }
+
+        const consumedFromLot = Math.min(lot.remaining, pointsToConsume);
+        lot.remaining -= consumedFromLot;
+        pointsToConsume -= consumedFromLot;
+      }
+    }
+
+    for (const lot of lots.filter((entry) => entry.type === LoyaltyLedgerType.EARN && entry.expiresAt && entry.expiresAt > now && entry.expiresAt <= limitDate && entry.remaining > 0)) {
+      const idempotencyKey = `loyalty:expiring-notice:${lot.id}`;
+      const existingNotice = await prisma.loyaltyNotification.findUnique({ where: { idempotencyKey } });
+
+      if (existingNotice || !lot.expiresAt) {
+        continue;
+      }
+
+      const result = await sendLoyaltyPointsExpiringEmail({
+        expiresAt: lot.expiresAt,
+        points: Math.min(lot.remaining, current.balance),
+        userId: user.id
+      });
+
+      await prisma.loyaltyNotification.create({
+        data: {
+          email: lot.email,
+          errorMessage: result.error ?? null,
+          idempotencyKey,
+          sourceLedgerId: lot.id,
+          status: result.ok ? "SENT" : "FAILED",
+          type: "POINTS_EXPIRING",
+          userId: user.id
+        }
+      });
+      processedCount += 1;
+    }
+  }
+
+  revalidatePath("/admin/fidelidade");
+  redirect(`/admin/fidelidade?routine=expiring&count=${processedCount}`);
+}
+
 export async function convertNerdcoinsToCoupon(formData: FormData): Promise<void> {
   const session = await auth();
 
@@ -374,12 +568,19 @@ export async function convertNerdcoinsToCoupon(formData: FormData): Promise<void
   }
 
   const requestedPoints = z.coerce.number().int().min(1).max(1_000_000).parse(formData.get("points"));
+  let generatedCouponCode: string | null = null;
+  let generatedCouponValueCents = 0;
+  let generatedCouponExpiresAt: Date | null = null;
 
   try {
     const settings = await getLoyaltyProgramSettings();
 
     if (!settings.isEnabled || requestedPoints < settings.minRedeemPoints) {
       throw new Error("Quantidade abaixo do mínimo de resgate.");
+    }
+
+    if (settings.maxRedeemPoints && requestedPoints > settings.maxRedeemPoints) {
+      throw new Error("Quantidade acima do máximo de resgate.");
     }
 
     const couponValueCents = calculateCouponValueCents(requestedPoints, settings.redeemCentsPerPoint);
@@ -398,6 +599,9 @@ export async function convertNerdcoinsToCoupon(formData: FormData): Promise<void
 
       const nextBalance = current.balance - requestedPoints;
       const couponCode = `NERD${crypto.randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase()}`;
+      generatedCouponCode = couponCode;
+      generatedCouponValueCents = couponValueCents;
+      generatedCouponExpiresAt = expiresAt;
 
       await tx.loyaltyPoints.update({
         where: { userId: session.user.id },
@@ -439,17 +643,43 @@ export async function convertNerdcoinsToCoupon(formData: FormData): Promise<void
 
   revalidatePath("/conta/nerdcoins");
   revalidatePath("/programa-de-fidelidade");
+  if (generatedCouponCode && generatedCouponExpiresAt) {
+    await sendLoyaltyCouponGeneratedEmail({
+      couponCode: generatedCouponCode,
+      expiresAt: generatedCouponExpiresAt,
+      userId: session.user.id,
+      valueCents: generatedCouponValueCents
+    });
+  }
   redirect("/conta/nerdcoins?cupom=gerado#cupons-gerados");
 }
 
 function getSafeNerdcoinsConversionMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : "";
   const publicMessages = new Set([
+    "Quantidade acima do máximo de resgate.",
     "Quantidade abaixo do mínimo de resgate.",
     "Saldo insuficiente."
   ]);
 
   return publicMessages.has(message) ? message : "Não foi possível converter Nerdcoins.";
+}
+
+function parseOptionalDate(value?: string): Date | null {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function splitTags(value: string): string[] {
+  return value
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
 }
 
 function getSaoPauloDateParts(date: Date): { day: number; month: number; year: number } {

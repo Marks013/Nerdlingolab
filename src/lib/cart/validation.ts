@@ -1,4 +1,4 @@
-import { CouponType, ProductStatus } from "@/generated/prisma/client";
+import { CouponType, LoyaltyTier, ProductStatus } from "@/generated/prisma/client";
 
 import { getPrimaryImageUrl } from "@/features/catalog/image-utils";
 import type {
@@ -8,7 +8,12 @@ import type {
   ValidatedCartItem
 } from "@/features/cart/types";
 import { validateCoupon } from "@/lib/cart/discounts";
-import { calculateCouponValueCents, getLoyaltyProgramSettings } from "@/lib/loyalty/settings";
+import {
+  applyLoyaltyCampaignPoints,
+  describeLoyaltyCampaign,
+  getBestLoyaltyCampaignForProducts
+} from "@/lib/loyalty/campaigns";
+import { calculateCouponValueCents, calculateEarnedPoints, getLoyaltyProgramSettings } from "@/lib/loyalty/settings";
 import { prisma } from "@/lib/prisma";
 import { defaultFreeShippingThresholdCents, selectShippingOption } from "@/lib/shipping/quotes";
 import { getStorefrontTheme } from "@/lib/theme/storefront";
@@ -89,6 +94,11 @@ export async function validateCartItems(
     userId: request.userId
   });
   const totalCents = Math.max(0, discountedSubtotalCents - loyaltyPreview.discountCents);
+  const loyaltyEarnPreview = await buildLoyaltyEarnPreview({
+    productIds: validatedItems.map((item) => item.productId),
+    rewardBaseCents: totalCents,
+    userId: request.userId
+  });
   const theme = await getStorefrontTheme();
   const hasFreeShippingCoupon = couponPreview.coupon?.type === CouponType.FREE_SHIPPING;
   const shippingQuote = await selectShippingOption({
@@ -131,7 +141,8 @@ export async function validateCartItems(
     selectedShippingOption: shippingQuote.selectedOption,
     shippingOptions: shippingQuote.options,
     couponMessage: couponPreview.message,
-    loyalty: loyaltyPreview
+    loyalty: loyaltyPreview,
+    loyaltyEarnPreview
   };
 }
 
@@ -150,7 +161,12 @@ function buildEmptyCartResponse(request: CartValidationRequest): CartValidationR
     selectedShippingOption: null,
     shippingOptions: [],
     couponMessage: request.couponCode ? "Adicione produtos antes de aplicar cupom." : null,
-    loyalty: buildCouponOnlyLoyaltyPreview()
+    loyalty: buildCouponOnlyLoyaltyPreview(),
+    loyaltyEarnPreview: {
+      estimatedPoints: 0,
+      message: null,
+      rewardBaseCents: 0
+    }
   };
 }
 
@@ -239,6 +255,54 @@ async function validateLoyaltyRedemption({
     isAvailable,
     maxRedeemablePoints,
     message: redeemedPoints < normalizedRequestedPoints ? "Ajustamos o resgate ao limite disponível para este carrinho." : null
+  };
+}
+
+async function buildLoyaltyEarnPreview({
+  productIds,
+  rewardBaseCents,
+  userId
+}: {
+  productIds: string[];
+  rewardBaseCents: number;
+  userId?: string;
+}): Promise<CartValidationResponse["loyaltyEarnPreview"]> {
+  const settings = await getLoyaltyProgramSettings();
+
+  if (!settings.isEnabled || rewardBaseCents <= 0) {
+    return {
+      estimatedPoints: 0,
+      message: settings.isEnabled ? null : "NerdCoins temporariamente indisponíveis.",
+      rewardBaseCents
+    };
+  }
+
+  const loyaltyPoints = userId
+    ? await prisma.loyaltyPoints.findUnique({
+        where: { userId },
+        select: { tier: true }
+      })
+    : null;
+  const tier = loyaltyPoints?.tier ?? LoyaltyTier.GENIN;
+  const baseEstimatedPoints = calculateEarnedPoints({
+    settings,
+    tier,
+    totalCents: rewardBaseCents
+  });
+  const campaign = await getBestLoyaltyCampaignForProducts({
+    productIds,
+    rewardBaseCents
+  });
+  const estimatedPoints = applyLoyaltyCampaignPoints(baseEstimatedPoints, campaign);
+
+  return {
+    estimatedPoints,
+    message: campaign
+      ? describeLoyaltyCampaign(campaign)
+      : userId
+        ? "Estimativa sobre produtos após descontos, sem contar frete."
+        : "Entre na sua conta para garantir os NerdCoins desta compra.",
+    rewardBaseCents
   };
 }
 

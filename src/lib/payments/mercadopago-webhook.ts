@@ -6,7 +6,7 @@ import {
 } from "@/generated/prisma/client";
 import type { PrismaClient } from "@/generated/prisma/client";
 
-import { sendOrderPaidEmail } from "@/lib/email/transactional";
+import { sendLoyaltyOrderEarnedEmail, sendOrderPaidEmail } from "@/lib/email/transactional";
 import { assertMercadoPagoConfigured, mercadoPagoPayment } from "@/lib/mercadopago";
 import { registerOrderCouponRedemption } from "@/lib/payments/order-coupon";
 import { decrementInventoryForOrder } from "@/lib/payments/order-inventory";
@@ -151,6 +151,7 @@ export async function processApprovedMercadoPagoPayment({
 
   if (paidOrderId) {
     await sendOrderPaidEmail(paidOrderId);
+    await sendLoyaltyOrderEarnedEmail(paidOrderId);
   }
 }
 

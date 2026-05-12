@@ -12,6 +12,7 @@ import {
   getVipProgress,
   loyaltyTierLabels
 } from "@/lib/loyalty/settings";
+import { getStorefrontLoyaltyCampaigns } from "@/lib/loyalty/campaigns";
 import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
@@ -47,7 +48,10 @@ export const dynamic = "force-dynamic";
 
 export default async function LoyaltyPage(): Promise<React.ReactElement> {
   const session = await auth();
-  const settings = await getLoyaltyProgramSettings();
+  const [settings, activeCampaigns] = await Promise.all([
+    getLoyaltyProgramSettings(),
+    getStorefrontLoyaltyCampaigns()
+  ]);
   const loyaltyPoints = session?.user?.id
     ? await prisma.loyaltyPoints.findUnique({ where: { userId: session.user.id } })
     : null;
@@ -59,6 +63,9 @@ export default async function LoyaltyPage(): Promise<React.ReactElement> {
       })
     : [];
   const minCouponValue = calculateCouponValueCents(settings.minRedeemPoints, settings.redeemCentsPerPoint);
+  const examplePurchaseCents = 10_000;
+  const exampleBasePoints = Math.floor((examplePurchaseCents / 100) * settings.pointsPerReal);
+  const exampleBaseCouponCents = calculateCouponValueCents(exampleBasePoints, settings.redeemCentsPerPoint);
   const vipProgress = loyaltyPoints
     ? getVipProgress({
         orderCount: loyaltyPoints.tierOrderCount,
@@ -117,6 +124,53 @@ export default async function LoyaltyPage(): Promise<React.ReactElement> {
           </Card>
         ))}
       </div>
+      {activeCampaigns.length > 0 ? (
+        <section className="mt-8 rounded-lg border border-primary/30 bg-white p-6 shadow-sm sm:p-8">
+          <p className="inline-flex items-center rounded-full bg-[#fff7ed] px-3 py-1 text-xs font-black uppercase text-primary">
+            <Sparkles className="mr-1.5 size-3.5" />
+            Campanhas ativas
+          </p>
+          <h2 className="mt-3 text-balance text-3xl font-black tracking-normal text-black">
+            Missões temporárias para ganhar mais NerdCoins.
+          </h2>
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {activeCampaigns.map((campaign) => (
+              <div className="rounded-lg border border-primary/20 bg-[#fff7ed] p-4" key={campaign.id}>
+                <p className="font-black text-black">{campaign.name}</p>
+                <p className="mt-1 text-sm leading-6 text-[#4f5d65]">
+                  {campaign.description || "Campanha especial válida enquanto estiver ativa no site."}
+                </p>
+                <p className="mt-3 text-sm font-black text-primary">
+                  {campaign.pointsMultiplier}% dos pontos{campaign.bonusPoints > 0 ? ` + ${campaign.bonusPoints} extras` : ""}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+      <section className="mt-8 rounded-lg border border-primary/30 bg-[#fff7ed] p-6 shadow-sm sm:p-8">
+        <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:items-center">
+          <div>
+            <p className="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-black uppercase text-primary">
+              <TicketPercent className="mr-1.5 size-3.5" />
+              Exemplo real de benefício
+            </p>
+            <h2 className="mt-3 text-balance text-3xl font-black tracking-normal text-black">
+              Compre hoje, alimente o próximo cupom.
+            </h2>
+            <p className="mt-3 text-pretty text-sm leading-6 text-[#4f5d65]">
+              Em uma compra aprovada de {formatCurrency(examplePurchaseCents)}, um cliente Genin acumula cerca de {exampleBasePoints} NerdCoins,
+              que podem virar {formatCurrency(exampleBaseCouponCents)} em desconto quando convertidos. Nos níveis VIP, esse retorno fica ainda maior.
+            </p>
+          </div>
+          <div className="grid gap-2 rounded-lg border border-primary/20 bg-white p-4">
+            <RuleLine label="Genin" value={`${exampleBasePoints} pts · ${formatCurrency(exampleBaseCouponCents)}`} />
+            <RuleLine label="Chunin" value={`${Math.floor((exampleBasePoints * settings.chuninMultiplier) / 100)} pts`} />
+            <RuleLine label="Jonin" value={`${Math.floor((exampleBasePoints * settings.joninMultiplier) / 100)} pts`} />
+            <RuleLine label="Hokage" value={`${Math.floor((exampleBasePoints * settings.hokageMultiplier) / 100)} pts`} />
+          </div>
+        </div>
+      </section>
       <Card className="mt-8 border-primary/35 bg-orange-50/80 dark:bg-orange-950/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl">

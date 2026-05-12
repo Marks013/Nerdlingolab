@@ -50,6 +50,12 @@ export interface LoyaltyRedemptionPreview {
   message: string | null;
 }
 
+export interface LoyaltyEarnPreview {
+  estimatedPoints: number;
+  rewardBaseCents: number;
+  message: string | null;
+}
+
 export interface ValidatedCartItem {
   productId: string;
   variantId: string;
@@ -83,4 +89,5 @@ export interface CartValidationResponse {
   shippingOptions: ShippingOption[];
   couponMessage: string | null;
   loyalty: LoyaltyRedemptionPreview;
+  loyaltyEarnPreview: LoyaltyEarnPreview;
 }

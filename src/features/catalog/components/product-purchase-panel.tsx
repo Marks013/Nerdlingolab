@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgePercent, ChevronDown, CreditCard, Heart, MessageCircle, Minus, Plus, ShieldCheck, Zap } from "lucide-react";
+import { BadgePercent, ChevronDown, Coins, CreditCard, Heart, MessageCircle, Minus, Plus, ShieldCheck, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -35,6 +35,19 @@ export interface ProductVariantOption {
 interface ProductPurchasePanelProps {
   freeShippingThresholdCents: number;
   imageUrl: string | null;
+  loyaltyProgram: {
+    campaign: {
+      bonusPoints: number;
+      id: string;
+      name: string;
+      pointsMultiplier: number;
+    } | null;
+    isEnabled: boolean;
+    minRedeemPoints: number;
+    pointsPerReal: number;
+    redeemCentsPerPoint: number;
+    tierMultiplierPercent: number;
+  };
   onVariantSelect?: (variantId: string) => void;
   paymentTerms: PaymentTerms;
   productId: string;
@@ -48,6 +61,7 @@ interface ProductPurchasePanelProps {
 export function ProductPurchasePanel({
   freeShippingThresholdCents,
   imageUrl,
+  loyaltyProgram,
   onVariantSelect,
   paymentTerms,
   productId,
@@ -82,6 +96,10 @@ export function ProductPurchasePanel({
     priceCents: selectedVariant.priceCents
   }).at(-1);
   const subtotalCents = selectedVariant.priceCents * quantity;
+  const estimatedNerdcoins = loyaltyProgram.isEnabled
+    ? calculateEstimatedNerdcoins(subtotalCents, loyaltyProgram)
+    : 0;
+  const minCouponValueCents = loyaltyProgram.minRedeemPoints * loyaltyProgram.redeemCentsPerPoint;
   const selectedCartItem: CartItem = {
     productId,
     variantId: selectedVariant.id,
@@ -139,6 +157,25 @@ export function ProductPurchasePanel({
           priceCents={selectedVariant.priceCents}
           pixPriceCents={pixPriceCents}
         />
+        {estimatedNerdcoins > 0 ? (
+          <div className="mt-4 rounded-lg border border-primary/25 bg-[#fff7ed] p-4 text-[#3a2a1c]">
+            <div className="flex items-start gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-white text-primary shadow-sm">
+                <Coins className="size-5" />
+              </span>
+              <div>
+                <p className="text-sm font-black">
+                  Esta escolha pode render {estimatedNerdcoins} NerdCoins
+                </p>
+                <p className="mt-1 text-xs font-semibold leading-5 text-[#6b5140]">
+                  {loyaltyProgram.campaign
+                    ? `${loyaltyProgram.campaign.name}: campanha especial aplicada nesta seleção.`
+                    : `Acumule pontos em compras aprovadas e converta em cupom a partir de ${loyaltyProgram.minRedeemPoints} pontos (${formatCurrency(minCouponValueCents)}).`}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-7 flex items-center gap-4">
@@ -239,6 +276,20 @@ export function ProductPurchasePanel({
       />
     </div>
   );
+}
+
+function calculateEstimatedNerdcoins(
+  subtotalCents: number,
+  loyaltyProgram: ProductPurchasePanelProps["loyaltyProgram"]
+): number {
+  const basePoints = Math.floor((subtotalCents / 100) * loyaltyProgram.pointsPerReal);
+  const tierPoints = Math.floor((basePoints * loyaltyProgram.tierMultiplierPercent) / 100);
+
+  if (!loyaltyProgram.campaign) {
+    return tierPoints;
+  }
+
+  return Math.max(0, Math.floor((tierPoints * loyaltyProgram.campaign.pointsMultiplier) / 100) + loyaltyProgram.campaign.bonusPoints);
 }
 
 function PaymentInstallmentPanel({

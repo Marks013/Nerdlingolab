@@ -6,11 +6,16 @@ import { ProductDetailShell } from "@/features/catalog/components/product-detail
 import { ProductRecommendations } from "@/features/catalog/components/product-recommendations";
 import { getImageUrls, getPrimaryImageUrl } from "@/features/catalog/image-utils";
 import { ProductReviewsSection } from "@/features/reviews/components/product-reviews-section";
+import { LoyaltyTier } from "@/generated/prisma/client";
 import {
   getPublicProductBySlug,
   getPublicProductRecommendations
 } from "@/lib/catalog/queries";
+import { auth } from "@/lib/auth";
 import { getProductBadges } from "@/lib/catalog/badges";
+import { getLoyaltyProgramSettings, getTierMultiplierPercent } from "@/lib/loyalty/settings";
+import { getBestLoyaltyCampaignForProducts } from "@/lib/loyalty/campaigns";
+import { prisma } from "@/lib/prisma";
 import { getPublishedProductReviews } from "@/lib/reviews/queries";
 import { getStorefrontTheme } from "@/lib/theme/storefront";
 
@@ -78,15 +83,28 @@ export default async function ProductPage({ params }: ProductPageProps): Promise
     availableStock: Math.max(0, variant.stockQuantity - variant.reservedQuantity),
     imageUrl: getVariantImageUrl(variant.optionValues)
   }));
-  const [recommendedProducts, theme, reviewData] = await Promise.all([
+  const session = await auth();
+  const [recommendedProducts, theme, reviewData, loyaltySettings, loyaltyPoints, loyaltyCampaign] = await Promise.all([
     getPublicProductRecommendations({
       categoryId: product.categoryId,
       productId: product.id
     }),
     getStorefrontTheme(),
-    getPublishedProductReviews(product.id)
+    getPublishedProductReviews(product.id),
+    getLoyaltyProgramSettings(),
+    session?.user?.id
+      ? prisma.loyaltyPoints.findUnique({
+          where: { userId: session.user.id },
+          select: { tier: true }
+        })
+      : null,
+    getBestLoyaltyCampaignForProducts({
+      productIds: [product.id],
+      rewardBaseCents: product.priceCents
+    })
   ]);
   const productBadges = getProductBadges(product);
+  const loyaltyTier = loyaltyPoints?.tier ?? LoyaltyTier.GENIN;
 
   return (
     <main className="geek-page min-h-screen">
@@ -115,6 +133,14 @@ export default async function ProductPage({ params }: ProductPageProps): Promise
             maxInstallments: theme.maxInstallments,
             paymentFeeSource: theme.paymentFeeSource,
             pixDiscountBps: theme.pixDiscountBps
+          }}
+          loyaltyProgram={{
+            isEnabled: loyaltySettings.isEnabled,
+            minRedeemPoints: loyaltySettings.minRedeemPoints,
+            pointsPerReal: loyaltySettings.pointsPerReal,
+            redeemCentsPerPoint: loyaltySettings.redeemCentsPerPoint,
+            tierMultiplierPercent: getTierMultiplierPercent(loyaltyTier, loyaltySettings),
+            campaign: loyaltyCampaign
           }}
           variants={variants}
         />

@@ -4,8 +4,14 @@ import {
   calculateEarnedPoints,
   calculateTier,
   getLoyaltyProgramSettings,
+  getOrderRewardBaseCents,
   getPointsExpirationDate
 } from "@/lib/loyalty/settings";
+import {
+  applyLoyaltyCampaignPoints,
+  describeLoyaltyCampaign,
+  getBestLoyaltyCampaignForProducts
+} from "@/lib/loyalty/campaigns";
 import type { PaidOrder, TransactionClient } from "@/lib/payments/mercadopago-webhook";
 
 export async function registerOrderLoyaltyLedger(
@@ -31,16 +37,23 @@ export async function registerOrderLoyaltyLedger(
     update: {}
   });
   const settings = await getLoyaltyProgramSettings(tx);
-  const earnedPoints = calculateEarnedPoints({
+  const rewardBaseCents = getOrderRewardBaseCents(order);
+  const baseEarnedPoints = calculateEarnedPoints({
     settings,
     tier: currentPoints.tier,
-    totalCents: order.totalCents
+    totalCents: rewardBaseCents
   });
+  const campaign = await getBestLoyaltyCampaignForProducts({
+    client: tx,
+    productIds: order.items.map((item) => item.productId),
+    rewardBaseCents
+  });
+  const earnedPoints = applyLoyaltyCampaignPoints(baseEarnedPoints, campaign);
   const nextBalance = currentPoints.balance - order.loyaltyPointsRedeemed + earnedPoints;
   const nextTier = calculateTier({
     orderCount: currentPoints.tierOrderCount + 1,
     settings,
-    spendCents: currentPoints.tierSpendCents + order.totalCents
+    spendCents: currentPoints.tierSpendCents + rewardBaseCents
   });
 
   await registerRedeemedPoints(tx, order, currentPoints.balance);
@@ -48,7 +61,10 @@ export async function registerOrderLoyaltyLedger(
     tx,
     order,
     currentPoints.balance - order.loyaltyPointsRedeemed,
+    baseEarnedPoints,
+    campaign,
     earnedPoints,
+    currentPoints.tier,
     nextTier,
     getPointsExpirationDate(settings)
   );
@@ -60,7 +76,7 @@ export async function registerOrderLoyaltyLedger(
       lifetimeEarned: { increment: earnedPoints },
       lifetimeRedeemed: { increment: order.loyaltyPointsRedeemed },
       tierOrderCount: { increment: 1 },
-      tierSpendCents: { increment: order.totalCents },
+      tierSpendCents: { increment: rewardBaseCents },
       tier: nextTier,
       tierUpdatedAt: new Date()
     }
@@ -200,6 +216,7 @@ async function registerInviteeReferralReward(
     id: string;
     inviteeId: string;
     inviteeRewardPoints: number;
+    referralCode: string;
   },
   order: PaidOrder
 ): Promise<void> {
@@ -213,6 +230,14 @@ async function registerInviteeReferralReward(
   });
 
   if (existingLedger) {
+    return;
+  }
+
+  const signupReferralLedger = await tx.loyaltyLedger.findUnique({
+    where: { idempotencyKey: `loyalty:referral:invitee:${referral.inviteeId}:${referral.referralCode}` }
+  });
+
+  if (signupReferralLedger) {
     return;
   }
 
@@ -250,7 +275,10 @@ async function registerEarnedPoints(
   tx: TransactionClient,
   order: PaidOrder,
   balanceAfterRedemption: number,
+  baseEarnedPoints: number,
+  campaign: Awaited<ReturnType<typeof getBestLoyaltyCampaignForProducts>>,
   earnedPoints: number,
+  currentTier: LoyaltyTier,
   nextTier: LoyaltyTier,
   expiresAt: Date | null
 ): Promise<void> {
@@ -266,9 +294,18 @@ async function registerEarnedPoints(
       type: LoyaltyLedgerType.EARN,
       pointsDelta: earnedPoints,
       balanceAfter: balanceAfterRedemption + earnedPoints,
+      tierBefore: currentTier,
       tierAfter: nextTier,
       expiresAt,
-      reason: `Cashback do pedido ${order.orderNumber}`,
+      reason: campaign ? `Cashback do pedido ${order.orderNumber} (${campaign.name})` : `Cashback do pedido ${order.orderNumber}`,
+      customerNote: campaign ? describeLoyaltyCampaign(campaign) : undefined,
+      metadata: campaign ? {
+        baseEarnedPoints,
+        campaignBonusPoints: campaign.bonusPoints,
+        campaignId: campaign.id,
+        campaignMultiplier: campaign.pointsMultiplier,
+        campaignName: campaign.name
+      } : { baseEarnedPoints },
       idempotencyKey: `loyalty:earn:${order.id}`
     },
     update: {}

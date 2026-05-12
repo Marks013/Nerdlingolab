@@ -58,7 +58,7 @@ export default async function AccountNerdcoinsPage({
   }
 
   const resolvedSearchParams = await searchParams;
-  const [settings, loyaltyPoints, ledger, coupons, nextExpiringLedger, referralCode, referralsSent] = await Promise.all([
+  const [settings, loyaltyPoints, ledger, coupons, nextExpiringLedger, referralCode, referralsSent, customerProfile] = await Promise.all([
     getLoyaltyProgramSettings(),
     prisma.loyaltyPoints.upsert({
       where: { userId: session.user.id },
@@ -91,10 +91,15 @@ export default async function AccountNerdcoinsPage({
       orderBy: { createdAt: "desc" },
       take: 8,
       where: { inviterId: session.user.id }
+    }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { birthday: true, cpf: true }
     })
   ]);
   const minCouponValue = calculateCouponValueCents(settings.minRedeemPoints, settings.redeemCentsPerPoint);
-  const currentCouponValue = calculateCouponValueCents(loyaltyPoints.balance, settings.redeemCentsPerPoint);
+  const maxRedeemablePoints = Math.min(loyaltyPoints.balance, settings.maxRedeemPoints ?? loyaltyPoints.balance);
+  const currentCouponValue = calculateCouponValueCents(maxRedeemablePoints, settings.redeemCentsPerPoint);
   const pointsToCoupon = Math.max(0, settings.minRedeemPoints - loyaltyPoints.balance);
   const vipProgress = getVipProgress({
     orderCount: loyaltyPoints.tierOrderCount,
@@ -152,6 +157,18 @@ export default async function AccountNerdcoinsPage({
         <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 shadow-sm">
           <p className="font-black">Cupom gerado com sucesso.</p>
           <p className="mt-1">Ele já aparece em Cupons gerados e pode ser usado no carrinho.</p>
+        </div>
+      ) : null}
+
+      {!customerProfile?.cpf || !customerProfile.birthday ? (
+        <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 shadow-sm">
+          <p className="font-black">Complete sua conta para não perder NerdCoins de compra.</p>
+          <p className="mt-1">
+            Compras aprovadas só liberam pontos com CPF e aniversário cadastrados. Isso ajuda a proteger o programa contra abuso.
+          </p>
+          <Button asChild className="mt-3 bg-amber-600 text-white hover:bg-amber-700" size="sm">
+            <Link href="/conta">Completar dados</Link>
+          </Button>
         </div>
       ) : null}
 
@@ -242,6 +259,7 @@ export default async function AccountNerdcoinsPage({
             balance={loyaltyPoints.balance}
             currentCouponValueLabel={formatCurrency(currentCouponValue)}
             isEnabled={settings.isEnabled}
+            maxRedeemPoints={settings.maxRedeemPoints}
             minRedeemPoints={settings.minRedeemPoints}
           />
         </CardContent>
@@ -294,38 +312,7 @@ export default async function AccountNerdcoinsPage({
           <CardContent>
             <div className="grid gap-3">
               {coupons.map((coupon) => (
-                <article
-                  className={cn(
-                    "overflow-hidden rounded-lg border bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md",
-                    coupon.usedCount > 0 ? "border-slate-200" : "border-primary/35"
-                  )}
-                  key={coupon.id}
-                >
-                  <div className={cn("px-4 py-3 text-white", coupon.usedCount > 0 ? "bg-slate-600" : "bg-primary")}>
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-xs font-black uppercase">Cupom pessoal</p>
-                      <span className="rounded-full bg-white/20 px-2.5 py-1 text-xs font-bold">
-                        {coupon.usedCount > 0 ? "Usado" : "Disponível"}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-2xl font-black">{formatCurrency(coupon.value)} de desconto</p>
-                  </div>
-                  <div className="grid gap-3 p-4 text-sm">
-                    <div>
-                      <p className="text-xs font-bold uppercase text-muted-foreground">Digite no carrinho</p>
-                      <code className="mt-1 inline-flex rounded-full border border-orange-100 bg-orange-50 px-3 py-2 font-mono text-sm font-black text-primary">
-                        {coupon.code}
-                      </code>
-                    </div>
-                    <p className="text-muted-foreground">Expira em {formatDateTime(coupon.expiresAt)}</p>
-                    <CopyCouponButton code={coupon.code} />
-                    {coupon.usedCount === 0 ? (
-                      <Button asChild className="w-full bg-emerald-600 text-white hover:bg-emerald-700">
-                        <Link href="/carrinho">Usar no carrinho</Link>
-                      </Button>
-                    ) : null}
-                  </div>
-                </article>
+                <CouponGeneratedCard coupon={coupon} key={coupon.id} />
               ))}
               {coupons.length === 0 ? (
                 <p className="rounded-lg border border-dashed border-orange-200 bg-orange-50/60 p-4 text-sm text-muted-foreground">
@@ -361,6 +348,100 @@ export default async function AccountNerdcoinsPage({
       </div>
     </main>
   );
+}
+
+function CouponGeneratedCard({
+  coupon
+}: {
+  coupon: {
+    code: string;
+    expiresAt: Date | null;
+    id: string;
+    isActive: boolean;
+    usedCount: number;
+    value: number;
+  };
+}): React.ReactElement {
+  const status = getCouponStatus(coupon);
+
+  return (
+    <article
+      className={cn(
+        "overflow-hidden rounded-lg border bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md",
+        status.tone === "available" ? "border-primary/35" : "border-slate-200"
+      )}
+    >
+      <div className={cn("px-4 py-3 text-white", status.headerClass)}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-black uppercase">Cupom pessoal</p>
+          <span className="rounded-full bg-white/20 px-2.5 py-1 text-xs font-bold">
+            {status.label}
+          </span>
+        </div>
+        <p className="mt-2 text-2xl font-black">{formatCurrency(coupon.value)} de desconto</p>
+      </div>
+      <div className="grid gap-3 p-4 text-sm">
+        <div>
+          <p className="text-xs font-bold uppercase text-muted-foreground">Digite no carrinho</p>
+          <code className="mt-1 inline-flex rounded-full border border-orange-100 bg-orange-50 px-3 py-2 font-mono text-sm font-black text-primary">
+            {coupon.code}
+          </code>
+        </div>
+        <p className="text-muted-foreground">{status.description}</p>
+        <CopyCouponButton code={coupon.code} />
+        {status.tone === "available" ? (
+          <Button asChild className="w-full bg-emerald-600 text-white hover:bg-emerald-700">
+            <Link href="/carrinho">Usar no carrinho</Link>
+          </Button>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+function getCouponStatus(coupon: {
+  expiresAt: Date | null;
+  isActive: boolean;
+  usedCount: number;
+}): {
+  description: string;
+  headerClass: string;
+  label: string;
+  tone: "available" | "unavailable";
+} {
+  if (coupon.usedCount > 0) {
+    return {
+      description: "Cupom já utilizado em uma compra.",
+      headerClass: "bg-slate-600",
+      label: "Usado",
+      tone: "unavailable"
+    };
+  }
+
+  if (!coupon.isActive) {
+    return {
+      description: "Cupom desativado.",
+      headerClass: "bg-slate-600",
+      label: "Inativo",
+      tone: "unavailable"
+    };
+  }
+
+  if (coupon.expiresAt && coupon.expiresAt <= new Date()) {
+    return {
+      description: `Expirou em ${formatDateTime(coupon.expiresAt)}.`,
+      headerClass: "bg-slate-600",
+      label: "Expirado",
+      tone: "unavailable"
+    };
+  }
+
+  return {
+    description: coupon.expiresAt ? `Expira em ${formatDateTime(coupon.expiresAt)}.` : "Sem vencimento configurado.",
+    headerClass: "bg-primary",
+    label: "Disponível",
+    tone: "available"
+  };
 }
 
 function LedgerEntryCard({

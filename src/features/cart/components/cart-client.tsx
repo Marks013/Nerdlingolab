@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCart, Trash2 } from "lucide-react";
+import { Coins, ShoppingCart, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -281,6 +281,23 @@ export function CartClient({
             <span>Frete</span>
             <span>{formatCurrency(shipping)}</span>
           </div>
+          {validatedCart?.loyaltyEarnPreview.estimatedPoints ? (
+            <div className="rounded-lg border border-primary/25 bg-[#fff7ed] p-3 text-sm text-[#3a2a1c]">
+              <div className="flex items-start gap-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white text-primary">
+                  <Coins className="size-4" />
+                </span>
+                <div>
+                  <p className="font-black">
+                    Esta compra pode render {validatedCart.loyaltyEarnPreview.estimatedPoints} NerdCoins
+                  </p>
+                  <p className="mt-1 text-xs font-medium text-[#6b5140]">
+                    {validatedCart.loyaltyEarnPreview.message}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
           <div className="flex items-center justify-between border-t pt-4 text-base">
             <span>Total</span>
             <strong>{formatCurrency(total)}</strong>

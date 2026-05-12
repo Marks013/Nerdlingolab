@@ -11,6 +11,7 @@ interface NerdcoinsCouponFormProps {
   balance: number;
   currentCouponValueLabel: string;
   isEnabled: boolean;
+  maxRedeemPoints?: number | null;
   minRedeemPoints: number;
 }
 
@@ -19,9 +20,11 @@ export function NerdcoinsCouponForm({
   balance,
   currentCouponValueLabel,
   isEnabled,
+  maxRedeemPoints,
   minRedeemPoints
 }: NerdcoinsCouponFormProps): React.ReactElement {
-  const canGenerate = isEnabled && balance >= minRedeemPoints;
+  const maxRedeemablePoints = Math.max(0, Math.min(balance, maxRedeemPoints ?? balance));
+  const canGenerate = isEnabled && maxRedeemablePoints >= minRedeemPoints;
 
   return (
     <form action={action} className="grid gap-3 sm:grid-cols-[220px_1fr]">
@@ -29,13 +32,13 @@ export function NerdcoinsCouponForm({
         <Input
           className="border-primary/45 bg-white font-semibold tabular-nums focus-visible:ring-primary"
           defaultValue={minRedeemPoints}
-          max={balance}
+          max={maxRedeemablePoints}
           min={minRedeemPoints}
           name="points"
           type="number"
         />
         <p className="text-xs font-medium text-muted-foreground">
-          Seu saldo pode virar até {currentCouponValueLabel}.
+          Você pode converter até {maxRedeemablePoints} NerdCoins agora. Valor máximo: {currentCouponValueLabel}.
         </p>
       </div>
       <GenerateCouponButton canGenerate={canGenerate} />

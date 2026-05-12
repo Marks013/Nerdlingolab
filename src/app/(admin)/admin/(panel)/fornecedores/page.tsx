@@ -49,18 +49,26 @@ export default async function AdminSuppliersPage({
   await requireAdmin();
   await ensureProductSourcesFromMetafields(1_000);
 
-  const filters = resolveFilters(await searchParams);
+  const resolvedSearchParams = await searchParams;
+  const filters = resolveFilters(resolvedSearchParams);
+  const notice = readParam(resolvedSearchParams.notice);
   const dashboard = await getDropshippingDashboard(filters);
   const globalRule = dashboard.pricingRules.find((rule) => rule.id === "pricing_global_default") ?? dashboard.pricingRules[0];
 
   return (
     <main className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      {notice ? (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 shadow-sm">
+          {notice}
+        </div>
+      ) : null}
+
       <section className="flex flex-col gap-4 rounded-xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-secondary/10 p-5 shadow-sm lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-3xl">
           <p className="text-sm font-black uppercase tracking-wide text-primary">Central de fornecedores</p>
           <h1 className="mt-2 text-3xl font-black tracking-normal text-foreground">Dropshipping sem susto operacional</h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Monitore links de origem, preco fornecedor, estoque, variacoes e alertas sem travar a loja quando uma API externa falhar.
+            Monitore links de origem, preco fornecedor, estoque, variacoes e alertas sem travar a loja quando a leitura externa nao estiver disponivel.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -87,7 +95,7 @@ export default async function AdminSuppliersPage({
         <MetricCard label="Criticos" tone="critical" value={dashboard.totals.criticalStatuses} />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_380px]">
         <Card className="overflow-hidden">
           <CardHeader className="border-b bg-muted/30">
             <CardTitle>Produtos monitorados</CardTitle>
@@ -112,7 +120,7 @@ export default async function AdminSuppliersPage({
           <Card>
             <CardHeader>
               <CardTitle>Regra global de margem</CardTitle>
-              <CardDescription>Base para preco sugerido. Aplicacao continua manual e assistida.</CardDescription>
+              <CardDescription>Base para preco sugerido. Informe valores em reais, como 10,00.</CardDescription>
             </CardHeader>
             <CardContent>
               <form action={updateGlobalPricingRuleAction} className="grid gap-3">
@@ -156,7 +164,19 @@ export default async function AdminSuppliersPage({
                 Regra de seguranca
               </CardTitle>
               <CardDescription className="text-amber-900/80">
-                Falha no fornecedor nao derruba vitrine nem checkout. Links de terceiros ficam em modo assistido quando nao houver leitura publica confiavel.
+                Falha no fornecedor nao derruba vitrine nem checkout. Quando Mercado Livre ou Shopee bloqueiam leitura externa, o item fica manual assistido.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="border-sky-200 bg-sky-50 text-sky-950">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <RefreshCw className="size-5" />
+                Leitura automatica
+              </CardTitle>
+              <CardDescription className="text-sky-900/80">
+                O lote tenta consultar dados publicos. Se o fornecedor exigir login, captcha ou verificacao, o produto continua em modo manual com calculo de margem assim que voce preencher o preco de origem.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -204,54 +224,55 @@ function SupplierRow({ item }: { item: DropshippingDashboardItem }): React.React
   const sourcePriceChanged = item.suggestedPriceCents !== null && item.suggestedPriceCents !== item.storePriceCents;
 
   return (
-    <article className="rounded-xl border bg-background p-4 shadow-sm">
-      <div className="grid gap-4 xl:grid-cols-[minmax(280px,1.3fr)_minmax(420px,2fr)_minmax(280px,0.9fr)]">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border px-2 py-1 text-xs font-bold">{providerLabel(item.provider)}</span>
-            <StatusPill status={item.status} />
+    <article className="overflow-hidden rounded-xl border bg-background p-4 shadow-sm">
+      <div className="grid gap-4">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full border px-2 py-1 text-xs font-bold">{providerLabel(item.provider)}</span>
+              <StatusPill status={item.status} />
+            </div>
+            <Link className="mt-3 block max-w-3xl text-base font-black leading-snug text-foreground hover:text-primary" href={`/admin/produtos/${item.productId}/editar`}>
+              {item.productTitle}
+            </Link>
+            <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold text-muted-foreground">
+              <a className="inline-flex items-center gap-1 hover:text-primary" href={item.originalUrl} rel="noreferrer" target="_blank">
+                Abrir origem <ExternalLink className="size-3" />
+              </a>
+              <Link className="hover:text-primary" href={`/produtos/${item.productSlug}`} target="_blank">Ver vitrine</Link>
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">Ultima checagem: {formatDate(item.lastCheckedAt)}</p>
+            {item.lastError ? <p className="mt-2 max-w-3xl rounded-lg bg-amber-50 p-2 text-xs leading-5 text-amber-800">{item.lastError}</p> : null}
           </div>
-          <Link className="mt-3 block text-base font-black leading-snug text-foreground hover:text-primary" href={`/admin/produtos/${item.productId}/editar`}>
-            {item.productTitle}
-          </Link>
-          <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold text-muted-foreground">
-            <a className="inline-flex items-center gap-1 hover:text-primary" href={item.originalUrl} rel="noreferrer" target="_blank">
-              Abrir origem <ExternalLink className="size-3" />
-            </a>
-            <Link className="hover:text-primary" href={`/produtos/${item.productSlug}`} target="_blank">Ver vitrine</Link>
+
+          <div className="flex flex-wrap gap-2 lg:justify-end">
+            <form action={syncDropshippingSourceAction.bind(null, item.id)}>
+              <Button className="h-10 px-4" type="submit" variant="outline">
+                <RefreshCw className="mr-2 size-4" />
+                Sincronizar
+              </Button>
+            </form>
+            <form action={applySuggestedSourcePriceAction.bind(null, item.id)}>
+              <Button className="h-10 px-4" disabled={!sourcePriceChanged} type="submit">
+                Aplicar preco
+              </Button>
+            </form>
           </div>
-          <p className="mt-3 text-xs text-muted-foreground">Ultima checagem: {formatDate(item.lastCheckedAt)}</p>
-          {item.lastError ? <p className="mt-2 rounded-lg bg-red-50 p-2 text-xs leading-5 text-red-700">{item.lastError}</p> : null}
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
-          <InfoTile label="Preco origem" value={formatOptionalCurrency(item.lastPriceCents)} />
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <InfoTile detail={item.lastPriceCents === null ? "preencha na validacao manual" : undefined} label="Preco origem" value={formatOptionalCurrency(item.lastPriceCents)} />
           <InfoTile label="Preco loja" value={formatOptionalCurrency(item.storePriceCents)} />
-          <InfoTile highlight={sourcePriceChanged} label="Preco sugerido" value={formatOptionalCurrency(item.suggestedPriceCents)} detail={item.suggestedRuleLabel ?? "sem regra"} />
+          <InfoTile highlight={sourcePriceChanged} label="Preco sugerido" value={formatOptionalCurrency(item.suggestedPriceCents)} detail={item.suggestedRuleLabel ?? (item.lastPriceCents === null ? "aguardando preco origem" : "sem regra")} />
           <InfoTile label="Estoque origem" value={item.lastStockQuantity ?? "-"} detail={`${item.unavailableVariantCount}/${item.variantCount} variacoes indisponiveis`} />
         </div>
 
-        <div className="grid gap-3">
-          <div className="flex flex-wrap justify-start gap-2 xl:justify-end">
-          <form action={syncDropshippingSourceAction.bind(null, item.id)}>
-            <Button className="h-9" type="submit" variant="outline">
-              <RefreshCw className="mr-2 size-4" />
-              Sync
-            </Button>
-          </form>
-          <form action={applySuggestedSourcePriceAction.bind(null, item.id)}>
-            <Button className="h-9" disabled={!sourcePriceChanged} type="submit">
-              Aplicar
-            </Button>
-          </form>
-        </div>
-          <AlertList item={item} />
-        </div>
+        <AlertList item={item} />
       </div>
 
       <details className="mt-4 rounded-lg border bg-muted/30 p-3 text-left">
-          <summary className="cursor-pointer text-xs font-bold text-foreground">Validacao manual</summary>
-          <form action={updateManualSourceSnapshotAction} className="mt-3 grid gap-2 md:grid-cols-[180px_160px_140px_minmax(180px,1fr)_150px]">
+          <summary className="cursor-pointer text-sm font-bold text-foreground">Validacao manual</summary>
+          <form action={updateManualSourceSnapshotAction} className="mt-3 grid gap-3 lg:grid-cols-[180px_180px_140px_minmax(220px,1fr)_140px]">
             <input name="sourceId" type="hidden" value={item.id} />
             <select className="h-10 rounded-md border bg-background px-2 text-sm" defaultValue={item.status} name="status">
               {Object.values(SupplierSourceStatus).map((status) => (
@@ -305,7 +326,7 @@ function AlertList({ item }: { item: DropshippingDashboardItem }): React.ReactEl
 function CurrencyInput({
   defaultValue,
   name,
-  placeholder = "R$ 0,00"
+  placeholder = "0,00"
 }: {
   defaultValue: number;
   name: string;

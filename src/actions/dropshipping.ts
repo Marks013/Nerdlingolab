@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { PricingRoundingMode } from "@/generated/prisma/client";
@@ -32,20 +33,23 @@ const pricingFormSchema = z.object({
 
 export async function bootstrapDropshippingSourcesAction(): Promise<void> {
   await requireAdmin();
-  await ensureProductSourcesFromMetafields(1_000);
+  const result = await ensureProductSourcesFromMetafields(1_000);
   revalidatePath("/admin/fornecedores");
+  redirect(`/admin/fornecedores?notice=${encodeURIComponent(`Links reindexados. ${result.created} origem(ns) revisadas, ${result.skipped} sem link.`)}`);
 }
 
 export async function syncDropshippingSourceAction(sourceId: string): Promise<void> {
   await requireAdmin();
-  await syncProductSource(sourceIdSchema.parse(sourceId));
+  const result = await syncProductSource(sourceIdSchema.parse(sourceId));
   revalidatePath("/admin/fornecedores");
+  redirect(`/admin/fornecedores?notice=${encodeURIComponent(`Origem sincronizada como ${result.status}.`)}`);
 }
 
 export async function syncDropshippingBatchAction(): Promise<void> {
   await requireAdmin();
-  await syncDueProductSources(30);
+  const result = await syncDueProductSources(30);
   revalidatePath("/admin/fornecedores");
+  redirect(`/admin/fornecedores?notice=${encodeURIComponent(`Lote sincronizado. ${result.attempted} origem(ns), ${result.failed} falha(s) reais.`)}`);
 }
 
 export async function applySuggestedSourcePriceAction(sourceId: string): Promise<void> {
@@ -54,6 +58,7 @@ export async function applySuggestedSourcePriceAction(sourceId: string): Promise
   revalidatePath("/admin/fornecedores");
   revalidatePath("/admin/produtos");
   revalidatePath("/produtos");
+  redirect(`/admin/fornecedores?notice=${encodeURIComponent("Preco sugerido aplicado ao produto e variacoes.")}`);
 }
 
 export async function acknowledgeSourceAlertAction(formData: FormData): Promise<void> {
@@ -62,6 +67,7 @@ export async function acknowledgeSourceAlertAction(formData: FormData): Promise<
 
   await acknowledgeSourceAlert(alertId);
   revalidatePath("/admin/fornecedores");
+  redirect(`/admin/fornecedores?notice=${encodeURIComponent("Alerta marcado como visto.")}`);
 }
 
 export async function updateManualSourceSnapshotAction(formData: FormData): Promise<void> {
@@ -88,6 +94,7 @@ export async function updateManualSourceSnapshotAction(formData: FormData): Prom
   });
 
   revalidatePath("/admin/fornecedores");
+  redirect(`/admin/fornecedores?notice=${encodeURIComponent("Validacao manual salva. Preco sugerido recalculado.")}`);
 }
 
 export async function updateGlobalPricingRuleAction(formData: FormData): Promise<void> {
@@ -126,6 +133,7 @@ export async function updateGlobalPricingRuleAction(formData: FormData): Promise
   });
 
   revalidatePath("/admin/fornecedores");
+  redirect(`/admin/fornecedores?notice=${encodeURIComponent("Regra de margem salva em reais.")}`);
 }
 
 function parseCurrencyToCents(value: string | undefined): number | null {

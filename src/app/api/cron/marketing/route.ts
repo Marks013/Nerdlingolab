@@ -1,11 +1,33 @@
 import * as Sentry from "@sentry/nextjs";
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
+import { z } from "zod";
 
 import { runLoyaltyMarketingAutomation } from "@/lib/loyalty/automation";
+import { rateLimitRequest } from "@/lib/security/rate-limit";
+import { assertSameOriginRequest } from "@/lib/security/request";
 
 export const dynamic = "force-dynamic";
 
+const cronQuerySchema = z.object({});
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const rateLimitError = rateLimitRequest(request, {
+    intervalMs: 60_000,
+    limit: 20,
+    name: "cron-marketing"
+  });
+
+  if (rateLimitError) {
+    return rateLimitError;
+  }
+
+  const sameOriginError = hasBearerToken(request) ? null : assertSameOriginRequest(request);
+
+  if (sameOriginError) {
+    return sameOriginError;
+  }
+
   const authResult = authorizeCronRequest(request);
 
   if (!authResult.ok) {
@@ -13,6 +35,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
+    const parsedQuery = cronQuerySchema.safeParse(Object.fromEntries(request.nextUrl.searchParams));
+
+    if (!parsedQuery.success) {
+      return NextResponse.json({ error: "Parâmetros inválidos." }, { status: 400 });
+    }
+
     const results = await runLoyaltyMarketingAutomation();
 
     return NextResponse.json({
@@ -31,6 +59,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 }
 
+function hasBearerToken(request: NextRequest): boolean {
+  return request.headers.get("authorization")?.startsWith("Bearer ") ?? false;
+}
+
 function authorizeCronRequest(request: NextRequest): { error?: string; ok: boolean; status: number } {
   const expectedSecret = process.env.CRON_SECRET ?? process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
 
@@ -41,9 +73,16 @@ function authorizeCronRequest(request: NextRequest): { error?: string; ok: boole
   const header = request.headers.get("authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice("Bearer ".length).trim() : "";
 
-  if (token !== expectedSecret) {
+  if (!safeTokenEquals(token, expectedSecret)) {
     return { error: "Não autorizado.", ok: false, status: 401 };
   }
 
   return { ok: true, status: 200 };
+}
+
+function safeTokenEquals(receivedToken: string, expectedToken: string): boolean {
+  const received = Buffer.from(receivedToken);
+  const expected = Buffer.from(expectedToken);
+
+  return received.length === expected.length && timingSafeEqual(received, expected);
 }

@@ -22,6 +22,13 @@ const closedSourceStatuses: SupplierSourceStatus[] = [
   SupplierSourceStatus.CLOSED,
   SupplierSourceStatus.DELETED
 ];
+const sourceAvailabilityAlertTypes: SupplierAlertType[] = [
+  SupplierAlertType.API_ERROR,
+  SupplierAlertType.CONFIG_REQUIRED,
+  SupplierAlertType.OUT_OF_STOCK,
+  SupplierAlertType.SOURCE_CLOSED,
+  SupplierAlertType.SOURCE_PAUSED
+];
 
 export async function ensureDefaultDropshippingConfig(): Promise<void> {
   await prisma.$transaction([
@@ -179,7 +186,12 @@ export async function syncDueProductSources(limit = 25): Promise<{ attempted: nu
     orderBy: [{ lastCheckedAt: "asc" }, { createdAt: "asc" }],
     select: { id: true },
     take: limit,
-    where: { syncEnabled: true }
+    where: {
+      product: {
+        status: { not: ProductStatus.ARCHIVED }
+      },
+      syncEnabled: true
+    }
   });
   let failed = 0;
 
@@ -420,6 +432,20 @@ async function persistSnapshot(
       });
     }
   });
+
+  if (snapshot.status === SupplierSourceStatus.ACTIVE) {
+    await prisma.sourceAlert.updateMany({
+      data: {
+        resolvedAt: now,
+        status: SupplierAlertStatus.RESOLVED
+      },
+      where: {
+        productSourceId: source.id,
+        status: SupplierAlertStatus.OPEN,
+        type: { in: sourceAvailabilityAlertTypes }
+      }
+    });
+  }
 
   await createChangeAlerts(source, snapshot, previous);
 }

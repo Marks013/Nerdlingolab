@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { PricingRoundingMode } from "@/generated/prisma/client";
+import { PricingRoundingMode, ProductStatus, SupplierProvider, SupplierSourceStatus } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/admin";
 import {
   acknowledgeSourceAlert,
@@ -15,8 +15,10 @@ import {
   updateManualProductSourceSnapshot
 } from "@/lib/dropshipping/sync";
 import { importSupplierSnapshotCsv } from "@/lib/dropshipping/import";
+import { buildDropshippingSourceWhere } from "@/lib/dropshipping/queries";
 import { prisma } from "@/lib/prisma";
 
+const maxImportFileSize = 2_000_000;
 const sourceIdSchema = z.string().min(1);
 const manualSnapshotSchema = z.object({
   note: z.string().trim().max(500).optional(),
@@ -30,6 +32,15 @@ const pricingFormSchema = z.object({
   marginPercent: z.coerce.number().min(0).max(500),
   minimumMargin: z.string().trim().optional(),
   roundingMode: z.nativeEnum(PricingRoundingMode)
+});
+const filteredSourcesSchema = z.object({
+  provider: z.nativeEnum(SupplierProvider).optional(),
+  query: z.string().trim().max(120).optional(),
+  status: z.nativeEnum(SupplierSourceStatus).optional()
+});
+const productStorePriceSchema = z.object({
+  price: z.string().trim().min(1, "Informe um preco valido."),
+  productId: z.string().min(1)
 });
 
 export async function bootstrapDropshippingSourcesAction(): Promise<void> {
@@ -60,6 +71,133 @@ export async function applySuggestedSourcePriceAction(sourceId: string): Promise
   revalidatePath("/admin/produtos");
   revalidatePath("/produtos");
   redirect(`/admin/fornecedores?notice=${encodeURIComponent("Preco sugerido aplicado ao produto e variacoes.")}`);
+}
+
+export async function applySuggestedPricesToFilteredSourcesAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const filters = filteredSourcesSchema.parse({
+    provider: normalizeOptionalEnum(formData.get("fornecedor")),
+    query: normalizeOptionalText(formData.get("busca")),
+    status: normalizeOptionalEnum(formData.get("status"))
+  });
+  const sources = await prisma.productSource.findMany({
+    select: { id: true },
+    take: 250,
+    where: buildDropshippingSourceWhere(filters)
+  });
+  let applied = 0;
+  let skipped = 0;
+
+  for (const source of sources) {
+    try {
+      await applySuggestedSourcePrice(source.id);
+      applied += 1;
+    } catch {
+      skipped += 1;
+    }
+  }
+
+  revalidatePath("/admin/fornecedores");
+  revalidatePath("/admin/produtos");
+  revalidatePath("/produtos");
+  redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
+    filters,
+    notice: `Margem aplicada em massa. ${applied} produto(s) atualizado(s), ${skipped} sem preco sugerido valido.`,
+    noticeType: skipped > 0 ? "warning" : "success"
+  })}`);
+}
+
+export async function updateSupplierProductStorePriceAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const parsed = productStorePriceSchema.safeParse({
+    price: formData.get("storePrice"),
+    productId: formData.get("productId")
+  });
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Preco invalido.");
+  }
+
+  const priceCents = parseCurrencyToCents(parsed.data.price);
+
+  if (priceCents === null || priceCents <= 0) {
+    throw new Error("Informe um preco da loja maior que zero.");
+  }
+
+  await prisma.product.update({
+    data: {
+      priceCents,
+      variants: {
+        updateMany: {
+          data: { priceCents },
+          where: { productId: parsed.data.productId }
+        }
+      }
+    },
+    where: { id: parsed.data.productId }
+  });
+
+  revalidateSupplierProductPaths();
+  redirect(`/admin/fornecedores?notice=${encodeURIComponent("Preco da loja atualizado no produto e nas variacoes.")}`);
+}
+
+export async function archiveSupplierProductAction(productId: string): Promise<void> {
+  await requireAdmin();
+  const id = sourceIdSchema.parse(productId);
+
+  await prisma.product.update({
+    data: {
+      publishedAt: null,
+      status: ProductStatus.ARCHIVED
+    },
+    where: { id }
+  });
+
+  revalidateSupplierProductPaths();
+  redirect(`/admin/fornecedores?notice=${encodeURIComponent("Produto desativado na loja.")}&noticeType=warning`);
+}
+
+export async function deleteSupplierProductAction(productId: string): Promise<void> {
+  await requireAdmin();
+  const id = sourceIdSchema.parse(productId);
+  const product = await prisma.product.findUnique({
+    select: {
+      _count: { select: { orderItems: true } }
+    },
+    where: { id }
+  });
+
+  if (!product) {
+    redirect(`/admin/fornecedores?notice=${encodeURIComponent("Produto nao encontrado.")}&noticeType=warning`);
+  }
+
+  if (product._count.orderItems > 0) {
+    await prisma.product.update({
+      data: {
+        publishedAt: null,
+        status: ProductStatus.ARCHIVED
+      },
+      where: { id }
+    });
+    revalidateSupplierProductPaths();
+    redirect(`/admin/fornecedores?notice=${encodeURIComponent("Produto possui pedido vinculado e foi apenas desativado/arquivado.")}&noticeType=warning`);
+  }
+
+  try {
+    await prisma.product.delete({ where: { id } });
+    revalidateSupplierProductPaths();
+    redirect(`/admin/fornecedores?notice=${encodeURIComponent("Produto excluido definitivamente.")}&noticeType=success`);
+  } catch {
+    await prisma.product.update({
+      data: {
+        publishedAt: null,
+        status: ProductStatus.ARCHIVED
+      },
+      where: { id }
+    });
+    revalidateSupplierProductPaths();
+    redirect(`/admin/fornecedores?notice=${encodeURIComponent("Nao foi possivel excluir sem afetar vinculos. O produto foi desativado/arquivado com seguranca.")}&noticeType=warning`);
+  }
 }
 
 export async function acknowledgeSourceAlertAction(formData: FormData): Promise<void> {
@@ -107,23 +245,51 @@ export async function importSupplierSnapshotsAction(formData: FormData): Promise
     throw new Error("Envie um arquivo CSV valido.");
   }
 
-  if (file.size > 2_000_000) {
+  if (file.size > maxImportFileSize) {
     throw new Error("Arquivo muito grande. Envie um CSV de ate 2 MB.");
+  }
+
+  if (!isCsvFile(file)) {
+    throw new Error("Envie um arquivo .csv valido.");
   }
 
   const result = await importSupplierSnapshotCsv(await file.text());
   const details = [
     `${result.imported} importado(s)`,
     `${result.skipped} ignorado(s)`,
+    `${result.invalid} invalido(s)`,
     `${result.missing} sem origem localizada`
   ].join(", ");
   const suffix = result.errors.length ? ` Primeiros erros: ${result.errors.slice(0, 3).join(" | ")}` : "";
+  const params = new URLSearchParams({
+    errors: String(result.errors.length),
+    imported: String(result.imported),
+    invalid: String(result.invalid),
+    matchedByExternal: String(result.matchedByExternal),
+    matchedBySourceId: String(result.matchedBySourceId),
+    matchedByUrl: String(result.matchedByUrl),
+    missing: String(result.missing),
+    notice: `Importacao assistida concluida: ${details}.${suffix}`,
+    noticeType: result.errors.length || result.invalid ? "warning" : "success",
+    skipped: String(result.skipped),
+    updatedPrice: String(result.updatedPrice),
+    updatedStatus: String(result.updatedStatus),
+    updatedStock: String(result.updatedStock),
+    updatedTitle: String(result.updatedTitle)
+  });
+
+  if (result.errors.length) {
+    params.set("importDetails", result.errors.slice(0, 5).join(" | "));
+  }
 
   revalidatePath("/admin/fornecedores");
   revalidatePath("/admin/produtos");
   revalidatePath("/produtos");
-  redirect(`/admin/fornecedores?notice=${encodeURIComponent(`Importacao assistida concluida: ${details}.${suffix}`)}`);
+  redirect(`/admin/fornecedores?${params.toString()}`);
 }
+
+export const importSupplierCsvAction = importSupplierSnapshotsAction;
+export const updateManualSourceAction = updateManualSourceSnapshotAction;
 
 export async function updateGlobalPricingRuleAction(formData: FormData): Promise<void> {
   await requireAdmin();
@@ -164,6 +330,59 @@ export async function updateGlobalPricingRuleAction(formData: FormData): Promise
   redirect(`/admin/fornecedores?notice=${encodeURIComponent("Regra de margem salva em reais.")}`);
 }
 
+function buildSupplierRedirectParams({
+  filters,
+  notice,
+  noticeType
+}: {
+  filters: z.infer<typeof filteredSourcesSchema>;
+  notice: string;
+  noticeType: "success" | "warning";
+}): string {
+  const params = new URLSearchParams({
+    notice,
+    noticeType
+  });
+
+  if (filters.query) {
+    params.set("busca", filters.query);
+  }
+
+  if (filters.provider) {
+    params.set("fornecedor", filters.provider);
+  }
+
+  if (filters.status) {
+    params.set("status", filters.status);
+  }
+
+  return params.toString();
+}
+
+function normalizeOptionalText(value: FormDataEntryValue | null): string | undefined {
+  const text = typeof value === "string" ? value.trim() : "";
+
+  return text || undefined;
+}
+
+function normalizeOptionalEnum(value: FormDataEntryValue | null): string | undefined {
+  return normalizeOptionalText(value);
+}
+
+function revalidateSupplierProductPaths(): void {
+  revalidatePath("/admin/fornecedores");
+  revalidatePath("/admin/produtos");
+  revalidatePath("/produtos");
+  revalidatePath("/ofertas");
+}
+
+function isCsvFile(file: File): boolean {
+  const name = file.name.toLowerCase();
+  const type = file.type.toLowerCase();
+
+  return name.endsWith(".csv") || type === "text/csv" || type === "application/vnd.ms-excel";
+}
+
 function parseCurrencyToCents(value: string | undefined): number | null {
   const normalized = value?.replace(/\./g, "").replace(",", ".").trim();
 
@@ -173,7 +392,7 @@ function parseCurrencyToCents(value: string | undefined): number | null {
 
   const numberValue = Number(normalized);
 
-  return Number.isFinite(numberValue) ? Math.round(numberValue * 100) : null;
+  return Number.isFinite(numberValue) && numberValue >= 0 ? Math.round(numberValue * 100) : null;
 }
 
 function parseOptionalInteger(value: string | undefined): number | null {
@@ -183,5 +402,5 @@ function parseOptionalInteger(value: string | undefined): number | null {
 
   const numberValue = Number(value);
 
-  return Number.isInteger(numberValue) ? numberValue : null;
+  return Number.isInteger(numberValue) && numberValue >= 0 ? numberValue : null;
 }

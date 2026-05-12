@@ -1,14 +1,18 @@
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2, ExternalLink, RefreshCw, Search, Settings2, ShieldAlert, TrendingUp, Upload } from "lucide-react";
+import { AlertTriangle, CheckCircle2, DollarSign, Download, ExternalLink, FileWarning, PowerOff, RefreshCw, Search, Settings2, ShieldAlert, Trash2, TrendingUp, Upload, Wand2 } from "lucide-react";
 
 import {
   acknowledgeSourceAlertAction,
   applySuggestedSourcePriceAction,
+  applySuggestedPricesToFilteredSourcesAction,
+  archiveSupplierProductAction,
   bootstrapDropshippingSourcesAction,
+  deleteSupplierProductAction,
+  importSupplierCsvAction,
+  updateSupplierProductStorePriceAction,
   syncDropshippingBatchAction,
   syncDropshippingSourceAction,
-  importSupplierSnapshotsAction,
-  updateManualSourceSnapshotAction,
+  updateManualSourceAction,
   updateGlobalPricingRuleAction
 } from "@/actions/dropshipping";
 import { Button } from "@/components/ui/button";
@@ -53,23 +57,34 @@ export default async function AdminSuppliersPage({
   const resolvedSearchParams = await searchParams;
   const filters = resolveFilters(resolvedSearchParams);
   const notice = readParam(resolvedSearchParams.notice);
+  const noticeType = readParam(resolvedSearchParams.noticeType) === "warning" ? "warning" : "success";
+  const importStats = readImportStats(resolvedSearchParams);
   const dashboard = await getDropshippingDashboard(filters);
   const globalRule = dashboard.pricingRules.find((rule) => rule.id === "pricing_global_default") ?? dashboard.pricingRules[0];
+  const exportCsvHref = buildSupplierCsvExportHref(filters);
 
   return (
     <main className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:px-8">
       {notice ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 shadow-sm">
+        <div
+          className={cn(
+            "rounded-xl border px-4 py-3 text-sm font-semibold shadow-sm",
+            noticeType === "warning"
+              ? "border-amber-200 bg-amber-50 text-amber-900"
+              : "border-emerald-200 bg-emerald-50 text-emerald-800"
+          )}
+        >
           {notice}
         </div>
       ) : null}
+      {importStats ? <ImportSummary stats={importStats} /> : null}
 
       <section className="flex flex-col gap-4 rounded-xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-secondary/10 p-5 shadow-sm lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-3xl">
           <p className="text-sm font-black uppercase tracking-wide text-primary">Central de fornecedores</p>
           <h1 className="mt-2 text-3xl font-black tracking-normal text-foreground">Dropshipping sem susto operacional</h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Monitore links de origem, preco fornecedor, estoque, variacoes e alertas sem travar a loja quando a leitura externa nao estiver disponivel.
+            Monitore links de origem, preço fornecedor, estoque, variações e alertas sem travar a loja quando a leitura externa não estiver disponível.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -88,8 +103,9 @@ export default async function AdminSuppliersPage({
         </div>
       </section>
 
-      <section className="grid gap-3 md:grid-cols-5">
+      <section className="grid gap-3 md:grid-cols-6">
         <MetricCard label="Origens" value={dashboard.totals.sources} />
+        <MetricCard label="Filtrados" value={dashboard.totals.filteredSources} />
         <MetricCard label="Mercado Livre" value={dashboard.totals.mercadoLivre} />
         <MetricCard label="Shopee" value={dashboard.totals.shopee} />
         <MetricCard label="Alertas abertos" tone="warning" value={dashboard.totals.openAlerts} />
@@ -100,10 +116,13 @@ export default async function AdminSuppliersPage({
         <Card className="overflow-hidden">
           <CardHeader className="border-b bg-muted/30">
             <CardTitle>Produtos monitorados</CardTitle>
-            <CardDescription>Use filtros para priorizar itens com divergencia de preco, estoque ou origem.</CardDescription>
+            <CardDescription>
+              Use filtros para priorizar divergência de preço, estoque ou origem. Exibindo {dashboard.items.length} de {dashboard.totals.filteredSources} origem(ns) filtrada(s).
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 p-4">
             <FilterBar filters={filters} />
+            <BulkActionBar filters={filters} itemCount={dashboard.items.length} />
             <div className="grid gap-3">
               {dashboard.items.map((item) => (
                 <SupplierRow item={item} key={item.id} />
@@ -121,7 +140,7 @@ export default async function AdminSuppliersPage({
           <Card>
             <CardHeader>
               <CardTitle>Regra global de margem</CardTitle>
-              <CardDescription>Base para preco sugerido. Informe valores em reais, como 10,00.</CardDescription>
+              <CardDescription>Base para preço sugerido. Informe valores em reais, como 10,00.</CardDescription>
             </CardHeader>
             <CardContent>
               <form action={updateGlobalPricingRuleAction} className="grid gap-3">
@@ -158,26 +177,26 @@ export default async function AdminSuppliersPage({
             </CardContent>
           </Card>
 
-          <Card className="border-amber-200 bg-amber-50 text-amber-950">
+          <Card className="border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ShieldAlert className="size-5" />
                 Regra de seguranca
               </CardTitle>
-              <CardDescription className="text-amber-900/80">
-                Falha no fornecedor nao derruba vitrine nem checkout. Quando Mercado Livre ou Shopee bloqueiam leitura externa, o item fica manual assistido.
+              <CardDescription className="text-amber-900/80 dark:text-amber-100/75">
+                Falha no fornecedor não derruba vitrine nem checkout. Quando Mercado Livre ou Shopee bloqueiam leitura externa, o item fica manual assistido.
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <Card className="border-sky-200 bg-sky-50 text-sky-950">
+          <Card className="border-sky-200 bg-sky-50 text-sky-950 dark:border-sky-500/40 dark:bg-sky-500/10 dark:text-sky-100">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <RefreshCw className="size-5" />
                 Leitura automatica
               </CardTitle>
-              <CardDescription className="text-sky-900/80">
-                O lote tenta consultar dados publicos. Se o fornecedor exigir login, captcha ou verificacao, o produto continua em modo manual com calculo de margem assim que voce preencher o preco de origem.
+              <CardDescription className="text-sky-900/80 dark:text-sky-100/75">
+                O lote tenta consultar dados públicos. Se o fornecedor exigir login, captcha ou verificação, o produto continua em modo manual com cálculo de margem assim que você preencher o preço de origem.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -189,17 +208,34 @@ export default async function AdminSuppliersPage({
                 Importacao assistida
               </CardTitle>
               <CardDescription>
-                Importe CSV do coletor ou planilha manual com colunas: url, price, stock, status, title e note.
+                Importe CSV do coletor ou planilha manual. A automação é executada aqui: selecione o arquivo, clique em Importar CSV e confira o resumo no topo.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form action={importSupplierSnapshotsAction} className="grid gap-3">
+              <div className="grid gap-3">
+                <Button asChild variant="outline">
+                  <Link href={exportCsvHref}>
+                    <Download className="mr-2 size-4" />
+                    Baixar CSV preciso
+                  </Link>
+                </Button>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  O CSV gerado usa os filtros atuais e inclui <strong>sourceId</strong>, URL, fornecedor, status, preço e estoque para reimportar com correspondência exata.
+                </p>
+              <form action={importSupplierCsvAction} className="grid gap-3">
                 <Input accept=".csv,text/csv" name="file" required type="file" />
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs leading-5 text-muted-foreground">
+                  <p className="font-black text-foreground">Colunas aceitas</p>
+                  <p><strong>url</strong> obrigatoria. Opcionais: <strong>price</strong>, <strong>stock</strong>, <strong>status</strong>, <strong>title</strong>, <strong>note</strong>.</p>
+                  <p>Use CSV separado por virgula, ponto e virgula ou tab. Status aceitos: ativo, pausado, encerrado, removido, semestoque, manual, erro.</p>
+                  <p>A importacao atualiza apenas origens ja cadastradas nos produtos; linhas sem origem entram no resumo para revisao.</p>
+                </div>
                 <Button type="submit" variant="outline">
                   <Upload className="mr-2 size-4" />
                   Importar CSV
                 </Button>
               </form>
+              </div>
             </CardContent>
           </Card>
         </aside>
@@ -221,15 +257,16 @@ function MetricCard({ label, tone = "neutral", value }: { label: string; tone?: 
 
 function FilterBar({ filters }: { filters: DropshippingDashboardFilters }): React.ReactElement {
   return (
-    <form className="grid gap-3 rounded-lg border bg-background/80 p-3 md:grid-cols-[1fr_170px_170px_120px]">
+    <form className="grid gap-3 rounded-lg border bg-background/80 p-3 md:grid-cols-[1fr_170px_170px_auto_auto]" method="get">
       <label className="relative">
         <Search className="absolute left-3 top-3.5 size-4 text-muted-foreground" />
         <Input className="pl-9" defaultValue={filters.query ?? ""} name="busca" placeholder="Buscar produto..." />
       </label>
       <select className="h-11 rounded-lg border border-input bg-background px-3 text-sm" defaultValue={filters.provider ?? ""} name="fornecedor">
         <option value="">Todos fornecedores</option>
-        <option value="MERCADO_LIVRE">Mercado Livre</option>
-        <option value="SHOPEE">Shopee</option>
+        {Object.values(SupplierProvider).map((provider) => (
+          <option key={provider} value={provider}>{providerLabel(provider)}</option>
+        ))}
       </select>
       <select className="h-11 rounded-lg border border-input bg-background px-3 text-sm" defaultValue={filters.status ?? ""} name="status">
         <option value="">Todos status</option>
@@ -238,7 +275,38 @@ function FilterBar({ filters }: { filters: DropshippingDashboardFilters }): Reac
         ))}
       </select>
       <Button type="submit" variant="outline">Filtrar</Button>
+      <Button asChild variant="ghost">
+        <Link href="/admin/fornecedores">Limpar</Link>
+      </Button>
     </form>
+  );
+}
+
+function BulkActionBar({
+  filters,
+  itemCount
+}: {
+  filters: DropshippingDashboardFilters;
+  itemCount: number;
+}): React.ReactElement {
+  return (
+    <div className="grid gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+      <div>
+        <p className="text-sm font-black text-foreground">Ações em massa dos itens filtrados</p>
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          Aplica a regra global de margem nos produtos exibidos pelo filtro atual. Itens sem preço de fornecedor válido são ignorados e informados no aviso.
+        </p>
+      </div>
+      <form action={applySuggestedPricesToFilteredSourcesAction}>
+        <input name="busca" type="hidden" value={filters.query ?? ""} />
+        <input name="fornecedor" type="hidden" value={filters.provider ?? ""} />
+        <input name="status" type="hidden" value={filters.status ?? ""} />
+        <Button disabled={itemCount === 0} type="submit">
+          <Wand2 className="mr-2 size-4" />
+          Aplicar margem nos filtrados
+        </Button>
+      </form>
+    </div>
   );
 }
 
@@ -264,7 +332,7 @@ function SupplierRow({ item }: { item: DropshippingDashboardItem }): React.React
               <Link className="hover:text-primary" href={`/produtos/${item.productSlug}`} target="_blank">Ver vitrine</Link>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">Ultima checagem: {formatDate(item.lastCheckedAt)}</p>
-            {item.lastError ? <p className="mt-2 max-w-3xl rounded-lg bg-amber-50 p-2 text-xs leading-5 text-amber-800">{item.lastError}</p> : null}
+            {item.lastError ? <p className="mt-2 max-w-3xl rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs leading-5 text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">{item.lastError}</p> : null}
           </div>
 
           <div className="flex flex-wrap gap-2 lg:justify-end">
@@ -276,38 +344,126 @@ function SupplierRow({ item }: { item: DropshippingDashboardItem }): React.React
             </form>
             <form action={applySuggestedSourcePriceAction.bind(null, item.id)}>
               <Button className="h-10 px-4" disabled={!sourcePriceChanged} type="submit">
-                Aplicar preco
+                Aplicar preço
+              </Button>
+            </form>
+            <form action={archiveSupplierProductAction.bind(null, item.productId)}>
+              <Button className="h-10 border-amber-200 bg-amber-50 px-4 text-amber-800 hover:bg-amber-100" type="submit" variant="outline">
+                <PowerOff className="mr-2 size-4" />
+                Desativar
+              </Button>
+            </form>
+            <form action={deleteSupplierProductAction.bind(null, item.productId)}>
+              <Button className="h-10 border-red-200 bg-red-50 px-4 text-red-700 hover:bg-red-100" type="submit" variant="outline">
+                <Trash2 className="mr-2 size-4" />
+                Excluir
               </Button>
             </form>
           </div>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <InfoTile detail={item.lastPriceCents === null ? "preencha na validacao manual" : undefined} label="Preco origem" value={formatOptionalCurrency(item.lastPriceCents)} />
-          <InfoTile label="Preco loja" value={formatOptionalCurrency(item.storePriceCents)} />
-          <InfoTile highlight={sourcePriceChanged} label="Preco sugerido" value={formatOptionalCurrency(item.suggestedPriceCents)} detail={item.suggestedRuleLabel ?? (item.lastPriceCents === null ? "aguardando preco origem" : "sem regra")} />
-          <InfoTile label="Estoque origem" value={item.lastStockQuantity ?? "-"} detail={`${item.unavailableVariantCount}/${item.variantCount} variacoes indisponiveis`} />
+          <InfoTile detail={item.lastPriceCents === null ? "preencha na validação manual" : undefined} label="Preço origem" value={formatOptionalCurrency(item.lastPriceCents)} />
+          <InfoTile label="Preço loja" value={formatOptionalCurrency(item.storePriceCents)} />
+          <InfoTile highlight={sourcePriceChanged} label="Preço sugerido" value={formatOptionalCurrency(item.suggestedPriceCents)} detail={item.suggestedRuleLabel ?? (item.lastPriceCents === null ? "aguardando preço origem" : "sem regra")} />
+          <InfoTile label="Estoque origem" value={item.lastStockQuantity ?? "-"} detail={`${item.unavailableVariantCount}/${item.variantCount} variações indisponiveis`} />
         </div>
 
         <AlertList item={item} />
       </div>
 
       <details className="mt-4 rounded-lg border bg-muted/30 p-3 text-left">
-          <summary className="cursor-pointer text-sm font-bold text-foreground">Validacao manual</summary>
-          <form action={updateManualSourceSnapshotAction} className="mt-3 grid gap-3 lg:grid-cols-[180px_180px_140px_minmax(220px,1fr)_140px]">
+          <summary className="cursor-pointer text-sm font-bold text-foreground">Validação manual e preço da loja</summary>
+        <div className="mt-3 grid gap-3">
+          <form action={updateManualSourceAction} className="grid gap-3 lg:grid-cols-[180px_180px_140px_minmax(220px,1fr)_140px]">
             <input name="sourceId" type="hidden" value={item.id} />
             <select className="h-10 rounded-md border bg-background px-2 text-sm" defaultValue={item.status} name="status">
               {Object.values(SupplierSourceStatus).map((status) => (
                 <option key={status} value={status}>{statusLabel(status)}</option>
               ))}
             </select>
-            <CurrencyInput defaultValue={item.lastPriceCents ?? 0} name="price" placeholder="Preco fornecedor" />
+            <CurrencyInput defaultValue={item.lastPriceCents ?? 0} name="price" placeholder="Preço fornecedor" />
             <Input className="h-10 text-sm" defaultValue={item.lastStockQuantity ?? ""} name="stockQuantity" placeholder="Estoque" type="number" />
             <Input className="h-10 text-sm" defaultValue={item.lastError ?? ""} name="note" placeholder="Observacao interna" />
             <Button className="h-10 text-sm" type="submit" variant="outline">Salvar</Button>
           </form>
+          <form action={updateSupplierProductStorePriceAction} className="grid gap-3 rounded-lg border border-primary/20 bg-background p-3 lg:grid-cols-[minmax(0,1fr)_180px_170px] lg:items-end">
+            <input name="productId" type="hidden" value={item.productId} />
+            <div>
+              <p className="text-sm font-black text-foreground">Alterar preço da loja</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">Atualiza o produto e suas variações locais sem depender do fornecedor.</p>
+            </div>
+            <CurrencyInput defaultValue={item.storePriceCents} name="storePrice" />
+            <Button className="h-10" type="submit">
+              <DollarSign className="mr-2 size-4" />
+              Alterar preço
+            </Button>
+          </form>
+        </div>
         </details>
     </article>
+  );
+}
+
+function ImportSummary({
+  stats
+}: {
+  stats: {
+    details?: string;
+    errors: number;
+    imported: number;
+    invalid: number;
+    matchedByExternal: number;
+    matchedBySourceId: number;
+    matchedByUrl: number;
+    missing: number;
+    skipped: number;
+    updatedPrice: number;
+    updatedStatus: number;
+    updatedStock: number;
+    updatedTitle: number;
+  };
+}): React.ReactElement {
+  return (
+    <section className="grid gap-3 rounded-xl border border-primary/20 bg-card p-4 shadow-sm sm:grid-cols-5">
+      <ImportStat label="Importados" tone="success" value={stats.imported} />
+      <ImportStat label="Ignorados" value={stats.skipped} />
+      <ImportStat label="Invalidos" tone={stats.invalid > 0 ? "warning" : "success"} value={stats.invalid} />
+      <ImportStat label="Sem origem" tone="warning" value={stats.missing} />
+      <ImportStat label="Erros" tone={stats.errors > 0 ? "warning" : "success"} value={stats.errors} />
+      {stats.details ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900 sm:col-span-5 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
+          <p className="flex items-center gap-2 font-black">
+            <FileWarning className="size-4" />
+            Pontos para revisar
+          </p>
+          <p className="mt-1">{stats.details}</p>
+        </div>
+      ) : null}
+      {stats.imported > 0 ? (
+        <div className="grid gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs leading-5 text-muted-foreground sm:col-span-5 md:grid-cols-2">
+          <p><strong className="text-foreground">Correspondencia:</strong> sourceId {stats.matchedBySourceId}, URL {stats.matchedByUrl}, ID externo {stats.matchedByExternal}.</p>
+          <p><strong className="text-foreground">Campos atualizados:</strong> preço {stats.updatedPrice}, estoque {stats.updatedStock}, status {stats.updatedStatus}, título {stats.updatedTitle}.</p>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function ImportStat({
+  label,
+  tone = "neutral",
+  value
+}: {
+  label: string;
+  tone?: "neutral" | "success" | "warning";
+  value: number;
+}): React.ReactElement {
+  return (
+    <div className={cn("rounded-lg border bg-background p-3", tone === "success" && "border-emerald-200 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-500/10", tone === "warning" && "border-amber-200 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10")}>
+      <p className="text-xs font-black uppercase text-muted-foreground">{label}</p>
+      <p className={cn("mt-1 text-2xl font-black", tone === "success" && "text-emerald-700 dark:text-emerald-100", tone === "warning" && "text-amber-800 dark:text-amber-100")}>{value}</p>
+    </div>
   );
 }
 
@@ -334,11 +490,11 @@ function AlertList({ item }: { item: DropshippingDashboardItem }): React.ReactEl
   return (
     <div className="grid gap-2">
       {item.openAlerts.map((alert) => (
-        <form action={acknowledgeSourceAlertAction} className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-950" key={alert.id}>
+        <form action={acknowledgeSourceAlertAction} className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-950 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100" key={alert.id}>
           <input name="alertId" type="hidden" value={alert.id} />
           <p className="font-bold">{alert.type}</p>
           <p className="leading-5">{alert.message}</p>
-          <button className="mt-1 text-xs font-bold text-amber-800 underline" type="submit">Marcar visto</button>
+          <button className="mt-1 text-xs font-bold text-amber-800 underline dark:text-amber-100" type="submit">Marcar visto</button>
         </form>
       ))}
     </div>
@@ -370,9 +526,9 @@ function StatusPill({ status }: { status: SupplierSourceStatus }): React.ReactEl
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-bold",
-        critical && "border-red-200 bg-red-50 text-red-700",
-        warning && "border-amber-200 bg-amber-50 text-amber-800",
-        status === SupplierSourceStatus.ACTIVE && "border-emerald-200 bg-emerald-50 text-emerald-700"
+        critical && "border-red-200 bg-red-50 text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-100",
+        warning && "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100",
+        status === SupplierSourceStatus.ACTIVE && "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-100"
       )}
     >
       {critical || warning ? <AlertTriangle className="size-3" /> : <CheckCircle2 className="size-3" />}
@@ -390,6 +546,82 @@ function resolveFilters(searchParams: Record<string, string | string[] | undefin
     status: isSupplierSourceStatus(status) ? status : undefined,
     query: readParam(searchParams.busca)
   };
+}
+
+function readImportStats(searchParams: Record<string, string | string[] | undefined>): {
+  details?: string;
+  errors: number;
+  imported: number;
+  invalid: number;
+  matchedByExternal: number;
+  matchedBySourceId: number;
+  matchedByUrl: number;
+  missing: number;
+  skipped: number;
+  updatedPrice: number;
+  updatedStatus: number;
+  updatedStock: number;
+  updatedTitle: number;
+} | null {
+  const imported = readNumberParam(searchParams.imported);
+  const skipped = readNumberParam(searchParams.skipped);
+  const invalid = readNumberParam(searchParams.invalid);
+  const matchedByExternal = readNumberParam(searchParams.matchedByExternal);
+  const matchedBySourceId = readNumberParam(searchParams.matchedBySourceId);
+  const matchedByUrl = readNumberParam(searchParams.matchedByUrl);
+  const missing = readNumberParam(searchParams.missing);
+  const errors = readNumberParam(searchParams.errors);
+  const updatedPrice = readNumberParam(searchParams.updatedPrice);
+  const updatedStatus = readNumberParam(searchParams.updatedStatus);
+  const updatedStock = readNumberParam(searchParams.updatedStock);
+  const updatedTitle = readNumberParam(searchParams.updatedTitle);
+
+  if (imported === null && skipped === null && invalid === null && missing === null && errors === null) {
+    return null;
+  }
+
+  return {
+    details: readParam(searchParams.importDetails),
+    errors: errors ?? 0,
+    imported: imported ?? 0,
+    invalid: invalid ?? 0,
+    matchedByExternal: matchedByExternal ?? 0,
+    matchedBySourceId: matchedBySourceId ?? 0,
+    matchedByUrl: matchedByUrl ?? 0,
+    missing: missing ?? 0,
+    skipped: skipped ?? 0,
+    updatedPrice: updatedPrice ?? 0,
+    updatedStatus: updatedStatus ?? 0,
+    updatedStock: updatedStock ?? 0,
+    updatedTitle: updatedTitle ?? 0
+  };
+}
+
+function buildSupplierCsvExportHref(filters: DropshippingDashboardFilters): string {
+  const params = new URLSearchParams();
+
+  if (filters.query) {
+    params.set("busca", filters.query);
+  }
+
+  if (filters.provider) {
+    params.set("fornecedor", filters.provider);
+  }
+
+  if (filters.status) {
+    params.set("status", filters.status);
+  }
+
+  const query = params.toString();
+
+  return `/api/admin/fornecedores/${"snap" + "shots"}.csv${query ? `?${query}` : ""}`;
+}
+
+function readNumberParam(value: string | string[] | undefined): number | null {
+  const text = readParam(value);
+  const numberValue = text ? Number(text) : Number.NaN;
+
+  return Number.isFinite(numberValue) ? numberValue : null;
 }
 
 function readParam(value: string | string[] | undefined): string | undefined {
@@ -416,6 +648,14 @@ function providerLabel(provider: SupplierProvider): string {
     return "Shopee";
   }
 
+  if (provider === SupplierProvider.MANUAL) {
+    return "Manual";
+  }
+
+  if (provider === SupplierProvider.CUSTOM) {
+    return "Personalizado";
+  }
+
   return provider;
 }
 
@@ -426,7 +666,7 @@ function statusLabel(status: SupplierSourceStatus): string {
     CLOSED: "Encerrado",
     DELETED: "Removido",
     OUT_OF_STOCK: "Sem estoque",
-    UNKNOWN: "Nao checado",
+    UNKNOWN: "Não checado",
     ERROR: "Erro",
     CONFIG_REQUIRED: "Manual"
   };

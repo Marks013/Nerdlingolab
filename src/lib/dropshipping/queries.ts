@@ -1,15 +1,17 @@
 import {
+  ProductStatus,
   SupplierAlertStatus,
   SupplierAlertType,
   SupplierProvider,
   SupplierSourceStatus,
   type PricingRoundingMode
 } from "@/generated/prisma/client";
+import type { Prisma } from "@/generated/prisma/client";
 
 import { formatCurrency } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
-import { getSuggestedPriceForProduct } from "./pricing";
+import { getActivePricingRules, getSuggestedPriceFromRules } from "./pricing";
 
 const unavailableStatuses: SupplierSourceStatus[] = [
   SupplierSourceStatus.OUT_OF_STOCK,
@@ -54,11 +56,12 @@ export interface DropshippingDashboardItem {
 export async function getDropshippingDashboard(filters: DropshippingDashboardFilters = {}): Promise<{
   items: DropshippingDashboardItem[];
   totals: {
-    sources: number;
+    filteredSources: number;
     openAlerts: number;
     mercadoLivre: number;
     shopee: number;
     criticalStatuses: number;
+    sources: number;
   };
   pricingRules: Array<{
     id: string;
@@ -70,31 +73,9 @@ export async function getDropshippingDashboard(filters: DropshippingDashboardFil
     isActive: boolean;
   }>;
 }> {
-  const where = {
-    ...(filters.provider ? { provider: filters.provider } : {}),
-    ...(filters.status ? { status: filters.status } : {}),
-    ...(filters.query
-      ? {
-          product: {
-            title: {
-              contains: filters.query,
-              mode: "insensitive" as const
-            }
-          }
-        }
-      : {}),
-    ...(filters.alert === "open"
-      ? {
-          alerts: {
-            some: {
-              status: SupplierAlertStatus.OPEN
-            }
-          }
-        }
-      : {})
-  };
+  const where = buildDashboardWhere(filters);
 
-  const [sources, openAlerts, mercadoLivre, shopee, criticalStatuses, pricingRules] = await Promise.all([
+  const [sources, totalSources, filteredSources, openAlerts, mercadoLivre, shopee, criticalStatuses, pricingRules] = await Promise.all([
     prisma.productSource.findMany({
       include: {
         alerts: {
@@ -110,67 +91,97 @@ export async function getDropshippingDashboard(filters: DropshippingDashboardFil
       take: 120,
       where
     }),
-    prisma.sourceAlert.count({ where: { status: SupplierAlertStatus.OPEN } }),
-    prisma.productSource.count({ where: { provider: SupplierProvider.MERCADO_LIVRE } }),
-    prisma.productSource.count({ where: { provider: SupplierProvider.SHOPEE } }),
     prisma.productSource.count({
       where: {
+        product: {
+          status: { not: ProductStatus.ARCHIVED }
+        }
+      }
+    }),
+    prisma.productSource.count({ where }),
+    prisma.sourceAlert.count({
+      where: {
+        productSource: {
+          product: {
+            status: { not: ProductStatus.ARCHIVED }
+          }
+        },
+        status: SupplierAlertStatus.OPEN
+      }
+    }),
+    prisma.productSource.count({
+      where: {
+        product: {
+          status: { not: ProductStatus.ARCHIVED }
+        },
+        provider: SupplierProvider.MERCADO_LIVRE
+      }
+    }),
+    prisma.productSource.count({
+      where: {
+        product: {
+          status: { not: ProductStatus.ARCHIVED }
+        },
+        provider: SupplierProvider.SHOPEE
+      }
+    }),
+    prisma.productSource.count({
+      where: {
+        product: {
+          status: { not: ProductStatus.ARCHIVED }
+        },
         status: { in: [SupplierSourceStatus.PAUSED, SupplierSourceStatus.CLOSED, SupplierSourceStatus.DELETED, SupplierSourceStatus.OUT_OF_STOCK] }
       }
     }),
-    prisma.pricingRule.findMany({
-      orderBy: { updatedAt: "desc" },
-      take: 10
-    })
+    getActivePricingRules()
   ]);
 
-  const items = await Promise.all(
-    sources.map(async (source) => {
-      const suggested = await getSuggestedPriceForProduct({
-        categoryId: source.product.categoryId,
-        productId: source.productId,
-        sourcePriceCents: source.lastPriceCents,
-        supplierId: source.supplierId
-      });
+  const items = sources.map((source) => {
+    const suggested = getSuggestedPriceFromRules(pricingRules, {
+      categoryId: source.product.categoryId,
+      productId: source.productId,
+      sourcePriceCents: source.lastPriceCents,
+      supplierId: source.supplierId
+    });
 
-      return {
-        id: source.id,
-        productId: source.productId,
-        productTitle: source.product.title,
-        productSlug: source.product.slug,
-        provider: source.provider,
-        originalUrl: source.originalUrl,
-        status: source.status,
-        lastPriceCents: source.lastPriceCents,
-        lastStockQuantity: source.lastStockQuantity,
-        storePriceCents: source.product.priceCents,
-        suggestedPriceCents: suggested?.priceCents ?? null,
-        suggestedMarginCents: suggested?.marginCents ?? null,
-        suggestedRuleLabel: suggested?.ruleLabel ?? null,
-        lastCheckedAt: source.lastCheckedAt,
-        lastError: source.lastError,
-        openAlerts: source.alerts.map((alert) => ({
-          id: alert.id,
-          type: alert.type,
-          message: alert.message,
-          createdAt: alert.createdAt
-        })),
-        variantCount: source.variants.length,
-        unavailableVariantCount: source.variants.filter((variant) => unavailableStatuses.includes(variant.status)).length
-      } satisfies DropshippingDashboardItem;
-    })
-  );
+    return {
+      id: source.id,
+      productId: source.productId,
+      productTitle: source.product.title,
+      productSlug: source.product.slug,
+      provider: source.provider,
+      originalUrl: source.originalUrl,
+      status: source.status,
+      lastPriceCents: source.lastPriceCents,
+      lastStockQuantity: source.lastStockQuantity,
+      storePriceCents: source.product.priceCents,
+      suggestedPriceCents: suggested?.priceCents ?? null,
+      suggestedMarginCents: suggested?.marginCents ?? null,
+      suggestedRuleLabel: suggested?.ruleLabel ?? null,
+      lastCheckedAt: source.lastCheckedAt,
+      lastError: source.lastError,
+      openAlerts: source.alerts.map((alert) => ({
+        id: alert.id,
+        type: alert.type,
+        message: alert.message,
+        createdAt: alert.createdAt
+      })),
+      variantCount: source.variants.length,
+      unavailableVariantCount: source.variants.filter((variant) => unavailableStatuses.includes(variant.status)).length
+    } satisfies DropshippingDashboardItem;
+  });
 
   return {
     items,
     totals: {
-      sources: sources.length,
+      filteredSources,
       openAlerts,
       mercadoLivre,
       shopee,
-      criticalStatuses
+      criticalStatuses,
+      sources: totalSources
     },
-    pricingRules: pricingRules.map((rule) => ({
+    pricingRules: pricingRules.slice(0, 10).map((rule) => ({
       id: rule.id,
       label: rule.scope,
       marginPercent: String(rule.marginPercent),
@@ -179,6 +190,69 @@ export async function getDropshippingDashboard(filters: DropshippingDashboardFil
       roundingMode: rule.roundingMode,
       isActive: rule.isActive
     }))
+  };
+}
+
+export function buildDropshippingSourceWhere(filters: DropshippingDashboardFilters = {}): Prisma.ProductSourceWhereInput {
+  return buildDashboardWhere(filters);
+}
+
+function buildDashboardWhere(filters: DropshippingDashboardFilters = {}): Prisma.ProductSourceWhereInput {
+  return {
+    product: {
+      status: { not: ProductStatus.ARCHIVED }
+    },
+    ...(filters.provider ? { provider: filters.provider } : {}),
+    ...(filters.status ? { status: filters.status } : {}),
+    ...(filters.query
+      ? {
+          OR: [
+            {
+              product: {
+                title: {
+                  contains: filters.query,
+                  mode: "insensitive" as const
+                }
+              }
+            },
+            {
+              product: {
+                slug: {
+                  contains: filters.query,
+                  mode: "insensitive" as const
+                }
+              }
+            },
+            {
+              title: {
+                contains: filters.query,
+                mode: "insensitive" as const
+              }
+            },
+            {
+              originalUrl: {
+                contains: filters.query,
+                mode: "insensitive" as const
+              }
+            },
+            {
+              externalId: {
+                contains: filters.query,
+                mode: "insensitive" as const
+              }
+            }
+          ]
+        }
+      : {}),
+    ...(filters.alert === "open"
+      ? {
+          alerts: {
+            some: {
+              status: SupplierAlertStatus.OPEN
+            }
+          }
+        }
+      : {})
   };
 }
 

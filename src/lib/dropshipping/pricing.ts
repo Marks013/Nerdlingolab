@@ -18,42 +18,61 @@ export async function getSuggestedPriceForProduct(params: {
     return null;
   }
 
-  const rule = await resolvePricingRule(params);
+  const rule = selectPricingRule(await getActivePricingRules(), params);
 
   if (!rule) {
     return null;
   }
 
-  const marginByPercent = Math.round(params.sourcePriceCents * (Number(rule.marginPercent) / 100));
+  return getSuggestedPriceFromRule(params.sourcePriceCents, rule);
+}
+
+export async function getActivePricingRules(): Promise<PricingRule[]> {
+  return prisma.pricingRule.findMany({
+    orderBy: { updatedAt: "desc" },
+    where: { isActive: true }
+  });
+}
+
+export function getSuggestedPriceFromRules(
+  rules: PricingRule[],
+  params: {
+    supplierId: string;
+    productId: string;
+    categoryId?: string | null;
+    sourcePriceCents: number | null;
+  }
+): SuggestedPrice | null {
+  if (!params.sourcePriceCents || params.sourcePriceCents <= 0) {
+    return null;
+  }
+
+  const rule = selectPricingRule(rules, params);
+
+  return rule ? getSuggestedPriceFromRule(params.sourcePriceCents, rule) : null;
+}
+
+function getSuggestedPriceFromRule(sourcePriceCents: number, rule: PricingRule): SuggestedPrice {
+  const marginByPercent = Math.round(sourcePriceCents * (Number(rule.marginPercent) / 100));
   const marginCents = Math.max(rule.minimumMarginCents, marginByPercent + rule.marginFixedCents);
-  const rawPrice = params.sourcePriceCents + marginCents;
+  const rawPrice = sourcePriceCents + marginCents;
   const priceCents = applyRounding(rawPrice, rule.roundingMode);
 
   return {
     priceCents,
-    marginCents: priceCents - params.sourcePriceCents,
+    marginCents: priceCents - sourcePriceCents,
     ruleLabel: describeRule(rule)
   };
 }
 
-async function resolvePricingRule(params: {
-  supplierId: string;
-  productId: string;
-  categoryId?: string | null;
-}): Promise<PricingRule | null> {
-  const rules = await prisma.pricingRule.findMany({
-    orderBy: { updatedAt: "desc" },
-    where: {
-      isActive: true,
-      OR: [
-        { scope: PricingRuleScope.PRODUCT, productId: params.productId },
-        { scope: PricingRuleScope.CATEGORY, categoryId: params.categoryId ?? "__none__" },
-        { scope: PricingRuleScope.SUPPLIER, supplierId: params.supplierId },
-        { scope: PricingRuleScope.GLOBAL }
-      ]
-    }
-  });
-
+function selectPricingRule(
+  rules: PricingRule[],
+  params: {
+    supplierId: string;
+    productId: string;
+    categoryId?: string | null;
+  }
+): PricingRule | null {
   return rules.find((rule) => {
     if (rule.scope === PricingRuleScope.PRODUCT) {
       return rule.productId === params.productId;

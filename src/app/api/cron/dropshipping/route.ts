@@ -1,11 +1,35 @@
 import * as Sentry from "@sentry/nextjs";
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
+import { z } from "zod";
 
 import { syncDueProductSources } from "@/lib/dropshipping/sync";
+import { rateLimitRequest } from "@/lib/security/rate-limit";
+import { assertSameOriginRequest } from "@/lib/security/request";
 
 export const dynamic = "force-dynamic";
 
+const cronQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(200).default(50)
+});
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const rateLimitError = rateLimitRequest(request, {
+    intervalMs: 60_000,
+    limit: 20,
+    name: "cron-dropshipping"
+  });
+
+  if (rateLimitError) {
+    return rateLimitError;
+  }
+
+  const sameOriginError = hasBearerToken(request) ? null : assertSameOriginRequest(request);
+
+  if (sameOriginError) {
+    return sameOriginError;
+  }
+
   const authResult = authorizeCronRequest(request);
 
   if (!authResult.ok) {
@@ -13,8 +37,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const limit = Number(request.nextUrl.searchParams.get("limit") ?? 50);
-    const results = await syncDueProductSources(Number.isFinite(limit) ? Math.min(Math.max(limit, 1), 200) : 50);
+    const parsedQuery = cronQuerySchema.safeParse({
+      limit: request.nextUrl.searchParams.get("limit") ?? undefined
+    });
+
+    if (!parsedQuery.success) {
+      return NextResponse.json({ error: "Parâmetros inválidos." }, { status: 400 });
+    }
+
+    const results = await syncDueProductSources(parsedQuery.data.limit);
 
     return NextResponse.json({
       ok: true,
@@ -32,6 +63,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 }
 
+function hasBearerToken(request: NextRequest): boolean {
+  return request.headers.get("authorization")?.startsWith("Bearer ") ?? false;
+}
+
 function authorizeCronRequest(request: NextRequest): { error?: string; ok: boolean; status: number } {
   const expectedSecret = process.env.CRON_SECRET ?? process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
 
@@ -42,10 +77,16 @@ function authorizeCronRequest(request: NextRequest): { error?: string; ok: boole
   const header = request.headers.get("authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice("Bearer ".length).trim() : "";
 
-  if (token !== expectedSecret) {
+  if (!safeTokenEquals(token, expectedSecret)) {
     return { error: "Nao autorizado.", ok: false, status: 401 };
   }
 
   return { ok: true, status: 200 };
 }
 
+function safeTokenEquals(receivedToken: string, expectedToken: string): boolean {
+  const received = Buffer.from(receivedToken);
+  const expected = Buffer.from(expectedToken);
+
+  return received.length === expected.length && timingSafeEqual(received, expected);
+}

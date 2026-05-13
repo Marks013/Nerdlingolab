@@ -1,11 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
-import readline from "node:readline/promises";
 import process from "node:process";
+import readline from "node:readline/promises";
 import { chromium } from "@playwright/test";
 
 const repositoryCsvPath = path.resolve("data/shopify/products_export_1.csv");
 const defaultOutputPath = path.resolve("data/dropshipping", `supplier-snapshots-${new Date().toISOString().slice(0, 10)}.csv`);
+const importColumns = ["preco_importacao", "estoque_importacao", "status", "titulo_importacao", "note", "checkedAt"];
 const args = parseArgs(process.argv.slice(2));
 const inputPath = path.resolve(args.input ?? repositoryCsvPath);
 const outputPath = path.resolve(args.output ?? defaultOutputPath);
@@ -20,35 +21,36 @@ if (!fs.existsSync(inputPath)) {
 fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 fs.mkdirSync(userDataDir, { recursive: true });
 
-const urls = readInputUrls(fs.readFileSync(inputPath, "utf8"));
-const selectedUrls = Number.isFinite(limit) ? urls.slice(0, limit) : urls;
+const inputText = stripBom(fs.readFileSync(inputPath, "utf8"));
+const input = readInputRows(inputText);
+const selectedRows = Number.isFinite(limit) ? input.rows.slice(0, limit) : input.rows;
+const outputHeaders = ensureColumns(input.headers, importColumns);
 const context = await chromium.launchPersistentContext(userDataDir, {
   headless: !args.headed,
   viewport: { height: 900, width: 1366 }
 });
 const page = context.pages()[0] ?? await context.newPage();
-const rows = [["url", "provider", "title", "price", "stock", "status", "note", "checkedAt"]];
+const outputRows = input.rows.map((item) => alignRow(item.row, outputHeaders.length));
+fs.writeFileSync(outputPath, toCsv([outputHeaders, ...outputRows], input.delimiter), "utf8");
 
 try {
   if (args.loginFirst) {
     await runInteractiveLogin(context, page);
   }
 
-  for (const [index, url] of selectedUrls.entries()) {
-    process.stdout.write(`[${index + 1}/${selectedUrls.length}] ${url}\n`);
-    const snapshot = await collectUrlSnapshot(page, url, delayMs);
+  for (const [index, item] of selectedRows.entries()) {
+    process.stdout.write(`[${index + 1}/${selectedRows.length}] ${item.url}\n`);
+    const snapshot = await collectUrlSnapshot(page, item.url, delayMs);
+    const row = outputRows[item.originalIndex];
 
-    rows.push([
-      url,
-      snapshot.provider,
-      snapshot.title,
-      snapshot.price,
-      snapshot.stock,
-      snapshot.status,
-      snapshot.note,
-      new Date().toISOString()
-    ]);
-    fs.writeFileSync(outputPath, toCsv(rows), "utf8");
+    setColumn(row, outputHeaders, "provider", snapshot.provider);
+    setColumn(row, outputHeaders, "titulo_importacao", snapshot.title);
+    setColumn(row, outputHeaders, "preco_importacao", normalizePrice(snapshot.price));
+    setColumn(row, outputHeaders, "estoque_importacao", snapshot.stock);
+    setColumn(row, outputHeaders, "status", snapshot.status);
+    setColumn(row, outputHeaders, "note", snapshot.note);
+    setColumn(row, outputHeaders, "checkedAt", new Date().toISOString());
+    fs.writeFileSync(outputPath, toCsv([outputHeaders, ...outputRows], input.delimiter), "utf8");
   }
 } finally {
   await context.close();
@@ -58,7 +60,8 @@ console.log(JSON.stringify({
   input: inputPath,
   output: outputPath,
   profile: userDataDir,
-  processed: selectedUrls.length
+  processed: selectedRows.length,
+  totalRows: input.rows.length
 }, null, 2));
 
 function parseArgs(rawArgs) {
@@ -90,6 +93,48 @@ function parseArgs(rawArgs) {
   }
 
   return parsed;
+}
+
+function readInputRows(text) {
+  const delimiter = detectDelimiter(text);
+  const rows = parseCsv(text, delimiter);
+
+  if (!rows.length) {
+    throw new Error("Arquivo de entrada sem linhas.");
+  }
+
+  if (rows[0].length === 1 && /^https?:\/\//i.test(rows[0][0])) {
+    const headers = ["url", ...importColumns];
+    return {
+      delimiter,
+      headers,
+      rows: unique(rows.flat().map((value) => normalizeUrl(value)).filter(Boolean)).map((url, originalIndex) => ({
+        originalIndex,
+        row: [url, "", "", "", "", "", ""],
+        url
+      }))
+    };
+  }
+
+  const [headers, ...dataRows] = rows;
+  const columns = buildColumnMap(headers);
+  const linkColumn = findColumn(columns, ["url", "link", "originalurl", "originalproducturl", "origem"]) ?? findShopifyLinkColumn(headers);
+
+  if (linkColumn === null) {
+    throw new Error("Nenhuma coluna de link encontrada. Use url, link, originalUrl ou o CSV preciso baixado no admin.");
+  }
+
+  return {
+    delimiter,
+    headers,
+    rows: dataRows
+      .map((row) => ({
+        row,
+        url: normalizeUrl(row[linkColumn] ?? "")
+      }))
+      .filter((item) => item.url)
+      .map((item, originalIndex) => ({ ...item, originalIndex }))
+  };
 }
 
 async function runInteractiveLogin(context, page) {
@@ -139,8 +184,8 @@ async function collectUrlSnapshot(page, url, delayMs) {
         : /mercadolivre|mercadolibre/i.test(pageUrl)
           ? "MERCADO_LIVRE"
           : "";
-      const title = findTitle();
       const structured = findStructuredProduct();
+      const title = findTitle() || structured.title;
       const price = structured.price || findMeta(["product:price:amount", "price", "twitter:data1"]) || findVisiblePrice(text);
       const stock = findStock(text, structured.availability);
       const status = findStatus(text, structured.availability, price);
@@ -154,7 +199,7 @@ async function collectUrlSnapshot(page, url, delayMs) {
         provider,
         status,
         stock: stock ?? "",
-        title: title || structured.title || ""
+        title: title || ""
       };
 
       function findTitle() {
@@ -280,28 +325,6 @@ async function collectUrlSnapshot(page, url, delayMs) {
   }
 }
 
-function readInputUrls(text) {
-  const rows = parseCsv(text);
-
-  if (!rows.length) {
-    return [];
-  }
-
-  if (rows[0].length === 1 && /^https?:\/\//i.test(rows[0][0])) {
-    return [...new Set(rows.flat().map((value) => value.trim()).filter((value) => /^https?:\/\//i.test(value)))];
-  }
-
-  const [header, ...dataRows] = rows;
-  const columns = Object.fromEntries(header.map((name, index) => [name, index]));
-  const linkColumn = Object.keys(columns).find((name) => ["Link", "url", "URL", "originalUrl"].includes(name) || name.startsWith("Link ("));
-
-  if (!linkColumn) {
-    throw new Error("Nenhuma coluna de link encontrada. Use Link, url ou originalUrl.");
-  }
-
-  return [...new Set(dataRows.map((row) => normalizeUrl(row[columns[linkColumn]] ?? "")).filter(Boolean))];
-}
-
 function detectProvider(url) {
   if (/shopee\./i.test(url)) {
     return "SHOPEE";
@@ -312,6 +335,18 @@ function detectProvider(url) {
   }
 
   return "";
+}
+
+function normalizePrice(value) {
+  const text = String(value ?? "").trim();
+
+  if (!text) {
+    return "";
+  }
+
+  const match = text.match(/([0-9]{1,3}(?:\.[0-9]{3})*,[0-9]{2}|[0-9]+,[0-9]{2}|[0-9]+(?:\.[0-9]{1,2})?)/);
+
+  return match ? match[1].replace(/\./g, "") : text;
 }
 
 function normalizeUrl(value) {
@@ -330,17 +365,88 @@ function normalizeUrl(value) {
   }
 }
 
-function toCsv(rows) {
-  return `${rows.map((row) => row.map(csvCell).join(",")).join("\n")}\n`;
+function buildColumnMap(headers) {
+  return new Map(headers.map((name, index) => [normalizeHeader(name), index]));
 }
 
-function csvCell(value) {
+function findColumn(columns, names) {
+  for (const name of names) {
+    const index = columns.get(normalizeHeader(name));
+
+    if (typeof index === "number") {
+      return index;
+    }
+  }
+
+  return null;
+}
+
+function findShopifyLinkColumn(headers) {
+  const index = headers.findIndex((name) => /^link(?:\s*\(|$)/i.test(String(name).trim()));
+
+  return index >= 0 ? index : null;
+}
+
+function ensureColumns(headers, columns) {
+  const output = [...headers];
+  const existing = buildColumnMap(output);
+
+  for (const column of columns) {
+    if (!existing.has(normalizeHeader(column))) {
+      existing.set(normalizeHeader(column), output.length);
+      output.push(column);
+    }
+  }
+
+  return output;
+}
+
+function alignRow(row, length) {
+  const output = [...row];
+
+  while (output.length < length) {
+    output.push("");
+  }
+
+  return output;
+}
+
+function setColumn(row, headers, column, value) {
+  const index = buildColumnMap(headers).get(normalizeHeader(column));
+
+  if (typeof index === "number") {
+    row[index] = String(value ?? "");
+  }
+}
+
+function unique(values) {
+  return Array.from(new Set(values));
+}
+
+function stripBom(text) {
+  return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+}
+
+function normalizeHeader(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toLowerCase();
+}
+
+function toCsv(rows, delimiter) {
+  return `${rows.map((row) => row.map((value) => csvCell(value, delimiter)).join(delimiter)).join("\r\n")}\r\n`;
+}
+
+function csvCell(value, delimiter) {
   const text = String(value ?? "");
+  const needsQuote = text.includes(delimiter) || /["\r\n]/.test(text);
 
-  return /[",\n]/.test(text) ? `"${text.replace(/"/g, "\"\"")}"` : text;
+  return needsQuote ? `"${text.replace(/"/g, "\"\"")}"` : text;
 }
 
-function parseCsv(text) {
+function parseCsv(text, delimiter) {
   const rows = [];
   let field = "";
   let row = [];
@@ -364,7 +470,7 @@ function parseCsv(text) {
 
     if (char === "\"") {
       isQuoted = true;
-    } else if (char === ",") {
+    } else if (char === delimiter) {
       row.push(field);
       field = "";
     } else if (char === "\n") {
@@ -383,4 +489,43 @@ function parseCsv(text) {
   }
 
   return rows.filter((currentRow) => currentRow.some((value) => value.trim()));
+}
+
+function detectDelimiter(text) {
+  const firstLine = text.split(/\r?\n/, 1)[0] ?? "";
+  const candidates = [",", ";", "\t"];
+  let best = ",";
+  let bestCount = -1;
+  let isQuoted = false;
+  const counts = new Map(candidates.map((candidate) => [candidate, 0]));
+
+  for (let index = 0; index < firstLine.length; index += 1) {
+    const char = firstLine[index];
+    const nextChar = firstLine[index + 1];
+
+    if (char === "\"" && nextChar === "\"") {
+      index += 1;
+      continue;
+    }
+
+    if (char === "\"") {
+      isQuoted = !isQuoted;
+      continue;
+    }
+
+    if (!isQuoted && counts.has(char)) {
+      counts.set(char, (counts.get(char) ?? 0) + 1);
+    }
+  }
+
+  for (const candidate of candidates) {
+    const count = counts.get(candidate) ?? 0;
+
+    if (count > bestCount) {
+      best = candidate;
+      bestCount = count;
+    }
+  }
+
+  return best;
 }

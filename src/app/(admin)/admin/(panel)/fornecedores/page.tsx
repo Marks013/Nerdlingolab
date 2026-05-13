@@ -31,6 +31,7 @@ import {
 } from "@/lib/dropshipping/queries";
 import { ensureProductSourcesFromMetafields } from "@/lib/dropshipping/sync";
 import { cn } from "@/lib/utils";
+import { SupplierSubmitButton } from "./supplier-submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -89,16 +90,14 @@ export default async function AdminSuppliersPage({
         </div>
         <div className="flex flex-wrap gap-2">
           <form action={bootstrapDropshippingSourcesAction}>
-            <Button type="submit" variant="outline">
+            <SupplierSubmitButton label="Reindexar links" pendingLabel="Reindexando links...">
               <Settings2 className="mr-2 size-4" />
-              Reindexar links
-            </Button>
+            </SupplierSubmitButton>
           </form>
           <form action={syncDropshippingBatchAction}>
-            <Button type="submit">
+            <SupplierSubmitButton label="Sincronizar lote" pendingLabel="Sincronizando lote..." variant="default">
               <RefreshCw className="mr-2 size-4" />
-              Sincronizar lote
-            </Button>
+            </SupplierSubmitButton>
           </form>
         </div>
       </section>
@@ -169,10 +168,9 @@ export default async function AdminSuppliersPage({
                     <option value="NONE">Sem arredondar</option>
                   </select>
                 </label>
-                <Button type="submit">
+                <SupplierSubmitButton label="Salvar regra" pendingLabel="Salvando regra..." variant="default">
                   <TrendingUp className="mr-2 size-4" />
-                  Salvar regra
-                </Button>
+                </SupplierSubmitButton>
               </form>
             </CardContent>
           </Card>
@@ -208,7 +206,7 @@ export default async function AdminSuppliersPage({
                 Importacao assistida
               </CardTitle>
               <CardDescription>
-                Importe CSV do coletor ou planilha manual. A automação é executada aqui: selecione o arquivo, clique em Importar CSV e confira o resumo no topo.
+                Baixe o CSV preciso, preencha pelo coletor local e reimporte aqui. A correspondência usa sourceId, URL e IDs externos para evitar trocar produto errado.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -222,19 +220,24 @@ export default async function AdminSuppliersPage({
                 <p className="text-xs leading-5 text-muted-foreground">
                   O CSV gerado usa os filtros atuais e inclui <strong>sourceId</strong>, URL, fornecedor, status, preço e estoque para reimportar com correspondência exata.
                 </p>
-              <form action={importSupplierCsvAction} className="grid gap-3">
-                <Input accept=".csv,text/csv" name="file" required type="file" />
                 <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs leading-5 text-muted-foreground">
-                  <p className="font-black text-foreground">Colunas aceitas</p>
-                  <p><strong>url</strong> obrigatoria. Opcionais: <strong>price</strong>, <strong>stock</strong>, <strong>status</strong>, <strong>title</strong>, <strong>note</strong>.</p>
-                  <p>Use CSV separado por virgula, ponto e virgula ou tab. Status aceitos: ativo, pausado, encerrado, removido, semestoque, manual, erro.</p>
-                  <p>A importacao atualiza apenas origens ja cadastradas nos produtos; linhas sem origem entram no resumo para revisao.</p>
+                  <p className="font-black text-foreground">No seu computador</p>
+                  <code className="mt-1 block overflow-x-auto rounded-md bg-background px-2 py-1 text-[11px] text-foreground">
+                    npm run suppliers:assist -- --input caminho/do-csv-baixado.csv --output data/dropshipping/fornecedores-pronto.csv
+                  </code>
                 </div>
-                <Button type="submit" variant="outline">
-                  <Upload className="mr-2 size-4" />
-                  Importar CSV
-                </Button>
-              </form>
+                <form action={importSupplierCsvAction} className="grid gap-3">
+                  <Input accept=".csv,text/csv" name="file" required type="file" />
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs leading-5 text-muted-foreground">
+                    <p className="font-black text-foreground">Colunas aceitas</p>
+                    <p><strong>url</strong> ou <strong>sourceId</strong>. Opcionais: <strong>preco_importacao</strong>, <strong>estoque_importacao</strong>, <strong>status</strong>, <strong>titulo_importacao</strong>, <strong>note</strong>.</p>
+                    <p>Use CSV separado por virgula, ponto e virgula ou tab. Status aceitos: ativo, pausado, encerrado, removido, semestoque, manual, erro.</p>
+                    <p>A importacao atualiza apenas origens ja cadastradas nos produtos; linhas sem origem entram no resumo para revisao.</p>
+                  </div>
+                  <SupplierSubmitButton label="Importar CSV" pendingLabel="Importando CSV...">
+                    <Upload className="mr-2 size-4" />
+                  </SupplierSubmitButton>
+                </form>
               </div>
             </CardContent>
           </Card>
@@ -301,10 +304,9 @@ function BulkActionBar({
         <input name="busca" type="hidden" value={filters.query ?? ""} />
         <input name="fornecedor" type="hidden" value={filters.provider ?? ""} />
         <input name="status" type="hidden" value={filters.status ?? ""} />
-        <Button disabled={itemCount === 0} type="submit">
+        <SupplierSubmitButton disabled={itemCount === 0} label="Aplicar margem nos filtrados" pendingLabel="Aplicando margem..." variant="default">
           <Wand2 className="mr-2 size-4" />
-          Aplicar margem nos filtrados
-        </Button>
+        </SupplierSubmitButton>
       </form>
     </div>
   );
@@ -337,27 +339,22 @@ function SupplierRow({ item }: { item: DropshippingDashboardItem }): React.React
 
           <div className="flex flex-wrap gap-2 lg:justify-end">
             <form action={syncDropshippingSourceAction.bind(null, item.id)}>
-              <Button className="h-10 px-4" type="submit" variant="outline">
+              <SupplierSubmitButton className="h-10 px-4" label="Sincronizar" pendingLabel="Sincronizando...">
                 <RefreshCw className="mr-2 size-4" />
-                Sincronizar
-              </Button>
+              </SupplierSubmitButton>
             </form>
             <form action={applySuggestedSourcePriceAction.bind(null, item.id)}>
-              <Button className="h-10 px-4" disabled={!sourcePriceChanged} type="submit">
-                Aplicar preço
-              </Button>
+              <SupplierSubmitButton className="h-10 px-4" disabled={!sourcePriceChanged} label="Aplicar preço" pendingLabel="Aplicando preço..." variant="default" />
             </form>
             <form action={archiveSupplierProductAction.bind(null, item.productId)}>
-              <Button className="h-10 border-amber-200 bg-amber-50 px-4 text-amber-800 hover:bg-amber-100" type="submit" variant="outline">
+              <SupplierSubmitButton className="h-10 border-amber-200 bg-amber-50 px-4 text-amber-800 hover:bg-amber-100" label="Desativar" pendingLabel="Desativando...">
                 <PowerOff className="mr-2 size-4" />
-                Desativar
-              </Button>
+              </SupplierSubmitButton>
             </form>
             <form action={deleteSupplierProductAction.bind(null, item.productId)}>
-              <Button className="h-10 border-red-200 bg-red-50 px-4 text-red-700 hover:bg-red-100" type="submit" variant="outline">
+              <SupplierSubmitButton className="h-10 border-red-200 bg-red-50 px-4 text-red-700 hover:bg-red-100" label="Excluir" pendingLabel="Excluindo...">
                 <Trash2 className="mr-2 size-4" />
-                Excluir
-              </Button>
+              </SupplierSubmitButton>
             </form>
           </div>
         </div>
@@ -385,7 +382,7 @@ function SupplierRow({ item }: { item: DropshippingDashboardItem }): React.React
             <CurrencyInput defaultValue={item.lastPriceCents ?? 0} name="price" placeholder="Preço fornecedor" />
             <Input className="h-10 text-sm" defaultValue={item.lastStockQuantity ?? ""} name="stockQuantity" placeholder="Estoque" type="number" />
             <Input className="h-10 text-sm" defaultValue={item.lastError ?? ""} name="note" placeholder="Observacao interna" />
-            <Button className="h-10 text-sm" type="submit" variant="outline">Salvar</Button>
+            <SupplierSubmitButton className="h-10 text-sm" label="Salvar" pendingLabel="Salvando..." />
           </form>
           <form action={updateSupplierProductStorePriceAction} className="grid gap-3 rounded-lg border border-primary/20 bg-background p-3 lg:grid-cols-[minmax(0,1fr)_180px_170px] lg:items-end">
             <input name="productId" type="hidden" value={item.productId} />
@@ -394,10 +391,9 @@ function SupplierRow({ item }: { item: DropshippingDashboardItem }): React.React
               <p className="mt-1 text-xs leading-5 text-muted-foreground">Atualiza o produto e suas variações locais sem depender do fornecedor.</p>
             </div>
             <CurrencyInput defaultValue={item.storePriceCents} name="storePrice" />
-            <Button className="h-10" type="submit">
+            <SupplierSubmitButton className="h-10" label="Alterar preço" pendingLabel="Alterando preço..." variant="default">
               <DollarSign className="mr-2 size-4" />
-              Alterar preço
-            </Button>
+            </SupplierSubmitButton>
           </form>
         </div>
         </details>
@@ -494,7 +490,7 @@ function AlertList({ item }: { item: DropshippingDashboardItem }): React.ReactEl
           <input name="alertId" type="hidden" value={alert.id} />
           <p className="font-bold">{alert.type}</p>
           <p className="leading-5">{alert.message}</p>
-          <button className="mt-1 text-xs font-bold text-amber-800 underline dark:text-amber-100" type="submit">Marcar visto</button>
+          <SupplierSubmitButton className="mt-2 h-8 px-3 text-xs" label="Marcar visto" pendingLabel="Marcando..." />
         </form>
       ))}
     </div>

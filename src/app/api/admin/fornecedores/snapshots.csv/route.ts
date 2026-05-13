@@ -1,10 +1,14 @@
 import * as Sentry from "@sentry/nextjs";
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
 import { SupplierProvider, SupplierSourceStatus } from "@/generated/prisma/client";
 import { isAdminSession } from "@/lib/admin";
 import { buildSupplierSnapshotCsv } from "@/lib/dropshipping/csv-export";
+import { importSupplierSnapshotCsv } from "@/lib/dropshipping/import";
 import type { DropshippingDashboardFilters } from "@/lib/dropshipping/queries";
+
+const maxImportFileSize = 2_000_000;
 
 export async function GET(request: Request): Promise<NextResponse> {
   try {
@@ -36,6 +40,72 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 }
 
+export async function POST(request: Request): Promise<NextResponse> {
+  try {
+    if (!(await isAdminSession())) {
+      return NextResponse.json({ message: "Acesso nao autorizado." }, { status: 401 });
+    }
+
+    const formData = await request.formData();
+    const file = formData.get("file");
+
+    if (!(file instanceof File)) {
+      return redirectWithNotice(request, "Envie um arquivo CSV valido.", "warning");
+    }
+
+    if (file.size > maxImportFileSize) {
+      return redirectWithNotice(request, "Arquivo muito grande. Envie um CSV de ate 2 MB.", "warning");
+    }
+
+    if (!isCsvFile(file)) {
+      return redirectWithNotice(request, "Envie um arquivo .csv valido.", "warning");
+    }
+
+    const result = await importSupplierSnapshotCsv(await file.text());
+    const details = [
+      `${result.imported} importado(s)`,
+      `${result.skipped} ignorado(s)`,
+      `${result.invalid} invalido(s)`,
+      `${result.missing} sem origem localizada`
+    ].join(", ");
+    const suffix = result.errors.length ? ` Primeiros erros: ${result.errors.slice(0, 3).join(" | ")}` : "";
+    const params = new URLSearchParams({
+      errors: String(result.errors.length),
+      imported: String(result.imported),
+      invalid: String(result.invalid),
+      matchedByExternal: String(result.matchedByExternal),
+      matchedBySourceId: String(result.matchedBySourceId),
+      matchedByUrl: String(result.matchedByUrl),
+      missing: String(result.missing),
+      notice: `Importacao assistida concluida: ${details}.${suffix}`,
+      noticeType: result.errors.length || result.invalid ? "warning" : "success",
+      skipped: String(result.skipped),
+      updatedPrice: String(result.updatedPrice),
+      updatedStatus: String(result.updatedStatus),
+      updatedStock: String(result.updatedStock),
+      updatedTitle: String(result.updatedTitle)
+    });
+
+    if (result.errors.length) {
+      params.set("importDetails", result.errors.slice(0, 5).join(" | "));
+    }
+
+    revalidatePath("/admin/fornecedores");
+    revalidatePath("/admin/produtos");
+    revalidatePath("/produtos");
+
+    return NextResponse.redirect(new URL(`/admin/fornecedores?${params.toString()}`, request.url), 303);
+  } catch (error) {
+    Sentry.captureException(error, {
+      tags: {
+        feature: "supplier-assisted-import-post"
+      }
+    });
+
+    return redirectWithNotice(request, "Nao foi possivel importar o CSV de fornecedores.", "warning");
+  }
+}
+
 function resolveExportFilters(searchParams: URLSearchParams): DropshippingDashboardFilters {
   const provider = searchParams.get("fornecedor") ?? undefined;
   const status = searchParams.get("status") ?? undefined;
@@ -54,4 +124,17 @@ function isSupplierProvider(value: string | undefined): value is SupplierProvide
 
 function isSupplierSourceStatus(value: string | undefined): value is SupplierSourceStatus {
   return Boolean(value && Object.values(SupplierSourceStatus).includes(value as SupplierSourceStatus));
+}
+
+function isCsvFile(file: File): boolean {
+  return file.name.toLowerCase().endsWith(".csv") || ["text/csv", "application/vnd.ms-excel"].includes(file.type);
+}
+
+function redirectWithNotice(request: Request, notice: string, noticeType: "success" | "warning"): NextResponse {
+  const params = new URLSearchParams({
+    notice,
+    noticeType
+  });
+
+  return NextResponse.redirect(new URL(`/admin/fornecedores?${params.toString()}`, request.url), 303);
 }

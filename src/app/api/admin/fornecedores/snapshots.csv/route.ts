@@ -94,7 +94,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     revalidatePath("/admin/produtos");
     revalidatePath("/produtos");
 
-    return NextResponse.redirect(new URL(`/admin/fornecedores?${params.toString()}`, request.url), 303);
+    return NextResponse.redirect(buildAdminSuppliersRedirectUrl(request, params), 303);
   } catch (error) {
     Sentry.captureException(error, {
       tags: {
@@ -136,5 +136,60 @@ function redirectWithNotice(request: Request, notice: string, noticeType: "succe
     noticeType
   });
 
-  return NextResponse.redirect(new URL(`/admin/fornecedores?${params.toString()}`, request.url), 303);
+  return NextResponse.redirect(buildAdminSuppliersRedirectUrl(request, params), 303);
+}
+
+function buildAdminSuppliersRedirectUrl(request: Request, params: URLSearchParams): URL {
+  const baseUrl = resolvePublicBaseUrl(request);
+
+  return new URL(`/admin/fornecedores?${params.toString()}`, baseUrl);
+}
+
+function resolvePublicBaseUrl(request: Request): string {
+  const origin = request.headers.get("origin");
+
+  if (isPublicHttpOrigin(origin)) {
+    return origin;
+  }
+
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto") ?? "https";
+
+  if (forwardedHost && !isInternalHost(forwardedHost)) {
+    return `${forwardedProto}://${forwardedHost}`;
+  }
+
+  const host = request.headers.get("host");
+
+  if (host && !isInternalHost(host)) {
+    return `${requestUrlProtocol(request)}//${host}`;
+  }
+
+  return (process.env.APP_URL ?? process.env.NEXTAUTH_URL ?? "https://nerdlingolab.com").replace(/\/+$/, "");
+}
+
+function isPublicHttpOrigin(value: string | null): value is string {
+  if (!value) {
+    return false;
+  }
+
+  try {
+    const url = new URL(value);
+
+    return ["http:", "https:"].includes(url.protocol) && !isInternalHost(url.host);
+  } catch {
+    return false;
+  }
+}
+
+function isInternalHost(host: string): boolean {
+  return /^(0\.0\.0\.0|127\.0\.0\.1|localhost)(?::\d+)?$/i.test(host);
+}
+
+function requestUrlProtocol(request: Request): string {
+  try {
+    return new URL(request.url).protocol;
+  } catch {
+    return "https:";
+  }
 }

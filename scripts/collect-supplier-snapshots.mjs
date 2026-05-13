@@ -345,8 +345,17 @@ function normalizePrice(value) {
   }
 
   const match = text.match(/([0-9]{1,3}(?:\.[0-9]{3})*,[0-9]{2}|[0-9]+,[0-9]{2}|[0-9]+(?:\.[0-9]{1,2})?)/);
+  const price = match?.[1] ?? text;
 
-  return match ? match[1].replace(/\./g, "") : text;
+  if (price.includes(",")) {
+    return price.replace(/\./g, "");
+  }
+
+  if (/^\d+\.\d{1,2}$/.test(price)) {
+    return price.replace(".", ",");
+  }
+
+  return price;
 }
 
 function normalizeUrl(value) {

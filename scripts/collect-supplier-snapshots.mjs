@@ -7,6 +7,7 @@ import { chromium } from "@playwright/test";
 const repositoryCsvPath = path.resolve("data/shopify/products_export_1.csv");
 const defaultOutputPath = path.resolve("data/dropshipping", `supplier-snapshots-${new Date().toISOString().slice(0, 10)}.csv`);
 const importColumns = ["preco_importacao", "estoque_importacao", "status", "titulo_importacao", "note", "checkedAt"];
+const minimumReliablePrice = 15;
 const args = parseArgs(process.argv.slice(2));
 const inputPath = path.resolve(args.input ?? repositoryCsvPath);
 const outputPath = path.resolve(args.output ?? defaultOutputPath);
@@ -43,12 +44,19 @@ try {
     const snapshot = await collectUrlSnapshot(page, item.url, delayMs);
     const row = outputRows[item.originalIndex];
 
+    const normalizedPrice = normalizePrice(snapshot.price);
+    const suspiciousPrice = isSuspiciousLowPrice(normalizedPrice);
+    const status = suspiciousPrice ? "CONFIG_REQUIRED" : snapshot.status;
+    const note = suspiciousPrice
+      ? appendNote(snapshot.note, `Preco coletado abaixo de R$ ${minimumReliablePrice.toFixed(2).replace(".", ",")} e removido para revisao manual.`)
+      : snapshot.note;
+
     setColumn(row, outputHeaders, "provider", snapshot.provider);
     setColumn(row, outputHeaders, "titulo_importacao", snapshot.title);
-    setColumn(row, outputHeaders, "preco_importacao", normalizePrice(snapshot.price));
+    setColumn(row, outputHeaders, "preco_importacao", suspiciousPrice ? "" : normalizedPrice);
     setColumn(row, outputHeaders, "estoque_importacao", snapshot.stock);
-    setColumn(row, outputHeaders, "status", snapshot.status);
-    setColumn(row, outputHeaders, "note", snapshot.note);
+    setColumn(row, outputHeaders, "status", status);
+    setColumn(row, outputHeaders, "note", note);
     setColumn(row, outputHeaders, "checkedAt", new Date().toISOString());
     fs.writeFileSync(outputPath, toCsv([outputHeaders, ...outputRows], input.delimiter), "utf8");
   }
@@ -186,7 +194,7 @@ async function collectUrlSnapshot(page, url, delayMs) {
           : "";
       const structured = findStructuredProduct();
       const title = findTitle() || structured.title;
-      const price = structured.price || findMeta(["product:price:amount", "price", "twitter:data1"]) || findVisiblePrice(text);
+      const price = findBestPrice(text, structured.price, findMeta(["product:price:amount", "price", "twitter:data1"]));
       const stock = findStock(text, structured.availability);
       const status = findStatus(text, structured.availability, price);
       const note = status === "CONFIG_REQUIRED"
@@ -277,12 +285,88 @@ async function collectUrlSnapshot(page, url, delayMs) {
         return value.replace(/"/g, "\\\"");
       }
 
-      function findVisiblePrice(bodyText) {
-        const matches = [...bodyText.matchAll(/R\$\s*([0-9]{1,3}(?:\.[0-9]{3})*,[0-9]{2}|[0-9]+,[0-9]{2})/g)]
-          .map((match) => match[0])
-          .filter((value) => !/frete|envio/i.test(value));
+      function findBestPrice(bodyText, structuredPrice, metaPrice) {
+        const structuredCandidate = normalizeBrowserPrice(structuredPrice);
 
-        return matches[0] || "";
+        if (isReliableBrowserPrice(structuredCandidate)) {
+          return structuredCandidate;
+        }
+
+        const metaCandidate = normalizeBrowserPrice(metaPrice);
+
+        if (isReliableBrowserPrice(metaCandidate)) {
+          return metaCandidate;
+        }
+
+        return findVisiblePrice(bodyText);
+      }
+
+      function findVisiblePrice(bodyText) {
+        const candidates = [...bodyText.matchAll(/R\$\s*([0-9]{1,3}(?:\.[0-9]{3})*,[0-9]{2}|[0-9]+,[0-9]{2}|[0-9]+(?:\.[0-9]{1,2})?)/g)]
+          .map((match) => {
+            const rawValue = match[1] || "";
+            const context = bodyText.slice(Math.max(0, match.index - 80), Math.min(bodyText.length, match.index + match[0].length + 80));
+
+            return {
+              context,
+              value: normalizeBrowserPrice(rawValue)
+            };
+          })
+          .filter((candidate) => isReliableBrowserPrice(candidate.value))
+          .filter((candidate) => !isInstallmentOrSecondaryPrice(candidate.context));
+
+        return candidates[0]?.value || "";
+      }
+
+      function normalizeBrowserPrice(value) {
+        const text = String(value || "").trim();
+
+        if (!text) {
+          return "";
+        }
+
+        const match = text.match(/([0-9]{1,3}(?:\.[0-9]{3})*,[0-9]{2}|[0-9]+,[0-9]{2}|[0-9]+(?:\.[0-9]{1,2})?)/);
+        const price = match?.[1] || "";
+
+        if (!price) {
+          return "";
+        }
+
+        if (price.includes(",")) {
+          return price.replace(/\./g, "");
+        }
+
+        if (/^\d+\.\d{1,2}$/.test(price)) {
+          const [reais, centavos = ""] = price.split(".");
+
+          return `${reais},${centavos.padEnd(2, "0")}`;
+        }
+
+        return price;
+      }
+
+      function isReliableBrowserPrice(value) {
+        const price = parseBrowserPrice(value);
+
+        return price !== null && price >= 15 && price < 2_000;
+      }
+
+      function parseBrowserPrice(value) {
+        const text = String(value || "").trim();
+
+        if (!text) {
+          return null;
+        }
+
+        const numberValue = Number(text.replace(/\./g, "").replace(",", "."));
+
+        return Number.isFinite(numberValue) ? numberValue : null;
+      }
+
+      function isInstallmentOrSecondaryPrice(context) {
+        return /frete|envio|parcela|parcelamento|sem juros|juros|cart[aã]o|pix|cupom|desconto|cashback|moeda|moedas|economize/i.test(context)
+          || /\b\d{1,2}\s*x\s*(?:de\s*)?R\$/i.test(context)
+          || /R\$\s*[0-9.,]+\s*(?:x|vezes)/i.test(context);
       }
 
       function findStock(bodyText, availability) {
@@ -352,10 +436,36 @@ function normalizePrice(value) {
   }
 
   if (/^\d+\.\d{1,2}$/.test(price)) {
-    return price.replace(".", ",");
+    const [reais, centavos = ""] = price.split(".");
+
+    return `${reais},${centavos.padEnd(2, "0")}`;
   }
 
   return price;
+}
+
+function isSuspiciousLowPrice(value) {
+  const price = parsePrice(value);
+
+  return price !== null && price > 0 && price < minimumReliablePrice;
+}
+
+function parsePrice(value) {
+  const text = String(value ?? "").trim();
+
+  if (!text) {
+    return null;
+  }
+
+  const numberValue = Number(text.replace(/\./g, "").replace(",", "."));
+
+  return Number.isFinite(numberValue) ? numberValue : null;
+}
+
+function appendNote(note, suffix) {
+  const text = String(note ?? "").trim();
+
+  return text ? `${text} ${suffix}` : suffix;
 }
 
 function normalizeUrl(value) {

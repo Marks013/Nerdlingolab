@@ -53,6 +53,8 @@ interface SourceMatch {
 
 const maxImportRows = 1_000;
 const maxStoredErrors = 30;
+const minimumReliablePriceCents = 1_500;
+const maximumReliablePriceCents = 200_000;
 const requiredUrlColumns = ["url", "link", "origem", "originalurl", "originalproducturl"];
 const sourceIdColumns = ["sourceid", "origemid", "idsource"];
 
@@ -81,7 +83,7 @@ export async function importSupplierSnapshotCsv(text: string): Promise<SupplierS
   const parsedRows: ParsedSupplierSnapshotImportRow[] = [];
 
   for (const [index, row] of dataRows.slice(0, maxImportRows).entries()) {
-    const importRow = readImportRow(row, columns);
+    const importRow = sanitizeImportRow(readImportRow(row, columns));
 
     if (!importRow.url && !importRow.sourceId) {
       result.skipped += 1;
@@ -155,6 +157,23 @@ export async function importSupplierSnapshotCsv(text: string): Promise<SupplierS
 
 function hasUsefulImportData(row: SupplierSnapshotImportRow): boolean {
   return row.priceCents !== null || row.stockQuantity !== null || row.status !== null || Boolean(row.title);
+}
+
+function sanitizeImportRow(row: SupplierSnapshotImportRow): SupplierSnapshotImportRow {
+  if (
+    row.priceCents !== null
+    && row.priceCents > 0
+    && (row.priceCents < minimumReliablePriceCents || row.priceCents > maximumReliablePriceCents)
+  ) {
+    return {
+      ...row,
+      note: appendNote(row.note, `Preco de origem fora da faixa segura (${formatCents(row.priceCents)}). Revise manualmente.`),
+      priceCents: null,
+      status: SupplierSourceStatus.CONFIG_REQUIRED
+    };
+  }
+
+  return row;
 }
 
 async function buildSourceMatchIndex(rows: SupplierSnapshotImportRow[]): Promise<Map<string, SourceMatch>> {
@@ -270,6 +289,16 @@ function truncateText(value: string, maxLength: number): string {
   const trimmed = value.trim();
 
   return trimmed.length > maxLength ? trimmed.slice(0, maxLength) : trimmed;
+}
+
+function appendNote(note: string | null, suffix: string): string {
+  const text = note?.trim();
+
+  return text ? `${text} ${suffix}` : suffix;
+}
+
+function formatCents(value: number): string {
+  return `R$ ${(value / 100).toFixed(2).replace(".", ",")}`;
 }
 
 function inferStatus(row: SupplierSnapshotImportRow): SupplierSourceStatus {

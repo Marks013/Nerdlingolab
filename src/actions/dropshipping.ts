@@ -178,7 +178,7 @@ export async function updateSupplierProductStorePriceAction(formData: FormData):
   revalidateSupplierProductPaths();
   redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
     filters,
-    notice: "Preco da loja atualizado no produto e nas variacoes.",
+    notice: "Preco final da loja atualizado no produto e nas variacoes. Preco origem e estoque origem nao foram alterados por esta acao.",
     noticeType: "success"
   })}`);
 }

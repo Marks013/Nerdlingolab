@@ -414,11 +414,17 @@ function SupplierRow({
       </div>
 
       <details className="mt-4 rounded-lg border bg-muted/30 p-3 text-left">
-          <summary className="cursor-pointer text-sm font-bold text-foreground">Validação manual e preço da loja</summary>
+          <summary className="cursor-pointer text-sm font-bold text-foreground">Abrir validação manual</summary>
         <div className="mt-3 grid gap-3">
-          <form action={updateManualSourceAction} className="grid gap-3 lg:grid-cols-[180px_180px_140px_minmax(220px,1fr)_140px]">
+          <form action={updateManualSourceAction} className="grid gap-3 rounded-lg border border-emerald-200 bg-emerald-50/60 p-3 lg:grid-cols-[minmax(180px,220px)_minmax(180px,220px)_140px_minmax(220px,1fr)_190px] dark:border-emerald-500/40 dark:bg-emerald-500/10">
             <CurrentFilterInputs filters={filters} />
             <input name="sourceId" type="hidden" value={item.id} />
+            <div className="lg:col-span-5">
+              <p className="text-sm font-black text-emerald-900 dark:text-emerald-100">1. Salvar preço de origem e estoque</p>
+              <p className="mt-1 text-xs leading-5 text-emerald-800/80 dark:text-emerald-100/75">
+                Este bloco preenche as colunas <strong>Preço origem</strong> e <strong>Estoque origem</strong>. Com preço válido, itens manuais/erro/não checados viram ativo automaticamente.
+              </p>
+            </div>
             <select className="h-10 rounded-md border bg-background px-2 text-sm" defaultValue={item.status} name="status">
               {Object.values(SupplierSourceStatus).map((status) => (
                 <option key={status} value={status}>{statusLabel(status)}</option>
@@ -427,17 +433,19 @@ function SupplierRow({
             <SupplierManualPricePreview defaultValue={item.lastPriceCents ?? 0} name="price" placeholder="Preço fornecedor" pricingRule={pricingRule} />
             <Input className="h-10 text-sm" defaultValue={item.lastStockQuantity ?? ""} name="stockQuantity" placeholder="Estoque" type="number" />
             <Input className="h-10 text-sm" defaultValue={item.lastError ?? ""} name="note" placeholder="Observacao interna" />
-            <SupplierSubmitButton className="h-10 text-sm" label="Salvar" pendingLabel="Salvando..." />
+            <SupplierSubmitButton className="h-10 text-sm" label="Salvar origem/estoque" pendingLabel="Salvando origem..." variant="default" />
           </form>
-          <form action={updateSupplierProductStorePriceAction} className="grid gap-3 rounded-lg border border-primary/20 bg-background p-3 lg:grid-cols-[minmax(0,1fr)_180px_170px] lg:items-end">
+          <form action={updateSupplierProductStorePriceAction} className="grid gap-3 rounded-lg border border-amber-200 bg-amber-50/60 p-3 lg:grid-cols-[minmax(0,1fr)_180px_190px] lg:items-end dark:border-amber-500/40 dark:bg-amber-500/10">
             <CurrentFilterInputs filters={filters} />
             <input name="productId" type="hidden" value={item.productId} />
             <div>
-              <p className="text-sm font-black text-foreground">Alterar preço da loja</p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">Atualiza o produto e suas variações locais sem depender do fornecedor.</p>
+              <p className="text-sm font-black text-amber-950 dark:text-amber-100">2. Ajustar preço final da loja</p>
+              <p className="mt-1 text-xs leading-5 text-amber-900/80 dark:text-amber-100/75">
+                Atualiza apenas o produto e suas variações locais. Não altera <strong>Preço origem</strong> nem <strong>Estoque origem</strong>.
+              </p>
             </div>
             <CurrencyInput defaultValue={item.storePriceCents} name="storePrice" />
-            <SupplierSubmitButton className="h-10" label="Alterar preço" pendingLabel="Alterando preço..." variant="default">
+            <SupplierSubmitButton className="h-10" label="Alterar preço final" pendingLabel="Alterando preço..." variant="default">
               <DollarSign className="mr-2 size-4" />
             </SupplierSubmitButton>
           </form>

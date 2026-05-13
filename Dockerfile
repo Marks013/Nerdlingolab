@@ -27,7 +27,6 @@ ENV NEXT_TELEMETRY_DISABLED="1"
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN test -n "$NEXT_SERVER_ACTIONS_ENCRYPTION_KEY" || (echo "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY is required for Docker builds. Generate one with: openssl rand -base64 32" >&2; exit 1)
 RUN npm run build
 
 FROM base AS setup

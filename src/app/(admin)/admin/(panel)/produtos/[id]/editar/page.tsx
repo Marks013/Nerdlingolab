@@ -33,6 +33,7 @@ export default async function EditProductPage({
 
   const resolvedSearchParams = await searchParams;
   const notice = readParam(resolvedSearchParams.notice);
+  const formError = readParam(resolvedSearchParams.formError);
 
   return (
     <main>
@@ -40,6 +41,7 @@ export default async function EditProductPage({
         <ProductForm
           action={updateProduct.bind(null, product.id)}
           categories={categories}
+          errorNotice={formError}
           notice={notice}
           product={product}
           restockAction={restockProductVariant}

@@ -63,7 +63,7 @@ export async function createProduct(formData: FormData): Promise<void> {
   const parsedInput = productFormSchema.safeParse(formValuesToProductInput(formData));
 
   if (!parsedInput.success) {
-    throw new Error(parsedInput.error.issues[0]?.message ?? "Produto invalido.");
+    redirect(`/admin/produtos/novo?formError=${encodeURIComponent(parsedInput.error.issues[0]?.message ?? "Produto invalido.")}`);
   }
 
   const productInput = await internalizeProductInputImages(normalizeProductInput(parsedInput.data));
@@ -159,7 +159,7 @@ export async function updateProduct(productId: string, formData: FormData): Prom
   const parsedInput = productFormSchema.safeParse(formValuesToProductInput(formData));
 
   if (!parsedInput.success) {
-    throw new Error(parsedInput.error.issues[0]?.message ?? "Produto invalido.");
+    redirect(`/admin/produtos/${productId}/editar?formError=${encodeURIComponent(parsedInput.error.issues[0]?.message ?? "Produto invalido.")}`);
   }
 
   const productInput = await internalizeProductInputImages(normalizeProductInput(parsedInput.data));

@@ -37,6 +37,7 @@ import { formatCurrency } from "@/lib/format";
 interface ProductFormProps {
   action: (formData: FormData) => Promise<void>;
   categories: Category[];
+  errorNotice?: string;
   notice?: string;
   product?: ProductListItem;
   restockAction?: (formData: FormData) => Promise<void>;
@@ -86,8 +87,10 @@ const metafieldTypes = [
 ];
 
 type MatrixOptionName = "Cor" | "Tamanho" | "Genero";
+type SavedMatrixOptionValues = Record<MatrixOptionName, string[]>;
 
 const matrixOptionNames: MatrixOptionName[] = ["Cor", "Tamanho", "Genero"];
+const matrixOptionStorageKey = "nerdlingolab.productForm.matrixOptions";
 const genderOptionAliases = new Set(["genero", "sexo", "gender"]);
 const standardSizeOrder = ["PP", "P", "M", "G", "GG", "XG"];
 const standardGenderOptions = ["Feminino", "Masculino", "Unissex"];
@@ -132,6 +135,7 @@ const productStatusOptions = [
 export function ProductForm({
   categories,
   product,
+  errorNotice,
   notice,
   action,
   restockAction,
@@ -143,6 +147,9 @@ export function ProductForm({
   const [shippingPresets, setShippingPresets] = useState<ProductShippingPresetItem[]>(initialShippingPresets);
   const [selectedShippingPresetId, setSelectedShippingPresetId] = useState("");
   const [bulkVariantPrice, setBulkVariantPrice] = useState(() => getInitialVariantPrice(product));
+  const [baseSku, setBaseSku] = useState(() => getInitialBaseSku(product));
+  const [matrixOptionMemory, setMatrixOptionMemory] = useState<SavedMatrixOptionValues>(() => loadSavedMatrixOptionValues());
+  const [clientError, setClientError] = useState<string | null>(null);
   const [newShippingPresetName, setNewShippingPresetName] = useState("");
   const [newShippingPresetWeight, setNewShippingPresetWeight] = useState("");
   const [newShippingPresetWeightUnit, setNewShippingPresetWeightUnit] = useState<"g" | "kg">("g");
@@ -165,6 +172,16 @@ export function ProductForm({
   const variantGroups = useMemo(() => groupVariantsByPrimaryOption(variants), [variants]);
   const variantsPayload = useMemo(() => serializeVariants(variants), [variants]);
   const metafieldsPayload = useMemo(() => serializeMetafields(metafields), [metafields]);
+  const matrixValues = useMemo(() => ({
+    Cor: getMatrixOptionValues(variants, "Cor"),
+    Tamanho: getMatrixOptionValues(variants, "Tamanho"),
+    Genero: getMatrixOptionValues(variants, "Genero")
+  }), [variants]);
+  const matrixQuickValues = useMemo(() => ({
+    Cor: mergeOptionValues(matrixOptionMemory.Cor, matrixValues.Cor),
+    Tamanho: mergeOptionValues(standardSizeOrder, matrixOptionMemory.Tamanho, matrixValues.Tamanho),
+    Genero: mergeOptionValues(standardGenderOptions, matrixOptionMemory.Genero, matrixValues.Genero)
+  }), [matrixOptionMemory, matrixValues]);
   const selectedCategoryIds = new Set([
     product?.categoryId,
     ...(product?.categories.map((productCategory) => productCategory.category.id) ?? [])
@@ -220,11 +237,37 @@ export function ProductForm({
     syncDescriptionFromEditor();
   }
 
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>): void {
+    setClientError(null);
+    syncDescriptionBeforeSubmit();
+
+    const description = showHtmlSource
+      ? descriptionHtml
+      : descriptionEditorRef.current?.innerText ?? "";
+
+    if (description.trim().length < 10) {
+      event.preventDefault();
+      setClientError("Descreva melhor o produto antes de salvar.");
+      return;
+    }
+
+    if (!baseSku.trim() && variants.length === 0) {
+      event.preventDefault();
+      setClientError("Informe o SKU base ou crie ao menos uma variante.");
+    }
+  }
+
   function updateVariant(id: string, patch: Partial<VariantFormRow>): void {
     setVariants((current) => current.map((variant) => (variant.id === id ? { ...variant, ...patch } : variant)));
   }
 
   function updateVariantOption(variantId: string, optionIndex: number, patch: Partial<VariantOptionRow>): void {
+    const optionName = normalizeMatrixOptionName(patch.name ?? matrixOptionNames[optionIndex]);
+
+    if (isMatrixOptionName(optionName) && patch.value?.trim()) {
+      rememberMatrixOptionValue(optionName, patch.value);
+    }
+
     setVariants((current) =>
       current.map((variant) => {
         if (variant.id !== variantId) {
@@ -276,8 +319,15 @@ export function ProductForm({
       return;
     }
 
+    rememberMatrixOptionValue(optionName, normalizedValue);
+
     setVariants((current) =>
-      addMatrixOptionValue(current, optionName, normalizedValue).map((variant) => (
+      addMatrixOptionValue(
+        current,
+        optionName,
+        normalizedValue,
+        createVariantRow({ price: bulkVariantPrice.trim(), sku: baseSku.trim(), title: "Nova variacao" })
+      ).map((variant) => (
         bulkVariantPrice.trim() && !variant.price.trim()
           ? { ...variant, price: bulkVariantPrice.trim() }
           : variant
@@ -287,6 +337,18 @@ export function ProductForm({
 
   function applyShippingPresetToAll(preset: ProductShippingPresetItem): void {
     setVariants((current) => current.map((variant) => applyShippingPresetToVariant(variant, preset)));
+  }
+
+  function rememberMatrixOptionValue(optionName: MatrixOptionName, value: string): void {
+    setMatrixOptionMemory((current) => {
+      const nextMemory = addSavedMatrixOptionValue(current, optionName, value);
+
+      if (!areSavedMatrixOptionValuesEqual(nextMemory, current)) {
+        saveMatrixOptionValues(nextMemory);
+      }
+
+      return nextMemory;
+    });
   }
 
   function applyBulkVariantPrice(mode: "all" | "empty"): void {
@@ -425,8 +487,8 @@ export function ProductForm({
   }
 
   return (
-    <form action={action} className="grid gap-6" onSubmit={syncDescriptionBeforeSubmit}>
-      <input name="sku" type="hidden" value={firstVariant.sku} />
+    <form action={action} className="grid gap-6" onSubmit={handleSubmit}>
+      <input name="sku" type="hidden" value={firstVariant.sku || baseSku} />
       <input name="stockQuantity" type="hidden" value={firstVariant.stockQuantity || "0"} />
       <input name="trackInventory" type="hidden" value={firstVariant.trackInventory ? "on" : ""} />
       {product ? <input name="productId" type="hidden" value={product.id} /> : null}
@@ -462,6 +524,11 @@ export function ProductForm({
       {notice ? (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-100">
           {notice}
+        </div>
+      ) : null}
+      {errorNotice || clientError ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-800 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-100">
+          {errorNotice ?? clientError}
         </div>
       ) : null}
 
@@ -570,7 +637,7 @@ export function ProductForm({
                 </Button>
                 <Button
                   className="w-full sm:w-auto"
-                  onClick={() => setVariants((current) => [...current, createVariantRow({ price: bulkVariantPrice.trim(), title: `Variacao ${current.length + 1}` })])}
+                  onClick={() => setVariants((current) => [...current, createVariantRow({ price: bulkVariantPrice.trim(), sku: baseSku.trim(), title: `Variacao ${current.length + 1}` })])}
                   type="button"
                   variant="outline"
                 >
@@ -582,20 +649,22 @@ export function ProductForm({
             <div className="mt-4 grid gap-3 lg:grid-cols-3">
               <OptionSummary
                 label="Cores"
-                values={getMatrixOptionValues(variants, "Cor")}
+                quickValues={matrixQuickValues.Cor}
+                values={matrixValues.Cor}
                 onAdd={() => addOptionValueToMatrix("Cor")}
+                onAddValue={(value) => addOptionValueToMatrix("Cor", value)}
               />
               <OptionSummary
                 label="Tamanhos"
-                quickValues={standardSizeOrder}
-                values={getMatrixOptionValues(variants, "Tamanho")}
+                quickValues={matrixQuickValues.Tamanho}
+                values={matrixValues.Tamanho}
                 onAdd={() => addOptionValueToMatrix("Tamanho")}
                 onAddValue={(value) => addOptionValueToMatrix("Tamanho", value)}
               />
               <OptionSummary
                 label="Genero"
-                quickValues={standardGenderOptions}
-                values={getMatrixOptionValues(variants, "Genero")}
+                quickValues={matrixQuickValues.Genero}
+                values={matrixValues.Genero}
                 onAdd={() => addOptionValueToMatrix("Genero")}
                 onAddValue={(value) => addOptionValueToMatrix("Genero", value)}
               />
@@ -754,6 +823,13 @@ export function ProductForm({
                   </tr>
                 </thead>
                 <tbody className="divide-y">
+                  {variants.length === 0 ? (
+                    <tr>
+                      <td className="px-4 py-6 text-sm text-muted-foreground" colSpan={8}>
+                        Crie uma cor, tamanho ou genero acima para gerar as variantes do produto.
+                      </td>
+                    </tr>
+                  ) : null}
                   {variantGroups.map((group) => (
                     <Fragment key={group.key}>
                       <tr className="bg-muted/25">
@@ -1100,6 +1176,15 @@ export function ProductForm({
                 <Input defaultValue={product ? formatCurrency(product.priceCents) : ""} name="price" required />
               </label>
               <label className="grid gap-2 text-sm font-medium">
+                SKU base
+                <Input
+                  onChange={(event) => setBaseSku(event.target.value)}
+                  placeholder="Ex.: CAMISETA-NARUTO"
+                  required={variants.length === 0}
+                  value={baseSku}
+                />
+              </label>
+              <label className="grid gap-2 text-sm font-medium">
                 Preço comparativo base
                 <Input defaultValue={product?.compareAtPriceCents ? formatCurrency(product.compareAtPriceCents) : ""} name="compareAtPrice" />
               </label>
@@ -1162,6 +1247,31 @@ function MatrixOptionInput({
   optionName: MatrixOptionName;
   variantId: string;
 }): React.ReactElement {
+  if (optionName === "Tamanho" || optionName === "Genero") {
+    const values = optionName === "Tamanho" ? standardSizeOrder : standardGenderOptions;
+    const hasCurrentValue = option.value.trim() && values.some((value) => normalizeOptionName(value) === normalizeOptionName(option.value));
+    const selectValues = hasCurrentValue || !option.value.trim() ? values : [option.value, ...values];
+
+    return (
+      <label className="grid min-w-0 gap-1">
+        <span className="text-[11px] font-semibold text-muted-foreground">{optionName}</span>
+        <select
+          aria-label={`Valor de ${optionName}`}
+          className="h-10 w-full rounded-lg border border-primary/45 bg-background px-3 py-2 text-sm ring-offset-background focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          onChange={(event) => onChange(variantId, optionIndex, { name: optionName, value: event.target.value })}
+          value={option.value}
+        >
+          <option value="">{getMatrixOptionPlaceholder(optionName)}</option>
+          {selectValues.map((value) => (
+            <option key={value} value={value}>
+              {value}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+
   return (
     <div className="grid min-w-0 gap-1">
       <span className="text-[11px] font-semibold text-muted-foreground">{optionName}</span>
@@ -1330,7 +1440,7 @@ function Metric({ label, value }: { label: string; value: string }): React.React
 
 function getInitialVariantRows(product?: ProductListItem): VariantFormRow[] {
   if (!product || product.variants.length === 0) {
-    return [createVariantRow()];
+    return [];
   }
 
   return product.variants.map((variant, index) => {
@@ -1369,6 +1479,10 @@ function getInitialVariantPrice(product?: ProductListItem): string {
   return product.variants[0]?.priceCents
     ? formatCurrency(product.variants[0].priceCents)
     : formatCurrency(product.priceCents);
+}
+
+function getInitialBaseSku(product?: ProductListItem): string {
+  return product?.variants[0]?.sku ?? "";
 }
 
 function createVariantRow(overrides: Partial<VariantFormRow> = {}): VariantFormRow {
@@ -1419,7 +1533,7 @@ function groupVariantsByPrimaryOption(variants: VariantFormRow[]): Array<{ key: 
   const groups = new Map<string, VariantFormRow[]>();
 
   for (const variant of variants) {
-    const label = getVariantOptionValue(variant, "Cor") || "Sem cor";
+    const label = getVariantOptionValue(variant, "Cor") || "Cor nao definida";
     groups.set(label, [...(groups.get(label) ?? []), variant]);
   }
 
@@ -1439,7 +1553,8 @@ function getMatrixOptionValues(variants: VariantFormRow[], optionName: MatrixOpt
 function addMatrixOptionValue(
   variants: VariantFormRow[],
   optionName: MatrixOptionName,
-  value: string
+  value: string,
+  fallbackVariant = createVariantRow()
 ): VariantFormRow[] {
   const colors = optionName === "Cor" ? [value] : getMatrixOptionValues(variants, "Cor");
   const sizes = optionName === "Tamanho" ? [value] : getMatrixOptionValues(variants, "Tamanho");
@@ -1448,7 +1563,7 @@ function addMatrixOptionValue(
   const safeSizes = sizes.length > 0 ? sizes : [""];
   const safeGenders = genders.length > 0 ? genders : [""];
   const existingKeys = new Set(variants.map(getVariantCombinationKey));
-  const baseVariant = variants[0] ?? createVariantRow();
+  const baseVariant = variants[0] ?? fallbackVariant;
   const nextVariants = [...variants];
 
   for (const color of safeColors) {
@@ -1539,6 +1654,76 @@ function buildGeneratedSku(baseSku: string, options: VariantOptionRow[], index: 
 
 function uniqueStrings(values: string[]): string[] {
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+}
+
+function emptySavedMatrixOptionValues(): SavedMatrixOptionValues {
+  return {
+    Cor: [],
+    Tamanho: [],
+    Genero: []
+  };
+}
+
+function loadSavedMatrixOptionValues(): SavedMatrixOptionValues {
+  if (typeof window === "undefined") {
+    return emptySavedMatrixOptionValues();
+  }
+
+  try {
+    const rawValue = window.localStorage.getItem(matrixOptionStorageKey);
+    const parsedValue: unknown = rawValue ? JSON.parse(rawValue) : null;
+
+    if (!parsedValue || typeof parsedValue !== "object" || Array.isArray(parsedValue)) {
+      return emptySavedMatrixOptionValues();
+    }
+
+    const record = parsedValue as Partial<Record<MatrixOptionName, unknown>>;
+
+    return {
+      Cor: normalizeSavedOptionValues(record.Cor),
+      Tamanho: normalizeSavedOptionValues(record.Tamanho),
+      Genero: normalizeSavedOptionValues(record.Genero)
+    };
+  } catch {
+    return emptySavedMatrixOptionValues();
+  }
+}
+
+function saveMatrixOptionValues(values: SavedMatrixOptionValues): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(matrixOptionStorageKey, JSON.stringify(values));
+}
+
+function normalizeSavedOptionValues(value: unknown): string[] {
+  return Array.isArray(value) ? uniqueStrings(value.map((item) => String(item))).slice(0, 40) : [];
+}
+
+function mergeOptionValues(...groups: string[][]): string[] {
+  return uniqueStrings(groups.flat());
+}
+
+function addSavedMatrixOptionValue(
+  current: SavedMatrixOptionValues,
+  optionName: MatrixOptionName,
+  value: string
+): SavedMatrixOptionValues {
+  return {
+    ...current,
+    [optionName]: mergeOptionValues(current[optionName], [value]).slice(0, 40)
+  };
+}
+
+function areSavedMatrixOptionValuesEqual(
+  left: SavedMatrixOptionValues,
+  right: SavedMatrixOptionValues
+): boolean {
+  return matrixOptionNames.every((optionName) =>
+    left[optionName].length === right[optionName].length
+      && left[optionName].every((value, index) => value === right[optionName][index])
+  );
 }
 
 function applyShippingPresetPatch(preset: ProductShippingPresetItem): Partial<VariantFormRow> {
@@ -1634,6 +1819,10 @@ function getMatrixOptionPlaceholder(optionName: MatrixOptionName): string {
 
 function normalizeMatrixOptionName(optionName: string): MatrixOptionName | string {
   return genderOptionAliases.has(normalizeOptionName(optionName)) ? "Genero" : optionName;
+}
+
+function isMatrixOptionName(value: string): value is MatrixOptionName {
+  return matrixOptionNames.some((optionName) => optionName === value);
 }
 
 function sortSizeValues(values: string[]): string[] {

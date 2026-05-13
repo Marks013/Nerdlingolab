@@ -60,3 +60,6 @@ desktop.ini
 
 # Local Docker bind-mount data
 .data/
+
+# Local/server operational backups
+backups/

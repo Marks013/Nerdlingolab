@@ -11,8 +11,26 @@ const nextConfig = {
     remotePatterns: getNextImageRemotePatterns()
   },
   async headers() {
+    const cspReportOnly = [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "frame-ancestors 'none'",
+      "form-action 'self' https://www.mercadopago.com.br https://*.mercadopago.com.br",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self' data:",
+      "style-src 'self' 'unsafe-inline'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+      "connect-src 'self' https: wss:",
+      "frame-src 'self' https://www.mercadopago.com.br https://*.mercadopago.com.br",
+      "media-src 'self' blob: https:",
+      "worker-src 'self' blob:",
+      "upgrade-insecure-requests",
+      "report-uri /api/security/csp-report"
+    ].join("; ");
     const securityHeaders = [
       { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
+      { key: "Content-Security-Policy-Report-Only", value: cspReportOnly },
       { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
       { key: "X-Content-Type-Options", value: "nosniff" },
       { key: "X-DNS-Prefetch-Control", value: "on" },

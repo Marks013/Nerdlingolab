@@ -25,7 +25,7 @@ export function OrdersTable({ filters, orders }: OrdersTableProps): React.ReactE
         <CardDescription>Pagamentos, entrega, cliente e itens com leitura operacional rápida.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <form action="/admin/pedidos" className="grid gap-3 rounded-md border bg-background p-4 lg:grid-cols-2 2xl:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_auto_auto]">
+        <form action="/admin/pedidos" className="grid gap-3 rounded-md border bg-background p-4 lg:grid-cols-2 2xl:grid-cols-[minmax(240px,1.4fr)_1fr_1fr_1fr_1fr_auto_auto]">
           <label className="grid gap-2 text-sm font-medium">
             Buscar
             <input
@@ -103,7 +103,7 @@ export function OrdersTable({ filters, orders }: OrdersTableProps): React.ReactE
             const latestShipment = order.shipments[0];
 
             return (
-              <article key={order.id} className="grid gap-4 rounded-lg border bg-background p-4 lg:grid-cols-[minmax(260px,1fr)_1fr_180px_auto] lg:items-center">
+              <article key={order.id} className="grid gap-4 rounded-lg border bg-background p-4 xl:grid-cols-[minmax(260px,1fr)_minmax(180px,0.8fr)_180px_auto] xl:items-center">
                 <div className="min-w-0">
                   <p className="font-semibold">{order.orderNumber}</p>
                   <p className="truncate text-sm text-muted-foreground">
@@ -131,7 +131,7 @@ export function OrdersTable({ filters, orders }: OrdersTableProps): React.ReactE
                     {order.fulfillmentStatus}
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2 lg:justify-end">
+                <div className="flex flex-wrap gap-2 xl:justify-end">
                   {latestShipment ? (
                     <Button asChild className="h-10 px-4">
                       <Link href={`/admin/pedidos/${order.id}#rastreamento`}>

@@ -191,7 +191,7 @@ function ReviewCard({ review }: { review: AdminProductReview }): React.ReactElem
       <p className="mt-3 text-sm leading-6 text-foreground">{review.body}</p>
 
       {review.rewardGrantedAt ? (
-        <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
+        <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-100">
           Recompensa liberada em {formatDateTime(review.rewardGrantedAt)}
           {review.rewardCouponId ? ` · cupom ${formatCurrency(review.rewardCoupon?.value ?? 0)}` : ""}
           {review.rewardPoints ? ` · ${review.rewardPoints} Nerdcoins` : ""}
@@ -271,10 +271,10 @@ function Metric({ label, value }: { label: string; value: string }): React.React
 
 function StatusBadge({ status }: { status: ProductReviewStatus }): React.ReactElement {
   const styles: Record<ProductReviewStatus, string> = {
-    HIDDEN: "border-slate-200 bg-slate-50 text-slate-700",
-    PENDING: "border-orange-200 bg-orange-50 text-orange-800",
-    PUBLISHED: "border-emerald-200 bg-emerald-50 text-emerald-800",
-    REJECTED: "border-red-200 bg-red-50 text-red-800"
+    HIDDEN: "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-500/40 dark:bg-slate-500/10 dark:text-slate-100",
+    PENDING: "border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-500/40 dark:bg-orange-500/10 dark:text-orange-100",
+    PUBLISHED: "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-100",
+    REJECTED: "border-red-200 bg-red-50 text-red-800 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-100"
   };
   const labels: Record<ProductReviewStatus, string> = {
     HIDDEN: "Oculta",

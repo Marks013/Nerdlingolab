@@ -32,6 +32,7 @@ export const productFormSchema = z.object({
   compareAtPrice: z.string().trim().optional(),
   sku: z.string().trim().min(2, "Informe o SKU inicial."),
   stockQuantity: z.coerce.number().int().min(0),
+  trackInventory: z.preprocess((value) => value === true || value === "on" || value === "true", z.boolean()).default(false),
   variants: z.string().trim().optional(),
   status: z.enum(ProductStatus).default(ProductStatus.DRAFT)
 });
@@ -50,6 +51,7 @@ export interface NormalizedProductVariantInput {
   shippingLeadTimeDays?: number;
   sku: string;
   stockQuantity: number;
+  trackInventory: boolean;
   title: string;
   weightGrams?: number;
   widthCm?: number;
@@ -102,7 +104,7 @@ function parseProductVariants(input: ProductFormInput): NormalizedProductVariant
   const lines = splitLines(input.variants);
   const variantLines = lines.length > 0
     ? lines
-    : [`Padrão | ${input.sku} | ${input.price} | ${input.stockQuantity}`];
+    : [`Padrão | ${input.sku} | ${input.price} | ${input.stockQuantity} |  |  |  |  |  |  |  | ativo |  | ${input.trackInventory ? "controlar" : "sem_estoque"}`];
 
   return variantLines.map((line, index) => {
     const [
@@ -118,7 +120,8 @@ function parseProductVariants(input: ProductFormInput): NormalizedProductVariant
       lengthCmValue,
       shippingLeadTimeDaysValue,
       activeValue,
-      optionValuesValue
+      optionValuesValue,
+      trackInventoryValue
     ] = line.split("|").map((part) => part.trim());
     const sku = skuValue || (index === 0 ? input.sku : "");
 
@@ -152,6 +155,7 @@ function parseProductVariants(input: ProductFormInput): NormalizedProductVariant
       shippingLeadTimeDays: shippingLeadTimeDays && shippingLeadTimeDays > 0 ? shippingLeadTimeDays : undefined,
       sku,
       stockQuantity: Number.isFinite(stockQuantity) && stockQuantity > 0 ? stockQuantity : 0,
+      trackInventory: parseTrackInventoryValue(trackInventoryValue),
       title: titleValue || "Padrão",
       weightGrams: weightGrams && weightGrams > 0 ? weightGrams : undefined,
       widthCm: widthCm && widthCm > 0 ? widthCm : undefined
@@ -187,6 +191,14 @@ function parseActiveValue(value: string | undefined): boolean {
   }
 
   return !["0", "false", "inativo", "não", "nao"].includes(value.toLowerCase());
+}
+
+function parseTrackInventoryValue(value: string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+
+  return ["1", "true", "sim", "ativo", "controlar", "controlado", "estoque", "track"].includes(value.toLowerCase());
 }
 
 function isActiveColumnValue(value: string | undefined): boolean {

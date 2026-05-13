@@ -23,9 +23,15 @@ export async function reserveInventoryForCheckout(
       where: { id: item.variantId },
       select: {
         reservedQuantity: true,
-        stockQuantity: true
+        stockQuantity: true,
+        trackInventory: true
       }
     });
+
+    if (!variant.trackInventory) {
+      continue;
+    }
+
     const nextReservedQuantity = variant.reservedQuantity + item.quantity;
 
     if (nextReservedQuantity > variant.stockQuantity) {
@@ -59,6 +65,15 @@ export async function releaseInventoryReservations(
 ): Promise<void> {
   for (const item of items) {
     if (!item.variantId) {
+      continue;
+    }
+
+    const variant = await tx.productVariant.findUnique({
+      where: { id: item.variantId },
+      select: { trackInventory: true }
+    });
+
+    if (!variant?.trackInventory) {
       continue;
     }
 

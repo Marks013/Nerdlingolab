@@ -20,11 +20,11 @@ export function ProductTable({ categories, filters, products }: ProductTableProp
   const draftProducts = products.filter((product) => product.status === ProductStatus.DRAFT).length;
   const totalVariants = products.reduce((sum, product) => sum + product.variants.length, 0);
   const totalStock = products.reduce(
-    (sum, product) => sum + product.variants.reduce((variantSum, variant) => variantSum + variant.stockQuantity, 0),
+    (sum, product) => sum + product.variants.reduce((variantSum, variant) => variantSum + (variant.trackInventory ? variant.stockQuantity : 0), 0),
     0
   );
-  const lowStockProducts = products.filter((product) => getAvailableStock(product) > 0 && getAvailableStock(product) <= 3).length;
-  const outOfStockProducts = products.filter((product) => getAvailableStock(product) <= 0).length;
+  const lowStockProducts = products.filter((product) => hasTrackedInventory(product) && getAvailableStock(product) > 0 && getAvailableStock(product) <= 3).length;
+  const outOfStockProducts = products.filter((product) => hasTrackedInventory(product) && getAvailableStock(product) <= 0).length;
 
   return (
     <div className="grid gap-5">
@@ -52,12 +52,12 @@ export function ProductTable({ categories, filters, products }: ProductTableProp
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
         <Metric title="Produtos" value={String(products.length)} />
         <Metric title="Ativos" value={String(activeProducts)} />
         <Metric title="Rascunhos" value={String(draftProducts)} />
         <Metric title="Variacoes" value={String(totalVariants)} />
-        <Metric title="Estoque total" value={String(totalStock)} />
+        <Metric title="Estoque físico" value={totalStock > 0 ? String(totalStock) : "Sob demanda"} />
       </div>
 
       <form className="grid gap-3 rounded-lg border bg-background p-4 lg:grid-cols-[minmax(0,1fr)_180px_220px_auto]">
@@ -109,7 +109,7 @@ export function ProductTable({ categories, filters, products }: ProductTableProp
       ) : null}
 
       <div className="overflow-hidden rounded-lg border bg-background">
-        <div className="hidden grid-cols-[minmax(260px,1fr)_110px_110px_110px_minmax(180px,auto)] gap-4 border-b bg-muted/40 px-4 py-3 text-xs font-semibold uppercase text-muted-foreground lg:grid">
+        <div className="hidden grid-cols-[minmax(260px,1fr)_110px_130px_110px_minmax(180px,auto)] gap-4 border-b bg-muted/40 px-4 py-3 text-xs font-semibold uppercase text-muted-foreground xl:grid">
           <span>Produto</span>
           <span>Status</span>
           <span>Estoque</span>
@@ -136,7 +136,7 @@ function ProductRow({ product }: { product: ProductListItem }): React.ReactEleme
   const categoryLabel = getProductCategoryLabel(product);
 
   return (
-    <div className="grid min-w-0 gap-4 p-4 lg:grid-cols-[minmax(260px,1fr)_110px_110px_110px_minmax(180px,auto)] lg:items-center">
+    <div className="grid min-w-0 gap-4 p-4 xl:grid-cols-[minmax(260px,1fr)_110px_130px_110px_minmax(180px,auto)] xl:items-center">
       <div className="grid min-w-0 grid-cols-[72px_minmax(0,1fr)] gap-3">
         <div className="relative h-16 w-16 overflow-hidden rounded-md border bg-muted">
           {imageUrl ? <Image alt={product.title} className="object-cover" fill sizes="72px" src={imageUrl} /> : null}
@@ -157,7 +157,7 @@ function ProductRow({ product }: { product: ProductListItem }): React.ReactEleme
       <StatusBadge status={product.status} />
       <StockBadge availableStock={availableStock} />
       <p className="text-sm font-semibold">{formatCurrency(product.priceCents)}</p>
-      <div className="flex min-w-0 flex-wrap justify-start gap-1.5 lg:justify-end">
+      <div className="flex min-w-0 flex-wrap justify-start gap-1.5 xl:justify-end">
         <Button asChild className="h-9 px-2.5 text-xs" variant="outline">
           <Link href={`/admin/produtos/${product.id}/editar`}>
             <Pencil className="mr-1.5 h-3.5 w-3.5" />
@@ -171,7 +171,7 @@ function ProductRow({ product }: { product: ProductListItem }): React.ReactEleme
           </Button>
         </form>
         <form action={deleteProduct.bind(null, product.id)}>
-          <Button className="h-10 border-red-200 bg-red-50 px-3 text-xs text-red-700 hover:bg-red-600 hover:text-white" type="submit" variant="outline">
+          <Button className="h-10 border-red-200 bg-red-50 px-3 text-xs text-red-700 hover:bg-red-600 hover:text-white dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-100 dark:hover:bg-red-500/20" type="submit" variant="outline">
             <Trash2 className="mr-1.5 size-5" />
             Excluir
           </Button>
@@ -206,6 +206,14 @@ function StatusBadge({ status }: { status: ProductStatus }): React.ReactElement 
 }
 
 function StockBadge({ availableStock }: { availableStock: number }): React.ReactElement {
+  if (availableStock === Number.POSITIVE_INFINITY) {
+    return (
+      <span className="inline-flex w-fit items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-100">
+        Sob demanda
+      </span>
+    );
+  }
+
   const isLow = availableStock > 0 && availableStock <= 3;
   const isOut = availableStock <= 0;
 
@@ -239,10 +247,18 @@ function getPrimaryProductImage(product: ProductListItem): string | null {
 }
 
 function getAvailableStock(product: ProductListItem): number {
+  if (!hasTrackedInventory(product)) {
+    return Number.POSITIVE_INFINITY;
+  }
+
   return product.variants.reduce(
-    (sum, variant) => sum + Math.max(0, variant.stockQuantity - variant.reservedQuantity),
+    (sum, variant) => sum + (variant.trackInventory ? Math.max(0, variant.stockQuantity - variant.reservedQuantity) : 0),
     0
   );
+}
+
+function hasTrackedInventory(product: ProductListItem): boolean {
+  return product.variants.some((variant) => variant.trackInventory);
 }
 
 function getMetafieldCount(value: unknown): number {

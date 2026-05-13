@@ -29,6 +29,7 @@ export interface ProductVariantOption {
   priceCents: number;
   shippingLeadTimeDays?: number | null;
   title: string;
+  trackInventory?: boolean;
   weightGrams?: number | null;
   widthCm?: number | null;
 }

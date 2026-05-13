@@ -20,6 +20,12 @@ import { deleteUnusedMediaAssets, syncMediaUsages } from "@/lib/media/assets";
 import { prisma } from "@/lib/prisma";
 
 const execFileAsync = promisify(execFile);
+const restockVariantSchema = z.object({
+  productId: z.string().min(1),
+  quantity: z.coerce.number().int().positive("Informe uma quantidade maior que zero.").max(100_000),
+  reason: z.string().trim().max(180).optional(),
+  variantId: z.string().min(1)
+});
 
 export async function createCategory(formData: FormData): Promise<void> {
   await requireAdmin();
@@ -98,6 +104,7 @@ export async function createProduct(formData: FormData): Promise<void> {
               shippingLeadTimeDays: variant.shippingLeadTimeDays,
               sku: variant.sku,
               stockQuantity: variant.stockQuantity,
+              trackInventory: variant.trackInventory,
               title: variant.title,
               weightGrams: variant.weightGrams,
               widthCm: variant.widthCm
@@ -110,7 +117,7 @@ export async function createProduct(formData: FormData): Promise<void> {
       });
 
       for (const variant of product.variants) {
-        if (variant.stockQuantity <= 0) {
+        if (!variant.trackInventory || variant.stockQuantity <= 0) {
           continue;
         }
 
@@ -207,6 +214,7 @@ export async function updateProduct(productId: string, formData: FormData): Prom
               priceCents: variant.priceCents,
               shippingLeadTimeDays: variant.shippingLeadTimeDays ?? null,
               stockQuantity: variant.stockQuantity,
+              trackInventory: variant.trackInventory,
               title: variant.title,
               weightGrams: variant.weightGrams ?? null,
               widthCm: variant.widthCm ?? null
@@ -228,6 +236,7 @@ export async function updateProduct(productId: string, formData: FormData): Prom
             shippingLeadTimeDays: variant.shippingLeadTimeDays,
             sku: variant.sku,
             stockQuantity: variant.stockQuantity,
+            trackInventory: variant.trackInventory,
             title: variant.title,
             weightGrams: variant.weightGrams,
             widthCm: variant.widthCm
@@ -266,6 +275,77 @@ export async function updateProduct(productId: string, formData: FormData): Prom
 
   revalidateCatalogPaths();
   revalidatePath(`/admin/produtos/${productId}/editar`);
+}
+
+export async function restockProductVariant(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const variantId = z.string().min(1).parse(formData.get("restockVariantId"));
+  const parsed = restockVariantSchema.safeParse({
+    productId: formData.get("productId"),
+    quantity: formData.get(`restockQuantity:${variantId}`),
+    reason: formData.get(`restockReason:${variantId}`),
+    variantId
+  });
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Abastecimento invalido.");
+  }
+
+  const reason = parsed.data.reason || "Abastecimento manual de estoque";
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const variant = await tx.productVariant.findFirst({
+        select: {
+          id: true,
+          productId: true,
+          stockQuantity: true,
+          title: true,
+          trackInventory: true
+        },
+        where: {
+          id: parsed.data.variantId,
+          productId: parsed.data.productId
+        }
+      });
+
+      if (!variant) {
+        throw new Error("Variação não encontrada para abastecer.");
+      }
+
+      if (!variant.trackInventory) {
+        throw new Error("Ative o controle de estoque desta variação antes de abastecer.");
+      }
+
+      const updatedVariant = await tx.productVariant.update({
+        data: {
+          stockQuantity: {
+            increment: parsed.data.quantity
+          }
+        },
+        where: { id: variant.id }
+      });
+
+      await tx.inventoryLedger.create({
+        data: {
+          productId: variant.productId,
+          variantId: variant.id,
+          type: InventoryLedgerType.ADJUSTMENT,
+          quantityDelta: parsed.data.quantity,
+          quantityAfter: updatedVariant.stockQuantity,
+          reason
+        }
+      });
+    });
+  } catch (error) {
+    Sentry.captureException(error);
+    throw error instanceof Error ? error : new Error("Não foi possível abastecer a variação.");
+  }
+
+  revalidateCatalogPaths();
+  revalidatePath(`/admin/produtos/${parsed.data.productId}/editar`);
+  redirect(`/admin/produtos/${parsed.data.productId}/editar?notice=${encodeURIComponent(`Estoque abastecido: +${parsed.data.quantity} unidade(s).`)}`);
 }
 
 export async function archiveProduct(productId: string): Promise<void> {
@@ -427,7 +507,7 @@ export async function syncShopifyProductsFromCsv(): Promise<void> {
   revalidatePath("/admin/produtos");
 }
 
-function formValuesToProductInput(formData: FormData): Record<string, FormDataEntryValue | null> {
+function formValuesToProductInput(formData: FormData): Record<string, unknown> {
   return {
     title: formData.get("title"),
     slug: formData.get("slug"),
@@ -443,6 +523,7 @@ function formValuesToProductInput(formData: FormData): Record<string, FormDataEn
     compareAtPrice: formData.get("compareAtPrice"),
     sku: formData.get("sku"),
     stockQuantity: formData.get("stockQuantity"),
+    trackInventory: formData.get("trackInventory") === "on",
     variants: formData.get("variants"),
     status: formData.get("status")
   };

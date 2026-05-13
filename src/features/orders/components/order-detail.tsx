@@ -31,7 +31,7 @@ const orderSoftPanelClass = "border-orange-100 bg-orange-50/70 text-foreground d
 
 export function OrderDetail({ order }: OrderDetailProps): React.ReactElement {
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
       <div className="space-y-6">
         <Card className="overflow-hidden border-orange-100 shadow-sm dark:border-orange-500/30">
           <CardHeader className={orderCardHeaderClass}>

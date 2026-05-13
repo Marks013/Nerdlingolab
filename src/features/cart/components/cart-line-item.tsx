@@ -46,7 +46,9 @@ export function CartLineItem({
         </Link>
         <p className="mt-1 text-sm text-muted-foreground">{item.variantTitle}</p>
         <p className="mt-2 text-sm font-medium">{formatCurrency(item.unitPriceCents)}</p>
-        <p className="mt-1 text-xs text-muted-foreground">Estoque disponível: {item.availableStock}</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {item.trackInventory ? `Estoque disponível: ${item.availableStock}` : "Venda sob demanda"}
+        </p>
       </div>
       <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-end">
         <div className="inline-flex h-11 overflow-hidden rounded-xl border-2 border-primary/70 bg-[#fff7ed] shadow-[0_8px_18px_rgba(255,102,0,0.14)]">

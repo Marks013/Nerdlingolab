@@ -80,7 +80,8 @@ export default async function ProductPage({ params }: ProductPageProps): Promise
     shippingLeadTimeDays: variant.shippingLeadTimeDays,
     weightGrams: variant.weightGrams,
     widthCm: variant.widthCm,
-    availableStock: Math.max(0, variant.stockQuantity - variant.reservedQuantity),
+    availableStock: variant.trackInventory ? Math.max(0, variant.stockQuantity - variant.reservedQuantity) : 99,
+    trackInventory: variant.trackInventory,
     imageUrl: getVariantImageUrl(variant.optionValues)
   }));
   const session = await auth();

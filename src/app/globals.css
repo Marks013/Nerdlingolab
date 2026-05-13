@@ -258,6 +258,15 @@ form.rounded-2xl,
   min-width: 0;
 }
 
+.admin-shell main > .mx-auto,
+.admin-shell main.mx-auto {
+  max-width: min(100%, 96rem);
+}
+
+.admin-shell .overflow-x-auto {
+  overscroll-behavior-x: contain;
+}
+
 .admin-shell p,
 .admin-shell span,
 .admin-shell h1,

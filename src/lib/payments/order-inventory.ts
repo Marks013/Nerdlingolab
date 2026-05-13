@@ -11,6 +11,17 @@ export async function decrementInventoryForOrder(
       continue;
     }
 
+    const variant = await tx.productVariant.findUnique({
+      where: { id: item.variantId },
+      select: {
+        trackInventory: true
+      }
+    });
+
+    if (!variant?.trackInventory) {
+      continue;
+    }
+
     const updateResult = await tx.productVariant.updateMany({
       where: {
         id: item.variantId,
@@ -80,6 +91,17 @@ export async function restoreInventoryForCanceledOrder(
 ): Promise<void> {
   for (const item of order.items) {
     if (!item.variantId) {
+      continue;
+    }
+
+    const variant = await tx.productVariant.findUnique({
+      where: { id: item.variantId },
+      select: {
+        trackInventory: true
+      }
+    });
+
+    if (!variant?.trackInventory) {
       continue;
     }
 

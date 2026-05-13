@@ -5,8 +5,7 @@ import { prisma } from "@/lib/prisma";
 const blockingStatuses = new Set<SupplierSourceStatus>([
   SupplierSourceStatus.PAUSED,
   SupplierSourceStatus.CLOSED,
-  SupplierSourceStatus.DELETED,
-  SupplierSourceStatus.OUT_OF_STOCK
+  SupplierSourceStatus.DELETED
 ]);
 
 export async function assertDropshippingCheckoutAvailability(
@@ -52,4 +51,3 @@ export async function assertDropshippingCheckoutAvailability(
     }
   }
 }
-

@@ -72,8 +72,8 @@ export default async function AdminSuppliersPage({
           className={cn(
             "rounded-xl border px-4 py-3 text-sm font-semibold shadow-sm",
             noticeType === "warning"
-              ? "border-amber-200 bg-amber-50 text-amber-900"
-              : "border-emerald-200 bg-emerald-50 text-emerald-800"
+              ? "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100"
+              : "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-100"
           )}
         >
           {notice}
@@ -105,7 +105,7 @@ export default async function AdminSuppliersPage({
         </div>
       </section>
 
-      <section className="grid gap-3 md:grid-cols-6">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         <MetricCard label="Origens" value={dashboard.totals.sources} />
         <MetricCard label="Filtrados" value={dashboard.totals.filteredSources} />
         <MetricCard label="Mercado Livre" value={dashboard.totals.mercadoLivre} />
@@ -259,10 +259,10 @@ export default async function AdminSuppliersPage({
 
 function MetricCard({ label, tone = "neutral", value }: { label: string; tone?: "neutral" | "warning" | "critical"; value: number }): React.ReactElement {
   return (
-    <Card className={cn(tone === "warning" && "border-amber-200", tone === "critical" && "border-red-200")}>
+    <Card className={cn(tone === "warning" && "border-amber-200 dark:border-amber-500/40", tone === "critical" && "border-red-200 dark:border-red-500/40")}>
       <CardContent className="p-4">
         <p className="text-xs font-black uppercase tracking-wide text-muted-foreground">{label}</p>
-        <p className={cn("mt-2 text-2xl font-black", tone === "warning" && "text-amber-700", tone === "critical" && "text-red-700")}>{value}</p>
+        <p className={cn("mt-2 text-2xl font-black", tone === "warning" && "text-amber-700 dark:text-amber-100", tone === "critical" && "text-red-700 dark:text-red-100")}>{value}</p>
       </CardContent>
     </Card>
   );
@@ -281,7 +281,7 @@ function CurrentFilterInputs({ filters }: { filters: DropshippingDashboardFilter
 
 function FilterBar({ filters }: { filters: DropshippingDashboardFilters }): React.ReactElement {
   return (
-    <form className="grid gap-3 rounded-lg border bg-background/80 p-3 md:grid-cols-[1fr_170px_170px_170px_auto_auto]" method="get">
+    <form className="grid gap-3 rounded-lg border bg-background/80 p-3 lg:grid-cols-2 2xl:grid-cols-[minmax(260px,1fr)_170px_170px_170px_auto_auto]" method="get">
       <label className="relative">
         <Search className="absolute left-3 top-3.5 size-4 text-muted-foreground" />
         <Input className="pl-9" defaultValue={filters.query ?? ""} name="busca" placeholder="Buscar produto..." />
@@ -390,13 +390,13 @@ function SupplierRow({
             </form>
             <form action={archiveSupplierProductAction.bind(null, item.productId)}>
               <CurrentFilterInputs filters={filters} />
-              <SupplierSubmitButton className="h-10 border-amber-200 bg-amber-50 px-4 text-amber-800 hover:bg-amber-100" label="Desativar" pendingLabel="Desativando...">
+              <SupplierSubmitButton className="h-10 border-amber-200 bg-amber-50 px-4 text-amber-800 hover:bg-amber-100 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100 dark:hover:bg-amber-500/20" label="Desativar" pendingLabel="Desativando...">
                 <PowerOff className="mr-2 size-4" />
               </SupplierSubmitButton>
             </form>
             <form action={deleteSupplierProductAction.bind(null, item.productId)}>
               <CurrentFilterInputs filters={filters} />
-              <SupplierSubmitButton className="h-10 border-red-200 bg-red-50 px-4 text-red-700 hover:bg-red-100" label="Excluir" pendingLabel="Excluindo...">
+              <SupplierSubmitButton className="h-10 border-red-200 bg-red-50 px-4 text-red-700 hover:bg-red-100 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-100 dark:hover:bg-red-500/20" label="Excluir" pendingLabel="Excluindo...">
                 <Trash2 className="mr-2 size-4" />
               </SupplierSubmitButton>
             </form>
@@ -416,10 +416,10 @@ function SupplierRow({
       <details className="mt-4 rounded-lg border bg-muted/30 p-3 text-left">
           <summary className="cursor-pointer text-sm font-bold text-foreground">Abrir validação manual</summary>
         <div className="mt-3 grid gap-3">
-          <form action={updateManualSourceAction} className="grid gap-3 rounded-lg border border-emerald-200 bg-emerald-50/60 p-3 lg:grid-cols-[minmax(180px,220px)_minmax(180px,220px)_140px_minmax(220px,1fr)_190px] dark:border-emerald-500/40 dark:bg-emerald-500/10">
+          <form action={updateManualSourceAction} className="grid gap-3 rounded-lg border border-emerald-200 bg-emerald-50/60 p-3 lg:grid-cols-2 2xl:grid-cols-[minmax(180px,220px)_minmax(180px,220px)_140px_minmax(220px,1fr)_190px] dark:border-emerald-500/40 dark:bg-emerald-500/10">
             <CurrentFilterInputs filters={filters} />
             <input name="sourceId" type="hidden" value={item.id} />
-            <div className="lg:col-span-5">
+            <div className="lg:col-span-2 2xl:col-span-5">
               <p className="text-sm font-black text-emerald-900 dark:text-emerald-100">1. Salvar preço de origem e estoque</p>
               <p className="mt-1 text-xs leading-5 text-emerald-800/80 dark:text-emerald-100/75">
                 Este bloco preenche as colunas <strong>Preço origem</strong> e <strong>Estoque origem</strong>. Com preço válido, itens manuais/erro/não checados viram ativo automaticamente.
@@ -532,7 +532,7 @@ function InfoTile({ detail, highlight = false, label, value }: { detail?: string
 function AlertList({ filters, item }: { filters: DropshippingDashboardFilters; item: DropshippingDashboardItem }): React.ReactElement {
   if (!item.openAlerts.length) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
+      <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-200">
         <CheckCircle2 className="size-4" />
         Sem alerta aberto
       </span>

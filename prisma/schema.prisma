@@ -419,6 +419,7 @@ model ProductVariant {
   compareAtPriceCents  Int?
   stockQuantity        Int      @default(0)
   reservedQuantity     Int      @default(0)
+  trackInventory       Boolean  @default(false)
   weightGrams          Int?
   heightCm             Int?
   widthCm              Int?

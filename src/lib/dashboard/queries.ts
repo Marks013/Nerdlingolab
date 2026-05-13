@@ -143,6 +143,7 @@ export async function getAdminDashboardMetrics(): Promise<AdminDashboardMetrics>
         where: {
           isActive: true,
           product: { status: ProductStatus.ACTIVE },
+          trackInventory: true,
           stockQuantity: { lte: 5 }
         }
       }),

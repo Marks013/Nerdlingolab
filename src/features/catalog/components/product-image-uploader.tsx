@@ -112,7 +112,7 @@ export function ProductImageUploader({
                   <span className="truncate">{index === 0 ? "Imagem principal" : `Imagem ${index + 1}`}</span>
                   <Button
                     aria-label={`Remover imagem ${index + 1}`}
-                    className="size-10 border-red-200 bg-red-50 p-0 text-red-700 hover:bg-red-600 hover:text-white"
+                    className="size-10 border-red-200 bg-red-50 p-0 text-red-700 hover:bg-red-600 hover:text-white dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-100 dark:hover:bg-red-500/20"
                     onClick={() => removeImageUrl(url)}
                     size="icon"
                     type="button"

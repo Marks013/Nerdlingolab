@@ -167,7 +167,7 @@ function ProductInCategory({
       <form action={removeProductFromCategory}>
         <input name="categoryId" type="hidden" value={categoryId} />
         <input name="productId" type="hidden" value={product.id} />
-        <Button className="h-10 border-red-200 bg-red-50 px-3 text-red-700 hover:bg-red-600 hover:text-white" type="submit" variant="outline">
+        <Button className="h-10 border-red-200 bg-red-50 px-3 text-red-700 hover:bg-red-600 hover:text-white dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-100 dark:hover:bg-red-500/20" type="submit" variant="outline">
           <Trash2 className="mr-2 size-5" />
           Remover
         </Button>

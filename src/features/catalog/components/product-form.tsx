@@ -37,7 +37,9 @@ import { formatCurrency } from "@/lib/format";
 interface ProductFormProps {
   action: (formData: FormData) => Promise<void>;
   categories: Category[];
+  notice?: string;
   product?: ProductListItem;
+  restockAction?: (formData: FormData) => Promise<void>;
   shippingPresets: ProductShippingPresetItem[];
 }
 
@@ -59,6 +61,7 @@ interface VariantFormRow {
   shippingLeadTimeDays: string;
   sku: string;
   stockQuantity: string;
+  trackInventory: boolean;
   title: string;
   weightGrams: string;
   widthCm: string;
@@ -130,7 +133,9 @@ const productStatusOptions = [
 export function ProductForm({
   categories,
   product,
+  notice,
   action,
+  restockAction,
   shippingPresets: initialShippingPresets
 }: ProductFormProps): React.ReactElement {
   const imageUrls = getImageUrls(product?.images).join("\n");
@@ -154,7 +159,8 @@ export function ProductForm({
   const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
   const descriptionEditorRef = useRef<HTMLDivElement>(null);
   const firstVariant = variants[0] ?? createVariantRow();
-  const totalStock = variants.reduce((sum, variant) => sum + (Number.parseInt(variant.stockQuantity, 10) || 0), 0);
+  const trackedVariants = variants.filter((variant) => variant.trackInventory).length;
+  const totalStock = variants.reduce((sum, variant) => sum + (variant.trackInventory ? Number.parseInt(variant.stockQuantity, 10) || 0 : 0), 0);
   const activeVariants = variants.filter((variant) => variant.isActive).length;
   const variantGroups = useMemo(() => groupVariantsByPrimaryOption(variants), [variants]);
   const variantsPayload = useMemo(() => serializeVariants(variants), [variants]);
@@ -400,6 +406,8 @@ export function ProductForm({
     <form action={action} className="grid gap-6" onSubmit={syncDescriptionBeforeSubmit}>
       <input name="sku" type="hidden" value={firstVariant.sku} />
       <input name="stockQuantity" type="hidden" value={firstVariant.stockQuantity || "0"} />
+      <input name="trackInventory" type="hidden" value={firstVariant.trackInventory ? "on" : ""} />
+      {product ? <input name="productId" type="hidden" value={product.id} /> : null}
       <textarea className="hidden" defaultValue={descriptionHtml} name="description" readOnly ref={descriptionInputRef} />
       <textarea className="hidden" name="variants" readOnly value={variantsPayload} />
       <textarea className="hidden" name="metafields" readOnly value={metafieldsPayload} />
@@ -434,6 +442,11 @@ export function ProductForm({
         </div>
         <Button className="w-full sm:w-auto" type="submit">Salvar produto</Button>
       </div>
+      {notice ? (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-100">
+          {notice}
+        </div>
+      ) : null}
 
       <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="grid min-w-0 gap-5">
@@ -574,6 +587,13 @@ export function ProductForm({
               Ao vincular uma imagem, ela é aplicada nas variantes da mesma Cor + Sexo. Valores novos podem ser digitados ou criados pelos botões acima.
             </p>
             <div className="mt-4 rounded-lg border bg-muted/20 p-4">
+              <div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm leading-6 text-muted-foreground">
+                <p className="font-black text-foreground">Controle de estoque</p>
+                <p>
+                  Para dropshipping, deixe desligado. A loja venderá sob demanda sem limitar carrinho pelo estoque local.
+                  Ative apenas para produtos com estoque físico próprio.
+                </p>
+              </div>
               <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
                 <div className="min-w-0">
                   <h3 className="text-sm font-semibold tracking-normal">Atalhos logisticos</h3>
@@ -672,7 +692,7 @@ export function ProductForm({
               ) : null}
             </div>
             <div className="mt-4 overflow-x-auto rounded-lg border">
-              <table className="w-full min-w-[1120px] border-collapse text-sm">
+              <table className="w-full min-w-[1220px] border-collapse text-sm">
                 <thead className="bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
                   <tr>
                     <th className="w-[330px] px-3 py-2">Variante</th>
@@ -680,7 +700,7 @@ export function ProductForm({
                     <th className="w-[120px] px-3 py-2">Tamanho</th>
                     <th className="w-[130px] px-3 py-2">Genero</th>
                     <th className="w-[130px] px-3 py-2">Preço</th>
-                    <th className="w-[95px] px-3 py-2">Estoque</th>
+                    <th className="w-[150px] px-3 py-2">Estoque</th>
                     <th className="w-[110px] px-3 py-2">Status</th>
                     <th className="w-[160px] px-3 py-2 text-right">Acoes</th>
                   </tr>
@@ -766,6 +786,35 @@ export function ProductForm({
                                     </div>
                                   </div>
                                 </details>
+                                {restockAction && product && variant.trackInventory ? (
+                                  <div className="rounded-md border border-emerald-200 bg-emerald-50/70 p-2 dark:border-emerald-500/40 dark:bg-emerald-500/10">
+                                    <p className="text-xs font-black text-emerald-900 dark:text-emerald-100">Abastecer estoque</p>
+                                    <div className="mt-2 grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)_auto]">
+                                      <Input
+                                        className="h-9"
+                                        min={1}
+                                        name={`restockQuantity:${variant.id}`}
+                                        placeholder="+ qtd."
+                                        type="number"
+                                      />
+                                      <Input
+                                        className="h-9"
+                                        name={`restockReason:${variant.id}`}
+                                        placeholder="Motivo opcional"
+                                      />
+                                      <Button
+                                        className="h-9"
+                                        formAction={restockAction}
+                                        name="restockVariantId"
+                                        type="submit"
+                                        value={variant.id}
+                                        variant="default"
+                                      >
+                                        Abastecer
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : null}
                               </div>
                             </div>
                           </td>
@@ -783,7 +832,24 @@ export function ProductForm({
                             <Input className="h-9" value={variant.price} onChange={(event) => updateVariant(variant.id, { price: event.target.value })} required />
                           </td>
                           <td className="px-3 py-3">
-                            <Input className="h-9" min={0} type="number" value={variant.stockQuantity} onChange={(event) => updateVariant(variant.id, { stockQuantity: event.target.value })} />
+                            <div className="grid gap-2">
+                              <label className="flex items-center gap-2 rounded-md border bg-background px-2 py-2 text-xs font-semibold">
+                                <input
+                                  checked={variant.trackInventory}
+                                  onChange={(event) => updateVariant(variant.id, { trackInventory: event.target.checked })}
+                                  type="checkbox"
+                                />
+                                Controlar
+                              </label>
+                              <Input
+                                className="h-9"
+                                disabled={!variant.trackInventory}
+                                min={0}
+                                type="number"
+                                value={variant.stockQuantity}
+                                onChange={(event) => updateVariant(variant.id, { stockQuantity: event.target.value })}
+                              />
+                            </div>
                           </td>
                           <td className="px-3 py-3">
                             <label className="flex items-center gap-2 text-sm">
@@ -802,7 +868,7 @@ export function ProductForm({
                               </Button>
                               <Button
                                 aria-label="Remover variacao"
-                                className="h-10 border-red-200 bg-red-50 px-3 text-red-700 hover:bg-red-600 hover:text-white disabled:border-muted-foreground/20 disabled:bg-muted disabled:text-muted-foreground"
+                                className="h-10 border-red-200 bg-red-50 px-3 text-red-700 hover:bg-red-600 hover:text-white disabled:border-muted-foreground/20 disabled:bg-muted disabled:text-muted-foreground dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-100 dark:hover:bg-red-500/20 disabled:dark:border-muted-foreground/20 disabled:dark:bg-muted disabled:dark:text-muted-foreground"
                                 disabled={variants.length === 1}
                                 onClick={() => removeVariant(variant.id)}
                                 size="sm"
@@ -894,7 +960,7 @@ export function ProductForm({
                         <td className="px-3 py-3">
                           <Button
                             aria-label="Remover metacampo"
-                            className="h-10 border-red-200 bg-red-50 px-3 text-red-700 hover:bg-red-600 hover:text-white"
+                            className="h-10 border-red-200 bg-red-50 px-3 text-red-700 hover:bg-red-600 hover:text-white dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-100 dark:hover:bg-red-500/20"
                             onClick={() => removeMetafield(field.id)}
                             size="sm"
                             type="button"
@@ -926,7 +992,7 @@ export function ProductForm({
             </label>
             <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
               <Metric label="Variacoes" value={`${activeVariants}/${variants.length}`} />
-              <Metric label="Estoque" value={String(totalStock)} />
+              <Metric label="Estoque" value={trackedVariants > 0 ? `${totalStock} / ${trackedVariants} controlada(s)` : "Sob demanda"} />
             </dl>
           </section>
 
@@ -1235,6 +1301,7 @@ function getInitialVariantRows(product?: ProductListItem): VariantFormRow[] {
       shippingLeadTimeDays: variant.shippingLeadTimeDays ? String(variant.shippingLeadTimeDays) : "",
       sku: variant.sku,
       stockQuantity: String(variant.stockQuantity),
+      trackInventory: variant.trackInventory,
       title: variant.title || `Variacao ${index + 1}`,
       weightGrams: variant.weightGrams ? String(variant.weightGrams) : "",
       widthCm: variant.widthCm ? String(variant.widthCm) : ""
@@ -1256,6 +1323,7 @@ function createVariantRow(overrides: Partial<VariantFormRow> = {}): VariantFormR
     shippingLeadTimeDays: "",
     sku: "",
     stockQuantity: "0",
+    trackInventory: false,
     title: "Padrao",
     weightGrams: "",
     widthCm: "",
@@ -1345,6 +1413,7 @@ function addMatrixOptionValue(
           shippingLeadTimeDays: baseVariant.shippingLeadTimeDays,
           sku: buildGeneratedSku(baseVariant.sku, options, nextVariants.length + 1),
           stockQuantity: "0",
+          trackInventory: baseVariant.trackInventory,
           title: buildVariantTitle(options, "Nova variacao"),
           weightGrams: baseVariant.weightGrams,
           heightCm: baseVariant.heightCm,
@@ -1587,7 +1656,8 @@ function serializeVariants(variants: VariantFormRow[]): string {
         variant.lengthCm.trim(),
         variant.shippingLeadTimeDays.trim(),
         variant.isActive ? "ativo" : "inativo",
-        options.join(";")
+        options.join(";"),
+        variant.trackInventory ? "controlar" : "sem_estoque"
       ].join(" | ");
     })
     .join("\n");

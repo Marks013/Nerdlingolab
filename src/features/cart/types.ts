@@ -72,6 +72,7 @@ export interface ValidatedCartItem {
   quantity: number;
   lineTotalCents: number;
   availableStock: number;
+  trackInventory: boolean;
 }
 
 export interface CartValidationResponse {

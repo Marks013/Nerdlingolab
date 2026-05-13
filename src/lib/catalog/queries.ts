@@ -619,9 +619,14 @@ function getPublicProductWhere(filters: PublicProductFilters = {}): ProductWhere
       variants: {
         some: {
           isActive: true,
-          stockQuantity: {
-            gt: 0
-          }
+          OR: [
+            { trackInventory: false },
+            {
+              stockQuantity: {
+                gt: 0
+              }
+            }
+          ]
         }
       }
     },

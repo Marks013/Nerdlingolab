@@ -103,7 +103,7 @@ export function ShopHeader({
       </div>
 
       <div className="bg-[#f6f7f8] text-[#677279]">
-        <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-5 px-5 py-6 lg:grid-cols-[300px_minmax(280px,360px)_minmax(0,1fr)] lg:items-center lg:gap-5 xl:grid-cols-[330px_minmax(320px,390px)_minmax(0,1fr)] xl:gap-6">
+        <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-5 px-5 py-6 lg:grid-cols-[minmax(260px,auto)_minmax(280px,1fr)] lg:items-center lg:gap-x-8 xl:grid-cols-[minmax(310px,auto)_minmax(320px,420px)_minmax(0,1fr)] xl:gap-x-7">
           <Link className="group flex min-w-0 items-center justify-center gap-3 text-[#111827] lg:justify-start" href="/">
             <Image
               alt="NerdLingoLab"
@@ -114,7 +114,7 @@ export function ShopHeader({
               width={96}
             />
             <span className="flex min-w-0 flex-col leading-none">
-              <span className="whitespace-nowrap text-[34px] font-black tracking-normal leading-none">
+              <span className="whitespace-nowrap text-[clamp(1.85rem,2.7vw,2.125rem)] font-black tracking-normal leading-none">
                 <span className="text-[#ff6902]">Nerd</span>
                 <span className="text-[#7c1fe6]">LingoLab</span>
               </span>
@@ -204,7 +204,7 @@ export function ShopHeader({
             ) : null}
           </div>
 
-          <nav className="flex flex-wrap content-center items-center justify-center gap-3 lg:justify-end lg:gap-1 xl:flex-nowrap xl:gap-2">
+          <nav className="flex min-w-0 flex-wrap content-center items-center justify-center gap-2 lg:col-span-2 lg:justify-center xl:col-span-1 xl:flex-nowrap xl:justify-end xl:gap-1.5 2xl:gap-2">
             {headerLinks.map((link) => {
               const Icon = link.icon;
 

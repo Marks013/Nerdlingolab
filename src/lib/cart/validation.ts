@@ -18,6 +18,8 @@ import { prisma } from "@/lib/prisma";
 import { defaultFreeShippingThresholdCents, selectShippingOption } from "@/lib/shipping/quotes";
 import { getStorefrontTheme } from "@/lib/theme/storefront";
 
+const untrackedInventoryAvailableQuantity = 99;
+
 export async function validateCartItems(
   request: CartValidationRequest
 ): Promise<CartValidationResponse> {
@@ -48,7 +50,9 @@ export async function validateCartItems(
 
   for (const requestedItem of normalizedItems) {
     const variant = variantById.get(requestedItem.variantId);
-    const availableStock = variant ? Math.max(0, variant.stockQuantity - variant.reservedQuantity) : 0;
+    const availableStock = variant
+      ? getAvailableStockForVariant(variant)
+      : 0;
 
     if (!variant || availableStock <= 0) {
       removedItems.push(requestedItem.variantId);
@@ -73,7 +77,8 @@ export async function validateCartItems(
       widthCm: variant.widthCm,
       quantity,
       lineTotalCents: unitPriceCents * quantity,
-      availableStock
+      availableStock,
+      trackInventory: variant.trackInventory
     });
   }
 
@@ -144,6 +149,18 @@ export async function validateCartItems(
     loyalty: loyaltyPreview,
     loyaltyEarnPreview
   };
+}
+
+function getAvailableStockForVariant(variant: {
+  reservedQuantity: number;
+  stockQuantity: number;
+  trackInventory: boolean;
+}): number {
+  if (!variant.trackInventory) {
+    return untrackedInventoryAvailableQuantity;
+  }
+
+  return Math.max(0, variant.stockQuantity - variant.reservedQuantity);
 }
 
 function buildEmptyCartResponse(request: CartValidationRequest): CartValidationResponse {

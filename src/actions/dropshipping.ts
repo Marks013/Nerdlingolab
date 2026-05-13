@@ -82,7 +82,15 @@ export async function syncDropshippingBatchAction(formData: FormData): Promise<v
 export async function applySuggestedSourcePriceAction(sourceId: string, formData: FormData): Promise<void> {
   await requireAdmin();
   const filters = readSupplierFilters(formData);
-  await applySuggestedSourcePrice(sourceIdSchema.parse(sourceId));
+  try {
+    await applySuggestedSourcePrice(sourceIdSchema.parse(sourceId));
+  } catch {
+    redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
+      filters,
+      notice: "Nao foi possivel aplicar o preco. Produto ou origem nao localizada.",
+      noticeType: "warning"
+    })}`);
+  }
   revalidatePath("/admin/fornecedores");
   revalidatePath("/admin/produtos");
   revalidatePath("/produtos");
@@ -145,17 +153,24 @@ export async function updateSupplierProductStorePriceAction(formData: FormData):
     throw new Error("Informe um preco da loja maior que zero.");
   }
 
-  await prisma.product.update({
+  const updated = await prisma.product.updateMany({
     data: {
-      priceCents,
-      variants: {
-        updateMany: {
-          data: { priceCents },
-          where: { productId: parsed.data.productId }
-        }
-      }
+      priceCents
     },
     where: { id: parsed.data.productId }
+  });
+
+  if (updated.count === 0) {
+    redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
+      filters,
+      notice: "Produto nao encontrado para alterar preco.",
+      noticeType: "warning"
+    })}`);
+  }
+
+  await prisma.productVariant.updateMany({
+    data: { priceCents },
+    where: { productId: parsed.data.productId }
   });
 
   revalidateSupplierProductPaths();
@@ -171,13 +186,21 @@ export async function archiveSupplierProductAction(productId: string, formData: 
   const filters = readSupplierFilters(formData);
   const id = sourceIdSchema.parse(productId);
 
-  await prisma.product.update({
+  const updated = await prisma.product.updateMany({
     data: {
       publishedAt: null,
       status: ProductStatus.ARCHIVED
     },
     where: { id }
   });
+
+  if (updated.count === 0) {
+    redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
+      filters,
+      notice: "Produto nao encontrado para desativar.",
+      noticeType: "warning"
+    })}`);
+  }
 
   revalidateSupplierProductPaths();
   redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
@@ -207,7 +230,7 @@ export async function deleteSupplierProductAction(productId: string, formData: F
   }
 
   if (product._count.orderItems > 0) {
-    await prisma.product.update({
+    await prisma.product.updateMany({
       data: {
         publishedAt: null,
         status: ProductStatus.ARCHIVED
@@ -231,13 +254,20 @@ export async function deleteSupplierProductAction(productId: string, formData: F
       noticeType: "success"
     })}`);
   } catch {
-    await prisma.product.update({
+    const updated = await prisma.product.updateMany({
       data: {
         publishedAt: null,
         status: ProductStatus.ARCHIVED
       },
       where: { id }
     });
+    if (updated.count === 0) {
+      redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
+        filters,
+        notice: "Produto nao encontrado para excluir ou arquivar.",
+        noticeType: "warning"
+      })}`);
+    }
     revalidateSupplierProductPaths();
     redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
       filters,
@@ -277,11 +307,15 @@ export async function updateManualSourceSnapshotAction(formData: FormData): Prom
     throw new Error(parsed.error.issues[0]?.message ?? "Validacao manual invalida.");
   }
 
+  const priceCents = parseCurrencyToCents(parsed.data.price);
+  const stockQuantity = parseOptionalInteger(parsed.data.stockQuantity);
+  const status = inferManualSourceStatus(parsed.data.status, priceCents);
+
   await updateManualProductSourceSnapshot({
     sourceId: parsed.data.sourceId,
-    status: parsed.data.status,
-    priceCents: parseCurrencyToCents(parsed.data.price),
-    stockQuantity: parseOptionalInteger(parsed.data.stockQuantity),
+    status,
+    priceCents,
+    stockQuantity,
     note: parsed.data.note
   });
 
@@ -398,10 +432,28 @@ export async function updateGlobalPricingRuleAction(formData: FormData): Promise
 
 function readSupplierFilters(formData: FormData): z.infer<typeof filteredSourcesSchema> {
   return filteredSourcesSchema.parse({
-    provider: normalizeOptionalEnum(formData.get("fornecedor")),
-    query: normalizeOptionalText(formData.get("busca")),
-    status: normalizeOptionalEnum(formData.get("status"))
+    provider: normalizeOptionalEnum(formData.get("filterFornecedor") ?? formData.get("fornecedor")),
+    query: normalizeOptionalText(formData.get("filterBusca") ?? formData.get("busca")),
+    status: normalizeOptionalEnum(formData.get("filterStatus") ?? formData.get("status"))
   });
+}
+
+function inferManualSourceStatus(status: SupplierSourceStatus, priceCents: number | null): SupplierSourceStatus {
+  const autoActiveStatuses: SupplierSourceStatus[] = [
+    SupplierSourceStatus.CONFIG_REQUIRED,
+    SupplierSourceStatus.UNKNOWN,
+    SupplierSourceStatus.ERROR
+  ];
+
+  if (
+    priceCents !== null
+    && priceCents > 0
+    && autoActiveStatuses.includes(status)
+  ) {
+    return SupplierSourceStatus.ACTIVE;
+  }
+
+  return status;
 }
 
 function buildSupplierRedirectParams({

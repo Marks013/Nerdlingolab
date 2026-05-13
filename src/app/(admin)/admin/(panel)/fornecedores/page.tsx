@@ -265,9 +265,9 @@ function MetricCard({ label, tone = "neutral", value }: { label: string; tone?: 
 function CurrentFilterInputs({ filters }: { filters: DropshippingDashboardFilters }): React.ReactElement {
   return (
     <>
-      <input name="busca" type="hidden" value={filters.query ?? ""} />
-      <input name="fornecedor" type="hidden" value={filters.provider ?? ""} />
-      <input name="status" type="hidden" value={filters.status ?? ""} />
+      <input name="filterBusca" type="hidden" value={filters.query ?? ""} />
+      <input name="filterFornecedor" type="hidden" value={filters.provider ?? ""} />
+      <input name="filterStatus" type="hidden" value={filters.status ?? ""} />
     </>
   );
 }

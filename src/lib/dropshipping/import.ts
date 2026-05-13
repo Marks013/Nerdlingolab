@@ -16,6 +16,7 @@ export interface SupplierSnapshotImportResult {
   imported: number;
   invalid: number;
   missing: number;
+  archived: number;
   errors: string[];
   matchedByExternal: number;
   matchedBySourceId: number;
@@ -32,6 +33,7 @@ interface SupplierSnapshotImportRow {
   note: string | null;
   priceCents: number | null;
   provider: SupplierProvider | null;
+  productId: string | null;
   rawProvider: string;
   rawStatus: string;
   status: SupplierSourceStatus | null;
@@ -48,7 +50,8 @@ interface ParsedSupplierSnapshotImportRow {
 
 interface SourceMatch {
   id: string;
-  matchedBy: "external" | "sourceId" | "url";
+  matchedBy: "external" | "productId" | "sourceId" | "url";
+  productStatus: ProductStatus;
 }
 
 const maxImportRows = 1_000;
@@ -121,6 +124,13 @@ export async function importSupplierSnapshotCsv(text: string): Promise<SupplierS
       continue;
     }
 
+    if (source.productStatus === ProductStatus.ARCHIVED) {
+      result.archived += 1;
+      result.skipped += 1;
+      addImportError(result, `Linha ${index + 2}: produto arquivado/desativado ignorado para ${(importRow.title || importRow.url || source.id).slice(0, 120)}.`);
+      continue;
+    }
+
     const status = importRow.status ?? inferStatus(importRow);
 
     await updateManualProductSourceSnapshot({
@@ -178,41 +188,52 @@ function sanitizeImportRow(row: SupplierSnapshotImportRow): SupplierSnapshotImpo
 
 async function buildSourceMatchIndex(rows: SupplierSnapshotImportRow[]): Promise<Map<string, SourceMatch>> {
   const sourceIds = unique(rows.map((row) => row.sourceId).filter(isNonEmptyString));
+  const productIds = unique(rows.map((row) => row.productId).filter(isNonEmptyString));
   const urls = unique(rows.flatMap((row) => [row.url, normalizeUrl(row.url)]).filter(isNonEmptyString));
   const externalIds = unique(rows.map((row) => resolveExternalFields(row).externalId).filter(isNonEmptyString));
   const matches = new Map<string, SourceMatch>();
 
-  const [byIds, byUrls, byExternalIds] = await Promise.all([
+  const [byIds, byProducts, byUrls, byExternalIds] = await Promise.all([
     sourceIds.length
       ? prisma.productSource.findMany({
-          select: { id: true },
+          select: { id: true, product: { select: { status: true } } },
           where: {
-            id: { in: sourceIds },
-            product: { status: { not: ProductStatus.ARCHIVED } }
+            id: { in: sourceIds }
+          }
+        })
+      : [],
+    productIds.length
+      ? prisma.productSource.findMany({
+          orderBy: { updatedAt: "desc" },
+          select: { id: true, productId: true, product: { select: { status: true } } },
+          where: {
+            productId: { in: productIds }
           }
         })
       : [],
     urls.length
       ? prisma.productSource.findMany({
-          select: { id: true, originalUrl: true },
+          select: { id: true, originalUrl: true, product: { select: { status: true } } },
           where: {
-            originalUrl: { in: urls },
-            product: { status: { not: ProductStatus.ARCHIVED } }
+            originalUrl: { in: urls }
           }
         })
       : [],
     externalIds.length
       ? prisma.productSource.findMany({
-          select: { externalId: true, externalShopId: true, id: true, provider: true },
+          select: { externalId: true, externalShopId: true, id: true, product: { select: { status: true } }, provider: true },
           where: {
-            externalId: { in: externalIds },
-            product: { status: { not: ProductStatus.ARCHIVED } }
+            externalId: { in: externalIds }
           }
         })
       : []
   ]);
-  const byIdMap = new Map(byIds.map((source) => [source.id, source.id]));
-  const byUrlMap = new Map(byUrls.flatMap((source) => [[source.originalUrl, source.id], [normalizeUrl(source.originalUrl), source.id]]));
+  const byIdMap = new Map(byIds.map((source) => [source.id, { id: source.id, productStatus: source.product.status }]));
+  const byProductMap = new Map(byProducts.map((source) => [source.productId, { id: source.id, productStatus: source.product.status }]));
+  const byUrlMap = new Map(byUrls.flatMap((source) => [
+    [source.originalUrl, { id: source.id, productStatus: source.product.status }],
+    [normalizeUrl(source.originalUrl), { id: source.id, productStatus: source.product.status }]
+  ]));
   const byExternalMap = new Map(
     byExternalIds.map((source) => [
       externalMatchKey({
@@ -220,7 +241,7 @@ async function buildSourceMatchIndex(rows: SupplierSnapshotImportRow[]): Promise
         externalShopId: source.externalShopId,
         provider: source.provider
       }),
-      source.id
+      { id: source.id, productStatus: source.product.status }
     ])
   );
 
@@ -228,14 +249,21 @@ async function buildSourceMatchIndex(rows: SupplierSnapshotImportRow[]): Promise
     const key = rowMatchKey(row);
 
     if (row.sourceId && byIdMap.has(row.sourceId)) {
-      matches.set(key, { id: byIdMap.get(row.sourceId)!, matchedBy: "sourceId" });
+      const source = byIdMap.get(row.sourceId)!;
+      matches.set(key, { ...source, matchedBy: "sourceId" });
+      continue;
+    }
+
+    if (row.productId && byProductMap.has(row.productId)) {
+      const source = byProductMap.get(row.productId)!;
+      matches.set(key, { ...source, matchedBy: "productId" });
       continue;
     }
 
     const urlMatch = byUrlMap.get(row.url) ?? byUrlMap.get(normalizeUrl(row.url));
 
     if (urlMatch) {
-      matches.set(key, { id: urlMatch, matchedBy: "url" });
+      matches.set(key, { ...urlMatch, matchedBy: "url" });
       continue;
     }
 
@@ -243,7 +271,7 @@ async function buildSourceMatchIndex(rows: SupplierSnapshotImportRow[]): Promise
     const externalMatch = byExternalMap.get(externalMatchKey(external));
 
     if (externalMatch) {
-      matches.set(key, { id: externalMatch, matchedBy: "external" });
+      matches.set(key, { ...externalMatch, matchedBy: "external" });
     }
   }
 
@@ -275,6 +303,7 @@ function readImportRow(row: string[], columns: Map<string, number>): SupplierSna
     note: truncateText(firstColumn(row, columns, ["note", "observacao", "observacaointerna", "erro", "mensagem"]), 500) || null,
     priceCents: parseCurrencyToCents(firstColumn(row, columns, ["price", "preco", "precoimportacao", "precofornecedor", "supplierprice", "lastprice"])),
     provider: parseProvider(rawProvider),
+    productId: firstColumn(row, columns, ["productid", "idproduto"]) || null,
     rawProvider,
     rawStatus,
     status: parseStatus(rawStatus),
@@ -442,6 +471,11 @@ function incrementMatchCounter(result: SupplierSnapshotImportResult, matchedBy: 
     return;
   }
 
+  if (matchedBy === "productId") {
+    result.matchedBySourceId += 1;
+    return;
+  }
+
   if (matchedBy === "url") {
     result.matchedByUrl += 1;
     return;
@@ -453,7 +487,7 @@ function incrementMatchCounter(result: SupplierSnapshotImportResult, matchedBy: 
 function rowMatchKey(row: SupplierSnapshotImportRow): string {
   const external = resolveExternalFields(row);
 
-  return [row.sourceId ?? "", normalizeUrl(row.url), external.provider ?? "", external.externalId ?? "", external.externalShopId ?? ""].join("|");
+  return [row.sourceId ?? "", row.productId ?? "", normalizeUrl(row.url), external.provider ?? "", external.externalId ?? "", external.externalShopId ?? ""].join("|");
 }
 
 function externalMatchKey(input: {
@@ -561,6 +595,7 @@ function detectDelimiter(text: string): "," | ";" | "\t" {
 function createEmptyResult(errors: string[] = []): SupplierSnapshotImportResult {
   return {
     errors,
+    archived: 0,
     imported: 0,
     invalid: errors.length,
     matchedByExternal: 0,

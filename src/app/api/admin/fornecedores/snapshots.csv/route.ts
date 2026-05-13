@@ -72,6 +72,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const suffix = result.errors.length ? ` Primeiros erros: ${result.errors.slice(0, 3).join(" | ")}` : "";
     const params = new URLSearchParams({
       errors: String(result.errors.length),
+      archived: String(result.archived),
       imported: String(result.imported),
       invalid: String(result.invalid),
       matchedByExternal: String(result.matchedByExternal),

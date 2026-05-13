@@ -31,6 +31,7 @@ import {
 } from "@/lib/dropshipping/queries";
 import { ensureProductSourcesFromMetafields } from "@/lib/dropshipping/sync";
 import { cn } from "@/lib/utils";
+import { SupplierManualPricePreview } from "./supplier-manual-price-preview";
 import { SupplierSubmitButton } from "./supplier-submit-button";
 
 export const dynamic = "force-dynamic";
@@ -126,7 +127,12 @@ export default async function AdminSuppliersPage({
             <BulkActionBar filters={filters} itemCount={dashboard.items.length} />
             <div className="grid gap-3">
               {dashboard.items.map((item) => (
-                <SupplierRow filters={filters} item={item} key={item.id} />
+                <SupplierRow filters={filters} item={item} key={item.id} pricingRule={globalRule ? {
+                  marginFixedCents: globalRule.marginFixedCents,
+                  marginPercent: globalRule.marginPercent,
+                  minimumMarginCents: globalRule.minimumMarginCents,
+                  roundingMode: globalRule.roundingMode
+                } : null} />
               ))}
               {dashboard.items.length === 0 ? (
                 <div className="rounded-lg border px-4 py-8 text-center text-sm text-muted-foreground">
@@ -326,7 +332,20 @@ function BulkActionBar({
   );
 }
 
-function SupplierRow({ filters, item }: { filters: DropshippingDashboardFilters; item: DropshippingDashboardItem }): React.ReactElement {
+function SupplierRow({
+  filters,
+  item,
+  pricingRule
+}: {
+  filters: DropshippingDashboardFilters;
+  item: DropshippingDashboardItem;
+  pricingRule: {
+    marginFixedCents: number;
+    marginPercent: string;
+    minimumMarginCents: number;
+    roundingMode: string;
+  } | null;
+}): React.ReactElement {
   const sourcePriceChanged = item.suggestedPriceCents !== null && item.suggestedPriceCents !== item.storePriceCents;
 
   return (
@@ -398,7 +417,7 @@ function SupplierRow({ filters, item }: { filters: DropshippingDashboardFilters;
                 <option key={status} value={status}>{statusLabel(status)}</option>
               ))}
             </select>
-            <CurrencyInput defaultValue={item.lastPriceCents ?? 0} name="price" placeholder="Preço fornecedor" />
+            <SupplierManualPricePreview defaultValue={item.lastPriceCents ?? 0} name="price" placeholder="Preço fornecedor" pricingRule={pricingRule} />
             <Input className="h-10 text-sm" defaultValue={item.lastStockQuantity ?? ""} name="stockQuantity" placeholder="Estoque" type="number" />
             <Input className="h-10 text-sm" defaultValue={item.lastError ?? ""} name="note" placeholder="Observacao interna" />
             <SupplierSubmitButton className="h-10 text-sm" label="Salvar" pendingLabel="Salvando..." />
@@ -427,6 +446,7 @@ function ImportSummary({
   stats: {
     details?: string;
     errors: number;
+    archived: number;
     imported: number;
     invalid: number;
     matchedByExternal: number;
@@ -441,14 +461,15 @@ function ImportSummary({
   };
 }): React.ReactElement {
   return (
-    <section className="grid gap-3 rounded-xl border border-primary/20 bg-card p-4 shadow-sm sm:grid-cols-5">
+    <section className="grid gap-3 rounded-xl border border-primary/20 bg-card p-4 shadow-sm sm:grid-cols-6">
       <ImportStat label="Importados" tone="success" value={stats.imported} />
       <ImportStat label="Ignorados" value={stats.skipped} />
+      <ImportStat label="Arquivados" tone={stats.archived > 0 ? "warning" : "success"} value={stats.archived} />
       <ImportStat label="Invalidos" tone={stats.invalid > 0 ? "warning" : "success"} value={stats.invalid} />
       <ImportStat label="Sem origem" tone="warning" value={stats.missing} />
       <ImportStat label="Erros" tone={stats.errors > 0 ? "warning" : "success"} value={stats.errors} />
       {stats.details ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900 sm:col-span-5 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900 sm:col-span-6 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
           <p className="flex items-center gap-2 font-black">
             <FileWarning className="size-4" />
             Pontos para revisar
@@ -457,7 +478,7 @@ function ImportSummary({
         </div>
       ) : null}
       {stats.imported > 0 ? (
-        <div className="grid gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs leading-5 text-muted-foreground sm:col-span-5 md:grid-cols-2">
+        <div className="grid gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs leading-5 text-muted-foreground sm:col-span-6 md:grid-cols-2">
           <p><strong className="text-foreground">Correspondencia:</strong> sourceId {stats.matchedBySourceId}, URL {stats.matchedByUrl}, ID externo {stats.matchedByExternal}.</p>
           <p><strong className="text-foreground">Campos atualizados:</strong> preço {stats.updatedPrice}, estoque {stats.updatedStock}, status {stats.updatedStatus}, título {stats.updatedTitle}.</p>
         </div>
@@ -567,6 +588,7 @@ function resolveFilters(searchParams: Record<string, string | string[] | undefin
 
 function readImportStats(searchParams: Record<string, string | string[] | undefined>): {
   details?: string;
+  archived: number;
   errors: number;
   imported: number;
   invalid: number;
@@ -581,6 +603,7 @@ function readImportStats(searchParams: Record<string, string | string[] | undefi
   updatedTitle: number;
 } | null {
   const imported = readNumberParam(searchParams.imported);
+  const archived = readNumberParam(searchParams.archived);
   const skipped = readNumberParam(searchParams.skipped);
   const invalid = readNumberParam(searchParams.invalid);
   const matchedByExternal = readNumberParam(searchParams.matchedByExternal);
@@ -599,6 +622,7 @@ function readImportStats(searchParams: Record<string, string | string[] | undefi
 
   return {
     details: readParam(searchParams.importDetails),
+    archived: archived ?? 0,
     errors: errors ?? 0,
     imported: imported ?? 0,
     invalid: invalid ?? 0,

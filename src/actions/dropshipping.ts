@@ -319,11 +319,24 @@ export async function updateManualSourceSnapshotAction(formData: FormData): Prom
     note: parsed.data.note
   });
 
+  let priceNotice = "Preco sugerido recalculado.";
+
+  if (priceCents !== null && priceCents > 0 && status === SupplierSourceStatus.ACTIVE) {
+    try {
+      await applySuggestedSourcePrice(parsed.data.sourceId);
+      priceNotice = "Preco da loja e variacoes atualizado automaticamente com a margem configurada.";
+    } catch {
+      priceNotice = "Preco de origem salvo, mas nao foi possivel aplicar a margem automaticamente.";
+    }
+  }
+
   revalidatePath("/admin/fornecedores");
+  revalidatePath("/admin/produtos");
+  revalidatePath("/produtos");
   redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
     filters,
-    notice: "Validacao manual salva. Preco sugerido recalculado.",
-    noticeType: "success"
+    notice: `Validacao manual salva. ${priceNotice}`,
+    noticeType: priceNotice.includes("nao foi possivel") ? "warning" : "success"
   })}`);
 }
 
@@ -355,6 +368,7 @@ export async function importSupplierSnapshotsAction(formData: FormData): Promise
   const suffix = result.errors.length ? ` Primeiros erros: ${result.errors.slice(0, 3).join(" | ")}` : "";
   const params = new URLSearchParams({
     errors: String(result.errors.length),
+    archived: String(result.archived),
     imported: String(result.imported),
     invalid: String(result.invalid),
     matchedByExternal: String(result.matchedByExternal),

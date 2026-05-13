@@ -17,13 +17,17 @@ RUN --mount=type=cache,target=/root/.npm npm ci --prefer-offline
 
 FROM base AS builder
 
+ARG NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
+
 ENV AUTH_SECRET="temporary-build-auth-secret-change-me-64-characters-minimum-000000000000"
 ENV DATABASE_URL="postgresql://nerdlingolab:temporary-postgres-password-change-me@postgres:5432/nerdlingolab?schema=public"
+ENV NEXT_SERVER_ACTIONS_ENCRYPTION_KEY="${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY}"
 ENV NEXT_TELEMETRY_DISABLED="1"
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+RUN test -n "$NEXT_SERVER_ACTIONS_ENCRYPTION_KEY" || (echo "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY is required for Docker builds. Generate one with: openssl rand -base64 32" >&2; exit 1)
 RUN npm run build
 
 FROM base AS setup

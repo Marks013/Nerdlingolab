@@ -24,7 +24,12 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const pathname = request.nextUrl.pathname;
   const isAdminRoute = pathname.startsWith("/admin");
   const isLoginRoute = pathname === "/admin/login";
+  const malformedServerActionResponse = handleMalformedServerActionRequest(request);
   const maintenanceResponse = handleMaintenanceMode(request);
+
+  if (malformedServerActionResponse) {
+    return malformedServerActionResponse;
+  }
 
   if (maintenanceResponse) {
     return maintenanceResponse;
@@ -81,6 +86,25 @@ function handleMaintenanceMode(request: NextRequest): NextResponse | null {
       "x-nerdlingolab-maintenance": "1"
     }
   });
+}
+
+function handleMalformedServerActionRequest(request: NextRequest): NextResponse | null {
+  const actionId = request.headers.get("next-action")?.trim();
+
+  if (!actionId) {
+    return null;
+  }
+
+  if (request.method !== "POST" || !/^[0-9a-f]{40,128}$/i.test(actionId)) {
+    return new NextResponse(null, {
+      status: 400,
+      headers: {
+        "cache-control": "no-store, max-age=0"
+      }
+    });
+  }
+
+  return null;
 }
 
 function isMaintenanceModeEnabled(): boolean {

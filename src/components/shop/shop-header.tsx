@@ -45,7 +45,7 @@ const drawerCatalogLinks = [
 ];
 
 const headerActionClass =
-  "group relative inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-md px-2 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary xl:gap-2 xl:px-2.5";
+  "group relative inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-1.5 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary 2xl:gap-2 2xl:px-2.5";
 
 export function ShopHeader({
   announcementText = "FRETE GRÁTIS em compras acima de R$99,90",
@@ -103,7 +103,7 @@ export function ShopHeader({
       </div>
 
       <div className="bg-[#f6f7f8] text-[#677279]">
-        <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-5 px-5 py-6 lg:grid-cols-[minmax(260px,auto)_minmax(280px,1fr)] lg:items-center lg:gap-x-8 xl:grid-cols-[minmax(310px,auto)_minmax(320px,420px)_minmax(0,1fr)] xl:gap-x-7">
+        <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-5 px-5 py-6 lg:grid-cols-[minmax(260px,auto)_minmax(280px,1fr)] lg:items-center lg:gap-x-8 xl:grid-cols-[minmax(290px,auto)_minmax(280px,360px)_minmax(max-content,1fr)] xl:gap-x-5 2xl:grid-cols-[minmax(310px,auto)_minmax(320px,420px)_minmax(max-content,1fr)] 2xl:gap-x-7">
           <Link className="group flex min-w-0 items-center justify-center gap-3 text-[#111827] lg:justify-start" href="/">
             <Image
               alt="NerdLingoLab"
@@ -204,7 +204,7 @@ export function ShopHeader({
             ) : null}
           </div>
 
-          <nav className="flex min-w-0 flex-wrap content-center items-center justify-center gap-2 lg:col-span-2 lg:justify-center xl:col-span-1 xl:flex-nowrap xl:justify-end xl:gap-1.5 2xl:gap-2">
+          <nav className="flex min-w-0 flex-wrap content-center items-center justify-center gap-2 lg:col-span-2 lg:justify-center xl:col-span-1 xl:flex-nowrap xl:justify-end xl:gap-1 2xl:gap-2">
             {headerLinks.map((link) => {
               const Icon = link.icon;
 
@@ -269,7 +269,7 @@ export function ShopHeader({
             {isAuthenticated ? (
               <form action={signOutFromCustomer}>
                 <button
-                  className="inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-md border border-primary/25 bg-white px-2.5 text-sm font-semibold text-primary transition duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary xl:px-3"
+                  className="inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-md border border-primary/25 bg-white px-2.5 text-sm font-semibold text-primary transition duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary 2xl:px-3"
                   type="submit"
                 >
                   Sair

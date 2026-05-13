@@ -91,7 +91,6 @@ const matrixOptionNames: MatrixOptionName[] = ["Cor", "Tamanho", "Genero"];
 const genderOptionAliases = new Set(["genero", "sexo", "gender"]);
 const standardSizeOrder = ["PP", "P", "M", "G", "GG", "XG"];
 const standardGenderOptions = ["Feminino", "Masculino", "Unissex"];
-const optionNameSuggestions = ["Cor", "Tamanho", "Genero", "Sexo", "Material", "Estilo", "Modelo", "Idade", "Idioma"];
 const optionValueSuggestions = [
   "Azul",
   "Preto",
@@ -143,6 +142,7 @@ export function ProductForm({
   const [metafields, setMetafields] = useState<MetafieldFormRow[]>(() => getInitialMetafields(product?.metafields));
   const [shippingPresets, setShippingPresets] = useState<ProductShippingPresetItem[]>(initialShippingPresets);
   const [selectedShippingPresetId, setSelectedShippingPresetId] = useState("");
+  const [bulkVariantPrice, setBulkVariantPrice] = useState(() => getInitialVariantPrice(product));
   const [newShippingPresetName, setNewShippingPresetName] = useState("");
   const [newShippingPresetWeight, setNewShippingPresetWeight] = useState("");
   const [newShippingPresetWeightUnit, setNewShippingPresetWeightUnit] = useState<"g" | "kg">("g");
@@ -276,11 +276,33 @@ export function ProductForm({
       return;
     }
 
-    setVariants((current) => addMatrixOptionValue(current, optionName, normalizedValue));
+    setVariants((current) =>
+      addMatrixOptionValue(current, optionName, normalizedValue).map((variant) => (
+        bulkVariantPrice.trim() && !variant.price.trim()
+          ? { ...variant, price: bulkVariantPrice.trim() }
+          : variant
+      ))
+    );
   }
 
   function applyShippingPresetToAll(preset: ProductShippingPresetItem): void {
     setVariants((current) => current.map((variant) => applyShippingPresetToVariant(variant, preset)));
+  }
+
+  function applyBulkVariantPrice(mode: "all" | "empty"): void {
+    const price = bulkVariantPrice.trim();
+
+    if (!price) {
+      return;
+    }
+
+    setVariants((current) =>
+      current.map((variant) => (
+        mode === "all" || !variant.price.trim()
+          ? { ...variant, price }
+          : variant
+      ))
+    );
   }
 
   async function createShippingPreset(): Promise<void> {
@@ -411,11 +433,6 @@ export function ProductForm({
       <textarea className="hidden" defaultValue={descriptionHtml} name="description" readOnly ref={descriptionInputRef} />
       <textarea className="hidden" name="variants" readOnly value={variantsPayload} />
       <textarea className="hidden" name="metafields" readOnly value={metafieldsPayload} />
-      <datalist id="product-variant-option-names">
-        {optionNameSuggestions.map((option) => (
-          <option key={option} value={option} />
-        ))}
-      </datalist>
       <datalist id="product-variant-option-values">
         {optionValueSuggestions.map((option) => (
           <option key={option} value={option} />
@@ -553,7 +570,7 @@ export function ProductForm({
                 </Button>
                 <Button
                   className="w-full sm:w-auto"
-                  onClick={() => setVariants((current) => [...current, createVariantRow({ title: `Variacao ${current.length + 1}` })])}
+                  onClick={() => setVariants((current) => [...current, createVariantRow({ price: bulkVariantPrice.trim(), title: `Variacao ${current.length + 1}` })])}
                   type="button"
                   variant="outline"
                 >
@@ -586,6 +603,37 @@ export function ProductForm({
             <p className="mt-3 text-xs text-muted-foreground">
               Ao vincular uma imagem, ela é aplicada nas variantes da mesma Cor + Sexo. Valores novos podem ser digitados ou criados pelos botões acima.
             </p>
+            <div className="mt-4 rounded-lg border bg-background p-4">
+              <div className="grid gap-3 lg:grid-cols-[minmax(180px,260px)_auto_auto] lg:items-end">
+                <Field label="Preço padrão das variantes">
+                  <Input
+                    aria-label="Preço padrão das variantes"
+                    inputMode="decimal"
+                    onChange={(event) => setBulkVariantPrice(event.target.value)}
+                    placeholder="Ex.: 59,90"
+                    value={bulkVariantPrice}
+                  />
+                </Field>
+                <Button
+                  className="w-full lg:w-auto"
+                  disabled={!bulkVariantPrice.trim()}
+                  onClick={() => applyBulkVariantPrice("all")}
+                  type="button"
+                  variant="outline"
+                >
+                  Aplicar em todas
+                </Button>
+                <Button
+                  className="w-full lg:w-auto"
+                  disabled={!bulkVariantPrice.trim()}
+                  onClick={() => applyBulkVariantPrice("empty")}
+                  type="button"
+                  variant="ghost"
+                >
+                  Preencher vazias
+                </Button>
+              </div>
+            </div>
             <div className="mt-4 rounded-lg border bg-muted/20 p-4">
               <div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm leading-6 text-muted-foreground">
                 <p className="font-black text-foreground">Controle de estoque</p>
@@ -632,7 +680,7 @@ export function ProductForm({
                   </Button>
                 </div>
               </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(180px,1fr)_110px_90px_90px_90px_90px_110px_auto]">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-[minmax(220px,1fr)_120px_110px_120px_120px_120px_130px_auto]">
                 <Field label="Nome">
                   <Input
                     aria-label="Nome do novo atalho logistico"
@@ -674,7 +722,7 @@ export function ProductForm({
                   <Input aria-label="Dias adicionais ao prazo de frete" min={0} onChange={(event) => setNewShippingPresetLeadTimeDays(event.target.value)} placeholder="+ dias" type="number" value={newShippingPresetLeadTimeDays} />
                 </Field>
                 <Button
-                  className="w-full self-end sm:col-span-2 xl:col-span-1"
+                  className="w-full self-end sm:col-span-2 lg:col-span-4 2xl:col-span-1"
                   disabled={isSavingShippingPreset}
                   onClick={() => void createShippingPreset()}
                   type="button"
@@ -692,13 +740,13 @@ export function ProductForm({
               ) : null}
             </div>
             <div className="mt-4 overflow-x-auto rounded-lg border">
-              <table className="w-full min-w-[1220px] border-collapse text-sm">
+              <table className="w-full min-w-[1300px] border-collapse text-sm">
                 <thead className="bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
                   <tr>
                     <th className="w-[330px] px-3 py-2">Variante</th>
-                    <th className="w-[140px] px-3 py-2">Cor</th>
-                    <th className="w-[120px] px-3 py-2">Tamanho</th>
-                    <th className="w-[130px] px-3 py-2">Genero</th>
+                    <th className="w-[165px] px-3 py-2">Cor</th>
+                    <th className="w-[150px] px-3 py-2">Tamanho</th>
+                    <th className="w-[165px] px-3 py-2">Genero</th>
                     <th className="w-[130px] px-3 py-2">Preço</th>
                     <th className="w-[150px] px-3 py-2">Estoque</th>
                     <th className="w-[110px] px-3 py-2">Status</th>
@@ -745,7 +793,8 @@ export function ProductForm({
                             </td>
                             {[0, 1, 2].map((optionIndex) => (
                               <td className="px-3 py-3" key={`${variant.id}-${optionIndex}`}>
-                                <CompactOptionInput
+                                <MatrixOptionInput
+                                  optionName={matrixOptionNames[optionIndex]}
                                   option={variant.options[optionIndex]}
                                   optionIndex={optionIndex}
                                   variantId={variant.id}
@@ -1100,34 +1149,29 @@ function VariantImagePreview({ imageUrl, title }: { imageUrl: string; title: str
   );
 }
 
-function CompactOptionInput({
+function MatrixOptionInput({
   onChange,
   option,
   optionIndex,
+  optionName,
   variantId
 }: {
   onChange: (variantId: string, optionIndex: number, patch: Partial<VariantOptionRow>) => void;
   option: VariantOptionRow;
   optionIndex: number;
+  optionName: MatrixOptionName;
   variantId: string;
 }): React.ReactElement {
   return (
-    <div className="grid gap-2">
+    <div className="grid min-w-0 gap-1">
+      <span className="text-[11px] font-semibold text-muted-foreground">{optionName}</span>
       <Input
-        aria-label={`Nome da opcao ${optionIndex + 1}`}
-        className="h-8 text-xs"
-        list="product-variant-option-names"
-        placeholder={optionIndex === 0 ? "Cor" : optionIndex === 1 ? "Tamanho" : "Genero"}
-        value={option.name}
-        onChange={(event) => onChange(variantId, optionIndex, { name: event.target.value })}
-      />
-      <Input
-        aria-label={`Valor da opcao ${optionIndex + 1}`}
-        className="h-9"
+        aria-label={`Valor de ${optionName}`}
+        className="h-10"
         list="product-variant-option-values"
-        placeholder={optionIndex === 0 ? "Azul" : optionIndex === 1 ? "M" : "Unissex"}
+        placeholder={getMatrixOptionPlaceholder(optionName)}
         value={option.value}
-        onChange={(event) => onChange(variantId, optionIndex, { value: event.target.value })}
+        onChange={(event) => onChange(variantId, optionIndex, { name: optionName, value: event.target.value })}
       />
     </div>
   );
@@ -1315,6 +1359,16 @@ function getInitialVariantRows(product?: ProductListItem): VariantFormRow[] {
       widthCm: variant.widthCm ? String(variant.widthCm) : ""
     });
   });
+}
+
+function getInitialVariantPrice(product?: ProductListItem): string {
+  if (!product) {
+    return "";
+  }
+
+  return product.variants[0]?.priceCents
+    ? formatCurrency(product.variants[0].priceCents)
+    : formatCurrency(product.priceCents);
 }
 
 function createVariantRow(overrides: Partial<VariantFormRow> = {}): VariantFormRow {
@@ -1564,6 +1618,18 @@ function getApiMessage(payload: unknown): string | null {
 
 function getMatrixOptionLabel(optionName: MatrixOptionName): string {
   return optionName === "Genero" ? "Genero" : optionName;
+}
+
+function getMatrixOptionPlaceholder(optionName: MatrixOptionName): string {
+  if (optionName === "Cor") {
+    return "Branca";
+  }
+
+  if (optionName === "Tamanho") {
+    return "M";
+  }
+
+  return "Unissex";
 }
 
 function normalizeMatrixOptionName(optionName: string): MatrixOptionName | string {

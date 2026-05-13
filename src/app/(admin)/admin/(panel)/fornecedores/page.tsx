@@ -90,11 +90,13 @@ export default async function AdminSuppliersPage({
         </div>
         <div className="flex flex-wrap gap-2">
           <form action={bootstrapDropshippingSourcesAction}>
+            <CurrentFilterInputs filters={filters} />
             <SupplierSubmitButton label="Reindexar links" pendingLabel="Reindexando links...">
               <Settings2 className="mr-2 size-4" />
             </SupplierSubmitButton>
           </form>
           <form action={syncDropshippingBatchAction}>
+            <CurrentFilterInputs filters={filters} />
             <SupplierSubmitButton label="Sincronizar lote" pendingLabel="Sincronizando lote..." variant="default">
               <RefreshCw className="mr-2 size-4" />
             </SupplierSubmitButton>
@@ -124,7 +126,7 @@ export default async function AdminSuppliersPage({
             <BulkActionBar filters={filters} itemCount={dashboard.items.length} />
             <div className="grid gap-3">
               {dashboard.items.map((item) => (
-                <SupplierRow item={item} key={item.id} />
+                <SupplierRow filters={filters} item={item} key={item.id} />
               ))}
               {dashboard.items.length === 0 ? (
                 <div className="rounded-lg border px-4 py-8 text-center text-sm text-muted-foreground">
@@ -143,6 +145,7 @@ export default async function AdminSuppliersPage({
             </CardHeader>
             <CardContent>
               <form action={updateGlobalPricingRuleAction} className="grid gap-3">
+                <CurrentFilterInputs filters={filters} />
                 <label className="grid gap-1 text-sm font-semibold">
                   Margem percentual
                   <Input defaultValue={globalRule?.marginPercent ?? "35"} name="marginPercent" type="number" step="0.01" min="0" />
@@ -227,6 +230,7 @@ export default async function AdminSuppliersPage({
                   </code>
                 </div>
                 <form action={importSupplierCsvAction} className="grid gap-3">
+                  <CurrentFilterInputs filters={filters} />
                   <Input accept=".csv,text/csv" name="file" required type="file" />
                   <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs leading-5 text-muted-foreground">
                     <p className="font-black text-foreground">Colunas aceitas</p>
@@ -255,6 +259,16 @@ function MetricCard({ label, tone = "neutral", value }: { label: string; tone?: 
         <p className={cn("mt-2 text-2xl font-black", tone === "warning" && "text-amber-700", tone === "critical" && "text-red-700")}>{value}</p>
       </CardContent>
     </Card>
+  );
+}
+
+function CurrentFilterInputs({ filters }: { filters: DropshippingDashboardFilters }): React.ReactElement {
+  return (
+    <>
+      <input name="busca" type="hidden" value={filters.query ?? ""} />
+      <input name="fornecedor" type="hidden" value={filters.provider ?? ""} />
+      <input name="status" type="hidden" value={filters.status ?? ""} />
+    </>
   );
 }
 
@@ -312,7 +326,7 @@ function BulkActionBar({
   );
 }
 
-function SupplierRow({ item }: { item: DropshippingDashboardItem }): React.ReactElement {
+function SupplierRow({ filters, item }: { filters: DropshippingDashboardFilters; item: DropshippingDashboardItem }): React.ReactElement {
   const sourcePriceChanged = item.suggestedPriceCents !== null && item.suggestedPriceCents !== item.storePriceCents;
 
   return (
@@ -339,19 +353,23 @@ function SupplierRow({ item }: { item: DropshippingDashboardItem }): React.React
 
           <div className="flex flex-wrap gap-2 lg:justify-end">
             <form action={syncDropshippingSourceAction.bind(null, item.id)}>
+              <CurrentFilterInputs filters={filters} />
               <SupplierSubmitButton className="h-10 px-4" label="Sincronizar" pendingLabel="Sincronizando...">
                 <RefreshCw className="mr-2 size-4" />
               </SupplierSubmitButton>
             </form>
             <form action={applySuggestedSourcePriceAction.bind(null, item.id)}>
+              <CurrentFilterInputs filters={filters} />
               <SupplierSubmitButton className="h-10 px-4" disabled={!sourcePriceChanged} label="Aplicar preço" pendingLabel="Aplicando preço..." variant="default" />
             </form>
             <form action={archiveSupplierProductAction.bind(null, item.productId)}>
+              <CurrentFilterInputs filters={filters} />
               <SupplierSubmitButton className="h-10 border-amber-200 bg-amber-50 px-4 text-amber-800 hover:bg-amber-100" label="Desativar" pendingLabel="Desativando...">
                 <PowerOff className="mr-2 size-4" />
               </SupplierSubmitButton>
             </form>
             <form action={deleteSupplierProductAction.bind(null, item.productId)}>
+              <CurrentFilterInputs filters={filters} />
               <SupplierSubmitButton className="h-10 border-red-200 bg-red-50 px-4 text-red-700 hover:bg-red-100" label="Excluir" pendingLabel="Excluindo...">
                 <Trash2 className="mr-2 size-4" />
               </SupplierSubmitButton>
@@ -366,13 +384,14 @@ function SupplierRow({ item }: { item: DropshippingDashboardItem }): React.React
           <InfoTile label="Estoque origem" value={item.lastStockQuantity ?? "-"} detail={`${item.unavailableVariantCount}/${item.variantCount} variações indisponiveis`} />
         </div>
 
-        <AlertList item={item} />
+        <AlertList filters={filters} item={item} />
       </div>
 
       <details className="mt-4 rounded-lg border bg-muted/30 p-3 text-left">
           <summary className="cursor-pointer text-sm font-bold text-foreground">Validação manual e preço da loja</summary>
         <div className="mt-3 grid gap-3">
           <form action={updateManualSourceAction} className="grid gap-3 lg:grid-cols-[180px_180px_140px_minmax(220px,1fr)_140px]">
+            <CurrentFilterInputs filters={filters} />
             <input name="sourceId" type="hidden" value={item.id} />
             <select className="h-10 rounded-md border bg-background px-2 text-sm" defaultValue={item.status} name="status">
               {Object.values(SupplierSourceStatus).map((status) => (
@@ -385,6 +404,7 @@ function SupplierRow({ item }: { item: DropshippingDashboardItem }): React.React
             <SupplierSubmitButton className="h-10 text-sm" label="Salvar" pendingLabel="Salvando..." />
           </form>
           <form action={updateSupplierProductStorePriceAction} className="grid gap-3 rounded-lg border border-primary/20 bg-background p-3 lg:grid-cols-[minmax(0,1fr)_180px_170px] lg:items-end">
+            <CurrentFilterInputs filters={filters} />
             <input name="productId" type="hidden" value={item.productId} />
             <div>
               <p className="text-sm font-black text-foreground">Alterar preço da loja</p>
@@ -473,7 +493,7 @@ function InfoTile({ detail, highlight = false, label, value }: { detail?: string
   );
 }
 
-function AlertList({ item }: { item: DropshippingDashboardItem }): React.ReactElement {
+function AlertList({ filters, item }: { filters: DropshippingDashboardFilters; item: DropshippingDashboardItem }): React.ReactElement {
   if (!item.openAlerts.length) {
     return (
       <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
@@ -487,6 +507,7 @@ function AlertList({ item }: { item: DropshippingDashboardItem }): React.ReactEl
     <div className="grid gap-2">
       {item.openAlerts.map((alert) => (
         <form action={acknowledgeSourceAlertAction} className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-950 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100" key={alert.id}>
+          <CurrentFilterInputs filters={filters} />
           <input name="alertId" type="hidden" value={alert.id} />
           <p className="font-bold">{alert.type}</p>
           <p className="leading-5">{alert.message}</p>

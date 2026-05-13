@@ -47,18 +47,19 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
 
     const formData = await request.formData();
+    const filters = resolveImportFilters(formData);
     const file = formData.get("file");
 
     if (!(file instanceof File)) {
-      return redirectWithNotice(request, "Envie um arquivo CSV valido.", "warning");
+      return redirectWithNotice(request, "Envie um arquivo CSV valido.", "warning", filters);
     }
 
     if (file.size > maxImportFileSize) {
-      return redirectWithNotice(request, "Arquivo muito grande. Envie um CSV de ate 2 MB.", "warning");
+      return redirectWithNotice(request, "Arquivo muito grande. Envie um CSV de ate 2 MB.", "warning", filters);
     }
 
     if (!isCsvFile(file)) {
-      return redirectWithNotice(request, "Envie um arquivo .csv valido.", "warning");
+      return redirectWithNotice(request, "Envie um arquivo .csv valido.", "warning", filters);
     }
 
     const result = await importSupplierSnapshotCsv(await file.text());
@@ -85,6 +86,9 @@ export async function POST(request: Request): Promise<NextResponse> {
       updatedStock: String(result.updatedStock),
       updatedTitle: String(result.updatedTitle)
     });
+    const filterParams = buildSupplierFilterParams(filters);
+
+    filterParams.forEach((value, key) => params.set(key, value));
 
     if (result.errors.length) {
       params.set("importDetails", result.errors.slice(0, 5).join(" | "));
@@ -118,6 +122,18 @@ function resolveExportFilters(searchParams: URLSearchParams): DropshippingDashbo
   };
 }
 
+function resolveImportFilters(formData: FormData): DropshippingDashboardFilters {
+  const provider = normalizeOptionalText(formData.get("fornecedor"));
+  const status = normalizeOptionalText(formData.get("status"));
+  const query = normalizeOptionalText(formData.get("busca"));
+
+  return {
+    provider: isSupplierProvider(provider) ? provider : undefined,
+    query,
+    status: isSupplierSourceStatus(status) ? status : undefined
+  };
+}
+
 function isSupplierProvider(value: string | undefined): value is SupplierProvider {
   return Boolean(value && Object.values(SupplierProvider).includes(value as SupplierProvider));
 }
@@ -130,13 +146,40 @@ function isCsvFile(file: File): boolean {
   return file.name.toLowerCase().endsWith(".csv") || ["text/csv", "application/vnd.ms-excel"].includes(file.type);
 }
 
-function redirectWithNotice(request: Request, notice: string, noticeType: "success" | "warning"): NextResponse {
+function redirectWithNotice(request: Request, notice: string, noticeType: "success" | "warning", filters: DropshippingDashboardFilters = {}): NextResponse {
   const params = new URLSearchParams({
     notice,
     noticeType
   });
+  const filterParams = buildSupplierFilterParams(filters);
+
+  filterParams.forEach((value, key) => params.set(key, value));
 
   return NextResponse.redirect(buildAdminSuppliersRedirectUrl(request, params), 303);
+}
+
+function buildSupplierFilterParams(filters: DropshippingDashboardFilters): URLSearchParams {
+  const params = new URLSearchParams();
+
+  if (filters.query) {
+    params.set("busca", filters.query);
+  }
+
+  if (filters.provider) {
+    params.set("fornecedor", filters.provider);
+  }
+
+  if (filters.status) {
+    params.set("status", filters.status);
+  }
+
+  return params;
+}
+
+function normalizeOptionalText(value: FormDataEntryValue | null): string | undefined {
+  const text = typeof value === "string" ? value.trim() : "";
+
+  return text || undefined;
 }
 
 function buildAdminSuppliersRedirectUrl(request: Request, params: URLSearchParams): URL {

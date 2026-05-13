@@ -43,34 +43,54 @@ const productStorePriceSchema = z.object({
   productId: z.string().min(1)
 });
 
-export async function bootstrapDropshippingSourcesAction(): Promise<void> {
+export async function bootstrapDropshippingSourcesAction(formData: FormData): Promise<void> {
   await requireAdmin();
+  const filters = readSupplierFilters(formData);
   const result = await ensureProductSourcesFromMetafields(1_000);
   revalidatePath("/admin/fornecedores");
-  redirect(`/admin/fornecedores?notice=${encodeURIComponent(`Links reindexados. ${result.created} origem(ns) revisadas, ${result.skipped} sem link.`)}`);
+  redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
+    filters,
+    notice: `Links reindexados. ${result.created} origem(ns) revisadas, ${result.skipped} sem link.`,
+    noticeType: "success"
+  })}`);
 }
 
-export async function syncDropshippingSourceAction(sourceId: string): Promise<void> {
+export async function syncDropshippingSourceAction(sourceId: string, formData: FormData): Promise<void> {
   await requireAdmin();
+  const filters = readSupplierFilters(formData);
   const result = await syncProductSource(sourceIdSchema.parse(sourceId));
   revalidatePath("/admin/fornecedores");
-  redirect(`/admin/fornecedores?notice=${encodeURIComponent(`Origem sincronizada como ${result.status}.`)}`);
+  redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
+    filters,
+    notice: `Origem sincronizada como ${result.status}.`,
+    noticeType: "success"
+  })}`);
 }
 
-export async function syncDropshippingBatchAction(): Promise<void> {
+export async function syncDropshippingBatchAction(formData: FormData): Promise<void> {
   await requireAdmin();
+  const filters = readSupplierFilters(formData);
   const result = await syncDueProductSources(30);
   revalidatePath("/admin/fornecedores");
-  redirect(`/admin/fornecedores?notice=${encodeURIComponent(`Lote sincronizado. ${result.attempted} origem(ns), ${result.failed} falha(s) reais.`)}`);
+  redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
+    filters,
+    notice: `Lote sincronizado. ${result.attempted} origem(ns), ${result.failed} falha(s) reais.`,
+    noticeType: result.failed > 0 ? "warning" : "success"
+  })}`);
 }
 
-export async function applySuggestedSourcePriceAction(sourceId: string): Promise<void> {
+export async function applySuggestedSourcePriceAction(sourceId: string, formData: FormData): Promise<void> {
   await requireAdmin();
+  const filters = readSupplierFilters(formData);
   await applySuggestedSourcePrice(sourceIdSchema.parse(sourceId));
   revalidatePath("/admin/fornecedores");
   revalidatePath("/admin/produtos");
   revalidatePath("/produtos");
-  redirect(`/admin/fornecedores?notice=${encodeURIComponent("Preco sugerido aplicado ao produto e variacoes.")}`);
+  redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
+    filters,
+    notice: "Preco sugerido aplicado ao produto e variacoes.",
+    noticeType: "success"
+  })}`);
 }
 
 export async function applySuggestedPricesToFilteredSourcesAction(formData: FormData): Promise<void> {
@@ -109,6 +129,7 @@ export async function applySuggestedPricesToFilteredSourcesAction(formData: Form
 
 export async function updateSupplierProductStorePriceAction(formData: FormData): Promise<void> {
   await requireAdmin();
+  const filters = readSupplierFilters(formData);
   const parsed = productStorePriceSchema.safeParse({
     price: formData.get("storePrice"),
     productId: formData.get("productId")
@@ -138,11 +159,16 @@ export async function updateSupplierProductStorePriceAction(formData: FormData):
   });
 
   revalidateSupplierProductPaths();
-  redirect(`/admin/fornecedores?notice=${encodeURIComponent("Preco da loja atualizado no produto e nas variacoes.")}`);
+  redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
+    filters,
+    notice: "Preco da loja atualizado no produto e nas variacoes.",
+    noticeType: "success"
+  })}`);
 }
 
-export async function archiveSupplierProductAction(productId: string): Promise<void> {
+export async function archiveSupplierProductAction(productId: string, formData: FormData): Promise<void> {
   await requireAdmin();
+  const filters = readSupplierFilters(formData);
   const id = sourceIdSchema.parse(productId);
 
   await prisma.product.update({
@@ -154,11 +180,16 @@ export async function archiveSupplierProductAction(productId: string): Promise<v
   });
 
   revalidateSupplierProductPaths();
-  redirect(`/admin/fornecedores?notice=${encodeURIComponent("Produto desativado na loja.")}&noticeType=warning`);
+  redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
+    filters,
+    notice: "Produto desativado na loja.",
+    noticeType: "warning"
+  })}`);
 }
 
-export async function deleteSupplierProductAction(productId: string): Promise<void> {
+export async function deleteSupplierProductAction(productId: string, formData: FormData): Promise<void> {
   await requireAdmin();
+  const filters = readSupplierFilters(formData);
   const id = sourceIdSchema.parse(productId);
   const product = await prisma.product.findUnique({
     select: {
@@ -168,7 +199,11 @@ export async function deleteSupplierProductAction(productId: string): Promise<vo
   });
 
   if (!product) {
-    redirect(`/admin/fornecedores?notice=${encodeURIComponent("Produto nao encontrado.")}&noticeType=warning`);
+    redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
+      filters,
+      notice: "Produto nao encontrado.",
+      noticeType: "warning"
+    })}`);
   }
 
   if (product._count.orderItems > 0) {
@@ -180,13 +215,21 @@ export async function deleteSupplierProductAction(productId: string): Promise<vo
       where: { id }
     });
     revalidateSupplierProductPaths();
-    redirect(`/admin/fornecedores?notice=${encodeURIComponent("Produto possui pedido vinculado e foi apenas desativado/arquivado.")}&noticeType=warning`);
+    redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
+      filters,
+      notice: "Produto possui pedido vinculado e foi apenas desativado/arquivado.",
+      noticeType: "warning"
+    })}`);
   }
 
   try {
     await prisma.product.delete({ where: { id } });
     revalidateSupplierProductPaths();
-    redirect(`/admin/fornecedores?notice=${encodeURIComponent("Produto excluido definitivamente.")}&noticeType=success`);
+    redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
+      filters,
+      notice: "Produto excluido definitivamente.",
+      noticeType: "success"
+    })}`);
   } catch {
     await prisma.product.update({
       data: {
@@ -196,21 +239,31 @@ export async function deleteSupplierProductAction(productId: string): Promise<vo
       where: { id }
     });
     revalidateSupplierProductPaths();
-    redirect(`/admin/fornecedores?notice=${encodeURIComponent("Nao foi possivel excluir sem afetar vinculos. O produto foi desativado/arquivado com seguranca.")}&noticeType=warning`);
+    redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
+      filters,
+      notice: "Nao foi possivel excluir sem afetar vinculos. O produto foi desativado/arquivado com seguranca.",
+      noticeType: "warning"
+    })}`);
   }
 }
 
 export async function acknowledgeSourceAlertAction(formData: FormData): Promise<void> {
   await requireAdmin();
+  const filters = readSupplierFilters(formData);
   const alertId = z.string().min(1).parse(formData.get("alertId"));
 
   await acknowledgeSourceAlert(alertId);
   revalidatePath("/admin/fornecedores");
-  redirect(`/admin/fornecedores?notice=${encodeURIComponent("Alerta marcado como visto.")}`);
+  redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
+    filters,
+    notice: "Alerta marcado como visto.",
+    noticeType: "success"
+  })}`);
 }
 
 export async function updateManualSourceSnapshotAction(formData: FormData): Promise<void> {
   await requireAdmin();
+  const filters = readSupplierFilters(formData);
 
   const parsed = manualSnapshotSchema.safeParse({
     note: formData.get("note"),
@@ -233,11 +286,16 @@ export async function updateManualSourceSnapshotAction(formData: FormData): Prom
   });
 
   revalidatePath("/admin/fornecedores");
-  redirect(`/admin/fornecedores?notice=${encodeURIComponent("Validacao manual salva. Preco sugerido recalculado.")}`);
+  redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
+    filters,
+    notice: "Validacao manual salva. Preco sugerido recalculado.",
+    noticeType: "success"
+  })}`);
 }
 
 export async function importSupplierSnapshotsAction(formData: FormData): Promise<void> {
   await requireAdmin();
+  const filters = readSupplierFilters(formData);
 
   const file = formData.get("file");
 
@@ -277,6 +335,9 @@ export async function importSupplierSnapshotsAction(formData: FormData): Promise
     updatedStock: String(result.updatedStock),
     updatedTitle: String(result.updatedTitle)
   });
+  const filterParams = buildSupplierFilterParams(filters);
+
+  filterParams.forEach((value, key) => params.set(key, value));
 
   if (result.errors.length) {
     params.set("importDetails", result.errors.slice(0, 5).join(" | "));
@@ -293,6 +354,7 @@ export const updateManualSourceAction = updateManualSourceSnapshotAction;
 
 export async function updateGlobalPricingRuleAction(formData: FormData): Promise<void> {
   await requireAdmin();
+  const filters = readSupplierFilters(formData);
 
   const parsed = pricingFormSchema.safeParse({
     marginFixed: formData.get("marginFixed"),
@@ -327,7 +389,19 @@ export async function updateGlobalPricingRuleAction(formData: FormData): Promise
   });
 
   revalidatePath("/admin/fornecedores");
-  redirect(`/admin/fornecedores?notice=${encodeURIComponent("Regra de margem salva em reais.")}`);
+  redirect(`/admin/fornecedores?${buildSupplierRedirectParams({
+    filters,
+    notice: "Regra de margem salva em reais.",
+    noticeType: "success"
+  })}`);
+}
+
+function readSupplierFilters(formData: FormData): z.infer<typeof filteredSourcesSchema> {
+  return filteredSourcesSchema.parse({
+    provider: normalizeOptionalEnum(formData.get("fornecedor")),
+    query: normalizeOptionalText(formData.get("busca")),
+    status: normalizeOptionalEnum(formData.get("status"))
+  });
 }
 
 function buildSupplierRedirectParams({
@@ -357,6 +431,24 @@ function buildSupplierRedirectParams({
   }
 
   return params.toString();
+}
+
+function buildSupplierFilterParams(filters: z.infer<typeof filteredSourcesSchema>): URLSearchParams {
+  const params = new URLSearchParams();
+
+  if (filters.query) {
+    params.set("busca", filters.query);
+  }
+
+  if (filters.provider) {
+    params.set("fornecedor", filters.provider);
+  }
+
+  if (filters.status) {
+    params.set("status", filters.status);
+  }
+
+  return params;
 }
 
 function normalizeOptionalText(value: FormDataEntryValue | null): string | undefined {

@@ -25,6 +25,7 @@ export interface DropshippingDashboardFilters {
   status?: SupplierSourceStatus;
   alert?: "open";
   query?: string;
+  scope?: "active" | "all" | "review";
 }
 
 export interface DropshippingDashboardItem {
@@ -198,62 +199,110 @@ export function buildDropshippingSourceWhere(filters: DropshippingDashboardFilte
 }
 
 function buildDashboardWhere(filters: DropshippingDashboardFilters = {}): Prisma.ProductSourceWhereInput {
+  const scopeWhere = resolveDashboardScopeWhere(filters);
+  const combinedFilters: Prisma.ProductSourceWhereInput[] = [];
+
+  if (!filters.status && hasWhereClause(scopeWhere)) {
+    combinedFilters.push(scopeWhere);
+  }
+
+  if (filters.query) {
+    combinedFilters.push({
+      OR: [
+        {
+          product: {
+            title: {
+              contains: filters.query,
+              mode: "insensitive" as const
+            }
+          }
+        },
+        {
+          product: {
+            slug: {
+              contains: filters.query,
+              mode: "insensitive" as const
+            }
+          }
+        },
+        {
+          title: {
+            contains: filters.query,
+            mode: "insensitive" as const
+          }
+        },
+        {
+          originalUrl: {
+            contains: filters.query,
+            mode: "insensitive" as const
+          }
+        },
+        {
+          externalId: {
+            contains: filters.query,
+            mode: "insensitive" as const
+          }
+        }
+      ]
+    });
+  }
+
+  if (filters.alert === "open") {
+    combinedFilters.push({
+      alerts: {
+        some: {
+          status: SupplierAlertStatus.OPEN
+        }
+      }
+    });
+  }
+
   return {
+    ...(combinedFilters.length ? { AND: combinedFilters } : {}),
     product: {
       status: { not: ProductStatus.ARCHIVED }
     },
     ...(filters.provider ? { provider: filters.provider } : {}),
-    ...(filters.status ? { status: filters.status } : {}),
-    ...(filters.query
-      ? {
-          OR: [
-            {
-              product: {
-                title: {
-                  contains: filters.query,
-                  mode: "insensitive" as const
-                }
-              }
-            },
-            {
-              product: {
-                slug: {
-                  contains: filters.query,
-                  mode: "insensitive" as const
-                }
-              }
-            },
-            {
-              title: {
-                contains: filters.query,
-                mode: "insensitive" as const
-              }
-            },
-            {
-              originalUrl: {
-                contains: filters.query,
-                mode: "insensitive" as const
-              }
-            },
-            {
-              externalId: {
-                contains: filters.query,
-                mode: "insensitive" as const
-              }
-            }
-          ]
+    ...(filters.status ? { status: filters.status } : {})
+  };
+}
+
+function resolveDashboardScopeWhere(filters: DropshippingDashboardFilters): Prisma.ProductSourceWhereInput {
+  if (filters.scope === "all") {
+    return {};
+  }
+
+  if (filters.scope === "active") {
+    return {
+      alerts: {
+        none: {
+          status: SupplierAlertStatus.OPEN
         }
-      : {}),
-    ...(filters.alert === "open"
-      ? {
-          alerts: {
-            some: {
-              status: SupplierAlertStatus.OPEN
-            }
+      },
+      status: SupplierSourceStatus.ACTIVE
+    };
+  }
+
+  return {
+    OR: [
+      {
+        status: {
+          not: SupplierSourceStatus.ACTIVE
+        }
+      },
+      {
+        alerts: {
+          some: {
+            status: SupplierAlertStatus.OPEN
           }
         }
-      : {})
+      }
+    ]
   };
+}
+
+function hasWhereClause(where: Prisma.ProductSourceWhereInput): boolean {
+  return Object.keys(where).length > 0;
 }
 
 export function formatOptionalCurrency(value: number | null): string {

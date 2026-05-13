@@ -87,7 +87,11 @@ function roundToEnding(value: number, ending: number): number {
 }
 
 function parseCurrencyToCents(value: string): number | null {
-  const normalized = value.replace(/\./g, "").replace(",", ".").trim();
+  const normalized = value
+    .replace(/[^\d,.-]/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".")
+    .trim();
 
   if (!normalized) {
     return null;

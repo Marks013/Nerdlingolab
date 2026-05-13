@@ -36,6 +36,7 @@ const pricingFormSchema = z.object({
 const filteredSourcesSchema = z.object({
   provider: z.nativeEnum(SupplierProvider).optional(),
   query: z.string().trim().max(120).optional(),
+  scope: z.enum(["active", "all", "review"]).optional(),
   status: z.nativeEnum(SupplierSourceStatus).optional()
 });
 const productStorePriceSchema = z.object({
@@ -106,6 +107,7 @@ export async function applySuggestedPricesToFilteredSourcesAction(formData: Form
   const filters = filteredSourcesSchema.parse({
     provider: normalizeOptionalEnum(formData.get("fornecedor")),
     query: normalizeOptionalText(formData.get("busca")),
+    scope: normalizeOptionalScope(formData.get("escopo")),
     status: normalizeOptionalEnum(formData.get("status"))
   });
   const sources = await prisma.productSource.findMany({
@@ -319,12 +321,14 @@ export async function updateManualSourceSnapshotAction(formData: FormData): Prom
     note: parsed.data.note
   });
 
-  let priceNotice = "Preco sugerido recalculado.";
+  let priceNotice = priceCents !== null && priceCents > 0
+    ? "Preco de origem salvo e preco sugerido recalculado."
+    : "Preco sugerido recalculado.";
 
   if (priceCents !== null && priceCents > 0 && status === SupplierSourceStatus.ACTIVE) {
     try {
       await applySuggestedSourcePrice(parsed.data.sourceId);
-      priceNotice = "Preco da loja e variacoes atualizado automaticamente com a margem configurada.";
+      priceNotice = "Preco de origem salvo; loja e variacoes atualizadas automaticamente com a margem configurada.";
     } catch {
       priceNotice = "Preco de origem salvo, mas nao foi possivel aplicar a margem automaticamente.";
     }
@@ -448,6 +452,7 @@ function readSupplierFilters(formData: FormData): z.infer<typeof filteredSources
   return filteredSourcesSchema.parse({
     provider: normalizeOptionalEnum(formData.get("filterFornecedor") ?? formData.get("fornecedor")),
     query: normalizeOptionalText(formData.get("filterBusca") ?? formData.get("busca")),
+    scope: normalizeOptionalScope(formData.get("filterEscopo") ?? formData.get("escopo")),
     status: normalizeOptionalEnum(formData.get("filterStatus") ?? formData.get("status"))
   });
 }
@@ -492,6 +497,10 @@ function buildSupplierRedirectParams({
     params.set("fornecedor", filters.provider);
   }
 
+  if (filters.scope) {
+    params.set("escopo", filters.scope);
+  }
+
   if (filters.status) {
     params.set("status", filters.status);
   }
@@ -508,6 +517,10 @@ function buildSupplierFilterParams(filters: z.infer<typeof filteredSourcesSchema
 
   if (filters.provider) {
     params.set("fornecedor", filters.provider);
+  }
+
+  if (filters.scope) {
+    params.set("escopo", filters.scope);
   }
 
   if (filters.status) {
@@ -527,6 +540,14 @@ function normalizeOptionalEnum(value: FormDataEntryValue | null): string | undef
   return normalizeOptionalText(value);
 }
 
+function normalizeOptionalScope(value: FormDataEntryValue | null): "active" | "all" | "review" | undefined {
+  if (value !== "active" && value !== "all" && value !== "review") {
+    return undefined;
+  }
+
+  return value;
+}
+
 function revalidateSupplierProductPaths(): void {
   revalidatePath("/admin/fornecedores");
   revalidatePath("/admin/produtos");
@@ -542,7 +563,11 @@ function isCsvFile(file: File): boolean {
 }
 
 function parseCurrencyToCents(value: string | undefined): number | null {
-  const normalized = value?.replace(/\./g, "").replace(",", ".").trim();
+  const normalized = value
+    ?.replace(/[^\d,.-]/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".")
+    .trim();
 
   if (!normalized) {
     return null;

@@ -273,6 +273,7 @@ function CurrentFilterInputs({ filters }: { filters: DropshippingDashboardFilter
     <>
       <input name="filterBusca" type="hidden" value={filters.query ?? ""} />
       <input name="filterFornecedor" type="hidden" value={filters.provider ?? ""} />
+      <input name="filterEscopo" type="hidden" value={filters.scope ?? "review"} />
       <input name="filterStatus" type="hidden" value={filters.status ?? ""} />
     </>
   );
@@ -280,11 +281,16 @@ function CurrentFilterInputs({ filters }: { filters: DropshippingDashboardFilter
 
 function FilterBar({ filters }: { filters: DropshippingDashboardFilters }): React.ReactElement {
   return (
-    <form className="grid gap-3 rounded-lg border bg-background/80 p-3 md:grid-cols-[1fr_170px_170px_auto_auto]" method="get">
+    <form className="grid gap-3 rounded-lg border bg-background/80 p-3 md:grid-cols-[1fr_170px_170px_170px_auto_auto]" method="get">
       <label className="relative">
         <Search className="absolute left-3 top-3.5 size-4 text-muted-foreground" />
         <Input className="pl-9" defaultValue={filters.query ?? ""} name="busca" placeholder="Buscar produto..." />
       </label>
+      <select className="h-11 rounded-lg border border-input bg-background px-3 text-sm" defaultValue={filters.scope ?? "review"} name="escopo">
+        <option value="review">Fila de revisao</option>
+        <option value="all">Todos monitorados</option>
+        <option value="active">Resolvidos ativos</option>
+      </select>
       <select className="h-11 rounded-lg border border-input bg-background px-3 text-sm" defaultValue={filters.provider ?? ""} name="fornecedor">
         <option value="">Todos fornecedores</option>
         {Object.values(SupplierProvider).map((provider) => (
@@ -323,6 +329,7 @@ function BulkActionBar({
       <form action={applySuggestedPricesToFilteredSourcesAction}>
         <input name="busca" type="hidden" value={filters.query ?? ""} />
         <input name="fornecedor" type="hidden" value={filters.provider ?? ""} />
+        <input name="escopo" type="hidden" value={filters.scope ?? "review"} />
         <input name="status" type="hidden" value={filters.status ?? ""} />
         <SupplierSubmitButton disabled={itemCount === 0} label="Aplicar margem nos filtrados" pendingLabel="Aplicando margem..." variant="default">
           <Wand2 className="mr-2 size-4" />
@@ -577,10 +584,12 @@ function StatusPill({ status }: { status: SupplierSourceStatus }): React.ReactEl
 
 function resolveFilters(searchParams: Record<string, string | string[] | undefined>): DropshippingDashboardFilters {
   const provider = readParam(searchParams.fornecedor);
+  const scope = readParam(searchParams.escopo);
   const status = readParam(searchParams.status);
 
   return {
     provider: isSupplierProvider(provider) ? provider : undefined,
+    scope: isSupplierScope(scope) ? scope : "review",
     status: isSupplierSourceStatus(status) ? status : undefined,
     query: readParam(searchParams.busca)
   };
@@ -649,6 +658,10 @@ function buildSupplierCsvExportHref(filters: DropshippingDashboardFilters): stri
     params.set("fornecedor", filters.provider);
   }
 
+  if (filters.scope) {
+    params.set("escopo", filters.scope);
+  }
+
   if (filters.status) {
     params.set("status", filters.status);
   }
@@ -678,6 +691,10 @@ function isSupplierProvider(value: string | undefined): value is SupplierProvide
 
 function isSupplierSourceStatus(value: string | undefined): value is SupplierSourceStatus {
   return Boolean(value && Object.values(SupplierSourceStatus).includes(value as SupplierSourceStatus));
+}
+
+function isSupplierScope(value: string | undefined): value is "active" | "all" | "review" {
+  return value === "active" || value === "all" || value === "review";
 }
 
 function providerLabel(provider: SupplierProvider): string {

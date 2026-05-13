@@ -732,155 +732,163 @@ export function ProductForm({
                         </td>
                       </tr>
                       {expandedVariantGroups.has(group.key) ? group.variants.map((variant) => (
-                        <tr className="align-top" key={variant.id}>
-                          <td className="px-3 py-3">
-                            <div className="flex gap-3">
-                              <VariantThumbnail imageUrl={variant.imageUrl} title={variant.title} />
-                              <div className="grid min-w-0 flex-1 gap-2">
-                                <Input className="h-9" value={variant.title} onChange={(event) => updateVariant(variant.id, { title: event.target.value })} required />
-                                <Input className="h-9 font-mono text-xs" value={variant.sku} onChange={(event) => updateVariant(variant.id, { sku: event.target.value })} required />
-                                <details className="rounded-md border bg-muted/20 p-2">
-                                  <summary className="cursor-pointer text-xs font-semibold text-muted-foreground">Midia e campos avancados</summary>
-                                  <div className="mt-3 grid gap-3 md:grid-cols-3">
-                                    <Field label="Preço comparativo">
-                                      <Input value={variant.compareAtPrice} onChange={(event) => updateVariant(variant.id, { compareAtPrice: event.target.value })} />
-                                    </Field>
-                                    <Field label="Codigo de barras">
-                                      <Input value={variant.barcode} onChange={(event) => updateVariant(variant.id, { barcode: event.target.value })} />
-                                    </Field>
-                                    <Field label="Peso (g)">
-                                      <div className="grid gap-2">
-                                        <Input min={0} type="number" value={variant.weightGrams} onChange={(event) => updateVariant(variant.id, { weightGrams: event.target.value })} />
-                                        <ShippingPresetSelect
-                                          onSelect={(preset) => updateVariant(variant.id, applyShippingPresetPatch(preset))}
-                                          presets={shippingPresets}
-                                        />
-                                      </div>
-                                    </Field>
-                                    <Field label="Comprimento (cm)">
-                                      <Input min={0} type="number" value={variant.lengthCm} onChange={(event) => updateVariant(variant.id, { lengthCm: event.target.value })} />
-                                    </Field>
-                                    <Field label="Largura (cm)">
-                                      <Input min={0} type="number" value={variant.widthCm} onChange={(event) => updateVariant(variant.id, { widthCm: event.target.value })} />
-                                    </Field>
-                                    <Field label="Altura (cm)">
-                                      <Input min={0} type="number" value={variant.heightCm} onChange={(event) => updateVariant(variant.id, { heightCm: event.target.value })} />
-                                    </Field>
-                                    <Field label="Prazo adicional (dias)">
-                                      <Input min={0} type="number" value={variant.shippingLeadTimeDays} onChange={(event) => updateVariant(variant.id, { shippingLeadTimeDays: event.target.value })} />
-                                    </Field>
-                                    <div className="grid gap-2 md:col-span-3">
-                                      <VariantImagePreview imageUrl={variant.imageUrl} title={variant.title} />
-                                      <div className="flex flex-wrap gap-2">
-                                        <MediaLibraryPicker
-                                          accept="image"
-                                          buttonLabel={variant.imageUrl ? "Trocar imagem" : "Vincular imagem"}
-                                          onSelect={(url) => updateVariantImageLink(variant.id, url)}
-                                        />
-                                        {variant.imageUrl ? (
-                                          <Button onClick={() => updateVariant(variant.id, { imageUrl: "" })} type="button" variant="ghost">
-                                            Limpar imagem
-                                          </Button>
-                                        ) : null}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </details>
-                                {restockAction && product && variant.trackInventory ? (
-                                  <div className="rounded-md border border-emerald-200 bg-emerald-50/70 p-2 dark:border-emerald-500/40 dark:bg-emerald-500/10">
-                                    <p className="text-xs font-black text-emerald-900 dark:text-emerald-100">Abastecer estoque</p>
-                                    <div className="mt-2 grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)_auto]">
-                                      <Input
-                                        className="h-9"
-                                        min={1}
-                                        name={`restockQuantity:${variant.id}`}
-                                        placeholder="+ qtd."
-                                        type="number"
-                                      />
-                                      <Input
-                                        className="h-9"
-                                        name={`restockReason:${variant.id}`}
-                                        placeholder="Motivo opcional"
-                                      />
-                                      <Button
-                                        className="h-9"
-                                        formAction={restockAction}
-                                        name="restockVariantId"
-                                        type="submit"
-                                        value={variant.id}
-                                        variant="default"
-                                      >
-                                        Abastecer
-                                      </Button>
-                                    </div>
-                                  </div>
-                                ) : null}
+                        <Fragment key={variant.id}>
+                          <tr className="align-top">
+                            <td className="px-3 py-3">
+                              <div className="flex gap-3">
+                                <VariantThumbnail imageUrl={variant.imageUrl} title={variant.title} />
+                                <div className="grid min-w-0 flex-1 gap-2">
+                                  <Input className="h-9" value={variant.title} onChange={(event) => updateVariant(variant.id, { title: event.target.value })} required />
+                                  <Input className="h-9 font-mono text-xs" value={variant.sku} onChange={(event) => updateVariant(variant.id, { sku: event.target.value })} required />
+                                </div>
                               </div>
-                            </div>
-                          </td>
-                          {[0, 1, 2].map((optionIndex) => (
-                            <td className="px-3 py-3" key={`${variant.id}-${optionIndex}`}>
-                              <CompactOptionInput
-                                option={variant.options[optionIndex]}
-                                optionIndex={optionIndex}
-                                variantId={variant.id}
-                                onChange={updateVariantOption}
-                              />
                             </td>
-                          ))}
-                          <td className="px-3 py-3">
-                            <Input className="h-9" value={variant.price} onChange={(event) => updateVariant(variant.id, { price: event.target.value })} required />
-                          </td>
-                          <td className="px-3 py-3">
-                            <div className="grid gap-2">
-                              <label className="flex items-center gap-2 rounded-md border bg-background px-2 py-2 text-xs font-semibold">
+                            {[0, 1, 2].map((optionIndex) => (
+                              <td className="px-3 py-3" key={`${variant.id}-${optionIndex}`}>
+                                <CompactOptionInput
+                                  option={variant.options[optionIndex]}
+                                  optionIndex={optionIndex}
+                                  variantId={variant.id}
+                                  onChange={updateVariantOption}
+                                />
+                              </td>
+                            ))}
+                            <td className="px-3 py-3">
+                              <Input className="h-9" value={variant.price} onChange={(event) => updateVariant(variant.id, { price: event.target.value })} required />
+                            </td>
+                            <td className="px-3 py-3">
+                              <div className="grid gap-2">
+                                <label className="flex items-center gap-2 rounded-md border bg-background px-2 py-2 text-xs font-semibold">
+                                  <input
+                                    checked={variant.trackInventory}
+                                    onChange={(event) => updateVariant(variant.id, { trackInventory: event.target.checked })}
+                                    type="checkbox"
+                                  />
+                                  Controlar
+                                </label>
+                                <Input
+                                  className="h-9"
+                                  disabled={!variant.trackInventory}
+                                  min={0}
+                                  type="number"
+                                  value={variant.stockQuantity}
+                                  onChange={(event) => updateVariant(variant.id, { stockQuantity: event.target.value })}
+                                />
+                              </div>
+                            </td>
+                            <td className="px-3 py-3">
+                              <label className="flex items-center gap-2 text-sm">
                                 <input
-                                  checked={variant.trackInventory}
-                                  onChange={(event) => updateVariant(variant.id, { trackInventory: event.target.checked })}
+                                  checked={variant.isActive}
+                                  onChange={(event) => updateVariant(variant.id, { isActive: event.target.checked })}
                                   type="checkbox"
                                 />
-                                Controlar
+                                Ativa
                               </label>
-                              <Input
-                                className="h-9"
-                                disabled={!variant.trackInventory}
-                                min={0}
-                                type="number"
-                                value={variant.stockQuantity}
-                                onChange={(event) => updateVariant(variant.id, { stockQuantity: event.target.value })}
-                              />
-                            </div>
-                          </td>
-                          <td className="px-3 py-3">
-                            <label className="flex items-center gap-2 text-sm">
-                              <input
-                                checked={variant.isActive}
-                                onChange={(event) => updateVariant(variant.id, { isActive: event.target.checked })}
-                                type="checkbox"
-                              />
-                              Ativa
-                            </label>
-                          </td>
-                          <td className="px-3 py-3">
-                            <div className="flex justify-end gap-1">
-                              <Button aria-label="Duplicar variacao" onClick={() => duplicateVariant(variant.id)} size="sm" type="button" variant="outline">
-                                Duplicar
-                              </Button>
-                              <Button
-                                aria-label="Remover variacao"
-                                className="h-10 border-red-200 bg-red-50 px-3 text-red-700 hover:bg-red-600 hover:text-white disabled:border-muted-foreground/20 disabled:bg-muted disabled:text-muted-foreground dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-100 dark:hover:bg-red-500/20 disabled:dark:border-muted-foreground/20 disabled:dark:bg-muted disabled:dark:text-muted-foreground"
-                                disabled={variants.length === 1}
-                                onClick={() => removeVariant(variant.id)}
-                                size="sm"
-                                type="button"
-                                variant="outline"
-                              >
-                                <Trash2 className="mr-1.5 size-5" />
-                                Excluir
-                              </Button>
-                            </div>
+                            </td>
+                            <td className="px-3 py-3">
+                              <div className="flex justify-end gap-1">
+                                <Button aria-label="Duplicar variacao" onClick={() => duplicateVariant(variant.id)} size="sm" type="button" variant="outline">
+                                  Duplicar
+                                </Button>
+                                <Button
+                                  aria-label="Remover variacao"
+                                  className="h-10 border-red-200 bg-red-50 px-3 text-red-700 hover:bg-red-600 hover:text-white disabled:border-muted-foreground/20 disabled:bg-muted disabled:text-muted-foreground dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-100 dark:hover:bg-red-500/20 disabled:dark:border-muted-foreground/20 disabled:dark:bg-muted disabled:dark:text-muted-foreground"
+                                  disabled={variants.length === 1}
+                                  onClick={() => removeVariant(variant.id)}
+                                  size="sm"
+                                  type="button"
+                                  variant="outline"
+                                >
+                                  <Trash2 className="mr-1.5 size-5" />
+                                  Excluir
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                          <tr className="border-t-0 bg-muted/10">
+                            <td className="px-3 pb-4 pt-0" colSpan={8}>
+                              <details className="rounded-lg border bg-background p-3 shadow-sm">
+                              <summary className="cursor-pointer text-sm font-semibold text-muted-foreground">Midia e campos avancados</summary>
+                              <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(260px,340px)]">
+                                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                                  <Field label="Preço comparativo">
+                                    <Input value={variant.compareAtPrice} onChange={(event) => updateVariant(variant.id, { compareAtPrice: event.target.value })} />
+                                  </Field>
+                                  <Field label="Codigo de barras">
+                                    <Input value={variant.barcode} onChange={(event) => updateVariant(variant.id, { barcode: event.target.value })} />
+                                  </Field>
+                                  <Field label="Peso (g)">
+                                    <div className="grid gap-2">
+                                      <Input min={0} type="number" value={variant.weightGrams} onChange={(event) => updateVariant(variant.id, { weightGrams: event.target.value })} />
+                                      <ShippingPresetSelect
+                                        onSelect={(preset) => updateVariant(variant.id, applyShippingPresetPatch(preset))}
+                                        presets={shippingPresets}
+                                      />
+                                    </div>
+                                  </Field>
+                                  <Field label="Comprimento (cm)">
+                                    <Input min={0} type="number" value={variant.lengthCm} onChange={(event) => updateVariant(variant.id, { lengthCm: event.target.value })} />
+                                  </Field>
+                                  <Field label="Largura (cm)">
+                                    <Input min={0} type="number" value={variant.widthCm} onChange={(event) => updateVariant(variant.id, { widthCm: event.target.value })} />
+                                  </Field>
+                                  <Field label="Altura (cm)">
+                                    <Input min={0} type="number" value={variant.heightCm} onChange={(event) => updateVariant(variant.id, { heightCm: event.target.value })} />
+                                  </Field>
+                                  <Field label="Prazo adicional (dias)">
+                                    <Input min={0} type="number" value={variant.shippingLeadTimeDays} onChange={(event) => updateVariant(variant.id, { shippingLeadTimeDays: event.target.value })} />
+                                  </Field>
+                                </div>
+                                <div className="grid content-start gap-2">
+                                  <VariantImagePreview imageUrl={variant.imageUrl} title={variant.title} />
+                                  <div className="flex flex-wrap gap-2">
+                                    <MediaLibraryPicker
+                                      accept="image"
+                                      buttonLabel={variant.imageUrl ? "Trocar imagem" : "Vincular imagem"}
+                                      onSelect={(url) => updateVariantImageLink(variant.id, url)}
+                                    />
+                                    {variant.imageUrl ? (
+                                      <Button onClick={() => updateVariant(variant.id, { imageUrl: "" })} type="button" variant="ghost">
+                                        Limpar imagem
+                                      </Button>
+                                    ) : null}
+                                  </div>
+                                </div>
+                              </div>
+                              {restockAction && product && variant.trackInventory ? (
+                                <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50/70 p-3 dark:border-emerald-500/40 dark:bg-emerald-500/10">
+                                  <p className="text-xs font-black text-emerald-900 dark:text-emerald-100">Abastecer estoque</p>
+                                  <div className="mt-2 grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)_auto]">
+                                    <Input
+                                      className="h-9"
+                                      min={1}
+                                      name={`restockQuantity:${variant.id}`}
+                                      placeholder="+ qtd."
+                                      type="number"
+                                    />
+                                    <Input
+                                      className="h-9"
+                                      name={`restockReason:${variant.id}`}
+                                      placeholder="Motivo opcional"
+                                    />
+                                    <Button
+                                      className="h-9"
+                                      formAction={restockAction}
+                                      name="restockVariantId"
+                                      type="submit"
+                                      value={variant.id}
+                                      variant="default"
+                                    >
+                                      Abastecer
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : null}
+                            </details>
                           </td>
                         </tr>
+                        </Fragment>
                       )) : null}
                     </Fragment>
                   ))}
@@ -1218,7 +1226,7 @@ function ShippingPresetSelect({
 
 function Field({ children, label }: { children: React.ReactNode; label: string }): React.ReactElement {
   return (
-    <label className="grid gap-2 text-sm font-medium">
+    <label className="grid min-w-0 gap-2 text-sm font-medium">
       {label}
       {children}
     </label>

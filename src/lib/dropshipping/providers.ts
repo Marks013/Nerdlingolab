@@ -55,7 +55,11 @@ export async function fetchSupplierSnapshot(params: {
 
 async function fetchMercadoLivreSnapshot(externalId: string | null, originalUrl: string): Promise<SupplierProductSnapshot> {
   if (!externalId) {
-    throw new SupplierSyncError("Link do Mercado Livre sem ID MLB valido.", SupplierSourceStatus.ERROR);
+    return buildManualRequiredSnapshot({
+      originalUrl,
+      provider: SupplierProvider.MERCADO_LIVRE,
+      reason: "Link do Mercado Livre sem ID MLB válido."
+    });
   }
 
   const response = await fetch(`${mercadoLivreItemApi}/${encodeURIComponent(externalId)}`, {
@@ -148,7 +152,11 @@ async function fetchShopeeSnapshot(params: {
   originalUrl: string;
 }): Promise<SupplierProductSnapshot> {
   if (!params.externalId || !params.externalShopId) {
-    throw new SupplierSyncError("Link da Shopee sem shop_id/item_id validos.", SupplierSourceStatus.ERROR);
+    return buildManualRequiredSnapshot({
+      originalUrl: params.originalUrl,
+      provider: SupplierProvider.SHOPEE,
+      reason: "Link da Shopee sem shop_id/item_id válidos."
+    });
   }
 
   const pageSnapshot = await fetchPublicProductPageSnapshot({
@@ -184,6 +192,29 @@ function buildAssistedShopeeSnapshot(params: {
     rawSummary: {
       mode: "third_party_assisted",
       reason: "Shopee de terceiros sem leitura publica confiavel. Use validacao manual.",
+      url: params.originalUrl
+    },
+    fetchedAt: new Date()
+  };
+}
+
+function buildManualRequiredSnapshot(params: {
+  originalUrl: string;
+  provider: SupplierProvider;
+  reason: string;
+}): SupplierProductSnapshot {
+  return {
+    provider: params.provider,
+    externalId: null,
+    title: null,
+    status: SupplierSourceStatus.CONFIG_REQUIRED,
+    priceCents: null,
+    currency: "BRL",
+    stockQuantity: null,
+    variants: [],
+    rawSummary: {
+      mode: "manual_required",
+      reason: params.reason,
       url: params.originalUrl
     },
     fetchedAt: new Date()

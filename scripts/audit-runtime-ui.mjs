@@ -69,7 +69,7 @@ async function loginAsAdmin(page, projectName) {
     await page.getByLabel("E-mail").fill(adminEmail);
     await page.getByLabel("Senha").fill(adminPassword);
     await page.getByRole("button", { name: "Entrar" }).click();
-    await page.waitForURL(/\/admin\/dashboard(?:\?|$)/, { timeout: 15_000 });
+    await page.waitForURL(/\/admin(?:\/dashboard)?(?:\?|$)/, { timeout: 15_000 });
 
     return true;
   } catch (error) {

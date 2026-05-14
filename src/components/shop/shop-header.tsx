@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Bot, ChevronDown, ChevronRight, Headphones, Menu, Search, ShoppingCart, Star, Tags, Ticket, UserRound, X } from "lucide-react";
+import { ArrowRight, Bot, ChevronDown, ChevronRight, ChevronsRight, Headphones, Menu, Search, ShoppingCart, Star, Tags, Ticket, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useMemo, useState } from "react";
@@ -204,7 +204,8 @@ export function ShopHeader({
             ) : null}
           </div>
 
-          <nav className="flex min-w-0 flex-nowrap content-center items-center justify-start gap-1 overflow-x-auto pb-1 lg:col-span-2 lg:justify-center xl:col-span-1 xl:justify-end xl:overflow-visible xl:pb-0 2xl:gap-2" data-ui-audit-scrollable>
+          <div className="nl-scroll-hint nl-scroll-hint-neutral min-w-0 lg:col-span-2 xl:col-span-1">
+          <nav className="flex min-w-0 flex-nowrap content-center items-center justify-start gap-1 overflow-x-auto px-1 pb-1 pt-1 lg:justify-center xl:justify-end xl:overflow-visible xl:pb-0 2xl:gap-2" data-ui-audit-scrollable>
             {headerLinks.map((link) => {
               const Icon = link.icon;
 
@@ -230,12 +231,12 @@ export function ShopHeader({
                   >
                     <Icon className="h-5 w-5 text-primary transition group-hover:scale-110" />
                     {link.href === "/carrinho" && cartCount > 0 ? (
-                      <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#111827] px-1 text-[10px] font-black leading-none text-white shadow-sm">
+                      <span className="absolute right-0 top-0 inline-flex min-h-5 min-w-5 translate-x-1/3 -translate-y-1/3 items-center justify-center rounded-full border-2 border-white bg-[#111827] px-1 text-[10px] font-black leading-none text-white shadow-sm">
                         {cartBadgeLabel}
                       </span>
                     ) : null}
                     {link.href === "/favoritos" && favorites.length > 0 ? (
-                      <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#111827] px-1 text-[10px] font-black leading-none text-white shadow-sm">
+                      <span className="absolute right-0 top-0 inline-flex min-h-5 min-w-5 translate-x-1/3 -translate-y-1/3 items-center justify-center rounded-full border-2 border-white bg-[#111827] px-1 text-[10px] font-black leading-none text-white shadow-sm">
                         {favoriteBadgeLabel}
                       </span>
                     ) : null}
@@ -278,6 +279,7 @@ export function ShopHeader({
               </form>
             ) : null}
           </nav>
+          </div>
         </div>
       </div>
 
@@ -292,16 +294,26 @@ export function ShopHeader({
             Todas as Categorias
           </button>
 
-          <nav className="flex flex-1 gap-3 overflow-x-auto pb-1 md:flex-wrap md:items-center md:justify-center md:gap-6 md:overflow-visible md:pb-0" data-ui-audit-scrollable>
-            {categoryLinks.map((link) => (
-              <Link className="group grid min-w-[86px] justify-items-center text-center text-xs font-bold text-white focus-visible:outline-none sm:min-w-[104px] md:min-w-0 md:text-sm" href={link.href} key={link.label}>
-                <span className={`mx-auto flex size-12 items-center justify-center rounded-full shadow-lg ring-2 ring-white/20 sm:size-14 md:size-20 ${link.color} transition duration-200 group-hover:scale-105 group-hover:shadow-xl group-focus-visible:ring-2 group-focus-visible:ring-white`}>
-                  <link.icon className={`size-7 ${link.iconColor} transition duration-200 group-hover:rotate-[-6deg] group-hover:scale-110 sm:size-8 md:size-10`} />
-                </span>
-                <span className="mt-2 block leading-tight drop-shadow-sm">{link.label}</span>
-              </Link>
-            ))}
-          </nav>
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 flex items-center justify-end text-white/90 md:hidden">
+              <span className="nl-scroll-cue">
+                Arraste para ver mais
+                <ChevronsRight className="size-4" />
+              </span>
+            </div>
+            <div className="nl-scroll-hint nl-scroll-hint-light">
+              <nav className="flex gap-3 overflow-x-auto pb-1 pr-8 md:flex-wrap md:items-center md:justify-center md:gap-6 md:overflow-visible md:pb-0 md:pr-0" data-ui-audit-scrollable>
+                {categoryLinks.map((link) => (
+                  <Link className="group grid min-w-[86px] justify-items-center text-center text-xs font-bold text-white focus-visible:outline-none sm:min-w-[104px] md:min-w-0 md:text-sm" href={link.href} key={link.label}>
+                    <span className={`mx-auto flex size-12 items-center justify-center rounded-full shadow-lg ring-2 ring-white/20 sm:size-14 md:size-20 ${link.color} transition duration-200 group-hover:scale-105 group-hover:shadow-xl group-focus-visible:ring-2 group-focus-visible:ring-white`}>
+                      <link.icon className={`size-7 ${link.iconColor} transition duration-200 group-hover:rotate-[-6deg] group-hover:scale-110 sm:size-8 md:size-10`} />
+                    </span>
+                    <span className="mt-2 block leading-tight drop-shadow-sm">{link.label}</span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -172,8 +172,12 @@ function TicketPanel({ ticket }: { ticket: AdminSupportTicket }): React.ReactEle
               <h2 className="font-bold">Responder por e-mail</h2>
             </div>
             <input name="ticketId" type="hidden" value={ticket.id} />
+            <label className="sr-only" htmlFor={`support-reply-${ticket.id}`}>
+              Resposta para o protocolo {ticket.ticketId}
+            </label>
             <Textarea
               className="mt-3 min-h-36"
+              id={`support-reply-${ticket.id}`}
               maxLength={5000}
               minLength={10}
               name="message"

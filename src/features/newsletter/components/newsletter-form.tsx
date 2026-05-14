@@ -37,7 +37,7 @@ export function NewsletterForm(): React.ReactElement {
       const payload = await response.json().catch(() => null) as Partial<NewsletterState> | null;
 
       setState({
-        message: payload?.message ?? "Nao foi possivel confirmar sua inscricao agora.",
+        message: payload?.message ?? "Não foi possível confirmar sua inscrição agora.",
         ok: response.ok && payload?.ok === true
       });
 
@@ -46,7 +46,7 @@ export function NewsletterForm(): React.ReactElement {
       }
     } catch {
       setState({
-        message: "Nao foi possivel confirmar sua inscricao agora.",
+        message: "Não foi possível confirmar sua inscrição agora.",
         ok: false
       });
     } finally {

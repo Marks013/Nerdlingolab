@@ -25,9 +25,9 @@ export function ProductCard({ imagePriority = false, nerdcoinsEstimate = 0, prod
 
   if (variant === "list") {
     return (
-      <article className="manga-panel group relative overflow-hidden rounded-lg bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
-        <div className="grid min-h-[112px] grid-cols-[88px_minmax(0,1fr)] gap-3 p-3 sm:grid-cols-[104px_minmax(0,1fr)_170px] sm:items-center sm:gap-4 sm:p-4">
-          <Link className="relative h-24 w-[88px] overflow-hidden rounded-md bg-[#f7f7f7] sm:h-24 sm:w-[104px]" href={`/produtos/${product.slug}`}>
+      <article className="manga-panel group relative overflow-hidden rounded-lg bg-white shadow-sm transition-colors duration-150 hover:border-primary/45">
+        <div className="grid min-h-[112px] grid-cols-[88px_minmax(0,1fr)] gap-3 p-3 sm:grid-cols-[104px_minmax(0,1fr)_minmax(150px,180px)] sm:items-center sm:gap-4 sm:p-4">
+          <Link className="relative aspect-square w-[88px] overflow-hidden rounded-md bg-[#f7f7f7] sm:w-[104px]" href={`/produtos/${product.slug}`}>
             {imageUrl ? (
               <Image
                 alt={`Imagem de ${product.title}`}
@@ -58,7 +58,7 @@ export function ProductCard({ imagePriority = false, nerdcoinsEstimate = 0, prod
           </Link>
 
           <div className="col-span-2 flex items-center justify-between gap-3 border-t border-primary/10 pt-3 sm:col-span-1 sm:border-t-0 sm:pt-0">
-            <div>
+            <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase text-[#4f5d65]">Preço</p>
               <div className="mt-1 flex flex-wrap items-baseline gap-2">
                 <p className="text-lg font-black leading-none text-primary sm:text-xl">{formatCurrency(product.priceCents)}</p>
@@ -86,7 +86,7 @@ export function ProductCard({ imagePriority = false, nerdcoinsEstimate = 0, prod
   }
 
   return (
-    <article className="manga-panel group relative flex h-full flex-col overflow-hidden rounded-lg bg-white shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg">
+    <article className="manga-panel group relative flex h-full flex-col overflow-hidden rounded-lg bg-white shadow-sm transition-colors duration-150 hover:border-primary/45">
       <Link className="flex h-full flex-col" href={`/produtos/${product.slug}`}>
         <div className="relative aspect-[4/4.1] overflow-hidden bg-[#f7f7f7]">
           {imageUrl ? (

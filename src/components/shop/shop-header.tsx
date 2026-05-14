@@ -45,7 +45,7 @@ const drawerCatalogLinks = [
 ];
 
 const headerActionClass =
-  "group relative inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-1.5 text-sm font-semibold transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary 2xl:gap-2 2xl:px-2.5";
+  "group relative inline-flex min-h-10 min-w-0 shrink-0 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-center text-sm font-semibold leading-tight transition-colors duration-150 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary 2xl:gap-2 2xl:px-3";
 
 export function ShopHeader({
   announcementText = "FRETE GRÁTIS em compras acima de R$99,90",
@@ -98,12 +98,12 @@ export function ShopHeader({
 
   return (
     <header className="anime-header relative z-40 bg-[#ff6902] text-white">
-      <div className="flex h-11 items-center justify-center px-4 text-sm font-bold tracking-normal">
+      <div className="flex min-h-11 items-center justify-center px-4 py-2 text-center text-sm font-bold tracking-normal">
         {announcementText}
       </div>
 
       <div className="bg-[#f6f7f8] text-[#677279]">
-        <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-5 px-5 py-6 lg:grid-cols-[minmax(260px,auto)_minmax(280px,1fr)] lg:items-center lg:gap-x-8 xl:grid-cols-[minmax(290px,auto)_minmax(280px,360px)_minmax(max-content,1fr)] xl:gap-x-5 2xl:grid-cols-[minmax(310px,auto)_minmax(320px,420px)_minmax(max-content,1fr)] 2xl:gap-x-7">
+        <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-5 px-4 py-5 sm:px-5 lg:grid-cols-[minmax(240px,0.8fr)_minmax(280px,1.2fr)] lg:items-center lg:gap-x-6 xl:grid-cols-[minmax(250px,0.85fr)_minmax(300px,440px)_minmax(0,1fr)] xl:gap-x-4 2xl:grid-cols-[minmax(310px,auto)_minmax(320px,460px)_minmax(0,1fr)] 2xl:gap-x-7">
           <Link className="group flex min-w-0 items-center justify-center gap-3 text-[#111827] lg:justify-start" href="/">
             <Image
               alt="NerdLingoLab"
@@ -114,7 +114,7 @@ export function ShopHeader({
               width={96}
             />
             <span className="flex min-w-0 flex-col leading-none">
-              <span className="whitespace-nowrap text-[clamp(1.85rem,2.7vw,2.125rem)] font-black tracking-normal leading-none">
+              <span className="whitespace-nowrap text-[clamp(1.65rem,2.4vw,2.125rem)] font-black tracking-normal leading-none">
                 <span className="text-[#ff6902]">Nerd</span>
                 <span className="text-[#7c1fe6]">LingoLab</span>
               </span>
@@ -204,7 +204,7 @@ export function ShopHeader({
             ) : null}
           </div>
 
-          <nav className="flex min-w-0 flex-wrap content-center items-center justify-center gap-2 lg:col-span-2 lg:justify-center xl:col-span-1 xl:flex-nowrap xl:justify-end xl:gap-1 2xl:gap-2">
+          <nav className="flex min-w-0 flex-wrap content-center items-center justify-center gap-2 lg:col-span-2 lg:justify-center xl:col-span-1 xl:justify-end xl:gap-1.5 2xl:gap-2">
             {headerLinks.map((link) => {
               const Icon = link.icon;
 
@@ -269,7 +269,7 @@ export function ShopHeader({
             {isAuthenticated ? (
               <form action={signOutFromCustomer}>
                 <button
-                  className="inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-md border border-primary/25 bg-white px-2.5 text-sm font-semibold text-primary transition duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary 2xl:px-3"
+                  className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-primary/25 bg-white px-3 py-1.5 text-center text-sm font-semibold leading-tight text-primary transition-colors duration-150 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   type="submit"
                 >
                   Sair
@@ -283,7 +283,7 @@ export function ShopHeader({
       <div className="border-t border-white/20 bg-[#ff6902]">
         <div className="mx-auto flex min-h-[112px] w-full max-w-[1440px] flex-col items-stretch gap-5 px-4 py-4 sm:px-5 md:flex-row md:items-center">
           <button
-            className="inline-flex h-11 items-center justify-center gap-3 rounded-lg bg-white px-5 text-sm font-bold text-black shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-[#fff7ef] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white md:justify-start"
+            className="inline-flex min-h-11 items-center justify-center gap-3 rounded-lg bg-white px-5 py-2 text-sm font-bold text-black shadow-sm transition-colors duration-150 hover:bg-[#fff7ef] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white md:justify-start"
             onClick={() => setIsCategoryDrawerOpen(true)}
             type="button"
           >

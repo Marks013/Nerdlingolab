@@ -27,8 +27,13 @@ const adminPaths = [
 ];
 
 const projects = [
-  { name: "desktop", use: devices["Desktop Chrome"] },
-  { name: "mobile", use: devices["Pixel 7"] }
+  { name: "phone-360", use: { ...devices["Pixel 7"], viewport: { width: 360, height: 740 } } },
+  { name: "phone-430", use: { ...devices["Pixel 7"], viewport: { width: 430, height: 932 } } },
+  { name: "tablet-768", use: { ...devices["iPad Mini"], viewport: { width: 768, height: 1024 } } },
+  { name: "desktop-1024", use: { ...devices["Desktop Chrome"], viewport: { width: 1024, height: 768 } } },
+  { name: "desktop-1366", use: { ...devices["Desktop Chrome"], viewport: { width: 1366, height: 768 } } },
+  { name: "desktop-1440", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
+  { name: "wide-1920", use: { ...devices["Desktop Chrome"], viewport: { width: 1920, height: 1080 } } }
 ];
 
 function loadDotEnvFile(filePath) {
@@ -59,7 +64,8 @@ function normalizeText(value) {
 
 async function loginAsAdmin(page, projectName) {
   try {
-    await page.goto(pageUrl("/admin/login"), { waitUntil: "networkidle" });
+    await page.goto(pageUrl("/admin/login"), { timeout: 45_000, waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("networkidle", { timeout: 8_000 }).catch(() => null);
     await page.getByLabel("E-mail").fill(adminEmail);
     await page.getByLabel("Senha").fill(adminPassword);
     await page.getByRole("button", { name: "Entrar" }).click();
@@ -114,7 +120,8 @@ async function auditPage(page, path, projectName) {
     requestFailures.push(`${request.method()} ${request.url()} ${failure?.errorText ?? "falhou"}`);
   });
 
-  const response = await page.goto(pageUrl(path), { waitUntil: "networkidle" });
+  const response = await page.goto(pageUrl(path), { timeout: 45_000, waitUntil: "domcontentloaded" });
+  await page.waitForLoadState("networkidle", { timeout: 8_000 }).catch(() => null);
   const status = response?.status() ?? 0;
 
   if (status >= 500) {

@@ -326,7 +326,7 @@ export function ProductForm({
         current,
         optionName,
         normalizedValue,
-        createVariantRow({ price: bulkVariantPrice.trim(), sku: baseSku.trim(), title: "Nova variacao" })
+        createVariantRow({ price: bulkVariantPrice.trim(), sku: baseSku.trim(), title: "Nova variação" })
       ).map((variant) => (
         bulkVariantPrice.trim() && !variant.price.trim()
           ? { ...variant, price: bulkVariantPrice.trim() }
@@ -392,7 +392,7 @@ export function ProductForm({
       || !Number.isFinite(shippingLeadTimeDays)
       || shippingLeadTimeDays < 0
     ) {
-      setShippingPresetMessage("Informe nome, peso e dimensoes validos.");
+      setShippingPresetMessage("Informe nome, peso e dimensões válidos.");
       return;
     }
 
@@ -413,7 +413,7 @@ export function ProductForm({
       const preset = getShippingPresetFromPayload(payload);
 
       if (!preset) {
-        throw new Error("Resposta invalida ao salvar o atalho.");
+        throw new Error("Resposta inválida ao salvar o atalho.");
       }
 
       setShippingPresets((current) => upsertShippingPreset(current, preset));
@@ -424,7 +424,7 @@ export function ProductForm({
       setNewShippingPresetWidth("");
       setNewShippingPresetLength("");
       setNewShippingPresetLeadTimeDays("");
-      setShippingPresetMessage("Atalho salvo para proximos cadastros.");
+      setShippingPresetMessage("Atalho salvo para próximos cadastros.");
     } catch (error) {
       setShippingPresetMessage(error instanceof Error ? error.message : "Não foi possível salvar o atalho.");
     } finally {
@@ -450,7 +450,7 @@ export function ProductForm({
           ...source,
           id: createRowId("variant"),
           sku: source.sku ? `${source.sku}-COPIA` : "",
-          title: `${source.title || "Variacao"} copia`
+          title: `${source.title || "Variação"} cópia`
         })
       ];
     });
@@ -516,7 +516,7 @@ export function ProductForm({
           <p className="text-sm text-muted-foreground">Catálogo / Produtos</p>
           <h1 className="text-2xl font-bold tracking-normal">{product ? "Editar produto" : "Novo produto"}</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground text-pretty">
-            Estruture conteudo, midia, organizacao, variacoes, estoque e metacampos em um fluxo visual.
+            Estruture conteúdo, mídia, organização, variações, estoque e metacampos em um fluxo visual.
           </p>
         </div>
         <Button className="w-full sm:w-auto" type="submit">Salvar produto</Button>
@@ -567,13 +567,13 @@ export function ProductForm({
                 <EditorButton label="Lista numerada" icon={ListOrdered} onClick={() => runEditorCommand("insertOrderedList")} />
                 <EditorButton label="Link" icon={Link2} onClick={insertPromptedLink} />
                 <EditorButton
-                  label="Imagem da midia"
+                  label="Imagem da mídia"
                   icon={ImageIcon}
                   onClick={() => setDescriptionMediaIntent((current) => (current === "image" ? null : "image"))}
                   pressed={descriptionMediaIntent === "image"}
                 />
                 <EditorButton
-                  label="Video da midia"
+                  label="Vídeo da mídia"
                   icon={Video}
                   onClick={() => setDescriptionMediaIntent((current) => (current === "video" ? null : "video"))}
                   pressed={descriptionMediaIntent === "video"}
@@ -627,7 +627,7 @@ export function ProductForm({
 
           <section className="rounded-lg border bg-background p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <SectionHeading icon={Layers3} title="Variacoes e estoque" />
+              <SectionHeading icon={Layers3} title="Variações e estoque" />
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Button className="w-full sm:w-auto" onClick={expandAllVariantGroups} type="button" variant="ghost">
                   Expandir tudo
@@ -637,12 +637,12 @@ export function ProductForm({
                 </Button>
                 <Button
                   className="w-full sm:w-auto"
-                  onClick={() => setVariants((current) => [...current, createVariantRow({ price: bulkVariantPrice.trim(), sku: baseSku.trim(), title: `Variacao ${current.length + 1}` })])}
+                  onClick={() => setVariants((current) => [...current, createVariantRow({ price: bulkVariantPrice.trim(), sku: baseSku.trim(), title: `Variação ${current.length + 1}` })])}
                   type="button"
                   variant="outline"
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Adicionar variacao
+                  Adicionar variação
                 </Button>
               </div>
             </div>
@@ -662,15 +662,15 @@ export function ProductForm({
                 onAddValue={(value) => addOptionValueToMatrix("Tamanho", value)}
               />
               <OptionSummary
-                label="Genero"
+                label="Gênero"
                 quickValues={matrixQuickValues.Genero}
                 values={matrixValues.Genero}
                 onAdd={() => addOptionValueToMatrix("Genero")}
                 onAddValue={(value) => addOptionValueToMatrix("Genero", value)}
               />
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Ao vincular uma imagem, ela é aplicada nas variantes da mesma Cor + Sexo. Valores novos podem ser digitados ou criados pelos botões acima.
+            <p className="mt-3 text-sm leading-6 text-muted-foreground text-pretty">
+              Ao vincular uma imagem, ela é aplicada nas variantes da mesma cor e gênero. Valores novos podem ser digitados ou criados pelos botões acima.
             </p>
             <div className="mt-4 rounded-lg border bg-background p-4">
               <div className="grid gap-3 lg:grid-cols-[minmax(180px,260px)_auto_auto] lg:items-end">
@@ -713,9 +713,9 @@ export function ProductForm({
               </div>
               <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
                 <div className="min-w-0">
-                  <h3 className="text-sm font-semibold tracking-normal">Atalhos logisticos</h3>
+                  <h3 className="text-sm font-semibold tracking-normal">Atalhos logísticos</h3>
                   <p className="mt-1 max-w-2xl text-xs text-muted-foreground text-pretty">
-                    Salve peso e dimensoes frequentes para preencher rapidamente as variantes e calcular o frete com mais precisao.
+                    Salve peso e dimensões frequentes para preencher rapidamente as variantes e calcular o frete com mais precisão.
                   </p>
                 </div>
                 <div className="grid w-full gap-2 sm:grid-cols-[minmax(0,1fr)_auto] xl:max-w-xl">
@@ -752,7 +752,7 @@ export function ProductForm({
               <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-[minmax(220px,1fr)_120px_110px_120px_120px_120px_130px_auto]">
                 <Field label="Nome">
                   <Input
-                    aria-label="Nome do novo atalho logistico"
+                    aria-label="Nome do novo atalho logístico"
                     onChange={(event) => setNewShippingPresetName(event.target.value)}
                     placeholder="Ex.: Camiseta basica"
                     value={newShippingPresetName}
@@ -779,13 +779,13 @@ export function ProductForm({
                   </select>
                 </Field>
                 <Field label="Compr.">
-                  <Input aria-label="Comprimento em centimetros" min={1} onChange={(event) => setNewShippingPresetLength(event.target.value)} placeholder="30" type="number" value={newShippingPresetLength} />
+                  <Input aria-label="Comprimento em centímetros" min={1} onChange={(event) => setNewShippingPresetLength(event.target.value)} placeholder="30" type="number" value={newShippingPresetLength} />
                 </Field>
                 <Field label="Largura">
-                  <Input aria-label="Largura em centimetros" min={1} onChange={(event) => setNewShippingPresetWidth(event.target.value)} placeholder="25" type="number" value={newShippingPresetWidth} />
+                  <Input aria-label="Largura em centímetros" min={1} onChange={(event) => setNewShippingPresetWidth(event.target.value)} placeholder="25" type="number" value={newShippingPresetWidth} />
                 </Field>
                 <Field label="Altura">
-                  <Input aria-label="Altura em centimetros" min={1} onChange={(event) => setNewShippingPresetHeight(event.target.value)} placeholder="3" type="number" value={newShippingPresetHeight} />
+                  <Input aria-label="Altura em centímetros" min={1} onChange={(event) => setNewShippingPresetHeight(event.target.value)} placeholder="3" type="number" value={newShippingPresetHeight} />
                 </Field>
                 <Field label="+ dias">
                   <Input aria-label="Dias adicionais ao prazo de frete" min={0} onChange={(event) => setNewShippingPresetLeadTimeDays(event.target.value)} placeholder="+ dias" type="number" value={newShippingPresetLeadTimeDays} />
@@ -808,25 +808,205 @@ export function ProductForm({
                 <p className="mt-2 text-xs text-muted-foreground">{shippingPresetMessage}</p>
               ) : null}
             </div>
-            <div className="mt-4 overflow-x-auto rounded-lg border">
+            <div className="mt-4 grid gap-3 2xl:hidden">
+              {variants.length === 0 ? (
+                <div className="rounded-lg border border-dashed bg-muted/20 p-4 text-sm text-muted-foreground">
+                  Crie uma cor, tamanho ou gênero acima para gerar as variantes do produto.
+                </div>
+              ) : null}
+              {variantGroups.map((group) => (
+                <section className="overflow-hidden rounded-lg border bg-background" key={group.key}>
+                  <button
+                    aria-expanded={expandedVariantGroups.has(group.key)}
+                    className="flex w-full items-center justify-between gap-3 bg-muted/25 px-3 py-3 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onClick={() => toggleVariantGroup(group.key)}
+                    type="button"
+                  >
+                    <span className="flex min-w-0 items-center gap-2 font-semibold">
+                      {expandedVariantGroups.has(group.key) ? (
+                        <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                      )}
+                      <span className="inline-flex size-4 shrink-0 rounded-full border" style={{ backgroundColor: getSwatchColor(group.label) }} />
+                      <span className="truncate">{group.label}</span>
+                    </span>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {group.variants.length} variante{group.variants.length === 1 ? "" : "s"}
+                    </span>
+                  </button>
+                  {expandedVariantGroups.has(group.key) ? (
+                    <div className="grid gap-3 p-3">
+                      {group.variants.map((variant) => (
+                        <article className="overflow-hidden rounded-xl border border-primary/20 bg-card shadow-sm" key={variant.id}>
+                          <div className="flex flex-col gap-3 border-b border-primary/15 bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+                            <div className="flex min-w-0 items-center gap-3">
+                              <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full border bg-background">
+                                <span className="size-5 rounded-full border" style={{ backgroundColor: getSwatchColor(getVariantOptionValue(variant, "Cor")) }} />
+                              </span>
+                              <div className="min-w-0">
+                                <h3 className="truncate text-sm font-black text-foreground">{variant.title || "Nova variação"}</h3>
+                                <p className="mt-0.5 truncate text-xs font-medium text-muted-foreground">{variant.sku || "SKU pendente"}</p>
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                              <span className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-black text-primary">
+                                {variant.price || "Sem preço"}
+                              </span>
+                              <span className={variant.isActive ? "rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700" : "rounded-full border border-muted-foreground/20 bg-muted px-3 py-1 text-xs font-black text-muted-foreground"}>
+                                {variant.isActive ? "Ativa" : "Inativa"}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="grid gap-4 p-3 sm:p-4">
+                            <div className="grid gap-3 sm:grid-cols-[72px_minmax(0,1fr)]">
+                            <VariantThumbnail imageUrl={variant.imageUrl} title={variant.title} />
+                            <div className="grid min-w-0 gap-3">
+                              <div className="grid gap-3 sm:grid-cols-2">
+                                <Field label="Nome da variante">
+                                  <Input value={variant.title} onChange={(event) => updateVariant(variant.id, { title: event.target.value })} required />
+                                </Field>
+                                <Field label="SKU">
+                                  <Input className="font-mono text-xs" value={variant.sku} onChange={(event) => updateVariant(variant.id, { sku: event.target.value })} required />
+                                </Field>
+                              </div>
+                              <div className="nl-field-grid">
+                                {[0, 1, 2].map((optionIndex) => (
+                                  <MatrixOptionInput
+                                    key={`${variant.id}-card-${optionIndex}`}
+                                    optionName={matrixOptionNames[optionIndex]}
+                                    option={variant.options[optionIndex]}
+                                    optionIndex={optionIndex}
+                                    variantId={variant.id}
+                                    onChange={updateVariantOption}
+                                  />
+                                ))}
+                                <Field label="Preço">
+                                  <Input value={variant.price} onChange={(event) => updateVariant(variant.id, { price: event.target.value })} required />
+                                </Field>
+                              </div>
+                            </div>
+                          </div>
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            <label className="flex min-h-10 items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm font-semibold">
+                              <input
+                                checked={variant.trackInventory}
+                                onChange={(event) => updateVariant(variant.id, { trackInventory: event.target.checked })}
+                                type="checkbox"
+                              />
+                              Controlar estoque
+                            </label>
+                            <Field label="Estoque">
+                              <Input
+                                disabled={!variant.trackInventory}
+                                min={0}
+                                type="number"
+                                value={variant.stockQuantity}
+                                onChange={(event) => updateVariant(variant.id, { stockQuantity: event.target.value })}
+                              />
+                            </Field>
+                            <label className="flex min-h-10 items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm font-semibold">
+                              <input
+                                checked={variant.isActive}
+                                onChange={(event) => updateVariant(variant.id, { isActive: event.target.checked })}
+                                type="checkbox"
+                              />
+                              Variante ativa
+                            </label>
+                            <div className="nl-action-row sm:justify-end lg:justify-start">
+                              <Button aria-label="Duplicar variação" onClick={() => duplicateVariant(variant.id)} size="sm" type="button" variant="outline">
+                                Duplicar
+                              </Button>
+                              <Button
+                                aria-label="Remover variação"
+                                className="border-red-200 bg-red-50 text-red-700 hover:bg-red-600 hover:text-white disabled:border-muted-foreground/20 disabled:bg-muted disabled:text-muted-foreground dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-100 dark:hover:bg-red-500/20 disabled:dark:border-muted-foreground/20 disabled:dark:bg-muted disabled:dark:text-muted-foreground"
+                                disabled={variants.length === 1}
+                                onClick={() => removeVariant(variant.id)}
+                                size="sm"
+                                type="button"
+                                variant="outline"
+                              >
+                                <Trash2 className="size-4" />
+                                Excluir
+                              </Button>
+                            </div>
+                          </div>
+                            <details className="rounded-lg border bg-background p-3 shadow-sm">
+                            <summary className="cursor-pointer text-sm font-semibold text-muted-foreground">Mídia e campos avançados</summary>
+                            <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,320px)]">
+                              <div className="nl-field-grid">
+                                <Field label="Preço comparativo">
+                                  <Input value={variant.compareAtPrice} onChange={(event) => updateVariant(variant.id, { compareAtPrice: event.target.value })} />
+                                </Field>
+                                <Field label="Código de barras">
+                                  <Input value={variant.barcode} onChange={(event) => updateVariant(variant.id, { barcode: event.target.value })} />
+                                </Field>
+                                <Field label="Peso (g)">
+                                  <div className="grid gap-2">
+                                    <Input min={0} type="number" value={variant.weightGrams} onChange={(event) => updateVariant(variant.id, { weightGrams: event.target.value })} />
+                                    <ShippingPresetSelect
+                                      onSelect={(preset) => updateVariant(variant.id, applyShippingPresetPatch(preset))}
+                                      presets={shippingPresets}
+                                    />
+                                  </div>
+                                </Field>
+                                <Field label="Comprimento (cm)">
+                                  <Input min={0} type="number" value={variant.lengthCm} onChange={(event) => updateVariant(variant.id, { lengthCm: event.target.value })} />
+                                </Field>
+                                <Field label="Largura (cm)">
+                                  <Input min={0} type="number" value={variant.widthCm} onChange={(event) => updateVariant(variant.id, { widthCm: event.target.value })} />
+                                </Field>
+                                <Field label="Altura (cm)">
+                                  <Input min={0} type="number" value={variant.heightCm} onChange={(event) => updateVariant(variant.id, { heightCm: event.target.value })} />
+                                </Field>
+                                <Field label="Prazo adicional (dias)">
+                                  <Input min={0} type="number" value={variant.shippingLeadTimeDays} onChange={(event) => updateVariant(variant.id, { shippingLeadTimeDays: event.target.value })} />
+                                </Field>
+                              </div>
+                              <div className="grid content-start gap-2">
+                                <VariantImagePreview imageUrl={variant.imageUrl} title={variant.title} />
+                                <div className="nl-action-row">
+                                  <MediaLibraryPicker
+                                    accept="image"
+                                    buttonLabel={variant.imageUrl ? "Trocar imagem" : "Vincular imagem"}
+                                    onSelect={(url) => updateVariantImageLink(variant.id, url)}
+                                  />
+                                  {variant.imageUrl ? (
+                                    <Button onClick={() => updateVariant(variant.id, { imageUrl: "" })} type="button" variant="ghost">
+                                      Limpar imagem
+                                    </Button>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </div>
+                            </details>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : null}
+                </section>
+              ))}
+            </div>
+            <div className="mt-4 hidden overflow-x-auto rounded-lg border 2xl:block" data-ui-audit-scrollable>
               <table className="w-full min-w-[1300px] border-collapse text-sm">
                 <thead className="bg-muted/50 text-left text-xs font-semibold text-muted-foreground">
                   <tr>
                     <th className="w-[330px] px-3 py-2">Variante</th>
                     <th className="w-[165px] px-3 py-2">Cor</th>
                     <th className="w-[150px] px-3 py-2">Tamanho</th>
-                    <th className="w-[165px] px-3 py-2">Genero</th>
+                    <th className="w-[165px] px-3 py-2">Gênero</th>
                     <th className="w-[130px] px-3 py-2">Preço</th>
                     <th className="w-[150px] px-3 py-2">Estoque</th>
                     <th className="w-[110px] px-3 py-2">Status</th>
-                    <th className="w-[160px] px-3 py-2 text-right">Acoes</th>
+                    <th className="w-[160px] px-3 py-2 text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {variants.length === 0 ? (
                     <tr>
                       <td className="px-4 py-6 text-sm text-muted-foreground" colSpan={8}>
-                        Crie uma cor, tamanho ou genero acima para gerar as variantes do produto.
+                        Crie uma cor, tamanho ou gênero acima para gerar as variantes do produto.
                       </td>
                     </tr>
                   ) : null}
@@ -913,11 +1093,11 @@ export function ProductForm({
                             </td>
                             <td className="px-3 py-3">
                               <div className="flex justify-end gap-1">
-                                <Button aria-label="Duplicar variacao" onClick={() => duplicateVariant(variant.id)} size="sm" type="button" variant="outline">
+                                <Button aria-label="Duplicar variação" onClick={() => duplicateVariant(variant.id)} size="sm" type="button" variant="outline">
                                   Duplicar
                                 </Button>
                                 <Button
-                                  aria-label="Remover variacao"
+                                  aria-label="Remover variação"
                                   className="h-10 border-red-200 bg-red-50 px-3 text-red-700 hover:bg-red-600 hover:text-white disabled:border-muted-foreground/20 disabled:bg-muted disabled:text-muted-foreground dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-100 dark:hover:bg-red-500/20 disabled:dark:border-muted-foreground/20 disabled:dark:bg-muted disabled:dark:text-muted-foreground"
                                   disabled={variants.length === 1}
                                   onClick={() => removeVariant(variant.id)}
@@ -934,13 +1114,13 @@ export function ProductForm({
                           <tr className="border-t-0 bg-muted/10">
                             <td className="px-3 pb-4 pt-0" colSpan={8}>
                               <details className="rounded-lg border bg-background p-3 shadow-sm">
-                              <summary className="cursor-pointer text-sm font-semibold text-muted-foreground">Midia e campos avancados</summary>
+                              <summary className="cursor-pointer text-sm font-semibold text-muted-foreground">Mídia e campos avançados</summary>
                               <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(260px,340px)]">
                                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                                   <Field label="Preço comparativo">
                                     <Input value={variant.compareAtPrice} onChange={(event) => updateVariant(variant.id, { compareAtPrice: event.target.value })} />
                                   </Field>
-                                  <Field label="Codigo de barras">
+                                  <Field label="Código de barras">
                                     <Input value={variant.barcode} onChange={(event) => updateVariant(variant.id, { barcode: event.target.value })} />
                                   </Field>
                                   <Field label="Peso (g)">
@@ -1124,7 +1304,7 @@ export function ProductForm({
               </select>
             </label>
             <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-              <Metric label="Variacoes" value={`${activeVariants}/${variants.length}`} />
+              <Metric label="Variações" value={`${activeVariants}/${variants.length}`} />
               <Metric label="Estoque" value={trackedVariants > 0 ? `${totalStock} / ${trackedVariants} controlada(s)` : "Sob demanda"} />
             </dl>
           </section>
@@ -1135,7 +1315,7 @@ export function ProductForm({
               <label className="grid gap-2 text-sm font-medium">
                 Categoria principal
                 <select className="h-10 rounded-md border bg-background px-3 text-sm" defaultValue={product?.categoryId ?? ""} name="categoryId">
-                  <option value="">Sem colecao</option>
+                  <option value="">Sem coleção</option>
                   {categories.map((category) => (
                     <option key={category.id} value={category.id}>{category.name}</option>
                   ))}
@@ -1200,7 +1380,7 @@ function VariantThumbnail({ imageUrl, title }: { imageUrl: string; title: string
   return (
     <div className="relative size-14 shrink-0 overflow-hidden rounded-md border bg-muted">
       {imageUrl ? (
-        <Image alt={title || "Imagem da variacao"} className="object-cover" fill sizes="56px" src={imageUrl} />
+        <Image alt={title || "Imagem da variação"} className="object-cover" fill sizes="56px" src={imageUrl} />
       ) : (
         <span className="grid h-full place-items-center text-muted-foreground">
           <ImageIcon className="h-5 w-5" />
@@ -1222,12 +1402,12 @@ function VariantImagePreview({ imageUrl, title }: { imageUrl: string; title: str
   return (
     <figure className="flex items-center gap-3 rounded-lg border bg-background p-2">
       <div className="relative size-20 shrink-0 overflow-hidden rounded-md bg-muted">
-        <Image alt={title || "Imagem da variacao"} className="object-cover" fill sizes="80px" src={imageUrl} />
+        <Image alt={title || "Imagem da variação"} className="object-cover" fill sizes="80px" src={imageUrl} />
       </div>
       <figcaption className="min-w-0 text-sm">
         <strong className="block truncate">Imagem vinculada</strong>
         <span className="text-xs text-muted-foreground">
-          Será aplicada nas variantes com a mesma cor e sexo.
+          Será aplicada nas variantes com a mesma cor e gênero.
         </span>
       </figcaption>
     </figure>
@@ -1254,9 +1434,9 @@ function MatrixOptionInput({
 
     return (
       <label className="grid min-w-0 gap-1">
-        <span className="text-[11px] font-semibold text-muted-foreground">{optionName}</span>
+        <span className="text-xs font-semibold text-muted-foreground">{getMatrixOptionLabel(optionName)}</span>
         <select
-          aria-label={`Valor de ${optionName}`}
+          aria-label={`Valor de ${getMatrixOptionLabel(optionName)}`}
           className="h-10 w-full rounded-lg border border-primary/45 bg-background px-3 py-2 text-sm ring-offset-background focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onChange={(event) => onChange(variantId, optionIndex, { name: optionName, value: event.target.value })}
           value={option.value}
@@ -1274,9 +1454,9 @@ function MatrixOptionInput({
 
   return (
     <div className="grid min-w-0 gap-1">
-      <span className="text-[11px] font-semibold text-muted-foreground">{optionName}</span>
+      <span className="text-xs font-semibold text-muted-foreground">{getMatrixOptionLabel(optionName)}</span>
       <Input
-        aria-label={`Valor de ${optionName}`}
+        aria-label={`Valor de ${getMatrixOptionLabel(optionName)}`}
         className="h-10"
         list="product-variant-option-values"
         placeholder={getMatrixOptionPlaceholder(optionName)}
@@ -1354,7 +1534,7 @@ function ShippingPresetSelect({
 }): React.ReactElement {
   return (
     <select
-      aria-label="Aplicar atalho logistico"
+      aria-label="Aplicar atalho logístico"
       className="h-9 rounded-md border bg-background px-3 text-xs"
       disabled={presets.length === 0}
       onChange={(event) => {
@@ -1464,7 +1644,7 @@ function getInitialVariantRows(product?: ProductListItem): VariantFormRow[] {
       sku: variant.sku,
       stockQuantity: String(variant.stockQuantity),
       trackInventory: variant.trackInventory,
-      title: variant.title || `Variacao ${index + 1}`,
+      title: variant.title || `Variação ${index + 1}`,
       weightGrams: variant.weightGrams ? String(variant.weightGrams) : "",
       widthCm: variant.widthCm ? String(variant.widthCm) : ""
     });
@@ -1533,7 +1713,7 @@ function groupVariantsByPrimaryOption(variants: VariantFormRow[]): Array<{ key: 
   const groups = new Map<string, VariantFormRow[]>();
 
   for (const variant of variants) {
-    const label = getVariantOptionValue(variant, "Cor") || "Cor nao definida";
+    const label = getVariantOptionValue(variant, "Cor") || "Cor não definida";
     groups.set(label, [...(groups.get(label) ?? []), variant]);
   }
 
@@ -1591,7 +1771,7 @@ function addMatrixOptionValue(
           sku: buildGeneratedSku(baseVariant.sku, options, nextVariants.length + 1),
           stockQuantity: "0",
           trackInventory: baseVariant.trackInventory,
-          title: buildVariantTitle(options, "Nova variacao"),
+          title: buildVariantTitle(options, "Nova variação"),
           weightGrams: baseVariant.weightGrams,
           heightCm: baseVariant.heightCm,
           lengthCm: baseVariant.lengthCm,
@@ -1802,7 +1982,7 @@ function getApiMessage(payload: unknown): string | null {
 }
 
 function getMatrixOptionLabel(optionName: MatrixOptionName): string {
-  return optionName === "Genero" ? "Genero" : optionName;
+  return optionName === "Genero" ? "Gênero" : optionName;
 }
 
 function getMatrixOptionPlaceholder(optionName: MatrixOptionName): string {
@@ -1907,7 +2087,7 @@ function serializeVariants(variants: VariantFormRow[]): string {
       }
 
       return [
-        variant.title.trim() || "Padrao",
+        variant.title.trim() || "Padrão",
         variant.sku.trim(),
         variant.price.trim(),
         variant.stockQuantity.trim() || "0",

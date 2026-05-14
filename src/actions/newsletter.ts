@@ -5,7 +5,10 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { requireAdmin } from "@/lib/admin";
-import { sendNewsletterCampaignEmail } from "@/lib/email/transactional";
+import {
+  refreshNewsletterCampaignDeliveryStats,
+  runNewsletterDeliveryProcessor
+} from "@/lib/newsletter/delivery-processor";
 import { getNewsletterAudienceSubscribers, isNewsletterAudience } from "@/lib/newsletter/audience";
 import { prisma } from "@/lib/prisma";
 
@@ -142,8 +145,6 @@ export async function sendNewsletterCampaign(campaignId: string): Promise<void> 
   }
 
   const subscribers = await getNewsletterAudienceSubscribers(campaign.audience);
-  let sentCount = 0;
-  let failedCount = 0;
 
   await prisma.newsletterCampaign.update({
     where: { id: campaign.id },
@@ -154,48 +155,6 @@ export async function sendNewsletterCampaign(campaignId: string): Promise<void> 
   });
 
   for (const subscriber of subscribers) {
-    const pendingDelivery = await prisma.newsletterCampaignDelivery.upsert({
-      where: {
-        campaignId_subscriberId: {
-          campaignId: campaign.id,
-          subscriberId: subscriber.id
-        }
-      },
-      create: {
-        campaignId: campaign.id,
-        email: subscriber.email,
-        status: "PENDING",
-        subscriberId: subscriber.id
-      },
-      update: {
-        email: subscriber.email,
-        errorMessage: null,
-        status: "PENDING"
-      }
-    });
-    const result = await sendNewsletterCampaignEmail({
-      body: campaign.body,
-      ctaHref: campaign.ctaHref,
-      ctaLabel: campaign.ctaLabel,
-      deliveryId: pendingDelivery.id,
-      email: subscriber.email,
-      eyebrow: campaign.eyebrow,
-      previewText: campaign.previewText,
-      subject: campaign.subject,
-      unsubscribeToken: subscriber.unsubscribeToken
-    });
-    const now = new Date();
-
-    if (result.ok) {
-      sentCount += 1;
-      await prisma.newsletterSubscriber.update({
-        where: { id: subscriber.id },
-        data: { lastSentAt: now }
-      });
-    } else {
-      failedCount += 1;
-    }
-
     await prisma.newsletterCampaignDelivery.upsert({
       where: {
         campaignId_subscriberId: {
@@ -206,30 +165,26 @@ export async function sendNewsletterCampaign(campaignId: string): Promise<void> 
       create: {
         campaignId: campaign.id,
         email: subscriber.email,
-        errorMessage: result.error ?? null,
-        sentAt: result.ok ? now : null,
-        status: result.ok ? "SENT" : "FAILED",
+        attempts: 0,
+        errorMessage: null,
+        nextRetryAt: null,
+        processingStartedAt: null,
+        status: "PENDING",
         subscriberId: subscriber.id
       },
       update: {
+        attempts: 0,
         email: subscriber.email,
-        errorMessage: result.error ?? null,
-        sentAt: result.ok ? now : null,
-        status: result.ok ? "SENT" : "FAILED"
+        errorMessage: null,
+        nextRetryAt: null,
+        processingStartedAt: null,
+        status: "PENDING"
       }
     });
   }
 
-  await prisma.newsletterCampaign.update({
-    where: { id: campaign.id },
-    data: {
-      failedCount,
-      recipientCount: subscribers.length,
-      sentAt: new Date(),
-      sentCount,
-      status: failedCount > 0 ? "SENT_WITH_ERRORS" : "SENT"
-    }
-  });
+  await runNewsletterDeliveryProcessor(Math.min(subscribers.length, 50));
+  await refreshNewsletterCampaignDeliveryStats(campaign.id);
 
   revalidatePath("/admin/newsletter");
   revalidatePath("/admin/dashboard");

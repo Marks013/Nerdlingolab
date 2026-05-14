@@ -182,6 +182,60 @@ services:
     networks:
       - commerce
 
+  billing-cron:
+    image: curlimages/curl:8.11.1
+    container_name: nerdlingolab-billing-cron
+    depends_on:
+      app:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -c
+    command:
+      - |
+        while true; do
+          TOKEN="$${CRON_SECRET:-$${AUTH_SECRET:-$${NEXTAUTH_SECRET:-}}}"
+          if [ -z "$$TOKEN" ]; then
+            echo "$$(date -Is) CRON_SECRET/AUTH_SECRET ausente"
+          else
+            curl -fsS -X POST -H "Authorization: Bearer $$TOKEN" "http://app:3000/api/cron/billing?limit=$${BILLING_CRON_LIMIT:-50}" || true
+            echo
+          fi
+          sleep "$${BILLING_CRON_INTERVAL_SECONDS:-300}"
+        done
+    environment: *app-environment
+    restart: unless-stopped
+    logging: *service-logging
+    networks:
+      - commerce
+
+  newsletter-cron:
+    image: curlimages/curl:8.11.1
+    container_name: nerdlingolab-newsletter-cron
+    depends_on:
+      app:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -c
+    command:
+      - |
+        while true; do
+          TOKEN="$${CRON_SECRET:-$${AUTH_SECRET:-$${NEXTAUTH_SECRET:-}}}"
+          if [ -z "$$TOKEN" ]; then
+            echo "$$(date -Is) CRON_SECRET/AUTH_SECRET ausente"
+          else
+            curl -fsS -X POST -H "Authorization: Bearer $$TOKEN" "http://app:3000/api/cron/newsletter?limit=$${NEWSLETTER_CRON_LIMIT:-50}" || true
+            echo
+          fi
+          sleep "$${NEWSLETTER_CRON_INTERVAL_SECONDS:-300}"
+        done
+    environment: *app-environment
+    restart: unless-stopped
+    logging: *service-logging
+    networks:
+      - commerce
+
 
 networks:
   commerce:

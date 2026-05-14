@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
 
-interface NewsletterState {
-  message: string | null;
-  ok: boolean;
-}
+import { subscribeNewsletter, type NewsletterState } from "@/actions/newsletter";
 
 const initialState: NewsletterState = {
   message: null,
@@ -13,49 +11,10 @@ const initialState: NewsletterState = {
 };
 
 export function NewsletterForm(): React.ReactElement {
-  const [state, setState] = useState<NewsletterState>(initialState);
-  const [isPending, setIsPending] = useState(false);
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
-    setIsPending(true);
-
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-
-    try {
-      const response = await fetch("/api/newsletter", {
-        body: JSON.stringify({
-          email: formData.get("email"),
-          website: formData.get("website") ?? undefined
-        }),
-        headers: {
-          "Content-Type": "application/json"
-        },
-        method: "POST"
-      });
-      const payload = await response.json().catch(() => null) as Partial<NewsletterState> | null;
-
-      setState({
-        message: payload?.message ?? "Não foi possível confirmar sua inscrição agora.",
-        ok: response.ok && payload?.ok === true
-      });
-
-      if (response.ok) {
-        form.reset();
-      }
-    } catch {
-      setState({
-        message: "Não foi possível confirmar sua inscrição agora.",
-        ok: false
-      });
-    } finally {
-      setIsPending(false);
-    }
-  }
+  const [state, formAction] = useActionState(subscribeNewsletter, initialState);
 
   return (
-    <form className="mt-6 grid gap-3" onSubmit={handleSubmit}>
+    <form action={formAction} className="mt-6 grid gap-3">
       <label className="sr-only" htmlFor="footer-email">Newsletter</label>
       <input
         aria-hidden="true"
@@ -75,7 +34,7 @@ export function NewsletterForm(): React.ReactElement {
         required
         type="email"
       />
-      <NewsletterSubmitButton isPending={isPending} />
+      <NewsletterSubmitButton />
       {state.message ? (
         <p className={state.ok ? "text-sm font-semibold text-[#237f34]" : "text-sm font-semibold text-destructive"}>
           {state.message}
@@ -85,14 +44,16 @@ export function NewsletterForm(): React.ReactElement {
   );
 }
 
-function NewsletterSubmitButton({ isPending }: { isPending: boolean }): React.ReactElement {
+function NewsletterSubmitButton(): React.ReactElement {
+  const status = useFormStatus();
+
   return (
     <button
       className="h-12 rounded-lg bg-primary px-5 text-sm font-bold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
-      disabled={isPending}
+      disabled={status.pending}
       type="submit"
     >
-      {isPending ? "Enviando..." : "Enviar"}
+      {status.pending ? "Enviando..." : "Enviar"}
     </button>
   );
 }

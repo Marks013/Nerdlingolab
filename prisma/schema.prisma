@@ -106,9 +106,11 @@ enum WebhookProvider {
 
 enum WebhookStatus {
   RECEIVED
+  PROCESSING
   PROCESSED
   IGNORED
   FAILED
+  DEAD_LETTER
 }
 
 enum ShippingProvider {
@@ -712,18 +714,23 @@ model NewsletterCampaign {
 }
 
 model NewsletterCampaignDelivery {
-  id           String               @id @default(cuid())
-  campaignId   String
-  subscriberId String
-  email        String
-  status       String               @default("PENDING")
-  errorMessage String?
-  sentAt       DateTime?
-  openedAt     DateTime?
-  clickedAt    DateTime?
-  openCount    Int                  @default(0)
-  clickCount   Int                  @default(0)
-  createdAt    DateTime             @default(now())
+  id                  String               @id @default(cuid())
+  campaignId          String
+  subscriberId        String
+  email               String
+  status              String               @default("PENDING")
+  attempts            Int                  @default(0)
+  maxAttempts         Int                  @default(6)
+  lastAttemptAt       DateTime?
+  nextRetryAt         DateTime?
+  processingStartedAt DateTime?
+  errorMessage        String?
+  sentAt              DateTime?
+  openedAt            DateTime?
+  clickedAt           DateTime?
+  openCount           Int                  @default(0)
+  clickCount          Int                  @default(0)
+  createdAt           DateTime             @default(now())
 
   campaign   NewsletterCampaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   subscriber NewsletterSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
@@ -731,6 +738,9 @@ model NewsletterCampaignDelivery {
   @@unique([campaignId, subscriberId])
   @@index([subscriberId, createdAt])
   @@index([status, createdAt])
+  @@index([status, nextRetryAt])
+  @@index([status, processingStartedAt])
+  @@index([campaignId, status])
 }
 
 model MarketingPopup {
@@ -1193,16 +1203,23 @@ model Referral {
 }
 
 model WebhookEvent {
-  id              String          @id @default(cuid())
-  provider        WebhookProvider
-  externalEventId String
-  status          WebhookStatus   @default(RECEIVED)
-  payload         Json
-  processedAt     DateTime?
-  errorMessage    String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id                  String          @id @default(cuid())
+  provider            WebhookProvider
+  externalEventId     String
+  status              WebhookStatus   @default(RECEIVED)
+  payload             Json
+  attempts            Int             @default(0)
+  maxAttempts         Int             @default(6)
+  lastAttemptAt       DateTime?
+  nextRetryAt         DateTime?
+  processingStartedAt DateTime?
+  processedAt         DateTime?
+  errorMessage        String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
 
   @@unique([provider, externalEventId])
   @@index([provider, status])
+  @@index([provider, status, nextRetryAt])
+  @@index([provider, status, processingStartedAt])
 }

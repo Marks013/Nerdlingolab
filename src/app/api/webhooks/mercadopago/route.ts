@@ -1,8 +1,12 @@
-import { WebhookProvider, WebhookStatus, type Prisma } from "@/generated/prisma/client";
+import { WebhookProvider, WebhookStatus } from "@/generated/prisma/client";
 import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 
-import { processMercadoPagoPayment } from "@/lib/payments/mercadopago-webhook";
+import { processBillingWebhookEvent } from "@/lib/payments/billing-webhook-processor";
+import {
+  getMercadoPagoExternalEventId,
+  toJsonValue
+} from "@/lib/payments/mercadopago-webhook-payload";
 import { prisma } from "@/lib/prisma";
 import { verifyMercadoPagoWebhookSignature } from "@/lib/security/mercadopago-signature";
 import { rateLimitRequest } from "@/lib/security/rate-limit";
@@ -50,26 +54,22 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ received: true, duplicate: true });
     }
 
-    const paymentId = getPaymentId(payload);
+    if (webhookEvent.status === WebhookStatus.DEAD_LETTER) {
+      return NextResponse.json({ received: true, deadLetter: true });
+    }
 
-    if (!paymentId) {
+    if (webhookEvent.status === WebhookStatus.FAILED) {
       await prisma.webhookEvent.update({
         where: { id: webhookEvent.id },
         data: {
-          status: "IGNORED",
-          errorMessage: "Payment id ausente no payload."
+          nextRetryAt: new Date()
         }
       });
-
-      return NextResponse.json({ received: true, ignored: true });
     }
 
-    await processMercadoPagoPayment({
-      paymentId,
-      webhookEventId: webhookEvent.id
-    });
+    const processingResult = await processBillingWebhookEvent(webhookEvent.id);
 
-    return NextResponse.json({ received: true });
+    return NextResponse.json({ received: true, processing: processingResult.status });
   } catch (error) {
     Sentry.captureException(error);
 
@@ -77,36 +77,6 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 }
 
-function getPaymentId(payload: unknown): string | null {
-  if (typeof payload !== "object" || payload === null) {
-    return null;
-  }
-
-  const record = payload as Record<string, unknown>;
-  const data = typeof record.data === "object" && record.data !== null
-    ? (record.data as Record<string, unknown>)
-    : null;
-  const candidate = data?.id ?? record["data.id"] ?? record.id;
-
-  return typeof candidate === "string" || typeof candidate === "number"
-    ? String(candidate)
-    : null;
-}
-
-function toJsonValue(payload: unknown): Prisma.InputJsonValue {
-  return JSON.parse(JSON.stringify(payload)) as Prisma.InputJsonValue;
-}
-
 function getExternalEventId(payload: unknown): string {
-  if (typeof payload !== "object" || payload === null) {
-    return crypto.randomUUID();
-  }
-
-  const record = payload as Record<string, unknown>;
-  const data = typeof record.data === "object" && record.data !== null
-    ? (record.data as Record<string, unknown>)
-    : null;
-  const id = record.id ?? record["data.id"] ?? data?.id;
-
-  return typeof id === "string" || typeof id === "number" ? String(id) : crypto.randomUUID();
+  return getMercadoPagoExternalEventId(payload);
 }

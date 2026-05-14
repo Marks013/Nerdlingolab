@@ -10,6 +10,8 @@ const maintenanceBypassQuery = "maintenance_bypass";
 const maintenanceAllowedPrefixes = [
   "/admin",
   "/api/auth",
+  "/api/cron/billing",
+  "/api/cron/newsletter",
   "/api/health",
   "/api/media",
   "/api/webhooks/mercadopago",

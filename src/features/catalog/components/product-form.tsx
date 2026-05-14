@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useMemo, useRef, useState } from "react";
+import { useFormStatus } from "react-dom";
 import type { Category } from "@/generated/prisma/client";
 import {
   Bold,
@@ -519,7 +520,7 @@ export function ProductForm({
             Estruture conteúdo, mídia, organização, variações, estoque e metacampos em um fluxo visual.
           </p>
         </div>
-        <Button className="w-full sm:w-auto" type="submit">Salvar produto</Button>
+        <ProductSubmitButton />
       </div>
       {notice ? (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-100">
@@ -670,7 +671,7 @@ export function ProductForm({
               />
             </div>
             <p className="mt-3 text-sm leading-6 text-muted-foreground text-pretty">
-              Ao vincular uma imagem, ela é aplicada nas variantes da mesma cor e gênero. Valores novos podem ser digitados ou criados pelos botões acima.
+              Ao vincular uma imagem, ela é aplicada nas variantes da mesma Cor + Sexo. Valores novos podem ser digitados ou criados pelos botões acima.
             </p>
             <div className="mt-4 rounded-lg border bg-background p-4">
               <div className="grid gap-3 lg:grid-cols-[minmax(180px,260px)_auto_auto] lg:items-end">
@@ -1522,6 +1523,16 @@ function OptionSummary({
         </div>
       ) : null}
     </div>
+  );
+}
+
+function ProductSubmitButton(): React.ReactElement {
+  const status = useFormStatus();
+
+  return (
+    <Button aria-busy={status.pending} className="w-full sm:w-auto" disabled={status.pending} type="submit">
+      {status.pending ? "Salvando..." : "Salvar produto"}
+    </Button>
   );
 }
 

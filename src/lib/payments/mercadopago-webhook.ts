@@ -25,6 +25,23 @@ interface MercadoPagoPaymentResponse {
   transaction_amount?: number;
 }
 
+const recoverablePaymentStatuses = new Set(["authorized", "in_process", "pending"]);
+const terminalIgnoredPaymentStatuses = new Set([
+  "cancelled",
+  "canceled",
+  "charged_back",
+  "in_mediation",
+  "rejected",
+  "refunded"
+]);
+
+export class RecoverableMercadoPagoPaymentError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RecoverableMercadoPagoPaymentError";
+  }
+}
+
 export type TransactionClient = Omit<
   PrismaClient,
   "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
@@ -43,6 +60,20 @@ export async function processMercadoPagoPayment({
   assertMercadoPagoConfigured();
 
   const payment = await mercadoPagoPayment.get({ id: paymentId }) as MercadoPagoPaymentResponse;
+  const normalizedStatus = payment.status?.trim().toLowerCase();
+
+  if (!normalizedStatus) {
+    throw new RecoverableMercadoPagoPaymentError("Mercado Pago retornou pagamento sem status.");
+  }
+
+  if (recoverablePaymentStatuses.has(normalizedStatus)) {
+    throw new RecoverableMercadoPagoPaymentError(`Pagamento Mercado Pago ainda em ${normalizedStatus}.`);
+  }
+
+  if (terminalIgnoredPaymentStatuses.has(normalizedStatus)) {
+    await markWebhookEvent(webhookEventId, WebhookStatus.IGNORED, `Pagamento Mercado Pago ${normalizedStatus}.`);
+    return;
+  }
 
   await processApprovedMercadoPagoPayment({
     payment,
@@ -81,6 +112,8 @@ export async function processApprovedMercadoPagoPayment({
         where: { id: webhookEventId },
         data: {
           status: WebhookStatus.FAILED,
+          processedAt: null,
+          processingStartedAt: null,
           errorMessage: "Pedido não encontrado."
         }
       });
@@ -93,6 +126,8 @@ export async function processApprovedMercadoPagoPayment({
         data: {
           status: WebhookStatus.IGNORED,
           processedAt: new Date(),
+          processingStartedAt: null,
+          nextRetryAt: null,
           errorMessage: "Pedido ja processado."
         }
       });
@@ -105,6 +140,8 @@ export async function processApprovedMercadoPagoPayment({
         data: {
           status: WebhookStatus.IGNORED,
           processedAt: new Date(),
+          processingStartedAt: null,
+          nextRetryAt: null,
           errorMessage: "Pagamento aprovado recebido para pedido ja cancelado ou reembolsado."
         }
       });
@@ -116,7 +153,8 @@ export async function processApprovedMercadoPagoPayment({
         where: { id: webhookEventId },
         data: {
           status: WebhookStatus.FAILED,
-          processedAt: new Date(),
+          processedAt: null,
+          processingStartedAt: null,
           errorMessage: "Valor pago não confere com o total do pedido."
         }
       });
@@ -144,6 +182,9 @@ export async function processApprovedMercadoPagoPayment({
       where: { id: webhookEventId },
       data: {
         status: WebhookStatus.PROCESSED,
+        errorMessage: null,
+        nextRetryAt: null,
+        processingStartedAt: null,
         processedAt: new Date()
       }
     });
@@ -178,6 +219,8 @@ async function markWebhookEvent(
     data: {
       status,
       processedAt: new Date(),
+      nextRetryAt: null,
+      processingStartedAt: null,
       errorMessage: message
     }
   });

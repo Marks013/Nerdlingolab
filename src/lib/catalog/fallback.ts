@@ -1,6 +1,7 @@
 import { ProductStatus, type Category } from "@/generated/prisma/client";
 
 import type { ProductListItem } from "@/lib/catalog/queries";
+import { getErrorMessage, isPrismaSchemaDriftError } from "@/lib/prisma-errors";
 
 const fallbackDate = new Date("2026-04-01T12:00:00.000Z");
 
@@ -147,7 +148,11 @@ export function shouldUseCatalogFallback(error: unknown): boolean {
     return false;
   }
 
-  const message = error instanceof Error ? error.message : String(error);
+  const message = getErrorMessage(error);
 
-  return message.includes("Can't reach database server") || message.includes("P1001");
+  return (
+    isPrismaSchemaDriftError(error) ||
+    message.includes("Can't reach database server") ||
+    message.includes("P1001")
+  );
 }

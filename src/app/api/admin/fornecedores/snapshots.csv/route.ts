@@ -1,14 +1,22 @@
 import * as Sentry from "@sentry/nextjs";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { SupplierProvider, SupplierSourceStatus } from "@/generated/prisma/client";
 import { isAdminSession } from "@/lib/admin";
 import { buildSupplierSnapshotCsv } from "@/lib/dropshipping/csv-export";
 import { importSupplierSnapshotCsv } from "@/lib/dropshipping/import";
 import type { DropshippingDashboardFilters } from "@/lib/dropshipping/queries";
+import { rateLimitRequest } from "@/lib/security/rate-limit";
+import { assertSameOriginRequest } from "@/lib/security/request";
 
 const maxImportFileSize = 2_000_000;
+const importFilterSchema = z.object({
+  busca: z.string().trim().max(160).optional(),
+  fornecedor: z.enum(SupplierProvider).optional(),
+  status: z.enum(SupplierSourceStatus).optional()
+});
 
 export async function GET(request: Request): Promise<NextResponse> {
   try {
@@ -42,6 +50,22 @@ export async function GET(request: Request): Promise<NextResponse> {
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
+    const sameOriginError = assertSameOriginRequest(request);
+
+    if (sameOriginError) {
+      return sameOriginError;
+    }
+
+    const rateLimitError = rateLimitRequest(request, {
+      intervalMs: 10 * 60 * 1000,
+      limit: 6,
+      name: "supplier-snapshot-import"
+    });
+
+    if (rateLimitError) {
+      return rateLimitError;
+    }
+
     if (!(await isAdminSession())) {
       return NextResponse.json({ message: "Acesso nao autorizado." }, { status: 401 });
     }
@@ -124,14 +148,20 @@ function resolveExportFilters(searchParams: URLSearchParams): DropshippingDashbo
 }
 
 function resolveImportFilters(formData: FormData): DropshippingDashboardFilters {
-  const provider = normalizeOptionalText(formData.get("fornecedor"));
-  const status = normalizeOptionalText(formData.get("status"));
-  const query = normalizeOptionalText(formData.get("busca"));
+  const parsedFilters = importFilterSchema.safeParse({
+    busca: normalizeOptionalText(formData.get("busca")),
+    fornecedor: normalizeOptionalText(formData.get("fornecedor")),
+    status: normalizeOptionalText(formData.get("status"))
+  });
+
+  if (!parsedFilters.success) {
+    return {};
+  }
 
   return {
-    provider: isSupplierProvider(provider) ? provider : undefined,
-    query,
-    status: isSupplierSourceStatus(status) ? status : undefined
+    provider: parsedFilters.data.fornecedor,
+    query: parsedFilters.data.busca,
+    status: parsedFilters.data.status
   };
 }
 

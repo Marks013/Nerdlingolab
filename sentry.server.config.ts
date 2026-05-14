@@ -13,6 +13,16 @@ Sentry.init({
       delete event.request.cookies;
     }
 
+    if (isServerActionDeploymentSkew(event)) {
+      return null;
+    }
+
     return event;
   }
 });
+
+function isServerActionDeploymentSkew(event: Sentry.ErrorEvent): boolean {
+  return event.exception?.values?.some((exception) =>
+    exception.value?.includes("Failed to find Server Action. This request might be from an older or newer deployment.")
+  ) ?? false;
+}

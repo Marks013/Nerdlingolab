@@ -404,11 +404,6 @@ export async function getPublicBestSellingProducts(take = 6): Promise<ProductLis
   try {
     const rankedItems = await prisma.orderItem.groupBy({
       by: ["productId"],
-      orderBy: {
-        _sum: {
-          quantity: "desc"
-        }
-      },
       where: {
         order: {
           paymentStatus: PaymentStatus.APPROVED,
@@ -420,10 +415,12 @@ export async function getPublicBestSellingProducts(take = 6): Promise<ProductLis
       },
       _sum: {
         quantity: true
-      },
-      take
+      }
     });
-    const productIds = rankedItems.map((item) => item.productId);
+    const productIds = rankedItems
+      .sort((left, right) => (right._sum.quantity ?? 0) - (left._sum.quantity ?? 0))
+      .slice(0, take)
+      .map((item) => item.productId);
 
     if (productIds.length === 0) {
       return [];
@@ -554,10 +551,8 @@ export async function getPublicProductRecommendations({
     }
   } satisfies ProductInclude;
 
-  let sameCategoryProducts: ProductListItem[];
-
   try {
-    sameCategoryProducts = categoryId
+    const sameCategoryProducts = categoryId
       ? await prisma.product.findMany({
           where: {
             AND: [
@@ -577,8 +572,30 @@ export async function getPublicProductRecommendations({
           include,
           orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
           take
-        })
+      })
       : [];
+
+    if (sameCategoryProducts.length >= take) {
+      return sameCategoryProducts;
+    }
+
+    const additionalProducts = await prisma.product.findMany({
+      where: {
+        AND: [
+          baseWhere,
+          {
+            id: {
+              notIn: [productId, ...sameCategoryProducts.map((product) => product.id)]
+            }
+          }
+        ]
+      },
+      include,
+      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+      take: take - sameCategoryProducts.length
+    });
+
+    return [...sameCategoryProducts, ...additionalProducts];
   } catch (error) {
     if (shouldUseCatalogFallback(error)) {
       return fallbackProducts.filter((product) => product.id !== productId).slice(0, take);
@@ -586,28 +603,6 @@ export async function getPublicProductRecommendations({
 
     throw error;
   }
-
-  if (sameCategoryProducts.length >= take) {
-    return sameCategoryProducts;
-  }
-
-  const additionalProducts = await prisma.product.findMany({
-    where: {
-      AND: [
-        baseWhere,
-        {
-          id: {
-            notIn: [productId, ...sameCategoryProducts.map((product) => product.id)]
-          }
-        }
-      ]
-    },
-    include,
-    orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
-    take: take - sameCategoryProducts.length
-  });
-
-  return [...sameCategoryProducts, ...additionalProducts];
 }
 
 function getPublicProductWhere(filters: PublicProductFilters = {}): ProductWhereInput {

@@ -147,14 +147,15 @@ function ProductShelf({
         </Link>
       </div>
       {products.length > 0 ? (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
+        <div className="flex snap-x gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:pb-0 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6" data-ui-audit-scrollable>
           {products.map((product, productIndex) => (
-            <ProductCard
-              imagePriority={Boolean(imagePriority && productIndex < 4)}
-              key={`${title}-${product.id}`}
-              nerdcoinsEstimate={estimateProductCardNerdcoins(product.priceCents, loyaltySettings)}
-              product={product}
-            />
+            <div className="min-w-[min(72vw,260px)] snap-start sm:min-w-0" key={`${title}-${product.id}`}>
+              <ProductCard
+                imagePriority={Boolean(imagePriority && productIndex < 4)}
+                nerdcoinsEstimate={estimateProductCardNerdcoins(product.priceCents, loyaltySettings)}
+                product={product}
+              />
+            </div>
           ))}
         </div>
       ) : (

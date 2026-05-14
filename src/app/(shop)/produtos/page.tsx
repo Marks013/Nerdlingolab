@@ -76,14 +76,25 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
           <p className="mt-3 text-center text-sm font-semibold text-[#4f5d65]">Seleções especiais da NerdLingoLab</p>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-[260px_1fr]">
-          <aside className="manga-panel rounded-lg bg-white p-4 shadow-sm sm:p-5 lg:sticky lg:top-5 lg:self-start">
-            <div className="mb-5 flex items-center gap-2 text-lg font-black text-black">
-              <SlidersHorizontal className="h-5 w-5 text-primary" />
-              Filtros
-            </div>
+        <div className="grid gap-6 lg:grid-cols-[260px_1fr] lg:gap-8">
+          <aside className="manga-panel overflow-hidden rounded-lg bg-white shadow-sm lg:sticky lg:top-5 lg:self-start">
+            <details className="group lg:contents">
+              <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 text-base font-black text-black sm:px-5 lg:hidden">
+                <span className="inline-flex items-center gap-2">
+                  <SlidersHorizontal className="size-5 text-primary" />
+                  Filtros e coleções
+                </span>
+                <span className="rounded-full border border-primary/25 bg-orange-50 px-3 py-1 text-xs font-black text-primary">
+                  Abrir
+                </span>
+              </summary>
+              <div className="hidden border-t border-primary/15 p-4 group-open:block sm:p-5 lg:block lg:border-t-0">
+                <div className="mb-5 hidden items-center gap-2 text-lg font-black text-black lg:flex">
+                  <SlidersHorizontal className="h-5 w-5 text-primary" />
+                  Filtros
+                </div>
 
-            <ProductFilterForm>
+                <ProductFilterForm>
               <div>
                 <label className="text-sm font-bold text-black" htmlFor="busca">
                   Buscar
@@ -175,7 +186,9 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps):
                   Limpar
                 </Link>
               </div>
-            </ProductFilterForm>
+                </ProductFilterForm>
+              </div>
+            </details>
           </aside>
 
           <section className="scroll-mt-32" id="lista-produtos">

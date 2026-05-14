@@ -45,7 +45,7 @@ const drawerCatalogLinks = [
 ];
 
 const headerActionClass =
-  "group relative inline-flex min-h-10 min-w-0 shrink-0 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-center text-sm font-semibold leading-tight transition-colors duration-150 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary 2xl:gap-2 2xl:px-3";
+  "group relative inline-flex min-h-9 min-w-0 shrink-0 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-center text-xs font-semibold leading-tight transition-colors duration-150 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary 2xl:min-h-10 2xl:gap-1.5 2xl:text-sm";
 
 export function ShopHeader({
   announcementText = "FRETE GRÁTIS em compras acima de R$99,90",
@@ -103,18 +103,18 @@ export function ShopHeader({
       </div>
 
       <div className="bg-[#f6f7f8] text-[#677279]">
-        <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-5 px-4 py-5 sm:px-5 lg:grid-cols-[minmax(240px,0.8fr)_minmax(280px,1.2fr)] lg:items-center lg:gap-x-6 xl:grid-cols-[minmax(250px,0.85fr)_minmax(300px,440px)_minmax(0,1fr)] xl:gap-x-4 2xl:grid-cols-[minmax(310px,auto)_minmax(320px,460px)_minmax(0,1fr)] 2xl:gap-x-7">
+        <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-4 px-4 py-5 sm:px-5 lg:grid-cols-[minmax(230px,0.8fr)_minmax(280px,1.2fr)] lg:items-center lg:gap-x-5 xl:grid-cols-[minmax(240px,0.8fr)_minmax(260px,390px)_minmax(0,1fr)] xl:gap-x-3 2xl:grid-cols-[minmax(300px,auto)_minmax(320px,460px)_minmax(0,1fr)] 2xl:gap-x-7">
           <Link className="group flex min-w-0 items-center justify-center gap-3 text-[#111827] lg:justify-start" href="/">
             <Image
               alt="NerdLingoLab"
-              className="h-14 w-14 shrink-0 rounded-2xl object-cover transition duration-300 group-hover:scale-[1.025] group-hover:drop-shadow-[0_6px_18px_rgba(255,105,2,0.24)] lg:h-16 lg:w-16"
+              className="size-12 shrink-0 rounded-2xl object-cover transition duration-300 group-hover:scale-[1.025] group-hover:drop-shadow-[0_6px_18px_rgba(255,105,2,0.24)] lg:size-14 2xl:size-16"
               height={96}
               priority
               src="/brand-assets/FAVICON_NERDLINGOLAB.webp"
               width={96}
             />
             <span className="flex min-w-0 flex-col leading-none">
-              <span className="whitespace-nowrap text-[clamp(1.65rem,2.4vw,2.125rem)] font-black tracking-normal leading-none">
+              <span className="whitespace-nowrap text-[clamp(1.45rem,2.1vw,2.125rem)] font-black tracking-normal leading-none">
                 <span className="text-[#ff6902]">Nerd</span>
                 <span className="text-[#7c1fe6]">LingoLab</span>
               </span>
@@ -204,7 +204,7 @@ export function ShopHeader({
             ) : null}
           </div>
 
-          <nav className="flex min-w-0 flex-wrap content-center items-center justify-center gap-2 lg:col-span-2 lg:justify-center xl:col-span-1 xl:justify-end xl:gap-1.5 2xl:gap-2">
+          <nav className="flex min-w-0 flex-nowrap content-center items-center justify-start gap-1 overflow-x-auto pb-1 lg:col-span-2 lg:justify-center xl:col-span-1 xl:justify-end xl:overflow-visible xl:pb-0 2xl:gap-2" data-ui-audit-scrollable>
             {headerLinks.map((link) => {
               const Icon = link.icon;
 
@@ -255,7 +255,8 @@ export function ShopHeader({
                           src="/brand-assets/nerd-icon-nerdcoins.webp"
                         />
                       </span>
-                      NerdCoins
+                      <span className="hidden 2xl:inline">NerdCoins</span>
+                      <span className="2xl:hidden">Coins</span>
                       {isAuthenticated && nerdcoinsBalance !== null ? (
                         <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[#111827] px-1.5 text-[10px] font-black leading-none text-white">
                           {nerdcoinsBalance > 9999 ? "9999+" : nerdcoinsBalance}
@@ -269,7 +270,7 @@ export function ShopHeader({
             {isAuthenticated ? (
               <form action={signOutFromCustomer}>
                 <button
-                  className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-primary/25 bg-white px-3 py-1.5 text-center text-sm font-semibold leading-tight text-primary transition-colors duration-150 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-md border border-primary/25 bg-white px-3 py-1.5 text-center text-xs font-semibold leading-tight text-primary transition-colors duration-150 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary 2xl:min-h-10 2xl:text-sm"
                   type="submit"
                 >
                   Sair
@@ -281,7 +282,7 @@ export function ShopHeader({
       </div>
 
       <div className="border-t border-white/20 bg-[#ff6902]">
-        <div className="mx-auto flex min-h-[112px] w-full max-w-[1440px] flex-col items-stretch gap-5 px-4 py-4 sm:px-5 md:flex-row md:items-center">
+        <div className="mx-auto flex min-h-[88px] w-full max-w-[1440px] flex-col items-stretch gap-4 px-4 py-4 sm:px-5 md:flex-row md:items-center md:gap-5">
           <button
             className="inline-flex min-h-11 items-center justify-center gap-3 rounded-lg bg-white px-5 py-2 text-sm font-bold text-black shadow-sm transition-colors duration-150 hover:bg-[#fff7ef] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white md:justify-start"
             onClick={() => setIsCategoryDrawerOpen(true)}
@@ -291,11 +292,11 @@ export function ShopHeader({
             Todas as Categorias
           </button>
 
-          <nav className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-4 md:flex md:flex-wrap md:items-center md:justify-center md:gap-6">
+          <nav className="flex flex-1 gap-3 overflow-x-auto pb-1 md:flex-wrap md:items-center md:justify-center md:gap-6 md:overflow-visible md:pb-0" data-ui-audit-scrollable>
             {categoryLinks.map((link) => (
-              <Link className="group min-w-0 text-center text-sm font-bold text-white focus-visible:outline-none" href={link.href} key={link.label}>
-                <span className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full shadow-lg ring-2 ring-white/20 md:h-20 md:w-20 ${link.color} transition duration-200 group-hover:-translate-y-1 group-hover:scale-105 group-hover:shadow-xl group-focus-visible:ring-2 group-focus-visible:ring-white`}>
-                  <link.icon className={`h-9 w-9 ${link.iconColor} transition duration-200 group-hover:rotate-[-6deg] group-hover:scale-110 md:h-10 md:w-10`} />
+              <Link className="group grid min-w-[86px] justify-items-center text-center text-xs font-bold text-white focus-visible:outline-none sm:min-w-[104px] md:min-w-0 md:text-sm" href={link.href} key={link.label}>
+                <span className={`mx-auto flex size-12 items-center justify-center rounded-full shadow-lg ring-2 ring-white/20 sm:size-14 md:size-20 ${link.color} transition duration-200 group-hover:scale-105 group-hover:shadow-xl group-focus-visible:ring-2 group-focus-visible:ring-white`}>
+                  <link.icon className={`size-7 ${link.iconColor} transition duration-200 group-hover:rotate-[-6deg] group-hover:scale-110 sm:size-8 md:size-10`} />
                 </span>
                 <span className="mt-2 block leading-tight drop-shadow-sm">{link.label}</span>
               </Link>

@@ -25,7 +25,6 @@ const nextConfig = {
       "frame-src 'self' https://www.mercadopago.com.br https://*.mercadopago.com.br",
       "media-src 'self' blob: https:",
       "worker-src 'self' blob:",
-      "upgrade-insecure-requests",
       "report-uri /api/security/csp-report"
     ].join("; ");
     const securityHeaders = [

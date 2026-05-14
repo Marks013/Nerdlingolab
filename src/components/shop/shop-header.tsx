@@ -47,6 +47,9 @@ const drawerCatalogLinks = [
 const headerActionClass =
   "group relative inline-flex min-h-9 min-w-0 shrink-0 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-center text-xs font-semibold leading-tight transition-colors duration-150 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary 2xl:min-h-10 2xl:gap-1.5 2xl:text-sm";
 
+const headerCountBadgeClass =
+  "ml-0.5 inline-flex min-h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[#111827] px-1.5 text-[10px] font-black leading-none text-white shadow-sm";
+
 export function ShopHeader({
   announcementText = "FRETE GRÁTIS em compras acima de R$99,90",
   isAuthenticated = false,
@@ -216,65 +219,65 @@ export function ShopHeader({
                 {headerLinks.map((link) => {
                   const Icon = link.icon;
 
-              if (link.href === "/conta" && !isAuthenticated) {
-                return (
-                  <button
-                    className={headerActionClass}
-                    key={link.label}
-                    onClick={() => setIsLoginModalOpen(true)}
-                    type="button"
-                  >
-                    <Icon className="h-5 w-5 text-primary transition group-hover:scale-110" />
-                    Login
-                  </button>
-                );
-              }
+                  if (link.href === "/conta" && !isAuthenticated) {
+                    return (
+                      <button
+                        className={headerActionClass}
+                        key={link.label}
+                        onClick={() => setIsLoginModalOpen(true)}
+                        type="button"
+                      >
+                        <Icon className="h-5 w-5 text-primary transition group-hover:scale-110" />
+                        Login
+                      </button>
+                    );
+                  }
 
-              return (
-                <Fragment key={link.label}>
-                  <Link
-                    className={headerActionClass}
-                    href={link.href}
-                  >
-                    <Icon className="h-5 w-5 text-primary transition group-hover:scale-110" />
-                    {link.href === "/carrinho" && cartCount > 0 ? (
-                      <span className="absolute right-1 top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#111827] px-1 text-[10px] font-black leading-none text-white shadow-sm">
-                        {cartBadgeLabel}
-                      </span>
-                    ) : null}
-                    {link.href === "/favoritos" && favorites.length > 0 ? (
-                      <span className="absolute right-1 top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#111827] px-1 text-[10px] font-black leading-none text-white shadow-sm">
-                        {favoriteBadgeLabel}
-                      </span>
-                    ) : null}
-                    {link.label}
-                  </Link>
-                  {link.href === "/favoritos" ? (
-                    <Link
-                      className={headerActionClass}
-                      href={isAuthenticated ? "/conta/nerdcoins" : "/programa-de-fidelidade"}
-                    >
-                      <span className="relative h-6 w-6 overflow-hidden rounded-md">
-                        <Image
-                          alt=""
-                          className="object-contain transition group-hover:scale-110"
-                          fill
-                          sizes="24px"
-                          src="/brand-assets/nerd-icon-nerdcoins.webp"
-                        />
-                      </span>
-                      <span className="hidden 2xl:inline">NerdCoins</span>
-                      <span className="2xl:hidden">Coins</span>
-                      {isAuthenticated && nerdcoinsBalance !== null ? (
-                        <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[#111827] px-1.5 text-[10px] font-black leading-none text-white">
-                          {nerdcoinsBalance > 9999 ? "9999+" : nerdcoinsBalance}
-                        </span>
+                  return (
+                    <Fragment key={link.label}>
+                      <Link
+                        className={headerActionClass}
+                        href={link.href}
+                      >
+                        <Icon className="h-5 w-5 text-primary transition group-hover:scale-110" />
+                        {link.label}
+                        {link.href === "/carrinho" && cartCount > 0 ? (
+                          <span className={headerCountBadgeClass}>
+                            {cartBadgeLabel}
+                          </span>
+                        ) : null}
+                        {link.href === "/favoritos" && favorites.length > 0 ? (
+                          <span className={headerCountBadgeClass}>
+                            {favoriteBadgeLabel}
+                          </span>
+                        ) : null}
+                      </Link>
+                      {link.href === "/favoritos" ? (
+                        <Link
+                          className={headerActionClass}
+                          href={isAuthenticated ? "/conta/nerdcoins" : "/programa-de-fidelidade"}
+                        >
+                          <span className="relative h-6 w-6 overflow-hidden rounded-md">
+                            <Image
+                              alt=""
+                              className="object-contain transition group-hover:scale-110"
+                              fill
+                              sizes="24px"
+                              src="/brand-assets/nerd-icon-nerdcoins.webp"
+                            />
+                          </span>
+                          <span className="hidden 2xl:inline">NerdCoins</span>
+                          <span className="2xl:hidden">Coins</span>
+                          {isAuthenticated && nerdcoinsBalance !== null ? (
+                            <span className={headerCountBadgeClass}>
+                              {nerdcoinsBalance > 9999 ? "9999+" : nerdcoinsBalance}
+                            </span>
+                          ) : null}
+                        </Link>
                       ) : null}
-                    </Link>
-                  ) : null}
-                </Fragment>
-              );
-            })}
+                    </Fragment>
+                  );
+                })}
                 {isAuthenticated ? (
                   <form action={signOutFromCustomer}>
                     <button

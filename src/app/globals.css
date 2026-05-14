@@ -196,7 +196,7 @@ form.form-shell,
 }
 
 .nl-scroll-hint-neutral::after {
-  color: hsl(var(--background));
+  color: hsl(var(--primary));
 }
 
 .nl-scroll-cue {

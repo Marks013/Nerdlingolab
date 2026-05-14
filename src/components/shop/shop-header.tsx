@@ -204,10 +204,17 @@ export function ShopHeader({
             ) : null}
           </div>
 
-          <div className="nl-scroll-hint nl-scroll-hint-neutral min-w-0 lg:col-span-2 xl:col-span-1">
-          <nav className="flex min-w-0 flex-nowrap content-center items-center justify-start gap-1 overflow-x-auto px-1 pb-1 pt-1 lg:justify-center xl:justify-end xl:overflow-visible xl:pb-0 2xl:gap-2" data-ui-audit-scrollable>
-            {headerLinks.map((link) => {
-              const Icon = link.icon;
+          <div className="min-w-0 lg:col-span-2 xl:col-span-1">
+            <div className="mb-1 flex items-center justify-end text-primary md:hidden">
+              <span className="nl-scroll-cue">
+                Arraste para ver mais
+                <ChevronsRight className="size-4" />
+              </span>
+            </div>
+            <div className="nl-scroll-hint nl-scroll-hint-neutral">
+              <nav className="flex min-w-0 flex-nowrap content-center items-center justify-start gap-1 overflow-x-auto px-2 py-2 lg:justify-center xl:justify-end xl:overflow-visible xl:px-1 xl:py-1 2xl:gap-2" data-ui-audit-scrollable>
+                {headerLinks.map((link) => {
+                  const Icon = link.icon;
 
               if (link.href === "/conta" && !isAuthenticated) {
                 return (
@@ -231,12 +238,12 @@ export function ShopHeader({
                   >
                     <Icon className="h-5 w-5 text-primary transition group-hover:scale-110" />
                     {link.href === "/carrinho" && cartCount > 0 ? (
-                      <span className="absolute right-0 top-0 inline-flex min-h-5 min-w-5 translate-x-1/3 -translate-y-1/3 items-center justify-center rounded-full border-2 border-white bg-[#111827] px-1 text-[10px] font-black leading-none text-white shadow-sm">
+                      <span className="absolute right-1 top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#111827] px-1 text-[10px] font-black leading-none text-white shadow-sm">
                         {cartBadgeLabel}
                       </span>
                     ) : null}
                     {link.href === "/favoritos" && favorites.length > 0 ? (
-                      <span className="absolute right-0 top-0 inline-flex min-h-5 min-w-5 translate-x-1/3 -translate-y-1/3 items-center justify-center rounded-full border-2 border-white bg-[#111827] px-1 text-[10px] font-black leading-none text-white shadow-sm">
+                      <span className="absolute right-1 top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#111827] px-1 text-[10px] font-black leading-none text-white shadow-sm">
                         {favoriteBadgeLabel}
                       </span>
                     ) : null}
@@ -268,17 +275,18 @@ export function ShopHeader({
                 </Fragment>
               );
             })}
-            {isAuthenticated ? (
-              <form action={signOutFromCustomer}>
-                <button
-                  className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-md border border-primary/25 bg-white px-3 py-1.5 text-center text-xs font-semibold leading-tight text-primary transition-colors duration-150 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary 2xl:min-h-10 2xl:text-sm"
-                  type="submit"
-                >
-                  Sair
-                </button>
-              </form>
-            ) : null}
-          </nav>
+                {isAuthenticated ? (
+                  <form action={signOutFromCustomer}>
+                    <button
+                      className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-md border border-primary/25 bg-white px-3 py-1.5 text-center text-xs font-semibold leading-tight text-primary transition-colors duration-150 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary 2xl:min-h-10 2xl:text-sm"
+                      type="submit"
+                    >
+                      Sair
+                    </button>
+                  </form>
+                ) : null}
+              </nav>
+            </div>
           </div>
         </div>
       </div>

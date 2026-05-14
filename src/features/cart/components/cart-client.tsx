@@ -316,23 +316,27 @@ export function CartClient({
               {cartMessage}
             </p>
           ) : null}
-          <Button
-            aria-disabled={!validatedCart?.items.length || !validatedCart.selectedShippingOption}
-            className="w-full"
-            onClick={handleCheckoutClick}
-            type="button"
-          >
-            Continuar para checkout
-          </Button>
-          <Button
-            className="w-full border-red-200 bg-red-50 font-black text-red-700 shadow-sm hover:bg-red-600 hover:text-white"
-            onClick={clearCart}
-            type="button"
-            variant="outline"
-          >
-            <Trash2 className="mr-2 size-5" />
-            Limpar carrinho
-          </Button>
+          <div className="grid gap-4 pt-2">
+            <Button
+              aria-disabled={!validatedCart?.items.length || !validatedCart.selectedShippingOption}
+              className="min-h-12 w-full text-base"
+              onClick={handleCheckoutClick}
+              type="button"
+            >
+              Continuar para checkout
+            </Button>
+            <div className="border-t border-red-100 pt-4">
+              <Button
+                className="min-h-11 w-full border-red-200 bg-red-50 font-black text-red-700 shadow-sm hover:bg-red-600 hover:text-white"
+                onClick={clearCart}
+                type="button"
+                variant="outline"
+              >
+                <Trash2 className="mr-2 size-5" />
+                Limpar carrinho
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -27,8 +27,10 @@ const recordIdSchema = z.string().trim().regex(/^[a-z0-9_-]{8,64}$/i);
 const manualShipmentSchema = z.object({
   carrierName: z.string().trim().min(1).max(80),
   carrierUrl: z.string().trim().max(300).optional(),
+  estimatedDeliveryAt: z.coerce.date().optional(),
   trackingNumber: z.string().trim().min(1).max(120)
 });
+const optionalEstimatedDeliveryAtSchema = z.coerce.date().optional();
 const externalShipmentIdSchema = z.string().trim().min(1).max(80).regex(/^[a-z0-9._:-]+$/i);
 const cancellationReasonSchema = z.string().trim().min(12).max(800);
 
@@ -290,6 +292,7 @@ export async function saveManualShipment(orderId: string, formData: FormData): P
     const parsedShipment = manualShipmentSchema.safeParse({
       carrierName: formData.get("carrierName"),
       carrierUrl: formData.get("carrierUrl") || undefined,
+      estimatedDeliveryAt: formData.get("estimatedDeliveryAt") || undefined,
       trackingNumber: formData.get("trackingNumber")
     });
 
@@ -317,6 +320,7 @@ export async function saveManualShipment(orderId: string, formData: FormData): P
           provider: ShippingProvider.MANUAL,
           carrierName: parsedShipment.data.carrierName,
           carrierUrl,
+          estimatedDeliveryAt: parsedShipment.data.estimatedDeliveryAt ?? null,
           trackingNumber: parsedShipment.data.trackingNumber,
           status: ShipmentStatus.SHIPPED,
           shippedAt: new Date()
@@ -351,9 +355,16 @@ export async function syncMercadoEnviosOrderShipment(orderId: string, formData: 
 
   try {
     const parsedExternalShipmentId = externalShipmentIdSchema.safeParse(formData.get("externalShipmentId"));
+    const parsedEstimatedDeliveryAt = optionalEstimatedDeliveryAtSchema.safeParse(
+      formData.get("estimatedDeliveryAt") || undefined
+    );
 
     if (!parsedExternalShipmentId.success) {
       throw new Error("Informe o código de envio.");
+    }
+
+    if (!parsedEstimatedDeliveryAt.success) {
+      throw new Error("Informe um prazo estimado válido.");
     }
 
     const previousOrder = await prisma.order.findUnique({
@@ -365,6 +376,13 @@ export async function syncMercadoEnviosOrderShipment(orderId: string, formData: 
       externalShipmentId: parsedExternalShipmentId.data,
       orderId: parsedOrderId
     });
+    await applyShipmentEstimatedDeliveryFallback({
+      estimatedDeliveryAt: parsedEstimatedDeliveryAt.data,
+      externalShipmentId: parsedExternalShipmentId.data,
+      orderId: parsedOrderId,
+      provider: ShippingProvider.MERCADO_ENVIOS
+    });
+
     if (previousOrder?.status !== OrderStatus.SHIPPED) {
       await sendOrderStatusUpdatedEmail({
         orderId: parsedOrderId,
@@ -385,9 +403,16 @@ export async function syncMelhorEnvioOrderShipment(orderId: string, formData: Fo
 
   try {
     const parsedExternalShipmentId = externalShipmentIdSchema.safeParse(formData.get("externalShipmentId"));
+    const parsedEstimatedDeliveryAt = optionalEstimatedDeliveryAtSchema.safeParse(
+      formData.get("estimatedDeliveryAt") || undefined
+    );
 
     if (!parsedExternalShipmentId.success) {
       throw new Error("Informe o código de envio.");
+    }
+
+    if (!parsedEstimatedDeliveryAt.success) {
+      throw new Error("Informe um prazo estimado válido.");
     }
 
     const previousOrder = await prisma.order.findUnique({
@@ -399,6 +424,13 @@ export async function syncMelhorEnvioOrderShipment(orderId: string, formData: Fo
       externalShipmentId: parsedExternalShipmentId.data,
       orderId: parsedOrderId
     });
+    await applyShipmentEstimatedDeliveryFallback({
+      estimatedDeliveryAt: parsedEstimatedDeliveryAt.data,
+      externalShipmentId: parsedExternalShipmentId.data,
+      orderId: parsedOrderId,
+      provider: ShippingProvider.MELHOR_ENVIO
+    });
+
     if (previousOrder?.status !== OrderStatus.SHIPPED) {
       await sendOrderStatusUpdatedEmail({
         orderId: parsedOrderId,
@@ -446,6 +478,32 @@ async function updateOrderStatus(
   }
 
   revalidateOrderPaths(parsedOrderId);
+}
+
+async function applyShipmentEstimatedDeliveryFallback({
+  estimatedDeliveryAt,
+  externalShipmentId,
+  orderId,
+  provider
+}: {
+  estimatedDeliveryAt?: Date;
+  externalShipmentId: string;
+  orderId: string;
+  provider: ShippingProvider;
+}): Promise<void> {
+  if (!estimatedDeliveryAt) {
+    return;
+  }
+
+  await prisma.shipment.updateMany({
+    data: { estimatedDeliveryAt },
+    where: {
+      estimatedDeliveryAt: null,
+      externalShipmentId,
+      orderId,
+      provider
+    }
+  });
 }
 
 function revalidateOrderPaths(orderId: string): void {

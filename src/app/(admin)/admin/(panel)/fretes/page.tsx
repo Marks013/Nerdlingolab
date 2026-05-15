@@ -70,10 +70,10 @@ export default async function AdminShippingPage(): Promise<React.ReactElement> {
 
                 <div className="border-t p-4">
                   <div className="mb-4 grid gap-2 rounded-lg border bg-muted/20 p-3 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
+                    <Info label="Prazo estimado" value={`${rate.estimatedBusinessDays} dia(s) úteis`} />
                     <Info label="Subtotal" value={formatRange(rate.minSubtotalCents, rate.maxSubtotalCents, formatCurrency)} />
                     <Info label="Quantidade" value={formatRange(rate.minItems, rate.maxItems, String)} />
                     <Info label="CEPs" value={rate.postalCodePrefixes.length > 0 ? rate.postalCodePrefixes.join(", ") : "Todo o Brasil"} />
-                    <Info label="Status" value={rate.isActive ? "Ativo no checkout" : "Oculto no checkout"} />
                   </div>
                   <ManualShippingRateForm
                     action={updateManualShippingRate.bind(null, rate.id)}
@@ -157,7 +157,7 @@ function ManualShippingRateForm({
       <div className="grid gap-4 lg:grid-cols-3">
         <TextField defaultValue={values.name} label="Nome" name="name" placeholder="Entrega padrao" required />
         <TextField defaultValue={values.priceCents} label="Valor" name="priceCents" placeholder="14,90" required />
-        <TextField defaultValue={values.estimatedBusinessDays} label="Prazo em dias uteis" name="estimatedBusinessDays" type="number" required />
+        <TextField defaultValue={values.estimatedBusinessDays} label="Prazo estimado em dias úteis" name="estimatedBusinessDays" type="number" required />
       </div>
       <TextField defaultValue={values.description} label="Descrição exibida no checkout" name="description" placeholder="Opção com melhor custo para sua região." />
       <div className="grid gap-4 lg:grid-cols-4">

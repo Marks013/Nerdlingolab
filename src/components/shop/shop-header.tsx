@@ -45,7 +45,7 @@ const drawerCatalogLinks = [
 ];
 
 const headerActionClass =
-  "group relative inline-flex min-h-9 min-w-0 shrink-0 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-center text-xs font-semibold leading-tight transition-colors duration-150 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary 2xl:min-h-10 2xl:gap-1.5 2xl:text-sm";
+  "group relative inline-flex min-h-9 min-w-0 shrink-0 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-center text-xs font-semibold leading-tight transition-colors duration-150 hover:bg-white hover:text-primary hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary md:min-h-8 md:px-1.5 md:py-1 md:text-[11px] xl:min-h-9 xl:px-2 xl:py-1.5 xl:text-xs 2xl:min-h-10 2xl:gap-1.5 2xl:text-sm";
 
 const headerCountBadgeClass =
   "ml-0.5 inline-flex min-h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[#111827] px-1.5 text-[10px] font-black leading-none text-white shadow-sm";
@@ -106,28 +106,28 @@ export function ShopHeader({
       </div>
 
       <div className="bg-[#f6f7f8] text-[#677279]">
-        <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-4 px-4 py-5 sm:px-5 lg:grid-cols-[minmax(230px,0.8fr)_minmax(280px,1.2fr)] lg:items-center lg:gap-x-5 xl:grid-cols-[minmax(240px,0.8fr)_minmax(260px,390px)_minmax(0,1fr)] xl:gap-x-3 2xl:grid-cols-[minmax(300px,auto)_minmax(320px,460px)_minmax(0,1fr)] 2xl:gap-x-7">
-          <Link className="group flex min-w-0 items-center justify-center gap-3 text-[#111827] lg:justify-start" href="/">
+        <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-4 px-4 py-5 sm:px-5 md:min-h-[112px] md:grid-cols-[minmax(190px,0.68fr)_minmax(220px,330px)_minmax(0,1.55fr)] md:items-center md:gap-x-2 md:py-4 lg:grid-cols-[minmax(205px,0.72fr)_minmax(235px,360px)_minmax(0,1.45fr)] lg:gap-x-3 xl:min-h-[120px] xl:grid-cols-[minmax(250px,0.8fr)_minmax(300px,440px)_minmax(0,1.2fr)] xl:gap-x-4 2xl:grid-cols-[minmax(300px,auto)_minmax(320px,460px)_minmax(0,1fr)] 2xl:gap-x-7">
+          <Link className="group flex min-w-0 items-center justify-center gap-3 text-[#111827] md:justify-start" href="/">
             <Image
               alt="NerdLingoLab"
-              className="size-12 shrink-0 rounded-2xl object-cover transition duration-300 group-hover:scale-[1.025] group-hover:drop-shadow-[0_6px_18px_rgba(255,105,2,0.24)] lg:size-14 2xl:size-16"
+              className="size-12 shrink-0 rounded-2xl object-cover transition duration-300 group-hover:scale-[1.025] group-hover:drop-shadow-[0_6px_18px_rgba(255,105,2,0.24)] md:size-11 lg:size-12 xl:size-14 2xl:size-16"
               height={96}
               priority
               src="/brand-assets/FAVICON_NERDLINGOLAB.webp"
               width={96}
             />
             <span className="flex min-w-0 flex-col leading-none">
-              <span className="whitespace-nowrap text-[clamp(1.45rem,2.1vw,2.125rem)] font-black tracking-normal leading-none">
+              <span className="whitespace-nowrap text-[clamp(1.45rem,2.1vw,2.125rem)] font-black leading-none tracking-normal md:text-[clamp(1.15rem,1.9vw,1.55rem)] lg:text-[clamp(1.25rem,1.7vw,1.75rem)] xl:text-[clamp(1.45rem,2vw,2.125rem)]">
                 <span className="text-[#ff6902]">Nerd</span>
                 <span className="text-[#7c1fe6]">LingoLab</span>
               </span>
-              <span className="mt-1 whitespace-nowrap text-[11px] font-bold uppercase tracking-[0.08em] text-[#ff6902]">
+              <span className="mt-1 whitespace-nowrap text-[11px] font-bold uppercase tracking-[0.08em] text-[#ff6902] md:text-[9px] lg:text-[10px] xl:text-[11px]">
                 Loja geek oficial
               </span>
             </span>
           </Link>
 
-          <div className="relative mx-auto w-full max-w-[550px] lg:max-w-none">
+          <div className="relative mx-auto w-full max-w-[550px] md:max-w-[330px] lg:max-w-[360px] xl:max-w-[440px] 2xl:max-w-[460px]">
             <form
               action="/produtos"
               className="search-arcade flex h-12 w-full items-center rounded-full border-2 border-primary bg-white px-4 shadow-sm"
@@ -207,7 +207,7 @@ export function ShopHeader({
             ) : null}
           </div>
 
-          <div className="min-w-0 lg:col-span-2 xl:col-span-1">
+          <div className="min-w-0">
             <div className="mb-1 flex items-center justify-end text-primary md:hidden">
               <span className="nl-scroll-cue">
                 Arraste para ver mais
@@ -215,7 +215,7 @@ export function ShopHeader({
               </span>
             </div>
             <div className="nl-scroll-hint nl-scroll-hint-neutral">
-              <nav className="flex min-w-0 flex-nowrap content-center items-center justify-start gap-1 overflow-x-auto px-2 py-2 lg:justify-center xl:justify-end xl:overflow-visible xl:px-1 xl:py-1 2xl:gap-2" data-ui-audit-scrollable>
+              <nav className="flex min-w-0 flex-nowrap content-center items-center justify-start gap-1 overflow-x-auto px-2 py-2 md:justify-end md:gap-0.5 md:px-0 md:py-1 xl:gap-1 xl:overflow-visible 2xl:gap-2" data-ui-audit-scrollable>
                 {headerLinks.map((link) => {
                   const Icon = link.icon;
 
@@ -281,7 +281,7 @@ export function ShopHeader({
                 {isAuthenticated ? (
                   <form action={signOutFromCustomer}>
                     <button
-                      className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-md border border-primary/25 bg-white px-3 py-1.5 text-center text-xs font-semibold leading-tight text-primary transition-colors duration-150 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary 2xl:min-h-10 2xl:text-sm"
+                      className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-md border border-primary/25 bg-white px-3 py-1.5 text-center text-xs font-semibold leading-tight text-primary transition-colors duration-150 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary md:min-h-8 md:px-2 md:py-1 md:text-[11px] xl:min-h-9 xl:px-3 xl:py-1.5 xl:text-xs 2xl:min-h-10 2xl:text-sm"
                       type="submit"
                     >
                       Sair

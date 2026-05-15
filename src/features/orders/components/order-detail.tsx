@@ -163,6 +163,7 @@ function ShippingCard({ order }: OrderDetailProps): React.ReactElement {
         </CardTitle>
         <CardDescription>
           Frete escolhido: {order.shippingServiceName ?? "Não definido"} · {formatCurrency(order.shippingCents)}
+          {order.shippingEstimatedBusinessDays ? ` · prazo do checkout: ${order.shippingEstimatedBusinessDays} dia(s) úteis` : ""}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 text-sm">
@@ -176,6 +177,10 @@ function ShippingCard({ order }: OrderDetailProps): React.ReactElement {
           <Input name="carrierName" placeholder="Transportadora" required />
           <Input name="trackingNumber" placeholder="Código de rastreio" required />
           <Input name="carrierUrl" placeholder="Link de acompanhamento" />
+          <label className="grid gap-1 text-xs font-bold uppercase text-muted-foreground">
+            Prazo estimado da entrega
+            <Input name="estimatedDeliveryAt" type="datetime-local" />
+          </label>
           <button className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-black text-white transition hover:bg-emerald-700" type="submit">
             Salvar rastreamento
           </button>
@@ -187,6 +192,10 @@ function ShippingCard({ order }: OrderDetailProps): React.ReactElement {
             Sincronizar Mercado Envios
           </p>
           <Input name="externalShipmentId" placeholder="Código de envio Mercado Envios" required />
+          <label className="grid gap-1 text-xs font-bold uppercase text-muted-foreground">
+            Prazo estimado, se o Mercado Envios não retornar
+            <Input name="estimatedDeliveryAt" type="datetime-local" />
+          </label>
           <button className="rounded-md bg-primary px-3 py-2 text-sm font-black text-white transition hover:bg-primary/90" type="submit">
             Sincronizar entrega
           </button>
@@ -198,6 +207,10 @@ function ShippingCard({ order }: OrderDetailProps): React.ReactElement {
             Sincronizar Melhor Envio
           </p>
           <Input name="externalShipmentId" placeholder="Código da etiqueta Melhor Envio" required />
+          <label className="grid gap-1 text-xs font-bold uppercase text-muted-foreground">
+            Prazo estimado, se o Melhor Envio não retornar
+            <Input name="estimatedDeliveryAt" type="datetime-local" />
+          </label>
           <button className="rounded-md bg-primary px-3 py-2 text-sm font-black text-white transition hover:bg-primary/90" type="submit">
             Sincronizar rastreio
           </button>

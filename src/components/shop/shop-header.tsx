@@ -106,7 +106,7 @@ export function ShopHeader({
       </div>
 
       <div className="bg-[#f6f7f8] text-[#677279]">
-        <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-4 px-4 py-5 sm:px-5 md:min-h-[112px] md:grid-cols-[minmax(190px,0.68fr)_minmax(220px,330px)_minmax(0,1.55fr)] md:items-center md:gap-x-2 md:py-4 lg:grid-cols-[minmax(205px,0.72fr)_minmax(235px,360px)_minmax(0,1.45fr)] lg:gap-x-3 xl:min-h-[120px] xl:grid-cols-[minmax(250px,0.8fr)_minmax(300px,440px)_minmax(0,1.2fr)] xl:gap-x-4 2xl:grid-cols-[minmax(300px,auto)_minmax(320px,460px)_minmax(0,1fr)] 2xl:gap-x-7">
+        <div className="mx-auto grid min-h-[150px] w-full max-w-[1440px] gap-4 px-4 py-5 sm:px-5 md:min-h-[112px] md:grid-cols-[minmax(168px,220px)_minmax(220px,1fr)_max-content] md:items-center md:gap-x-3 md:py-4 lg:grid-cols-[minmax(205px,250px)_minmax(260px,1fr)_max-content] lg:gap-x-4 xl:min-h-[120px] xl:grid-cols-[minmax(250px,330px)_minmax(320px,460px)_max-content] xl:gap-x-5 2xl:grid-cols-[minmax(300px,auto)_minmax(320px,460px)_max-content] 2xl:gap-x-7">
           <Link className="group flex min-w-0 items-center justify-center gap-3 text-[#111827] md:justify-start" href="/">
             <Image
               alt="NerdLingoLab"
@@ -127,7 +127,7 @@ export function ShopHeader({
             </span>
           </Link>
 
-          <div className="relative mx-auto w-full max-w-[550px] md:max-w-[330px] lg:max-w-[360px] xl:max-w-[440px] 2xl:max-w-[460px]">
+          <div className="relative mx-auto w-full max-w-[550px] md:max-w-none xl:max-w-[460px]">
             <form
               action="/produtos"
               className="search-arcade flex h-12 w-full items-center rounded-full border-2 border-primary bg-white px-4 shadow-sm"
@@ -207,7 +207,7 @@ export function ShopHeader({
             ) : null}
           </div>
 
-          <div className="min-w-0">
+          <div className="min-w-0 justify-self-end overflow-hidden">
             <div className="mb-1 flex items-center justify-end text-primary md:hidden">
               <span className="nl-scroll-cue">
                 Arraste para ver mais
@@ -215,7 +215,7 @@ export function ShopHeader({
               </span>
             </div>
             <div className="nl-scroll-hint nl-scroll-hint-neutral">
-              <nav className="flex min-w-0 flex-nowrap content-center items-center justify-start gap-1 overflow-x-auto px-2 py-2 md:justify-end md:gap-0.5 md:px-0 md:py-1 xl:gap-1 xl:overflow-visible 2xl:gap-2" data-ui-audit-scrollable>
+              <nav className="flex max-w-full min-w-0 flex-nowrap content-center items-center justify-start gap-1 overflow-x-auto px-2 py-2 md:justify-end md:gap-0.5 md:px-0 md:py-1 xl:gap-1 xl:overflow-visible 2xl:gap-2" data-ui-audit-scrollable>
                 {headerLinks.map((link) => {
                   const Icon = link.icon;
 
@@ -227,8 +227,8 @@ export function ShopHeader({
                         onClick={() => setIsLoginModalOpen(true)}
                         type="button"
                       >
-                        <Icon className="h-5 w-5 text-primary transition group-hover:scale-110" />
-                        Login
+                        <Icon className="h-5 w-5 text-primary transition group-hover:scale-110 md:h-4 md:w-4 xl:h-5 xl:w-5" />
+                        <span className="md:sr-only xl:not-sr-only">Login</span>
                       </button>
                     );
                   }
@@ -239,8 +239,8 @@ export function ShopHeader({
                         className={headerActionClass}
                         href={link.href}
                       >
-                        <Icon className="h-5 w-5 text-primary transition group-hover:scale-110" />
-                        {link.label}
+                        <Icon className="h-5 w-5 text-primary transition group-hover:scale-110 md:h-4 md:w-4 xl:h-5 xl:w-5" />
+                        <span className="md:sr-only xl:not-sr-only">{link.label}</span>
                         {link.href === "/carrinho" && cartCount > 0 ? (
                           <span className={headerCountBadgeClass}>
                             {cartBadgeLabel}
@@ -267,7 +267,7 @@ export function ShopHeader({
                             />
                           </span>
                           <span className="hidden 2xl:inline">NerdCoins</span>
-                          <span className="2xl:hidden">Coins</span>
+                          <span className="hidden xl:inline 2xl:hidden">Coins</span>
                           {isAuthenticated && nerdcoinsBalance !== null ? (
                             <span className={headerCountBadgeClass}>
                               {nerdcoinsBalance > 9999 ? "9999+" : nerdcoinsBalance}

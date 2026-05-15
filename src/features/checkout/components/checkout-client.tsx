@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, CreditCard, MapPin, PackageCheck, ShieldCheck, ShoppingBag } from "lucide-react";
+import { CheckCircle2, CreditCard, ExternalLink, MapPin, PackageCheck, ShieldCheck, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,15 @@ import { formatCpf } from "@/lib/identity/brazil";
 import { parseFriendlyResponse } from "@/lib/http/friendly-response";
 
 interface CheckoutResponse {
+  orderId: string;
   orderNumber: string;
   checkoutUrl: string | null;
   message?: string;
+}
+
+interface CreatedCheckoutSummary {
+  checkoutUrl: string | null;
+  orderId: string;
 }
 
 export interface CheckoutSavedAddress {
@@ -79,6 +85,7 @@ export function CheckoutClient({
   const [addressFields, setAddressFields] = useState<AddressFields>(fieldsFromAddress(defaultAddress));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [createdCheckout, setCreatedCheckout] = useState<CreatedCheckoutSummary | null>(null);
   const isManualAddress = addressOptions.length === 0 || !selectedAddressId;
   const customerName = customerProfile?.name ?? "";
   const customerEmail = customerProfile?.email ?? "";
@@ -107,6 +114,15 @@ export function CheckoutClient({
   async function handleSubmit(formData: FormData): Promise<void> {
     setIsSubmitting(true);
     setMessage(null);
+    setCreatedCheckout(null);
+
+    const mercadoPagoWindow = typeof window !== "undefined"
+      ? window.open("about:blank", "nerdlingolab-mercado-pago")
+      : null;
+
+    if (mercadoPagoWindow) {
+      mercadoPagoWindow.opener = null;
+    }
 
     const response = await fetch("/api/checkout", {
       method: "POST",
@@ -144,6 +160,7 @@ export function CheckoutClient({
     setIsSubmitting(false);
 
     if (!parsedResponse.ok || !parsedResponse.payload) {
+      mercadoPagoWindow?.close();
       setMessage(parsedResponse.message);
       return;
     }
@@ -151,12 +168,25 @@ export function CheckoutClient({
     const payload = parsedResponse.payload;
 
     clearCart();
+    setCreatedCheckout({
+      checkoutUrl: payload.checkoutUrl,
+      orderId: payload.orderId
+    });
 
     if (payload.checkoutUrl) {
+      if (mercadoPagoWindow && !mercadoPagoWindow.closed) {
+        mercadoPagoWindow.location.href = payload.checkoutUrl;
+        setMessage(
+          `Pedido ${payload.orderNumber} criado. Abrimos o Mercado Pago em uma nova aba; se a tela Pix não voltar sozinha, acompanhe a confirmação por aqui.`
+        );
+        return;
+      }
+
       window.location.assign(payload.checkoutUrl);
       return;
     }
 
+    mercadoPagoWindow?.close();
     setMessage(`Pedido ${payload.orderNumber} criado. Aguarde a confirmação do pagamento.`);
   }
 
@@ -171,8 +201,21 @@ export function CheckoutClient({
             <CardTitle className="mt-3 text-balance text-2xl font-black text-emerald-900">Pedido criado</CardTitle>
             <CardDescription className="text-pretty text-emerald-800">{message}</CardDescription>
           </CardHeader>
-          <CardContent className="flex justify-center p-6">
-            <Button asChild className="bg-emerald-600 text-white hover:bg-emerald-700">
+          <CardContent className="flex flex-col justify-center gap-3 p-6 sm:flex-row">
+            {createdCheckout?.checkoutUrl ? (
+              <Button asChild className="bg-primary text-white hover:bg-primary/90">
+                <a href={createdCheckout.checkoutUrl} rel="noreferrer" target="_blank">
+                  <ExternalLink className="mr-2 size-4" />
+                  Abrir Mercado Pago
+                </a>
+              </Button>
+            ) : null}
+            {createdCheckout?.orderId ? (
+              <Button asChild className="bg-emerald-600 text-white hover:bg-emerald-700">
+                <Link href={`/conta/pedidos/${createdCheckout.orderId}`}>Ver pedido</Link>
+              </Button>
+            ) : null}
+            <Button asChild className="bg-orange-600 text-white hover:bg-orange-700">
               <Link href="/produtos">Continuar comprando</Link>
             </Button>
           </CardContent>

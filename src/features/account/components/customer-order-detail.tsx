@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowLeft, Coins, CreditCard, MessageSquareText, PackageCheck, ReceiptText, Route, Tag, Truck } from "lucide-react";
+import { ArrowLeft, Ban, Coins, CreditCard, MessageSquareText, PackageCheck, ReceiptText, Route, Tag, Truck } from "lucide-react";
 
-import { ProductReviewStatus, type FulfillmentStatus, type OrderStatus, type PaymentStatus, type ProductReviewSettings } from "@/generated/prisma/client";
+import { FulfillmentStatus, OrderStatus, ProductReviewStatus, type PaymentStatus, type ProductReviewSettings } from "@/generated/prisma/client";
+import { cancelCustomerOrder } from "@/actions/orders";
 import { SafeImage as Image } from "@/components/media/safe-image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +31,7 @@ export function CustomerOrderDetail({
   reviewSettings
 }: CustomerOrderDetailProps): React.ReactElement {
   const canReviewOrder = isOrderEligibleForReview(order, reviewSettings.requireDeliveredOrder);
+  const canCancelOrder = isOrderCancelableByCustomer(order);
 
   return (
     <div className="space-y-6">
@@ -59,6 +61,45 @@ export function CustomerOrderDetail({
       </Card>
 
       <PurchaseSummaryCard order={order} />
+
+      {canCancelOrder ? (
+        <Card className="overflow-hidden border-red-200 shadow-sm">
+          <CardHeader className="bg-red-50">
+            <CardTitle className="flex items-center gap-2 text-balance text-red-900">
+              <Ban className="size-5 text-red-600" />
+              Cancelar pedido
+            </CardTitle>
+            <CardDescription className="text-red-800">
+              Disponível enquanto o pedido ainda não entrou em preparação ou envio. Se o pagamento já foi aprovado,
+              o sistema solicita o estorno pelo Mercado Pago automaticamente.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form action={cancelCustomerOrder.bind(null, order.id)} className="grid gap-3">
+              <label className="grid gap-2 text-sm font-bold text-[#2d2118]">
+                Justificativa do cancelamento
+                <textarea
+                  className="min-h-28 rounded-lg border border-red-200 bg-white px-4 py-3 text-sm font-medium text-[#2d2118] outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                  maxLength={800}
+                  minLength={12}
+                  name="cancellationReason"
+                  placeholder="Conte rapidamente por que deseja cancelar este pedido."
+                  required
+                />
+              </label>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-red-800">
+                  Depois de confirmar, o pedido sai do fluxo de preparo e você recebe um e-mail com o registro.
+                </p>
+                <Button className="bg-red-600 text-white hover:bg-red-700" type="submit">
+                  <Ban className="mr-2 size-4" />
+                  Cancelar pedido
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {order.customerNote ? (
         <Card className="overflow-hidden border-orange-100 shadow-sm">
@@ -316,4 +357,12 @@ function isOrderEligibleForReview(
   }
 
   return order.paymentStatus === "APPROVED" || order.status !== "PENDING_PAYMENT";
+}
+
+function isOrderCancelableByCustomer(order: { fulfillmentStatus: FulfillmentStatus; status: OrderStatus }): boolean {
+  if (order.fulfillmentStatus === FulfillmentStatus.FULFILLED) {
+    return false;
+  }
+
+  return order.status === OrderStatus.PENDING_PAYMENT || order.status === OrderStatus.PAID;
 }

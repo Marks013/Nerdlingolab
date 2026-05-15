@@ -32,6 +32,14 @@ const manualShipmentSchema = z.object({
 const externalShipmentIdSchema = z.string().trim().min(1).max(80).regex(/^[a-z0-9._:-]+$/i);
 const cancellationReasonSchema = z.string().trim().min(12).max(800);
 
+interface CancelOrderOptions {
+  blockProcessing: boolean;
+  cancellationReason: string;
+  canceledByUserId: string | null;
+  customerUserId?: string;
+  orderId: string;
+}
+
 export async function markOrderAsProcessing(orderId: string): Promise<void> {
   await updateOrderStatus(orderId, {
     status: OrderStatus.PROCESSING
@@ -63,86 +71,11 @@ export async function cancelUnpaidOrder(orderId: string, formData: FormData): Pr
   }
 
   try {
-    const orderBeforeCancel = await prisma.order.findUnique({
-      where: { id: parsedOrderId },
-      include: { items: true }
-    });
-
-    if (!orderBeforeCancel) {
-      throw new Error("Pedido não encontrado.");
-    }
-
-    if (orderBeforeCancel.status === OrderStatus.CANCELED || orderBeforeCancel.status === OrderStatus.REFUNDED) {
-      throw new Error("Pedido já cancelado.");
-    }
-
-    if (
-      orderBeforeCancel.fulfillmentStatus === FulfillmentStatus.FULFILLED ||
-      orderBeforeCancel.status === OrderStatus.SHIPPED ||
-      orderBeforeCancel.status === OrderStatus.DELIVERED
-    ) {
-      throw new Error("Pedidos enviados ou entregues devem seguir fluxo de devolução antes do cancelamento.");
-    }
-
-    const isPaidOrder = orderBeforeCancel.paymentStatus === PaymentStatus.APPROVED || Boolean(orderBeforeCancel.paidAt);
-    let refundResult: Awaited<ReturnType<typeof refundMercadoPagoPayment>> | null = null;
-    const refundIdempotencyKey = `order-refund-${orderBeforeCancel.id}`;
-
-    if (isPaidOrder) {
-      if (!orderBeforeCancel.mercadoPagoPaymentId) {
-        throw new Error("Pedido pago sem identificador de pagamento Mercado Pago.");
-      }
-
-      refundResult = await refundMercadoPagoPayment({
-        idempotencyKey: refundIdempotencyKey,
-        paymentId: orderBeforeCancel.mercadoPagoPaymentId
-      });
-    }
-
-    await prisma.$transaction(async (tx) => {
-      const order = await tx.order.findFirstOrThrow({
-        where: {
-          id: parsedOrderId
-        },
-        include: {
-          items: true
-        }
-      });
-
-      if (isPaidOrder) {
-        await restoreInventoryForCanceledOrder(tx, order);
-        await reverseOrderLoyalty(tx, order);
-      } else {
-        await releaseInventoryReservations(tx, order.items);
-      }
-
-      await tx.order.update({
-        where: { id: order.id },
-        data: {
-          canceledAt: new Date(),
-          canceledByUserId: session?.user?.id ?? null,
-          cancellationReason: parsedReason.data,
-          ...(isPaidOrder
-            ? {
-                paymentStatus: PaymentStatus.REFUNDED,
-                refundedAt: new Date(),
-                refundAmountCents: refundResult?.amountCents ?? order.totalCents,
-                refundIdempotencyKey,
-                refundProviderId: refundResult?.providerId ?? null,
-                refundStatus: refundResult?.status ?? null,
-                status: OrderStatus.REFUNDED
-              }
-            : {
-                paymentStatus: PaymentStatus.CANCELED,
-                refundedAt: null,
-                refundAmountCents: null,
-                refundIdempotencyKey: null,
-                refundProviderId: null,
-                refundStatus: null,
-                status: OrderStatus.CANCELED
-              })
-        }
-      });
+    await cancelOrderWithPolicy({
+      blockProcessing: false,
+      cancellationReason: parsedReason.data,
+      canceledByUserId: session?.user?.id ?? null,
+      orderId: parsedOrderId
     });
 
     await sendOrderCanceledEmail({
@@ -155,6 +88,141 @@ export async function cancelUnpaidOrder(orderId: string, formData: FormData): Pr
   }
 
   revalidateOrderPaths(parsedOrderId);
+}
+
+export async function cancelCustomerOrder(orderId: string, formData: FormData): Promise<void> {
+  const session = await auth();
+  const parsedOrderId = parseRecordId(orderId);
+  const parsedReason = cancellationReasonSchema.safeParse(formData.get("cancellationReason"));
+
+  if (!session?.user?.id) {
+    throw new Error("Entre na conta para cancelar o pedido.");
+  }
+
+  if (!parsedReason.success) {
+    throw new Error("Informe uma justificativa de cancelamento com pelo menos 12 caracteres.");
+  }
+
+  const cancellationReason = `Cancelamento solicitado pelo cliente: ${parsedReason.data}`;
+
+  try {
+    await cancelOrderWithPolicy({
+      blockProcessing: true,
+      cancellationReason,
+      canceledByUserId: session.user.id,
+      customerUserId: session.user.id,
+      orderId: parsedOrderId
+    });
+
+    await sendOrderCanceledEmail({
+      cancellationReason,
+      orderId: parsedOrderId
+    });
+  } catch (error) {
+    Sentry.captureException(error);
+    throw new Error("Não foi possível cancelar o pedido.");
+  }
+
+  revalidateOrderPaths(parsedOrderId);
+}
+
+async function cancelOrderWithPolicy({
+  blockProcessing,
+  cancellationReason,
+  canceledByUserId,
+  customerUserId,
+  orderId
+}: CancelOrderOptions): Promise<void> {
+  const orderBeforeCancel = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { items: true }
+  });
+
+  if (!orderBeforeCancel) {
+    throw new Error("Pedido não encontrado.");
+  }
+
+  if (customerUserId && orderBeforeCancel.userId !== customerUserId) {
+    throw new Error("Pedido não pertence ao usuário autenticado.");
+  }
+
+  if (orderBeforeCancel.status === OrderStatus.CANCELED || orderBeforeCancel.status === OrderStatus.REFUNDED) {
+    throw new Error("Pedido já cancelado.");
+  }
+
+  if (
+    orderBeforeCancel.fulfillmentStatus === FulfillmentStatus.FULFILLED ||
+    orderBeforeCancel.status === OrderStatus.SHIPPED ||
+    orderBeforeCancel.status === OrderStatus.DELIVERED
+  ) {
+    throw new Error("Pedidos enviados ou entregues devem seguir fluxo de devolução antes do cancelamento.");
+  }
+
+  if (blockProcessing && orderBeforeCancel.status === OrderStatus.PROCESSING) {
+    throw new Error("Pedido em preparação deve ser tratado pelo suporte.");
+  }
+
+  const isPaidOrder = orderBeforeCancel.paymentStatus === PaymentStatus.APPROVED || Boolean(orderBeforeCancel.paidAt);
+  let refundResult: Awaited<ReturnType<typeof refundMercadoPagoPayment>> | null = null;
+  const refundIdempotencyKey = `order-refund-${orderBeforeCancel.id}`;
+
+  if (isPaidOrder) {
+    if (!orderBeforeCancel.mercadoPagoPaymentId) {
+      throw new Error("Pedido pago sem identificador de pagamento Mercado Pago.");
+    }
+
+    refundResult = await refundMercadoPagoPayment({
+      idempotencyKey: refundIdempotencyKey,
+      paymentId: orderBeforeCancel.mercadoPagoPaymentId
+    });
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const order = await tx.order.findFirstOrThrow({
+      where: {
+        id: orderId,
+        ...(customerUserId ? { userId: customerUserId } : {})
+      },
+      include: {
+        items: true
+      }
+    });
+
+    if (isPaidOrder) {
+      await restoreInventoryForCanceledOrder(tx, order);
+      await reverseOrderLoyalty(tx, order);
+    } else {
+      await releaseInventoryReservations(tx, order.items);
+    }
+
+    await tx.order.update({
+      where: { id: order.id },
+      data: {
+        canceledAt: new Date(),
+        canceledByUserId,
+        cancellationReason,
+        ...(isPaidOrder
+          ? {
+              paymentStatus: PaymentStatus.REFUNDED,
+              refundedAt: new Date(),
+              refundAmountCents: refundResult?.amountCents ?? order.totalCents,
+              refundIdempotencyKey,
+              refundProviderId: refundResult?.providerId ?? null,
+              refundStatus: refundResult?.status ?? null,
+              status: OrderStatus.REFUNDED
+            }
+          : {
+              paymentStatus: PaymentStatus.CANCELED,
+              refundedAt: null,
+              refundAmountCents: null,
+              refundIdempotencyKey: null,
+              refundProviderId: null,
+              refundStatus: null,
+              status: OrderStatus.CANCELED
+            })
+      }
+    });
+  });
 }
 
 async function reverseOrderLoyalty(

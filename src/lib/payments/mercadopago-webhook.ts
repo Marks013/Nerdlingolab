@@ -42,6 +42,13 @@ export class RecoverableMercadoPagoPaymentError extends Error {
   }
 }
 
+export function isRecoverableMercadoPagoPaymentError(
+  error: unknown
+): error is RecoverableMercadoPagoPaymentError {
+  return error instanceof RecoverableMercadoPagoPaymentError
+    || (error instanceof Error && error.name === "RecoverableMercadoPagoPaymentError");
+}
+
 export type TransactionClient = Omit<
   PrismaClient,
   "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"

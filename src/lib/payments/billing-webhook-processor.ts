@@ -2,8 +2,8 @@ import * as Sentry from "@sentry/nextjs";
 
 import { WebhookProvider, WebhookStatus } from "@/generated/prisma/client";
 import {
+  isRecoverableMercadoPagoPaymentError,
   processMercadoPagoPayment,
-  RecoverableMercadoPagoPaymentError
 } from "@/lib/payments/mercadopago-webhook";
 import { getMercadoPagoPaymentId } from "@/lib/payments/mercadopago-webhook-payload";
 import { prisma } from "@/lib/prisma";
@@ -145,7 +145,7 @@ export async function processBillingWebhookEvent(
       return markWebhookIgnored(claimed.event.id, "Payment not found no Mercado Pago.");
     }
 
-    if (error instanceof RecoverableMercadoPagoPaymentError) {
+    if (isRecoverableMercadoPagoPaymentError(error)) {
       return scheduleRetryOrDeadLetter(claimed.event.id, claimed.event.attempts, claimed.event.maxAttempts, error);
     }
 

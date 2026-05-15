@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/features/cart/cart-store";
-import { formatCpf } from "@/lib/identity/brazil";
+import { lookupBrazilianPostalCode, normalizeBrazilianPostalCode } from "@/lib/addresses/brazil";
 import { parseFriendlyResponse } from "@/lib/http/friendly-response";
+import { formatCpf } from "@/lib/identity/brazil";
 
 interface CheckoutResponse {
   orderId: string;
@@ -85,6 +86,7 @@ export function CheckoutClient({
   const [addressFields, setAddressFields] = useState<AddressFields>(fieldsFromAddress(defaultAddress));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [postalCodeStatus, setPostalCodeStatus] = useState<string | null>(null);
   const [createdCheckout, setCreatedCheckout] = useState<CreatedCheckoutSummary | null>(null);
   const isManualAddress = addressOptions.length === 0 || !selectedAddressId;
   const customerName = customerProfile?.name ?? "";
@@ -94,6 +96,36 @@ export function CheckoutClient({
 
   function updateAddressField(field: keyof AddressFields, value: string): void {
     setAddressFields((currentFields) => ({ ...currentFields, [field]: value }));
+  }
+
+  async function lookupPostalCode(value: string): Promise<void> {
+    const postalCode = normalizeBrazilianPostalCode(value);
+    updateAddressField("postalCode", postalCode);
+
+    if (postalCode.length !== 8) {
+      setPostalCodeStatus(postalCode.length > 0 ? "Digite os 8 números do CEP." : null);
+      return;
+    }
+
+    setPostalCodeStatus("Buscando endereço...");
+
+    const result = await lookupBrazilianPostalCode(postalCode);
+
+    if (!result.ok || !result.address) {
+      setPostalCodeStatus(result.message ?? "CEP não encontrado. Confira antes de pagar.");
+      return;
+    }
+
+    setAddressFields((currentFields) => ({
+      ...currentFields,
+      city: result.address?.city ?? currentFields.city,
+      complement: currentFields.complement || result.address?.complement || "",
+      district: result.address?.district ?? currentFields.district,
+      postalCode,
+      state: result.address?.state ?? currentFields.state,
+      street: result.address?.street ?? currentFields.street
+    }));
+    setPostalCodeStatus("Endereço preenchido pelo CEP. Confira o número antes de pagar.");
   }
 
   function selectSavedAddress(addressId: string): void {
@@ -348,11 +380,15 @@ export function CheckoutClient({
           <label className="grid gap-2 text-sm font-medium">
             CEP
             <Input
+              autoComplete="postal-code"
+              inputMode="numeric"
+              maxLength={9}
               name="postalCode"
-              onChange={(event) => updateAddressField("postalCode", event.target.value)}
+              onChange={(event) => void lookupPostalCode(event.target.value)}
               required
               value={addressFields.postalCode}
             />
+            {postalCodeStatus ? <span className="text-xs font-normal text-muted-foreground">{postalCodeStatus}</span> : null}
           </label>
           <label className="grid gap-2 text-sm font-medium">
             Rua

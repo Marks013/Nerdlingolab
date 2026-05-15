@@ -4,6 +4,7 @@ import * as Sentry from "@sentry/nextjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { validateBrazilianAddress } from "@/lib/addresses/brazil";
 import { customerAddressFormSchema } from "@/lib/addresses/schema";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -26,6 +27,12 @@ export async function createCustomerAddress(formData: FormData): Promise<void> {
 
   if (!parsedAddress.success) {
     throw new Error("Revise o endereço informado.");
+  }
+
+  const validatedAddress = await validateBrazilianAddress(parsedAddress.data);
+
+  if (!validatedAddress.ok) {
+    throw new Error(validatedAddress.message ?? "Revise o CEP e o endereço informado.");
   }
 
   try {

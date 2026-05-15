@@ -2,6 +2,7 @@ import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 
 import { checkoutRequestSchema } from "@/features/checkout/schemas";
+import { validateBrazilianAddress } from "@/lib/addresses/brazil";
 import { auth } from "@/lib/auth";
 import { createCheckout } from "@/lib/checkout/create-checkout";
 import { rateLimitRequest } from "@/lib/security/rate-limit";
@@ -25,6 +26,15 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     if (!parsedBody.success) {
       return NextResponse.json({ message: "Revise os dados de entrega." }, { status: 400 });
+    }
+
+    const validatedAddress = await validateBrazilianAddress(parsedBody.data.shippingAddress);
+
+    if (!validatedAddress.ok) {
+      return NextResponse.json(
+        { message: validatedAddress.message ?? "Revise o CEP e o endereço informado." },
+        { status: 400 }
+      );
     }
 
     const session = await auth();

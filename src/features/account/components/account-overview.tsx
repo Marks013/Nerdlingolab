@@ -22,6 +22,7 @@ import {
   getPaymentStatusTone
 } from "@/features/orders/status-labels";
 import { GoogleSignInButton } from "@/features/auth/components/google-sign-in-button";
+import { lookupBrazilianPostalCode } from "@/lib/addresses/brazil";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { formatCpf } from "@/lib/identity/brazil";
 import type { CustomerAccountSummary } from "@/lib/orders/queries";
@@ -115,41 +116,29 @@ export function AccountOverview({ account, confirmedAddressLabel }: AccountOverv
     updateAddressDraft("postalCode", postalCode);
 
     if (postalCode.length !== 8) {
-      setPostalCodeStatus(null);
+      setPostalCodeStatus(postalCode.length > 0 ? "Digite os 8 números do CEP." : null);
       return;
     }
 
     setPostalCodeStatus("Buscando endereço...");
 
-    try {
-      const response = await fetch(`https://viacep.com.br/ws/${postalCode}/json/`);
-      const payload = await response.json() as {
-        bairro?: string;
-        complemento?: string;
-        erro?: boolean;
-        localidade?: string;
-        logradouro?: string;
-        uf?: string;
-      };
+    const result = await lookupBrazilianPostalCode(postalCode);
 
-      if (!response.ok || payload.erro) {
-        setPostalCodeStatus("CEP não encontrado. Preencha manualmente.");
-        return;
-      }
-
-      setAddressDraft((currentDraft) => ({
-        ...currentDraft,
-        city: payload.localidade ?? currentDraft.city,
-        complement: currentDraft.complement || payload.complemento || "",
-        district: payload.bairro ?? currentDraft.district,
-        postalCode,
-        state: payload.uf ?? currentDraft.state,
-        street: payload.logradouro ?? currentDraft.street
-      }));
-      setPostalCodeStatus("Endereço preenchido. Você pode editar qualquer campo.");
-    } catch {
-      setPostalCodeStatus("Não foi possível consultar o CEP agora. Preencha manualmente.");
+    if (!result.ok || !result.address) {
+      setPostalCodeStatus(result.message ?? "CEP não encontrado. Confira antes de salvar.");
+      return;
     }
+
+    setAddressDraft((currentDraft) => ({
+      ...currentDraft,
+      city: result.address?.city ?? currentDraft.city,
+      complement: currentDraft.complement || result.address?.complement || "",
+      district: result.address?.district ?? currentDraft.district,
+      postalCode,
+      state: result.address?.state ?? currentDraft.state,
+      street: result.address?.street ?? currentDraft.street
+    }));
+    setPostalCodeStatus("Endereço preenchido pelo CEP. Confira o número antes de salvar.");
   }
 
   return (

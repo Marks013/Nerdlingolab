@@ -318,7 +318,7 @@ async function resolveShippingAddress(input: CreateCheckoutInput): Promise<Custo
     district: savedAddress.district,
     city: savedAddress.city,
     state: savedAddress.state,
-    country: savedAddress.country
+    country: "BR"
   };
 }
 

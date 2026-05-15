@@ -7,6 +7,7 @@ import {
   getMercadoPagoExternalEventId,
   toJsonValue
 } from "@/lib/payments/mercadopago-webhook-payload";
+import { isClientAbortError } from "@/lib/monitoring/sentry-filters";
 import { prisma } from "@/lib/prisma";
 import { verifyMercadoPagoWebhookSignature } from "@/lib/security/mercadopago-signature";
 import { rateLimitRequest } from "@/lib/security/rate-limit";
@@ -23,7 +24,13 @@ export async function POST(request: Request): Promise<NextResponse> {
       return rateLimitError;
     }
 
-    const payload: unknown = await request.json();
+    const payloadResult = await readWebhookPayload(request);
+
+    if (!payloadResult.ok) {
+      return payloadResult.response;
+    }
+
+    const payload = payloadResult.payload;
 
     if (!verifyMercadoPagoWebhookSignature(request, payload)) {
       return NextResponse.json({ received: false }, { status: 401 });
@@ -71,9 +78,36 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     return NextResponse.json({ received: true, processing: processingResult.status });
   } catch (error) {
+    if (isClientAbortError(error)) {
+      return NextResponse.json({ received: false }, { status: 499 });
+    }
+
     Sentry.captureException(error);
 
     return NextResponse.json({ received: false }, { status: 500 });
+  }
+}
+
+async function readWebhookPayload(
+  request: Request
+): Promise<
+  | { ok: true; payload: unknown }
+  | { ok: false; response: NextResponse }
+> {
+  try {
+    return {
+      ok: true,
+      payload: await request.json()
+    };
+  } catch (error) {
+    if (isClientAbortError(error)) {
+      throw error;
+    }
+
+    return {
+      ok: false,
+      response: NextResponse.json({ received: false }, { status: 400 })
+    };
   }
 }
 

@@ -12,6 +12,11 @@ import {
 import { assertMercadoPagoConfigured, mercadoPagoPreference } from "@/lib/mercadopago";
 import { generateOrderNumber } from "@/lib/orders/number";
 import { getPendingPaymentExpiresAt } from "@/lib/orders/pending-payment-expiration";
+import {
+  decryptCustomerAddress,
+  decryptUserSensitive,
+  encryptOrderSensitiveInput
+} from "@/lib/privacy/sensitive-data";
 import { prisma } from "@/lib/prisma";
 
 interface CreateCheckoutInput extends CheckoutRequestInput {
@@ -119,9 +124,11 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Create
         taxCents: 0,
         totalCents: validatedCart.totalCents,
         loyaltyPointsRedeemed: 0,
-        shippingAddress: buildShippingAddressSnapshot(shippingAddress),
-        customerSnapshot: customer,
-        customerNote: input.customerNote || null,
+        ...encryptOrderSensitiveInput({
+          customerNote: input.customerNote || null,
+          customerSnapshot: customer,
+          shippingAddress: buildShippingAddressSnapshot(shippingAddress)
+        }),
         paymentIdempotencyKey: crypto.randomUUID(),
         items: {
           create: validatedCart.items.map((item) => ({
@@ -309,15 +316,17 @@ async function resolveShippingAddress(input: CreateCheckoutInput): Promise<Custo
     throw new Error("Endereço salvo não encontrado.");
   }
 
+  const decryptedAddress = decryptCustomerAddress(savedAddress);
+
   return {
-    recipient: savedAddress.recipient,
-    postalCode: savedAddress.postalCode,
-    street: savedAddress.street,
-    number: savedAddress.number,
-    complement: savedAddress.complement ?? undefined,
-    district: savedAddress.district,
-    city: savedAddress.city,
-    state: savedAddress.state,
+    recipient: decryptedAddress.recipient,
+    postalCode: decryptedAddress.postalCode,
+    street: decryptedAddress.street,
+    number: decryptedAddress.number,
+    complement: decryptedAddress.complement ?? undefined,
+    district: decryptedAddress.district,
+    city: decryptedAddress.city,
+    state: decryptedAddress.state,
     country: "BR"
   };
 }
@@ -341,11 +350,13 @@ async function resolveCheckoutCustomer(input: CreateCheckoutInput): Promise<Chec
     throw new Error("Cliente nao encontrado.");
   }
 
+  const decryptedUser = decryptUserSensitive(user);
+
   return {
-    name: user.name ?? input.customer.name,
+    name: decryptedUser.name ?? input.customer.name,
     email: user.email,
-    phone: user.phone ?? input.customer.phone,
-    cpf: user.cpf ?? input.customer.cpf
+    phone: decryptedUser.phone ?? input.customer.phone,
+    cpf: decryptedUser.cpf ?? input.customer.cpf
   };
 }
 

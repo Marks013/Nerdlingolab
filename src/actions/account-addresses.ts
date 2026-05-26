@@ -8,6 +8,7 @@ import { validateBrazilianAddress } from "@/lib/addresses/brazil";
 import { customerAddressFormSchema } from "@/lib/addresses/schema";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { encryptCustomerAddressInput } from "@/lib/privacy/sensitive-data";
 
 export async function createCustomerAddress(formData: FormData): Promise<void> {
   const userId = await requireCurrentUserId();
@@ -47,19 +48,23 @@ export async function createCustomerAddress(formData: FormData): Promise<void> {
         });
       }
 
+      const encryptedAddress = encryptCustomerAddressInput({
+        label: parsedAddress.data.label || null,
+        recipient: parsedAddress.data.recipient,
+        postalCode: parsedAddress.data.postalCode,
+        street: parsedAddress.data.street,
+        number: parsedAddress.data.number,
+        complement: parsedAddress.data.complement || null,
+        district: parsedAddress.data.district,
+        city: parsedAddress.data.city,
+        state: parsedAddress.data.state,
+        country: parsedAddress.data.country
+      });
+
       await tx.customerAddress.create({
         data: {
           userId,
-          label: parsedAddress.data.label || null,
-          recipient: parsedAddress.data.recipient,
-          postalCode: parsedAddress.data.postalCode,
-          street: parsedAddress.data.street,
-          number: parsedAddress.data.number,
-          complement: parsedAddress.data.complement || null,
-          district: parsedAddress.data.district,
-          city: parsedAddress.data.city,
-          state: parsedAddress.data.state,
-          country: parsedAddress.data.country,
+          ...encryptedAddress,
           isDefault: shouldBeDefault
         }
       });

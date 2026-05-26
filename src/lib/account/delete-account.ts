@@ -1,4 +1,5 @@
 import { UserRole, type PrismaClient } from "@/generated/prisma/client";
+import { decryptJson, encryptJson } from "@/lib/security/field-encryption";
 
 type TransactionClient = Omit<
   PrismaClient,
@@ -46,11 +47,17 @@ export async function deleteCustomerAccountPermanently({
   });
 
   for (const order of orders) {
+    const customerSnapshot = decryptJson(
+      order.customerSnapshot,
+      "order-customer-snapshot",
+      toRecord(order.customerSnapshot)
+    );
+
     await tx.order.update({
       where: { id: order.id },
       data: {
-        customerSnapshot: {
-          ...toRecord(order.customerSnapshot),
+        customerSnapshot: encryptJson({
+          ...toRecord(customerSnapshot),
           accountDeletedAt: new Date().toISOString(),
           accountDeletionActor: actor,
           originalUserId: user.id,
@@ -61,7 +68,7 @@ export async function deleteCustomerAccountPermanently({
             name: user.name,
             phone: user.phone
           }
-        },
+        }, "order-customer-snapshot"),
         userId: null
       }
     });

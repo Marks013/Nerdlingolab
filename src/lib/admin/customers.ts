@@ -1,7 +1,12 @@
 import { prisma } from "@/lib/prisma";
+import {
+  decryptCustomerAddresses,
+  decryptSupportTicket,
+  decryptUserSensitive
+} from "@/lib/privacy/sensitive-data";
 
 export async function getAdminCustomers() {
-  return prisma.user.findMany({
+  const customers = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
     select: {
       _count: {
@@ -87,10 +92,25 @@ export async function getAdminCustomers() {
     },
     take: 100
   });
+
+  return customers.map((customer) => ({
+    ...decryptUserSensitive(customer),
+    addresses: decryptCustomerAddresses(customer.addresses),
+    referralReceived: customer.referralReceived
+      ? {
+          ...customer.referralReceived,
+          inviter: decryptUserSensitive(customer.referralReceived.inviter)
+        }
+      : customer.referralReceived,
+    referralsSent: customer.referralsSent.map((referral) => ({
+      ...referral,
+      invitee: decryptUserSensitive(referral.invitee)
+    }))
+  }));
 }
 
 export async function getAdminSupportTickets() {
-  return prisma.supportTicket.findMany({
+  const tickets = await prisma.supportTicket.findMany({
     include: {
       user: {
         select: {
@@ -114,4 +134,6 @@ export async function getAdminSupportTickets() {
     orderBy: { createdAt: "desc" },
     take: 100
   });
+
+  return tickets.map(decryptSupportTicket);
 }

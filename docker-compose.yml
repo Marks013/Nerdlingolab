@@ -16,6 +16,7 @@ x-app-environment: &app-environment
   CHECKOUT_PAYMENT_MOCK: ${CHECKOUT_PAYMENT_MOCK:-false}
   CHECKOUT_PENDING_PAYMENT_TTL_HOURS: ${CHECKOUT_PENDING_PAYMENT_TTL_HOURS:-24}
   DATABASE_URL: postgresql://${POSTGRES_USER:-nerdlingolab}:${POSTGRES_PASSWORD:-temporary-postgres-password-change-me}@postgres:5432/${POSTGRES_DB:-nerdlingolab}?schema=public
+  DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?DATA_ENCRYPTION_KEY is required. Generate with openssl rand -base64 32}
   EMAIL_FROM: ${EMAIL_FROM:-NerdLingoLab <no-reply@nerdlingolab.local>}
   MERCADO_ENVIOS_ACCESS_TOKEN: ${MERCADO_ENVIOS_ACCESS_TOKEN:-}
   MERCADO_PAGO_ACCESS_TOKEN: ${MERCADO_PAGO_ACCESS_TOKEN:-}
@@ -66,6 +67,29 @@ x-app-environment: &app-environment
   SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-admin@nerdlingolab.local}
   SUPERADMIN_NAME: ${SUPERADMIN_NAME:-NerdLingoLab Admin}
   SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-Temporary-admin-password-123!}
+
+x-backup-environment: &backup-environment
+  APP_URL: ${APP_URL:-http://localhost:3001}
+  POSTGRES_DB: ${POSTGRES_DB:-nerdlingolab}
+  POSTGRES_USER: ${POSTGRES_USER:-nerdlingolab}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+  DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?DATA_ENCRYPTION_KEY is required}
+  BACKUP_DB_HOST: postgres
+  BACKUP_DB_PORT: "5432"
+  BACKUP_WORKSPACE_ROOT: /workspace
+  BACKUP_SRV_ROOT: /srv-data
+  BACKUP_MINIO_DATA_PATH: /srv-data/minio-data
+  BACKUP_CRITICAL_PATHS: ${BACKUP_CRITICAL_PATHS:-.env,docker-compose.yml,prisma,data/shopify,ops}
+  BACKUP_ENCRYPTION_PASSPHRASE: ${BACKUP_ENCRYPTION_PASSPHRASE:?BACKUP_ENCRYPTION_PASSPHRASE is required}
+  BACKUP_LOCAL_RETENTION_DAYS: ${BACKUP_LOCAL_RETENTION_DAYS:-14}
+  BACKUP_LOCAL_RETENTION_COUNT: ${BACKUP_LOCAL_RETENTION_COUNT:-30}
+  BACKUP_SKIP_UNCHANGED: ${BACKUP_SKIP_UNCHANGED:-true}
+  BACKUP_GITHUB_ENABLED: ${BACKUP_GITHUB_ENABLED:-true}
+  BACKUP_GITHUB_TOKEN: ${BACKUP_GITHUB_TOKEN:?BACKUP_GITHUB_TOKEN is required}
+  BACKUP_GITHUB_REPOSITORY: ${BACKUP_GITHUB_REPOSITORY:-Marks013/nerdlingolab-Backup}
+  BACKUP_GITHUB_RELEASE_TAG: ${BACKUP_GITHUB_RELEASE_TAG:-nerdlingolab-backups}
+  BACKUP_GITHUB_RETENTION_COUNT: ${BACKUP_GITHUB_RETENTION_COUNT:-30}
+  TZ: ${TZ:-America/Sao_Paulo}
 
 services:
   postgres:
@@ -232,6 +256,38 @@ services:
         done
     environment: *app-environment
     restart: unless-stopped
+    logging: *service-logging
+    networks:
+      - commerce
+
+  backup-runner:
+    image: postgres:16-alpine
+    container_name: nerdlingolab-backup-runner
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -lc
+    command:
+      - |
+        apk add --no-cache bash curl jq openssl tar gzip coreutils findutils >/dev/null
+        bash /workspace/ops/backup/run-backup.sh
+    environment: *backup-environment
+    profiles:
+      - backup
+    volumes:
+      - type: bind
+        source: .
+        target: /workspace
+        read_only: true
+      - type: bind
+        source: /srv/nerdlingolab
+        target: /srv-data
+        read_only: true
+      - type: bind
+        source: /srv/nerdlingolab/migration-backups
+        target: /backups
     logging: *service-logging
     networks:
       - commerce

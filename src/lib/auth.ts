@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { shouldUseSecureAuthCookies } from "@/lib/auth-cookies";
 import { isCustomerRegistrationComplete } from "@/lib/account/completion";
+import { decryptUserSensitive } from "@/lib/privacy/sensitive-data";
 import { prisma } from "@/lib/prisma";
 import { isRateLimitedKey } from "@/lib/security/rate-limit";
 
@@ -59,9 +60,11 @@ const providers: NextAuthConfig["providers"] = [
         return null;
       }
 
+      const safeUser = decryptUserSensitive(user);
+
       return {
         id: user.id,
-        name: user.name,
+        name: safeUser.name,
         email: user.email,
         image: user.image,
         role: user.role

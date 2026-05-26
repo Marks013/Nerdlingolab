@@ -26,6 +26,11 @@ import {
   getRequestBaseUrl,
   resetPasswordWithToken
 } from "@/lib/password-reset";
+import {
+  decryptUserSensitive,
+  encryptUserSensitiveInput,
+  getEncryptedCpfLookupValues
+} from "@/lib/privacy/sensitive-data";
 import { prisma } from "@/lib/prisma";
 import { isRateLimitedKey } from "@/lib/security/rate-limit";
 
@@ -197,7 +202,7 @@ export async function registerCustomer(formData: FormData): Promise<void> {
     where: {
       OR: [
         { email },
-        { cpf: { in: getCpfLookupValues(cpf) } }
+        { cpf: { in: getEncryptedCpfLookupValues(getCpfLookupValues(cpf)) } }
       ]
     }
   });
@@ -228,23 +233,26 @@ export async function registerCustomer(formData: FormData): Promise<void> {
           where: { code: referralCode, isActive: true }
         })
       : null;
+    const inviterUser = inviterCode?.user ? decryptUserSensitive(inviterCode.user) : null;
     const canRegisterReferral = Boolean(
       inviterCode &&
-      inviterCode.user.cpf &&
-      inviterCode.user.cpf !== cpf &&
-      inviterCode.user.email !== email &&
-      (!phone || !inviterCode.user.phone || inviterCode.user.phone !== phone)
+      inviterUser?.cpf &&
+      inviterUser.cpf !== cpf &&
+      inviterUser.email !== email &&
+      (!phone || !inviterUser.phone || inviterUser.phone !== phone)
     );
 
     const user = await tx.user.create({
       data: {
         birthday: parseBirthdayInput(birthday),
-        cpf,
         email,
-        name,
+        ...encryptUserSensitiveInput({
+          cpf,
+          name,
+          phone
+        }),
         passwordHash,
         privacyAcceptedAt: new Date(),
-        phone,
         role: UserRole.CUSTOMER,
         termsAcceptedAt: new Date(),
         loyaltyPoints: {

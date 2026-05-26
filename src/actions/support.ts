@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { requireAdmin } from "@/lib/admin";
 import { auth } from "@/lib/auth";
+import { decryptSupportTicket, encryptSupportReplyInput } from "@/lib/privacy/sensitive-data";
 import { prisma } from "@/lib/prisma";
 import { sendSupportReplyEmail } from "@/lib/support/send-support-email";
 
@@ -22,7 +23,7 @@ export async function replySupportTicket(formData: FormData): Promise<void> {
     ticketId: formData.get("ticketId")
   });
 
-  const ticket = await prisma.supportTicket.findUnique({
+  const ticket = decryptSupportTicket(await prisma.supportTicket.findUnique({
     include: {
       replies: {
         include: {
@@ -32,7 +33,7 @@ export async function replySupportTicket(formData: FormData): Promise<void> {
       }
     },
     where: { id: parsedInput.ticketId }
-  });
+  }));
 
   if (!ticket) {
     throw new Error("Chamado não encontrado.");
@@ -45,7 +46,7 @@ export async function replySupportTicket(formData: FormData): Promise<void> {
   const reply = await prisma.supportTicketReply.create({
     data: {
       adminUserId: session?.user?.id || null,
-      message: parsedInput.message,
+      ...encryptSupportReplyInput({ message: parsedInput.message }),
       ticketId: ticket.id
     }
   });

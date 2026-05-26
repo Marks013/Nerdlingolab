@@ -11,6 +11,7 @@ import { auth } from "@/lib/auth";
 import { getCpfLookupValues, parseBirthdayInput } from "@/lib/identity/brazil";
 import { ensureReferralCode } from "@/lib/loyalty/referrals";
 import { getLoyaltyProgramSettings, getPointsExpirationDate } from "@/lib/loyalty/settings";
+import { encryptUserSensitiveInput, getEncryptedCpfLookupValues } from "@/lib/privacy/sensitive-data";
 import { prisma } from "@/lib/prisma";
 import { LoyaltyLedgerType } from "@/generated/prisma/client";
 import { z } from "zod";
@@ -37,7 +38,7 @@ export async function updateCustomerProfile(formData: FormData): Promise<void> {
   try {
     const cpfOwner = await prisma.user.findFirst({
       where: {
-        cpf: { in: getCpfLookupValues(parsedProfile.data.cpf) },
+        cpf: { in: getEncryptedCpfLookupValues(getCpfLookupValues(parsedProfile.data.cpf)) },
         NOT: { id: userId }
       },
       select: { id: true }
@@ -50,9 +51,11 @@ export async function updateCustomerProfile(formData: FormData): Promise<void> {
     await prisma.user.update({
       where: { id: userId },
       data: {
-        name: parsedProfile.data.name,
-        phone: parsedProfile.data.phone,
-        cpf: parsedProfile.data.cpf,
+        ...encryptUserSensitiveInput({
+          cpf: parsedProfile.data.cpf,
+          name: parsedProfile.data.name,
+          phone: parsedProfile.data.phone
+        }),
         birthday: parseBirthdayInput(parsedProfile.data.birthday)
       }
     });
@@ -88,7 +91,7 @@ export async function completeCustomerRegistration(formData: FormData): Promise<
   const nextPath = sanitizeCustomerNextPath(parsedProfile.data.nextPath);
   const cpfOwner = await prisma.user.findFirst({
     where: {
-      cpf: { in: getCpfLookupValues(parsedProfile.data.cpf) },
+      cpf: { in: getEncryptedCpfLookupValues(getCpfLookupValues(parsedProfile.data.cpf)) },
       NOT: { id: userId }
     },
     select: { id: true }
@@ -107,9 +110,11 @@ export async function completeCustomerRegistration(formData: FormData): Promise<
         where: { id: userId },
         data: {
           birthday: parseBirthdayInput(parsedProfile.data.birthday),
-          cpf: parsedProfile.data.cpf,
-          name: parsedProfile.data.name,
-          phone: parsedProfile.data.phone,
+          ...encryptUserSensitiveInput({
+            cpf: parsedProfile.data.cpf,
+            name: parsedProfile.data.name,
+            phone: parsedProfile.data.phone
+          }),
           privacyAcceptedAt: new Date(),
           termsAcceptedAt: new Date()
         }

@@ -2,6 +2,7 @@ import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
+import { decryptSupportTicket, encryptSupportTicketInput } from "@/lib/privacy/sensitive-data";
 import { prisma } from "@/lib/prisma";
 import { rateLimitRequest } from "@/lib/security/rate-limit";
 import { assertSameOriginRequest } from "@/lib/security/request";
@@ -33,7 +34,9 @@ export async function GET(): Promise<NextResponse> {
   });
 
   return NextResponse.json({
-    tickets: tickets.map((ticket) => ({
+    tickets: tickets.map((rawTicket) => {
+      const ticket = decryptSupportTicket(rawTicket);
+      return {
       createdAt: ticket.createdAt.toISOString(),
       id: ticket.id,
       message: ticket.message,
@@ -53,7 +56,8 @@ export async function GET(): Promise<NextResponse> {
       subjectLabel: ticket.subjectLabel,
       ticketId: ticket.ticketId,
       updatedAt: ticket.updatedAt.toISOString()
-    }))
+      };
+    })
   });
 }
 
@@ -94,9 +98,11 @@ export async function POST(request: Request): Promise<NextResponse> {
         email: parsedBody.data.email,
         emailDeliveryStatus: result.ok ? "SENT" : "FAILED",
         emailProviderError: result.error ?? null,
-        message: parsedBody.data.message,
-        name: parsedBody.data.name,
-        phone: parsedBody.data.phone || null,
+        ...encryptSupportTicketInput({
+          message: parsedBody.data.message,
+          name: parsedBody.data.name,
+          phone: parsedBody.data.phone || null
+        }),
         resendId: result.providerMessageId ?? null,
         subject: parsedBody.data.subject,
         subjectLabel: supportSubjectLabels[parsedBody.data.subject],

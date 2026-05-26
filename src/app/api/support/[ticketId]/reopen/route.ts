@@ -3,6 +3,7 @@ import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
+import { encryptSupportTicketInput } from "@/lib/privacy/sensitive-data";
 import { prisma } from "@/lib/prisma";
 import { rateLimitRequest } from "@/lib/security/rate-limit";
 import { assertSameOriginRequest } from "@/lib/security/request";
@@ -88,7 +89,9 @@ export async function POST(request: Request, context: RouteContext): Promise<Nex
         rating: null,
         ratingComment: null,
         reopenCount: { increment: 1 },
-        reopenReason: parsedBody.data.reason,
+        ...encryptSupportTicketInput({
+          reopenReason: parsedBody.data.reason
+        }),
         reopenedAt: new Date(),
         status: SupportTicketStatus.OPEN
       },

@@ -21,6 +21,12 @@ import type { OrderWhereInput } from "@/generated/prisma/models/Order";
 
 import { prisma } from "@/lib/prisma";
 import { expireStalePendingPaymentOrders } from "@/lib/orders/pending-payment-expiration";
+import {
+  decryptCustomerAddress,
+  decryptCustomerAddresses,
+  decryptOrderSensitive,
+  decryptUserSensitive
+} from "@/lib/privacy/sensitive-data";
 
 export type AdminOrderListItem = Order & {
   user: Pick<User, "id" | "name" | "email"> | null;
@@ -119,7 +125,7 @@ export async function getAdminOrders(filters: Partial<AdminOrderFilters> = {}): 
   await expireStalePendingPaymentOrders();
   const resolvedFilters = resolveAdminOrderFilters(filters);
 
-  return prisma.order.findMany({
+  const orders = await prisma.order.findMany({
     where: buildAdminOrderWhere(resolvedFilters),
     include: {
       user: {
@@ -154,6 +160,11 @@ export async function getAdminOrders(filters: Partial<AdminOrderFilters> = {}): 
     orderBy: { createdAt: "desc" },
     take: 100
   });
+
+  return orders.map((order) => decryptOrderSensitive({
+    ...order,
+    user: order.user ? decryptUserSensitive(order.user) : order.user
+  }));
 }
 
 export async function getAdminOrderById(orderId: string): Promise<AdminOrderDetail | null> {
@@ -161,7 +172,7 @@ export async function getAdminOrderById(orderId: string): Promise<AdminOrderDeta
     limit: 10
   });
 
-  return prisma.order.findUnique({
+  const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: {
       user: {
@@ -213,6 +224,15 @@ export async function getAdminOrderById(orderId: string): Promise<AdminOrderDeta
         orderBy: { createdAt: "desc" }
       }
     }
+  });
+
+  if (!order) {
+    return null;
+  }
+
+  return decryptOrderSensitive({
+    ...order,
+    user: order.user ? decryptUserSensitive(order.user) : order.user
   });
 }
 
@@ -272,24 +292,26 @@ export async function getCustomerAccountSummary(
     return null;
   }
 
+  const decryptedUser = decryptUserSensitive(user);
+
   return {
     user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      cpf: user.cpf,
-      phone: user.phone,
-      birthday: user.birthday
+      id: decryptedUser.id,
+      name: decryptedUser.name,
+      email: decryptedUser.email,
+      cpf: decryptedUser.cpf,
+      phone: decryptedUser.phone,
+      birthday: decryptedUser.birthday
     },
     accounts: user.accounts,
-    addresses: user.addresses,
+    addresses: decryptCustomerAddresses(user.addresses),
     loyaltyPoints: user.loyaltyPoints,
-    orders: user.orders
+    orders: user.orders.map(decryptOrderSensitive)
   };
 }
 
 export async function getCustomerCheckoutProfile(userId: string): Promise<CustomerCheckoutProfile | null> {
-  return prisma.user.findUnique({
+  return decryptUserSensitive(await prisma.user.findUnique({
     where: { id: userId },
     select: {
       id: true,
@@ -298,14 +320,16 @@ export async function getCustomerCheckoutProfile(userId: string): Promise<Custom
       cpf: true,
       phone: true
     }
-  });
+  }));
 }
 
 export async function getCustomerSavedAddresses(userId: string): Promise<CustomerSavedAddress[]> {
-  return prisma.customerAddress.findMany({
+  const addresses = await prisma.customerAddress.findMany({
     where: { userId },
     orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }]
   });
+
+  return addresses.map(decryptCustomerAddress);
 }
 
 export async function getCustomerOrderById({
@@ -319,7 +343,7 @@ export async function getCustomerOrderById({
     limit: 10
   });
 
-  return prisma.order.findFirst({
+  const order = await prisma.order.findFirst({
     where: {
       id: orderId,
       userId
@@ -364,6 +388,8 @@ export async function getCustomerOrderById({
       }
     }
   });
+
+  return decryptOrderSensitive(order);
 }
 
 function buildAdminOrderWhere(filters: AdminOrderFilters): OrderWhereInput {
@@ -374,8 +400,7 @@ function buildAdminOrderWhere(filters: AdminOrderFilters): OrderWhereInput {
       OR: [
         { orderNumber: { contains: filters.query, mode: "insensitive" } },
         { email: { contains: filters.query, mode: "insensitive" } },
-        { user: { email: { contains: filters.query, mode: "insensitive" } } },
-        { user: { name: { contains: filters.query, mode: "insensitive" } } }
+        { user: { email: { contains: filters.query, mode: "insensitive" } } }
       ]
     });
   }

@@ -11,6 +11,7 @@ import { requireAdmin } from "@/lib/admin";
 import { auth } from "@/lib/auth";
 import { sendPasswordResetEmail } from "@/lib/email/transactional";
 import { createPasswordResetTokenForUserId, getRequestBaseUrl } from "@/lib/password-reset";
+import { encryptUserSensitiveInput } from "@/lib/privacy/sensitive-data";
 import { prisma } from "@/lib/prisma";
 
 const customerActionSchema = z.object({
@@ -76,13 +77,15 @@ export async function anonymizeCustomerAccount(formData: FormData): Promise<void
         where: { id: customerId },
         data: {
           birthday: null,
-          cpf: null,
           email: `deleted+${customerId}@nerdlingolab.local`,
           emailVerified: null,
           image: null,
-          name: "Cliente removido",
+          ...encryptUserSensitiveInput({
+            name: "Cliente removido",
+            phone: null,
+            cpf: null
+          }),
           passwordHash: null,
-          phone: null
         }
       })
     ]);
@@ -148,7 +151,9 @@ export async function updateCustomerAdminNotes(formData: FormData): Promise<void
   try {
     await prisma.user.update({
       data: {
-        adminNotes: parsedNotes.data.adminNotes || null
+        ...encryptUserSensitiveInput({
+          adminNotes: parsedNotes.data.adminNotes || null
+        })
       },
       where: { id: parsedNotes.data.customerId }
     });

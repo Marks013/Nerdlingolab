@@ -13,6 +13,8 @@ x-app-environment: &app-environment
   AUTH_GOOGLE_SECRET: ${AUTH_GOOGLE_SECRET:-}
   AUTH_SECRET: ${AUTH_SECRET:-temporary-auth-secret-change-me-64-characters-minimum-000000000000}
   AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-true}
+  NERDLINGOLAB_AUTOMATION_SECRET: ${NERDLINGOLAB_AUTOMATION_SECRET:-}
+  BACKUP_STATUS_DIR: ${BACKUP_STATUS_DIR:-/ops-backups}
   CHECKOUT_PAYMENT_MOCK: ${CHECKOUT_PAYMENT_MOCK:-false}
   CHECKOUT_PENDING_PAYMENT_TTL_HOURS: ${CHECKOUT_PENDING_PAYMENT_TTL_HOURS:-24}
   DATABASE_URL: postgresql://${POSTGRES_USER:-nerdlingolab}:${POSTGRES_PASSWORD:-temporary-postgres-password-change-me}@postgres:5432/${POSTGRES_DB:-nerdlingolab}?schema=public
@@ -191,6 +193,11 @@ services:
       postgres:
         condition: service_healthy
     environment: *app-environment
+    volumes:
+      - type: bind
+        source: /srv/nerdlingolab/migration-backups
+        target: /ops-backups
+        read_only: true
     healthcheck:
       test:
         - CMD-SHELL
@@ -204,61 +211,14 @@ services:
     restart: unless-stopped
     logging: *service-logging
     networks:
-      - commerce
+      commerce:
+      automation_backend:
+        aliases:
+          - nerdlingolab-web
 
-  billing-cron:
-    image: curlimages/curl:8.11.1
-    container_name: nerdlingolab-billing-cron
-    depends_on:
-      app:
-        condition: service_healthy
-    entrypoint:
-      - /bin/sh
-      - -c
-    command:
-      - |
-        while true; do
-          TOKEN="$${CRON_SECRET:-$${AUTH_SECRET:-$${NEXTAUTH_SECRET:-}}}"
-          if [ -z "$$TOKEN" ]; then
-            echo "$$(date -Is) CRON_SECRET/AUTH_SECRET ausente"
-          else
-            curl -fsS -X POST -H "Authorization: Bearer $$TOKEN" "http://app:3000/api/cron/billing?limit=$${BILLING_CRON_LIMIT:-50}" || true
-            echo
-          fi
-          sleep "$${BILLING_CRON_INTERVAL_SECONDS:-300}"
-        done
-    environment: *app-environment
-    restart: unless-stopped
-    logging: *service-logging
-    networks:
-      - commerce
-
-  newsletter-cron:
-    image: curlimages/curl:8.11.1
-    container_name: nerdlingolab-newsletter-cron
-    depends_on:
-      app:
-        condition: service_healthy
-    entrypoint:
-      - /bin/sh
-      - -c
-    command:
-      - |
-        while true; do
-          TOKEN="$${CRON_SECRET:-$${AUTH_SECRET:-$${NEXTAUTH_SECRET:-}}}"
-          if [ -z "$$TOKEN" ]; then
-            echo "$$(date -Is) CRON_SECRET/AUTH_SECRET ausente"
-          else
-            curl -fsS -X POST -H "Authorization: Bearer $$TOKEN" "http://app:3000/api/cron/newsletter?limit=$${NEWSLETTER_CRON_LIMIT:-50}" || true
-            echo
-          fi
-          sleep "$${NEWSLETTER_CRON_INTERVAL_SECONDS:-300}"
-        done
-    environment: *app-environment
-    restart: unless-stopped
-    logging: *service-logging
-    networks:
-      - commerce
+  # Scheduling is centralized in /home/ubuntu/automation-hub (n8n).
+  # Billing/newsletter/dropshipping/marketing still execute inside this backend
+  # through the /api/cron/* endpoints, but no polling cron containers run here.
 
   backup-runner:
     image: postgres:16-alpine
@@ -296,3 +256,6 @@ services:
 networks:
   commerce:
     driver: bridge
+  automation_backend:
+    external: true
+    name: automation_backend

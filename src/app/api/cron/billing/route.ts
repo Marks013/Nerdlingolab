@@ -68,16 +68,21 @@ function hasBearerToken(request: NextRequest): boolean {
 }
 
 function authorizeCronRequest(request: NextRequest): { error?: string; ok: boolean; status: number } {
-  const expectedSecret = process.env.CRON_SECRET ?? process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+  const expectedSecrets = [
+    process.env.NERDLINGOLAB_AUTOMATION_SECRET,
+    process.env.CRON_SECRET,
+    process.env.AUTH_SECRET,
+    process.env.NEXTAUTH_SECRET
+  ].filter((value): value is string => Boolean(value));
 
-  if (!expectedSecret) {
-    return { error: "CRON_SECRET nao configurado.", ok: false, status: 503 };
+  if (expectedSecrets.length === 0) {
+    return { error: "Secret de automacao nao configurado.", ok: false, status: 503 };
   }
 
   const header = request.headers.get("authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice("Bearer ".length).trim() : "";
 
-  if (!safeTokenEquals(token, expectedSecret)) {
+  if (!expectedSecrets.some((expectedSecret) => safeTokenEquals(token, expectedSecret))) {
     return { error: "Nao autorizado.", ok: false, status: 401 };
   }
 

@@ -16,6 +16,8 @@ const serverEnvSchema = z.object({
   APP_URL: z.string().url().default("http://localhost:3000"),
   DATABASE_URL: z.string().min(1),
   AUTH_SECRET: z.string().min(1),
+  NERDLINGOLAB_AUTOMATION_SECRET: z.string().optional(),
+  BACKUP_STATUS_DIR: z.string().default("/ops-backups"),
   AUTH_GOOGLE_ID: z.string().optional(),
   AUTH_GOOGLE_SECRET: z.string().optional(),
   MINIO_ENDPOINT: z.string().default("localhost"),

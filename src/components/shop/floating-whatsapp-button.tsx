@@ -74,7 +74,7 @@ export function FloatingWhatsappButton(): React.ReactElement {
         </section>
       ) : null}
 
-      <div className="flex items-end gap-3">
+      <div className="flex flex-col items-center gap-3">
         <button
           aria-controls={chatboxId}
           aria-expanded={isOpen}
@@ -119,17 +119,9 @@ export function FloatingWhatsappButton(): React.ReactElement {
 
 function WhatsappMark({ className }: { className?: string }): React.ReactElement {
   return (
-    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <svg aria-hidden="true" className={className} fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <path
-        d="M5.3 26.7 6.8 21A11.1 11.1 0 1 1 11.2 25l-5.9 1.7Z"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2.6"
-      />
-      <path
-        d="M12.1 10.7c-.3-.7-.6-.7-.9-.7h-.8c-.3 0-.8.1-1.2.6-.4.4-1.5 1.4-1.5 3.5s1.5 4.1 1.7 4.4c.2.3 3 4.7 7.4 6.3 3.7 1.5 4.4 1.2 5.2 1.1.8-.1 2.6-1.1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.4-.3-.9-.6l-2.8-1.4c-.4-.2-.8-.3-1.1.3-.3.4-1.1 1.3-1.4 1.6-.3.3-.5.3-1 .1-.5-.3-2-.7-3.8-2.4-1.4-1.2-2.4-2.8-2.6-3.3-.3-.5 0-.7.2-1 .2-.2.5-.5.7-.8.2-.3.3-.5.5-.8.1-.3.1-.6 0-.8l-.9-2Z"
-        fill="currentColor"
+        d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.26-.46-2.39-1.47-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.91-2.21-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.06 2.88 1.21 3.07.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.08 1.76-.72 2.01-1.41.25-.69.25-1.29.17-1.41-.07-.12-.27-.2-.57-.35ZM12.05 2a9.95 9.95 0 0 0-8.49 15.14L2.4 21.4l4.36-1.14A9.93 9.93 0 0 0 12.05 22h.01A10 10 0 0 0 12.05 2Zm.01 18.31h-.01a8.25 8.25 0 0 1-4.2-1.15l-.3-.18-2.59.68.69-2.52-.2-.32a8.3 8.3 0 1 1 6.61 3.49Z"
       />
     </svg>
   );

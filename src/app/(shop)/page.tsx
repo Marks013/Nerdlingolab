@@ -68,15 +68,6 @@ export default async function ShopHomePage(): Promise<React.ReactElement> {
       </section>
 
       <div className="mx-auto w-full max-w-[1360px] px-5 py-12">
-        <section className="mb-14">
-          <AutoCarousel
-            className="overflow-hidden rounded-lg bg-primary shadow-sm"
-            items={theme.promoSlides}
-            sizes="(min-width: 1024px) 1360px, 100vw"
-            slideClassName="relative aspect-[1640/2048] w-full md:aspect-[2048/628]"
-          />
-        </section>
-
         {storefrontSections.map((section, sectionIndex) => (
           <ProductShelf
             href={section.href}

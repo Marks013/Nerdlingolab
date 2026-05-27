@@ -14,7 +14,7 @@ export function FloatingWhatsappButton(): React.ReactElement {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="fixed bottom-20 right-3 z-50 flex w-[min(calc(100vw-1.5rem),22rem)] flex-col items-end gap-3 text-slate-950 sm:bottom-8 sm:right-5">
+    <div className="fixed bottom-20 right-3 z-[90] flex w-[min(calc(100vw-1.5rem),22rem)] flex-col items-end gap-3 text-slate-950 sm:bottom-8 sm:right-5">
       {isOpen ? (
         <section
           aria-label="Chat do Chibby"

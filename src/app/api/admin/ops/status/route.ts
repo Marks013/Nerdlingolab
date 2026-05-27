@@ -144,22 +144,16 @@ export async function GET(request: Request): Promise<NextResponse> {
 }
 
 function authorizeOpsRequest(request: Request): { error?: string; ok: boolean; status: number } {
-  const expectedSecrets = [
-    env.NERDLINGOLAB_AUTOMATION_SECRET,
-    process.env.CRON_SECRET,
-    env.AUTH_SECRET,
-    process.env.NEXTAUTH_SECRET
-  ].filter((value): value is string => Boolean(value));
+  const expectedSecrets = [env.NERDLINGOLAB_AUTOMATION_SECRET].filter((value): value is string => Boolean(value));
 
   if (expectedSecrets.length === 0) {
-    return { error: "Secret de automacao nao configurado.", ok: false, status: 503 };
+    return { error: "Secret de automacao dedicado nao configurado.", ok: false, status: 503 };
   }
 
   const header = request.headers.get("authorization") ?? "";
-  const fallbackToken = request.headers.get("x-cron-secret")?.trim() ?? "";
   const bearerToken = header.startsWith("Bearer ") ? header.slice("Bearer ".length).trim() : "";
 
-  if (!expectedSecrets.some((secret) => safeTokenEquals(bearerToken, secret) || safeTokenEquals(fallbackToken, secret))) {
+  if (!expectedSecrets.some((secret) => safeTokenEquals(bearerToken, secret))) {
     return { error: "Nao autorizado.", ok: false, status: 401 };
   }
 

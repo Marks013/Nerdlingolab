@@ -114,15 +114,12 @@ function hasBearerToken(request: NextRequest): boolean {
 }
 
 function authorizeCronRequest(request: NextRequest): { error?: string; ok: boolean; status: number } {
-  const expectedSecrets = [
-    process.env.NERDLINGOLAB_AUTOMATION_SECRET,
-    process.env.CRON_SECRET,
-    process.env.AUTH_SECRET,
-    process.env.NEXTAUTH_SECRET
-  ].filter((value): value is string => Boolean(value));
+  const expectedSecrets = [process.env.NERDLINGOLAB_AUTOMATION_SECRET].filter((value): value is string =>
+    Boolean(value)
+  );
 
   if (expectedSecrets.length === 0) {
-    return { error: "Secret de automacao nao configurado.", ok: false, status: 503 };
+    return { error: "Secret de automacao dedicado nao configurado.", ok: false, status: 503 };
   }
 
   const header = request.headers.get("authorization") ?? "";

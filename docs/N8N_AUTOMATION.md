@@ -19,11 +19,13 @@ Esse desenho evita duplicidade e impede que agendamento externo force envios ou 
 
 ### `POST /api/cron/automation`
 
-Executa o pulso operacional. Requer:
+Executa o pulso operacional. Requer o segredo dedicado de automacao:
 
 ```txt
 Authorization: Bearer <NERDLINGOLAB_AUTOMATION_SECRET>
 ```
+
+Nao use `AUTH_SECRET`, `NEXTAUTH_SECRET` ou secrets gerais de sessao para automacoes.
 
 Resposta esperada:
 
@@ -70,7 +72,7 @@ Retorna:
 Nao recriar:
 
 - containers `nerdlingolab-billing-cron` ou `nerdlingolab-newsletter-cron`;
-- scripts host `nerdlingolab-marketing-cron.sh` ou `nerdlingolab-dropshipping-cron.sh`;
+- scripts host ou scripts de repositorio para disparar `marketing` ou `dropshipping` fora do `/api/cron/automation`;
 - agendamentos diretos para billing/newsletter/dropshipping/marketing no crontab.
 
 O backup diario permanece no crontab porque usa volumes locais e `docker compose --profile backup`.

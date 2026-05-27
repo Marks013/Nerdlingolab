@@ -33,6 +33,10 @@ const BROWSER_EXTENSION_SCHEMES = [
   "safari-extension:"
 ];
 
+const REPORT_ONLY_EXTERNAL_FONT_NOISE_ORIGINS = [
+  "https://use.typekit.net"
+];
+
 export async function POST(request: Request): Promise<NextResponse> {
   try {
     const sameOriginError = assertSameOriginRequest(request);
@@ -133,7 +137,15 @@ function shouldIgnoreCspReport(
     getStringField(rawReport, "source-file", "sourceFile")
   ];
 
-  return reportSources.some(containsBrowserExtensionScheme);
+  return reportSources.some(containsBrowserExtensionScheme) || isReportOnlyExternalFontNoise(normalizedReport);
+}
+
+function isReportOnlyExternalFontNoise(report: NormalizedCspReport): boolean {
+  if (report.disposition !== "report" || report.effectiveDirective !== "font-src") {
+    return false;
+  }
+
+  return REPORT_ONLY_EXTERNAL_FONT_NOISE_ORIGINS.includes(getReportOrigin(report.blockedUri));
 }
 
 function getReportBody(report: unknown): Record<string, unknown> {

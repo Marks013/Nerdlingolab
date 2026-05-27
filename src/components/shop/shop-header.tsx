@@ -295,9 +295,9 @@ export function ShopHeader({
       </div>
 
       <div className="border-t border-white/20 bg-[#ff6902]">
-        <div className="mx-auto flex min-h-[88px] w-full max-w-[1440px] flex-col items-stretch gap-4 px-4 py-4 sm:px-5 md:flex-row md:items-center md:gap-5">
+        <div className="mx-auto grid min-h-[104px] w-full max-w-[1440px] items-center gap-4 px-4 py-4 sm:px-5 md:grid-cols-[minmax(190px,240px)_minmax(0,1fr)_minmax(190px,240px)] md:gap-6 md:py-3">
           <button
-            className="inline-flex min-h-11 items-center justify-center gap-3 rounded-lg bg-white px-5 py-2 text-sm font-bold text-black shadow-sm transition-colors duration-150 hover:bg-[#fff7ef] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white md:justify-start"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-3 rounded-lg bg-white px-5 py-2 text-sm font-bold text-black shadow-sm transition-colors duration-150 hover:bg-[#fff7ef] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white md:justify-start"
             onClick={() => setIsCategoryDrawerOpen(true)}
             type="button"
           >
@@ -305,7 +305,7 @@ export function ShopHeader({
             Todas as Categorias
           </button>
 
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0">
             <div className="mb-2 flex items-center justify-end text-white/90 md:hidden">
               <span className="nl-scroll-cue">
                 Arraste para ver mais
@@ -313,18 +313,20 @@ export function ShopHeader({
               </span>
             </div>
             <div className="nl-scroll-hint nl-scroll-hint-light">
-              <nav className="flex gap-3 overflow-x-auto pb-1 pr-8 md:flex-wrap md:items-center md:justify-center md:gap-6 md:overflow-visible md:pb-0 md:pr-0" data-ui-audit-scrollable>
+              <nav className="flex justify-start gap-4 overflow-x-auto pb-1 pr-8 md:flex-wrap md:items-start md:justify-center md:gap-7 md:overflow-visible md:pb-0 md:pr-0" data-ui-audit-scrollable>
                 {categoryLinks.map((link) => (
-                  <Link className="group grid min-w-[86px] justify-items-center text-center text-xs font-bold text-white focus-visible:outline-none sm:min-w-[104px] md:min-w-0 md:text-sm" href={link.href} key={link.label}>
-                    <span className={`mx-auto flex size-12 items-center justify-center rounded-full shadow-lg ring-2 ring-white/20 sm:size-14 md:size-20 ${link.color} transition duration-200 group-hover:scale-105 group-hover:shadow-xl group-focus-visible:ring-2 group-focus-visible:ring-white`}>
-                      <link.icon className={`size-7 ${link.iconColor} transition duration-200 group-hover:rotate-[-6deg] group-hover:scale-110 sm:size-8 md:size-10`} />
+                  <Link className="group grid w-[5.75rem] shrink-0 justify-items-center text-center text-xs font-bold text-white focus-visible:outline-none sm:w-[6.25rem] md:w-[7.25rem] md:text-sm" href={link.href} key={link.label}>
+                    <span className={`mx-auto flex size-14 items-center justify-center rounded-full shadow-lg ring-2 ring-white/20 sm:size-16 md:size-20 ${link.color} transition duration-200 group-hover:scale-105 group-hover:shadow-xl group-focus-visible:ring-2 group-focus-visible:ring-white`}>
+                      <link.icon className={`size-8 ${link.iconColor} transition duration-200 group-hover:rotate-[-6deg] group-hover:scale-110 md:size-10`} />
                     </span>
-                    <span className="mt-2 block leading-tight drop-shadow-sm">{link.label}</span>
+                    <span className="mt-2 flex min-h-8 items-start justify-center leading-tight drop-shadow-sm">{link.label}</span>
                   </Link>
                 ))}
               </nav>
             </div>
           </div>
+
+          <div aria-hidden="true" className="hidden md:block" />
         </div>
       </div>
 

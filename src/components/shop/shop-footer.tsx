@@ -5,6 +5,22 @@ import { PaymentBadgeStrip } from "@/components/shop/payment-badges";
 import { NewsletterForm } from "@/features/newsletter/components/newsletter-form";
 import type { StorefrontThemeView } from "@/lib/theme/storefront";
 
+const footerBubbles = Array.from({ length: 128 }, (_, index) => {
+  const size = 1.25 + ((index * 37) % 72) / 10;
+  const distance = 8 + ((index * 29) % 260) / 10;
+  const position = ((index * 83) % 116) - 8;
+  const time = 6.5 + ((index * 19) % 72) / 10;
+  const delay = -1 * (((index * 31) % 104) / 10);
+
+  return {
+    "--delay": `${delay}s`,
+    "--distance": `${distance}rem`,
+    "--position": `${position}%`,
+    "--size": `${size}rem`,
+    "--time": `${time}s`
+  } as React.CSSProperties;
+});
+
 const categories = [
   { href: "/produtos", label: "Todos os produtos" },
   { href: "/#mais-vendidos", label: "Mais Vendidos" },
@@ -52,8 +68,28 @@ export function ShopFooter({
 
   return (
     <footer className="bg-white text-black">
-      <section className="bg-primary text-white">
-        <div className="mx-auto grid w-full max-w-[1440px] gap-6 px-5 py-8 sm:px-8 md:grid-cols-2 lg:grid-cols-4 lg:px-10">
+      <section className="nl-footer-lava relative isolate overflow-hidden text-white">
+        <svg aria-hidden="true" className="absolute h-0 w-0">
+          <defs>
+            <filter id="nerdlingolab-footer-blob">
+              <feGaussianBlur in="SourceGraphic" result="blur" stdDeviation="10" />
+              <feColorMatrix
+                in="blur"
+                mode="matrix"
+                result="goo"
+                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -8"
+              />
+              <feBlend in="SourceGraphic" in2="goo" />
+            </filter>
+          </defs>
+        </svg>
+        <div aria-hidden="true" className="nl-footer-lava__bubbles">
+          {footerBubbles.map((bubbleStyle, index) => (
+            <span className="nl-footer-lava__bubble" key={index} style={bubbleStyle} />
+          ))}
+        </div>
+
+        <div className="relative z-10 mx-auto grid w-full max-w-[1440px] gap-6 px-5 py-8 sm:px-8 md:grid-cols-2 lg:grid-cols-4 lg:px-10">
           {serviceItems.map((item) => (
             <div className="flex items-start gap-5" key={item.title}>
               <item.icon className="mt-1 h-11 w-11 shrink-0 stroke-[1.8]" />

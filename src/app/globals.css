@@ -468,10 +468,10 @@ form.form-shell,
 }
 
 .nl-footer-lava {
+  --footer-background: hsl(24 100% 50%);
   background:
-    radial-gradient(circle at 18% 0%, hsl(42 100% 62% / 0.34), transparent 21rem),
-    radial-gradient(circle at 88% 18%, hsl(14 95% 52% / 0.32), transparent 24rem),
-    linear-gradient(135deg, hsl(24 100% 48%), hsl(31 100% 55%) 48%, hsl(18 98% 46%));
+    radial-gradient(circle at 18% 0%, hsl(42 100% 62% / 0.22), transparent 21rem),
+    linear-gradient(135deg, var(--footer-background), hsl(30 100% 54%) 52%, hsl(18 98% 46%));
   box-shadow: inset 0 -1px 0 hsl(24 100% 38% / 0.24);
 }
 
@@ -488,17 +488,19 @@ form.form-shell,
   mask-image: linear-gradient(to bottom, #000, transparent 86%);
 }
 
-.nl-footer-lava > .relative {
+.nl-footer-lava__content {
   text-shadow: 0 1px 8px hsl(18 96% 28% / 0.35);
 }
 
 .nl-footer-lava__bubbles {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  left: 0;
   z-index: 0;
-  overflow: hidden;
+  height: 1rem;
+  background: var(--footer-background);
   filter: url("#nerdlingolab-footer-blob");
-  opacity: 0.92;
   pointer-events: none;
 }
 
@@ -510,14 +512,14 @@ form.form-shell,
   width: var(--size);
   height: var(--size);
   border-radius: 999px;
-  background:
-    radial-gradient(circle at 35% 28%, hsl(44 100% 72%), transparent 0.9rem),
-    linear-gradient(135deg, hsl(7 92% 49%), hsl(28 100% 52%) 64%, hsl(43 100% 58%));
+  background: var(--footer-background);
   animation:
-    nl-footer-lava-rise var(--time) var(--delay) ease-in infinite,
-    nl-footer-lava-shrink var(--time) var(--delay) ease-in infinite;
-  box-shadow: 0 0 1.8rem hsl(17 100% 52% / 0.46);
-  transform: translate3d(-50%, 0, 0);
+    nl-footer-lava-size var(--time) ease-in infinite var(--delay),
+    nl-footer-lava-move var(--time) ease-in infinite var(--delay);
+  box-shadow:
+    inset 0.55rem 0.55rem 1.1rem hsl(43 100% 68% / 0.28),
+    0 0 1.4rem hsl(18 100% 43% / 0.36);
+  transform: translate3d(-50%, 100%, 0);
 }
 
 .payment-badge svg {
@@ -564,24 +566,21 @@ form.form-shell,
   100% { transform: translateX(100%); }
 }
 
-@keyframes nl-footer-lava-rise {
-  0% { bottom: -4rem; }
-  100% { bottom: var(--distance); }
-}
-
-@keyframes nl-footer-lava-shrink {
-  0% {
+@keyframes nl-footer-lava-size {
+  0%,
+  75% {
     width: var(--size);
     height: var(--size);
-  }
-  82% {
-    width: calc(var(--size) * 0.64);
-    height: calc(var(--size) * 0.64);
   }
   100% {
     width: 0;
     height: 0;
   }
+}
+
+@keyframes nl-footer-lava-move {
+  0% { bottom: -4rem; }
+  100% { bottom: var(--distance); }
 }
 
 @media (prefers-reduced-motion: reduce) {

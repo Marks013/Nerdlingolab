@@ -6,11 +6,11 @@ import { NewsletterForm } from "@/features/newsletter/components/newsletter-form
 import type { StorefrontThemeView } from "@/lib/theme/storefront";
 
 const footerBubbles = Array.from({ length: 128 }, (_, index) => {
-  const size = 1.25 + ((index * 37) % 72) / 10;
-  const distance = 8 + ((index * 29) % 260) / 10;
+  const size = 2 + ((index * 37) % 40) / 10;
+  const distance = 6 + ((index * 29) % 40) / 10;
   const position = ((index * 83) % 116) - 8;
-  const time = 6.5 + ((index * 19) % 72) / 10;
-  const delay = -1 * (((index * 31) % 104) / 10);
+  const time = 2 + ((index * 19) % 20) / 10;
+  const delay = -1 * (2 + ((index * 31) % 20) / 10);
 
   return {
     "--delay": `${delay}s`,
@@ -76,10 +76,10 @@ export function ShopFooter({
               <feColorMatrix
                 in="blur"
                 mode="matrix"
-                result="goo"
-                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -8"
+                result="blob"
+                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9"
               />
-              <feBlend in="SourceGraphic" in2="goo" />
+              <feBlend in="SourceGraphic" in2="blob" />
             </filter>
           </defs>
         </svg>
@@ -89,7 +89,7 @@ export function ShopFooter({
           ))}
         </div>
 
-        <div className="relative z-10 mx-auto grid w-full max-w-[1440px] gap-6 px-5 py-8 sm:px-8 md:grid-cols-2 lg:grid-cols-4 lg:px-10">
+        <div className="nl-footer-lava__content relative z-10 mx-auto grid w-full max-w-[1440px] gap-6 px-5 py-8 sm:px-8 md:grid-cols-2 lg:grid-cols-4 lg:px-10">
           {serviceItems.map((item) => (
             <div className="flex items-start gap-5" key={item.title}>
               <item.icon className="mt-1 h-11 w-11 shrink-0 stroke-[1.8]" />

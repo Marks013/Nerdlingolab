@@ -468,27 +468,22 @@ form.form-shell,
 }
 
 .nl-footer-lava {
-  --footer-background: #ff5f00;
-  --footer-lava: #ff7a12;
-  background: var(--footer-background);
-  overflow: hidden;
-}
-
-.nl-footer-lava__content {
-  text-shadow: 0 1px 8px rgb(132 38 0 / 0.34);
+  --footer-background: hsl(var(--primary));
+  isolation: isolate;
+  margin-top: 5rem;
+  overflow-x: clip;
+  overflow-y: visible;
+  position: relative;
 }
 
 .nl-footer-lava__bubbles {
-  position: absolute;
-  right: 0;
-  bottom: 2rem;
-  left: 0;
-  z-index: 0;
-  height: 1rem;
-  background: var(--footer-lava);
+  background: var(--footer-background);
   filter: url("#nerdlingolab-footer-blob");
-  opacity: 0.72;
+  height: 1rem;
+  inset: 0 0 auto;
   pointer-events: none;
+  position: absolute;
+  z-index: 0;
 }
 
 .nl-footer-lava__bubble {
@@ -499,19 +494,11 @@ form.form-shell,
   width: var(--size);
   height: var(--size);
   border-radius: 999px;
-  background: var(--footer-lava);
+  background: var(--footer-background);
   animation:
     nl-footer-lava-size var(--time) ease-in infinite var(--delay),
     nl-footer-lava-move var(--time) ease-in infinite var(--delay);
   transform: translate3d(-50%, 100%, 0);
-}
-
-@media (max-width: 767px) {
-  .nl-footer-lava__bubbles {
-    bottom: 0;
-    height: 5.5rem;
-    opacity: 0.44;
-  }
 }
 
 .payment-badge svg {

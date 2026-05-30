@@ -6,8 +6,8 @@ import { NewsletterForm } from "@/features/newsletter/components/newsletter-form
 import type { StorefrontThemeView } from "@/lib/theme/storefront";
 
 const footerBubbles = Array.from({ length: 128 }, (_, index) => {
-  const size = 2 + ((index * 37) % 40) / 10;
-  const distance = 2 + ((index * 53) % 32) / 10;
+  const size = 3.2 + ((index * 37) % 30) / 10;
+  const distance = 3.2 + ((index * 53) % 24) / 10;
   const position = -5 + ((index * 29) % 110);
   const time = 2 + ((index * 17) % 20) / 10;
   const delay = -1 * (2 + ((index * 31) % 20) / 10);
@@ -67,29 +67,15 @@ export function ShopFooter({
   const securityLinks = getSecurityVerificationLinks();
 
   return (
-    <footer className="bg-white text-black">
-      <section className="nl-footer-lava relative isolate text-white">
-        <svg aria-hidden="true" className="absolute h-0 w-0">
-          <defs>
-            <filter id="nerdlingolab-footer-blob">
-              <feGaussianBlur in="SourceGraphic" result="blur" stdDeviation="10" />
-              <feColorMatrix
-                in="blur"
-                mode="matrix"
-                result="blob"
-                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9"
-              />
-              <feBlend in="SourceGraphic" in2="blob" />
-            </filter>
-          </defs>
-        </svg>
-        <div aria-hidden="true" className="nl-footer-lava__bubbles">
-          {footerBubbles.map((bubbleStyle, index) => (
-            <span className="nl-footer-lava__bubble" key={index} style={bubbleStyle} />
-          ))}
-        </div>
+    <footer className="nl-footer-lava bg-white text-black">
+      <div aria-hidden="true" className="nl-footer-lava__bubbles">
+        {footerBubbles.map((bubbleStyle, index) => (
+          <span className="nl-footer-lava__bubble" key={index} style={bubbleStyle} />
+        ))}
+      </div>
 
-        <div className="nl-footer-lava__content relative z-10 mx-auto grid w-full max-w-[1440px] gap-6 px-5 py-8 sm:px-8 md:grid-cols-2 lg:grid-cols-4 lg:px-10">
+      <section className="relative z-10 bg-primary text-white">
+        <div className="mx-auto grid w-full max-w-[1440px] gap-6 px-5 py-8 sm:px-8 md:grid-cols-2 lg:grid-cols-4 lg:px-10">
           {serviceItems.map((item) => (
             <div className="flex items-start gap-5" key={item.title}>
               <item.icon className="mt-1 h-11 w-11 shrink-0 stroke-[1.8]" />
@@ -174,6 +160,23 @@ export function ShopFooter({
       <div className="bg-[#e8e8e8] py-2 text-center text-xs text-[#677279]">
         Segurança desenvolvida & certificada pela Ímã Digital ©.
       </div>
+      <svg
+        aria-hidden="true"
+        className="pointer-events-none fixed left-0 top-0 h-0 w-0 overflow-hidden"
+        focusable="false"
+      >
+        <defs>
+          <filter id="nerdlingolab-footer-blob">
+            <feGaussianBlur in="SourceGraphic" result="blur" stdDeviation="10" />
+            <feColorMatrix
+              in="blur"
+              mode="matrix"
+              result="blob"
+              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9"
+            />
+          </filter>
+        </defs>
+      </svg>
     </footer>
   );
 }

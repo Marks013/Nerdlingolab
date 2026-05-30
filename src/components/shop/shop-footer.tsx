@@ -7,7 +7,7 @@ import type { StorefrontThemeView } from "@/lib/theme/storefront";
 
 const footerBubbles = Array.from({ length: 128 }, (_, index) => {
   const size = 2 + ((index * 37) % 40) / 10;
-  const distance = 6 + ((index * 53) % 40) / 10;
+  const distance = 2 + ((index * 53) % 32) / 10;
   const position = -5 + ((index * 29) % 110);
   const time = 2 + ((index * 17) % 20) / 10;
   const delay = -1 * (2 + ((index * 31) % 20) / 10);
@@ -68,7 +68,7 @@ export function ShopFooter({
 
   return (
     <footer className="bg-white text-black">
-      <section className="nl-footer-lava relative isolate mt-20 text-white">
+      <section className="nl-footer-lava relative isolate text-white">
         <svg aria-hidden="true" className="absolute h-0 w-0">
           <defs>
             <filter id="nerdlingolab-footer-blob">

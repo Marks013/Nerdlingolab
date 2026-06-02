@@ -92,4 +92,4 @@ docker run --rm --network automation_backend curlimages/curl:8.7.1 \
   http://nerdlingolab-web:3000/api/admin/ops/status | jq
 ```
 
-O status pode ser `degraded` por alerta real de negocio, por exemplo fontes de dropshipping pendentes de configuracao.
+O status fica `degraded` apenas por incidente tecnico. Pendencias comerciais, como fontes de dropshipping pendentes de configuracao, ficam em `businessWarnings` e entram no relatorio sem derrubar a saude geral.

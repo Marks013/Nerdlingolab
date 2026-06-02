@@ -84,14 +84,17 @@ export async function GET(request: Request): Promise<NextResponse> {
       getAutomationJobs()
     ]);
 
-    const warnings = [
+    const sourceSignals = buildSourceSignals(normalizeCounts(sourceAlertStatuses), normalizeCounts(productSourceStatuses));
+    const incidents = [
       ...buildQueueWarnings("billingWebhooks", webhookStatuses, staleWebhooks),
       ...buildQueueWarnings("newsletterDeliveries", newsletterDeliveryStatuses, staleNewsletterDeliveries),
-      ...buildSourceWarnings(normalizeCounts(sourceAlertStatuses), normalizeCounts(productSourceStatuses)),
+      ...sourceSignals.incidents,
       ...buildBackupWarnings(backupStatus, now)
     ];
+    const businessWarnings = sourceSignals.businessWarnings;
+    const warnings = [...incidents, ...businessWarnings];
 
-    const state: OpsState = warnings.length > 0 ? "degraded" : "ok";
+    const state: OpsState = incidents.length > 0 ? "degraded" : "ok";
 
     return NextResponse.json({
       status: state,
@@ -126,6 +129,8 @@ export async function GET(request: Request): Promise<NextResponse> {
         supportTickets: normalizeCounts(supportTicketStatuses),
         loyaltyNotifications: normalizeCounts(loyaltyNotificationStatuses)
       },
+      incidents,
+      businessWarnings,
       warnings
     });
   } catch (error) {
@@ -248,25 +253,29 @@ function buildQueueWarnings(label: string, statuses: CountByStatus[], staleProce
   return warnings;
 }
 
-function buildSourceWarnings(sourceAlerts: CountByStatus[], productSources: CountByStatus[]): string[] {
-  const warnings: string[] = [];
+function buildSourceSignals(
+  sourceAlerts: CountByStatus[],
+  productSources: CountByStatus[]
+): { businessWarnings: string[]; incidents: string[] } {
+  const businessWarnings: string[] = [];
+  const incidents: string[] = [];
   const openAlerts = countStatus(sourceAlerts, "OPEN");
   const configRequired = countStatus(productSources, "CONFIG_REQUIRED");
   const sourceErrors = countStatus(productSources, "ERROR");
 
+  if (sourceErrors > 0) {
+    incidents.push(`dropshipping: ${sourceErrors} origens com erro`);
+  }
+
   if (openAlerts > 0) {
-    warnings.push(`dropshipping: ${openAlerts} alertas de fornecedor abertos`);
+    businessWarnings.push(`dropshipping: ${openAlerts} alertas de fornecedor abertos`);
   }
 
   if (configRequired > 0) {
-    warnings.push(`dropshipping: ${configRequired} origens pendentes de configuracao`);
+    businessWarnings.push(`dropshipping: ${configRequired} origens pendentes de configuracao`);
   }
 
-  if (sourceErrors > 0) {
-    warnings.push(`dropshipping: ${sourceErrors} origens com erro`);
-  }
-
-  return warnings;
+  return { businessWarnings, incidents };
 }
 
 function buildBackupWarnings(status: Awaited<ReturnType<typeof readBackupStatus>>, now: Date): string[] {

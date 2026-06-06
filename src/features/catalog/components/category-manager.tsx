@@ -105,7 +105,9 @@ function CategoryCard({ category, products }: { category: AdminCategoryManagerIt
           <p className="text-sm text-muted-foreground">{category.description ?? "Sem descrição pública"}</p>
           <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
             <span className="rounded-full border px-2 py-1">{category._count.products} produto{category._count.products === 1 ? "" : "s"}</span>
-            <span className="rounded-full border px-2 py-1">{totalVariants} variação{totalVariants === 1 ? "" : "ões"}</span>
+            <span className="rounded-full border px-2 py-1">
+              {totalVariants} {totalVariants === 1 ? "variação" : "variações"}
+            </span>
             <span className="rounded-full border px-2 py-1">{category.isActive ? "Visível" : "Oculta"}</span>
           </div>
         </div>
@@ -161,7 +163,9 @@ function ProductInCategory({
       </div>
       <div className="min-w-0">
         <p className="truncate font-semibold">{product.title}</p>
-        <p className="text-xs text-muted-foreground">{product.variants.length} variação{product.variants.length === 1 ? "" : "ões"} / {stock} em estoque</p>
+        <p className="text-xs text-muted-foreground">
+          {product.variants.length} {product.variants.length === 1 ? "variação" : "variações"} / {stock} em estoque
+        </p>
         <p className="text-sm font-semibold">{formatCurrency(product.priceCents)}</p>
       </div>
       <form action={removeProductFromCategory}>

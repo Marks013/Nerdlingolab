@@ -8,6 +8,7 @@ const repositoryCsvPath = path.resolve("data/shopify/products_export_1.csv");
 const defaultOutputPath = path.resolve("data/dropshipping", `supplier-snapshots-${new Date().toISOString().slice(0, 10)}.csv`);
 const importColumns = ["preco_importacao", "estoque_importacao", "status", "titulo_importacao", "note", "checkedAt"];
 const minimumReliablePrice = 15;
+const maximumReliablePrice = 500;
 const args = parseArgs(process.argv.slice(2));
 const inputPath = path.resolve(args.input ?? repositoryCsvPath);
 const outputPath = path.resolve(args.output ?? defaultOutputPath);
@@ -32,6 +33,14 @@ const context = await chromium.launchPersistentContext(userDataDir, {
 });
 const page = context.pages()[0] ?? await context.newPage();
 const outputRows = input.rows.map((item) => alignRow(item.row, outputHeaders.length));
+const runSummary = {
+  priceCaptured: 0,
+  stockCaptured: 0,
+  reviewRequired: 0,
+  unavailable: 0,
+  statusCounts: {}
+};
+
 fs.writeFileSync(outputPath, toCsv([outputHeaders, ...outputRows], input.delimiter), "utf8");
 
 try {
@@ -45,10 +54,10 @@ try {
     const row = outputRows[item.originalIndex];
 
     const normalizedPrice = normalizePrice(snapshot.price);
-    const suspiciousPrice = isSuspiciousLowPrice(normalizedPrice);
+    const suspiciousPrice = isSuspiciousPrice(normalizedPrice);
     const status = suspiciousPrice ? "CONFIG_REQUIRED" : snapshot.status;
     const note = suspiciousPrice
-      ? appendNote(snapshot.note, `Preco coletado abaixo de R$ ${minimumReliablePrice.toFixed(2).replace(".", ",")} e removido para revisao manual.`)
+      ? appendNote(snapshot.note, `Preco coletado fora da faixa segura (R$ ${minimumReliablePrice.toFixed(2).replace(".", ",")} a R$ ${maximumReliablePrice.toFixed(2).replace(".", ",")}) e removido para revisao manual.`)
       : snapshot.note;
 
     setColumn(row, outputHeaders, "provider", snapshot.provider);
@@ -58,6 +67,11 @@ try {
     setColumn(row, outputHeaders, "status", status);
     setColumn(row, outputHeaders, "note", note);
     setColumn(row, outputHeaders, "checkedAt", new Date().toISOString());
+    incrementSummary(runSummary, {
+      price: suspiciousPrice ? "" : normalizedPrice,
+      stock: snapshot.stock,
+      status
+    });
     fs.writeFileSync(outputPath, toCsv([outputHeaders, ...outputRows], input.delimiter), "utf8");
   }
 } finally {
@@ -69,8 +83,29 @@ console.log(JSON.stringify({
   output: outputPath,
   profile: userDataDir,
   processed: selectedRows.length,
-  totalRows: input.rows.length
+  totalRows: input.rows.length,
+  ...runSummary
 }, null, 2));
+
+function incrementSummary(summary, snapshot) {
+  if (snapshot.price) {
+    summary.priceCaptured += 1;
+  }
+
+  if (snapshot.stock) {
+    summary.stockCaptured += 1;
+  }
+
+  if (snapshot.status === "CONFIG_REQUIRED") {
+    summary.reviewRequired += 1;
+  }
+
+  if (snapshot.status === "INACTIVE") {
+    summary.unavailable += 1;
+  }
+
+  summary.statusCounts[snapshot.status] = (summary.statusCounts[snapshot.status] || 0) + 1;
+}
 
 function parseArgs(rawArgs) {
   const parsed = {};
@@ -298,7 +333,59 @@ async function collectUrlSnapshot(page, url, delayMs) {
           return metaCandidate;
         }
 
+        const domCandidate = findDomPrice();
+
+        if (isReliableBrowserPrice(domCandidate)) {
+          return domCandidate;
+        }
+
         return findVisiblePrice(bodyText);
+      }
+
+      function findDomPrice() {
+        const candidates = [];
+        const selectors = [
+          "[itemprop='price']",
+          "meta[itemprop='price']",
+          "[data-testid*='price' i]",
+          "[data-testid*='valor' i]",
+          "[class*='price' i]",
+          "[class*='preco' i]",
+          "[class*='andes-money-amount' i]"
+        ];
+
+        for (const selector of selectors) {
+          for (const node of [...document.querySelectorAll(selector)].slice(0, 80)) {
+            const content = node.getAttribute?.("content");
+            const value = content || readMoneyElement(node);
+            const normalized = normalizeBrowserPrice(value);
+
+            if (!isReliableBrowserPrice(normalized)) {
+              continue;
+            }
+
+            const context = `${node.getAttribute?.("aria-label") || ""} ${node.textContent || ""}`.trim();
+
+            if (isInstallmentOrSecondaryPrice(context)) {
+              continue;
+            }
+
+            candidates.push(normalized);
+          }
+        }
+
+        return candidates[0] || "";
+      }
+
+      function readMoneyElement(node) {
+        const fraction = node.querySelector?.(".andes-money-amount__fraction")?.textContent?.trim();
+        const cents = node.querySelector?.(".andes-money-amount__cents")?.textContent?.trim();
+
+        if (fraction) {
+          return cents ? `${fraction},${cents}` : fraction;
+        }
+
+        return node.textContent || "";
       }
 
       function findVisiblePrice(bodyText) {
@@ -325,30 +412,20 @@ async function collectUrlSnapshot(page, url, delayMs) {
           return "";
         }
 
-        const match = text.match(/([0-9]{1,3}(?:\.[0-9]{3})*,[0-9]{2}|[0-9]+,[0-9]{2}|[0-9]+(?:\.[0-9]{1,2})?)/);
+        const match = text.match(/([0-9]{1,3}(?:\.[0-9]{3})*,[0-9]{1,2}|[0-9]+,[0-9]{1,2}|[0-9]+(?:\.[0-9]{1,2})?)/);
         const price = match?.[1] || "";
 
         if (!price) {
           return "";
         }
 
-        if (price.includes(",")) {
-          return price.replace(/\./g, "");
-        }
-
-        if (/^\d+\.\d{1,2}$/.test(price)) {
-          const [reais, centavos = ""] = price.split(".");
-
-          return `${reais},${centavos.padEnd(2, "0")}`;
-        }
-
-        return price;
+        return formatBrowserPrice(price);
       }
 
       function isReliableBrowserPrice(value) {
         const price = parseBrowserPrice(value);
 
-        return price !== null && price >= 15 && price < 2_000;
+        return price !== null && price >= 15 && price <= 500;
       }
 
       function parseBrowserPrice(value) {
@@ -361,6 +438,35 @@ async function collectUrlSnapshot(page, url, delayMs) {
         const numberValue = Number(text.replace(/\./g, "").replace(",", "."));
 
         return Number.isFinite(numberValue) ? numberValue : null;
+      }
+
+      function formatBrowserPrice(value) {
+        const text = String(value || "").trim();
+
+        if (!text) {
+          return "";
+        }
+
+        if (text.includes(",")) {
+          const [reais, centavos = ""] = text.replace(/\./g, "").split(",");
+
+          return `${reais},${centavos.padEnd(2, "0").slice(0, 2)}`;
+        }
+
+        if (/^\d+\.\d{1,2}$/.test(text)) {
+          const [reais, centavos = ""] = text.split(".");
+
+          return `${reais},${centavos.padEnd(2, "0").slice(0, 2)}`;
+        }
+
+        if (/^\d{4,6}$/.test(text)) {
+          const cents = text.slice(-2);
+          const reais = text.slice(0, -2);
+
+          return `${reais},${cents}`;
+        }
+
+        return `${text},00`;
       }
 
       function isInstallmentOrSecondaryPrice(context) {
@@ -428,26 +534,32 @@ function normalizePrice(value) {
     return "";
   }
 
-  const match = text.match(/([0-9]{1,3}(?:\.[0-9]{3})*,[0-9]{2}|[0-9]+,[0-9]{2}|[0-9]+(?:\.[0-9]{1,2})?)/);
+  const match = text.match(/([0-9]{1,3}(?:\.[0-9]{3})*,[0-9]{1,2}|[0-9]+,[0-9]{1,2}|[0-9]+(?:\.[0-9]{1,2})?)/);
   const price = match?.[1] ?? text;
 
   if (price.includes(",")) {
-    return price.replace(/\./g, "");
+    const [reais, centavos = ""] = price.replace(/\./g, "").split(",");
+
+    return `${reais},${centavos.padEnd(2, "0").slice(0, 2)}`;
   }
 
   if (/^\d+\.\d{1,2}$/.test(price)) {
     const [reais, centavos = ""] = price.split(".");
 
-    return `${reais},${centavos.padEnd(2, "0")}`;
+    return `${reais},${centavos.padEnd(2, "0").slice(0, 2)}`;
   }
 
-  return price;
+  if (/^\d{4,6}$/.test(price)) {
+    return `${price.slice(0, -2)},${price.slice(-2)}`;
+  }
+
+  return /^\d+$/.test(price) ? `${price},00` : price;
 }
 
-function isSuspiciousLowPrice(value) {
+function isSuspiciousPrice(value) {
   const price = parsePrice(value);
 
-  return price !== null && price > 0 && price < minimumReliablePrice;
+  return price !== null && (price < minimumReliablePrice || price > maximumReliablePrice);
 }
 
 function parsePrice(value) {

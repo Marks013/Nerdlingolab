@@ -301,10 +301,12 @@ async function fetchPublicProductPageSnapshot(params: {
       externalId: params.externalId,
       externalShopId: params.externalShopId,
       title: structured.title,
-      status: statusFromStructuredAvailability(structured.availability, structured.priceCents),
+      status: params.provider === SupplierProvider.SHOPEE
+        ? statusFromShopeeStructuredAvailability(structured.priceCents)
+        : statusFromStructuredAvailability(structured.availability, structured.priceCents),
       priceCents: structured.priceCents,
       currency: structured.currency ?? "BRL",
-      stockQuantity: structured.stockQuantity,
+      stockQuantity: params.provider === SupplierProvider.SHOPEE ? null : structured.stockQuantity,
       variants: [],
       rawSummary: {
         mode: "public_page_structured_data",
@@ -507,6 +509,10 @@ function statusFromStructuredAvailability(availability: string | null, priceCent
   }
 
   return priceCents ? SupplierSourceStatus.ACTIVE : SupplierSourceStatus.UNKNOWN;
+}
+
+function statusFromShopeeStructuredAvailability(priceCents: number | null): SupplierSourceStatus {
+  return priceCents ? SupplierSourceStatus.ACTIVE : SupplierSourceStatus.CONFIG_REQUIRED;
 }
 
 function normalizeMercadoLivreVariation(variation: MercadoLivreVariation, currency: unknown): SupplierVariantSnapshot {

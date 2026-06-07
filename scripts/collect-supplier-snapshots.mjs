@@ -467,7 +467,7 @@ async function collectUrlSnapshot(page, item, delayMs) {
       function isReliableBrowserPrice(value) {
         const price = parseBrowserPrice(value);
 
-        return price !== null && price >= 15 && price <= 500;
+        return price !== null && price >= 15 && price <= 2000;
       }
 
       function parseBrowserPrice(value) {
@@ -518,6 +518,10 @@ async function collectUrlSnapshot(page, item, delayMs) {
       }
 
       function findStock(bodyText, availability) {
+        if (provider === "SHOPEE") {
+          return "";
+        }
+
         if (/OutOfStock|SoldOut|Discontinued|esgotado|sem estoque|indisponivel|indisponível/i.test(String(availability || ""))) {
           return "0";
         }
@@ -552,6 +556,10 @@ async function collectUrlSnapshot(page, item, delayMs) {
 
         if (/pausad[oa]|desativad[oa]|suspens[oa]|an[uú]ncio pausado|publica[cç][aã]o pausada/i.test(joined)) {
           return "PAUSED";
+        }
+
+        if (provider === "SHOPEE") {
+          return priceValue ? "ACTIVE" : "CONFIG_REQUIRED";
         }
 
         if (/OutOfStock|SoldOut|Discontinued|esgotado|sem estoque|indisponivel|indisponível/i.test(String(availability || ""))) {

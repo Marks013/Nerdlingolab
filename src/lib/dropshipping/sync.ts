@@ -257,8 +257,10 @@ export async function updateManualProductSourceSnapshot(input: {
   }
 
   const now = new Date();
+  const normalizedStatus = normalizeSupplierStatus(source.provider, input.status);
+  const normalizedStockQuantity = source.provider === SupplierProvider.SHOPEE ? null : input.stockQuantity;
   const nextPriceCents = input.priceCents ?? source.lastPriceCents;
-  const nextStockQuantity = input.stockQuantity ?? source.lastStockQuantity;
+  const nextStockQuantity = normalizedStockQuantity ?? source.lastStockQuantity;
 
   await prisma.$transaction(async (tx) => {
     await tx.productSource.update({
@@ -269,7 +271,7 @@ export async function updateManualProductSourceSnapshot(input: {
         lastPriceCents: nextPriceCents,
         lastStockQuantity: nextStockQuantity,
         lastSuccessfulSyncAt: now,
-        status: input.status
+        status: normalizedStatus
       },
       where: { id: source.id }
     });
@@ -277,10 +279,10 @@ export async function updateManualProductSourceSnapshot(input: {
     await tx.productSourceSnapshot.create({
       data: {
         productSourceId: source.id,
-        status: input.status,
+        status: normalizedStatus,
         priceCents: input.priceCents,
         currency: "BRL",
-        stockQuantity: input.stockQuantity,
+        stockQuantity: normalizedStockQuantity,
         rawSummary: {
           mode: "manual_assisted",
           note: input.note ?? null
@@ -288,7 +290,7 @@ export async function updateManualProductSourceSnapshot(input: {
       }
     });
 
-    if (input.status === SupplierSourceStatus.ACTIVE) {
+    if (normalizedStatus === SupplierSourceStatus.ACTIVE) {
       await tx.sourceAlert.updateMany({
         data: {
           resolvedAt: now,
@@ -302,7 +304,7 @@ export async function updateManualProductSourceSnapshot(input: {
     }
   });
 
-  if (input.status === SupplierSourceStatus.OUT_OF_STOCK) {
+  if (normalizedStatus === SupplierSourceStatus.OUT_OF_STOCK) {
     await upsertOpenAlert(source.id, {
       message: "Validacao manual marcou fornecedor sem estoque.",
       severity: SupplierAlertSeverity.CRITICAL,
@@ -310,11 +312,11 @@ export async function updateManualProductSourceSnapshot(input: {
     });
   }
 
-  if (closedSourceStatuses.includes(input.status)) {
+  if (closedSourceStatuses.includes(normalizedStatus)) {
     await upsertOpenAlert(source.id, {
-      message: `Validacao manual marcou origem como ${input.status}.`,
+      message: `Validacao manual marcou origem como ${normalizedStatus}.`,
       severity: SupplierAlertSeverity.CRITICAL,
-      type: input.status === SupplierSourceStatus.PAUSED ? SupplierAlertType.SOURCE_PAUSED : SupplierAlertType.SOURCE_CLOSED
+      type: normalizedStatus === SupplierSourceStatus.PAUSED ? SupplierAlertType.SOURCE_PAUSED : SupplierAlertType.SOURCE_CLOSED
     });
   }
 }
@@ -366,8 +368,10 @@ async function persistSnapshot(
 ): Promise<void> {
   const previous = source.snapshots[0];
   const now = snapshot.fetchedAt;
+  const normalizedStatus = normalizeSupplierStatus(source.provider, snapshot.status);
+  const normalizedStockQuantity = source.provider === SupplierProvider.SHOPEE ? null : snapshot.stockQuantity;
   const nextPriceCents = snapshot.priceCents ?? source.lastPriceCents;
-  const nextStockQuantity = snapshot.stockQuantity ?? source.lastStockQuantity;
+  const nextStockQuantity = normalizedStockQuantity ?? source.lastStockQuantity;
 
   await prisma.$transaction(async (tx) => {
     await tx.productSource.update({
@@ -380,7 +384,7 @@ async function persistSnapshot(
         lastPriceCents: nextPriceCents,
         lastStockQuantity: nextStockQuantity,
         lastSuccessfulSyncAt: now,
-        status: snapshot.status,
+        status: normalizedStatus,
         title: snapshot.title
       },
       where: { id: source.id }
@@ -389,11 +393,11 @@ async function persistSnapshot(
     await tx.productSourceSnapshot.create({
       data: {
         productSourceId: source.id,
-        status: snapshot.status,
+        status: normalizedStatus,
         title: snapshot.title,
         priceCents: snapshot.priceCents,
         currency: snapshot.currency,
-        stockQuantity: snapshot.stockQuantity,
+        stockQuantity: normalizedStockQuantity,
         variantCount: snapshot.variants.length,
         rawSummary: snapshot.rawSummary as Prisma.InputJsonObject
       }
@@ -437,7 +441,7 @@ async function persistSnapshot(
     }
   });
 
-  if (snapshot.status === SupplierSourceStatus.ACTIVE) {
+  if (normalizedStatus === SupplierSourceStatus.ACTIVE) {
     await prisma.sourceAlert.updateMany({
       data: {
         resolvedAt: now,
@@ -451,7 +455,15 @@ async function persistSnapshot(
     });
   }
 
-  await createChangeAlerts(source, snapshot, previous);
+  await createChangeAlerts(source, { ...snapshot, status: normalizedStatus, stockQuantity: normalizedStockQuantity }, previous);
+}
+
+function normalizeSupplierStatus(provider: SupplierProvider, status: SupplierSourceStatus): SupplierSourceStatus {
+  if (provider === SupplierProvider.SHOPEE && status === SupplierSourceStatus.OUT_OF_STOCK) {
+    return SupplierSourceStatus.ACTIVE;
+  }
+
+  return status;
 }
 
 async function createChangeAlerts(

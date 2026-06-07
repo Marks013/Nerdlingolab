@@ -170,6 +170,15 @@ function hasUsefulImportData(row: SupplierSnapshotImportRow): boolean {
 }
 
 function sanitizeImportRow(row: SupplierSnapshotImportRow): SupplierSnapshotImportRow {
+  if (row.provider === SupplierProvider.SHOPEE && row.status === SupplierSourceStatus.OUT_OF_STOCK) {
+    return {
+      ...row,
+      note: appendNote(row.note, "Estoque da Shopee ignorado por baixa confiabilidade da pagina publica."),
+      status: SupplierSourceStatus.ACTIVE,
+      stockQuantity: null
+    };
+  }
+
   if (
     row.priceCents !== null
     && row.priceCents > 0
@@ -331,6 +340,10 @@ function formatCents(value: number): string {
 }
 
 function inferStatus(row: SupplierSnapshotImportRow): SupplierSourceStatus {
+  if (row.provider === SupplierProvider.SHOPEE) {
+    return SupplierSourceStatus.ACTIVE;
+  }
+
   if (row.stockQuantity === 0) {
     return SupplierSourceStatus.OUT_OF_STOCK;
   }

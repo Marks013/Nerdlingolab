@@ -120,7 +120,7 @@ function incrementSummary(summary, snapshot) {
     summary.reviewRequired += 1;
   }
 
-  if (snapshot.status === "INACTIVE") {
+  if (["OUT_OF_STOCK", "PAUSED", "CLOSED", "DELETED"].includes(snapshot.status)) {
     summary.unavailable += 1;
   }
 
@@ -518,16 +518,24 @@ async function collectUrlSnapshot(page, url, delayMs) {
       function findStatus(bodyText, availability, priceValue) {
         const joined = `${availability}\n${bodyText}`;
 
-        if (/account-verification|captcha|robot|challenge|verifica[cç][aã]o/i.test(pageUrl) || /verifique que voce|verifique que voc[eê]|nao sou um robo|não sou um robô/i.test(joined)) {
-          return "CONFIG_REQUIRED";
+        if (/produto removido|an[uú]ncio removido|publica[cç][aã]o removida|produto exclu[ií]do|an[uú]ncio exclu[ií]do|deleted/i.test(joined)) {
+          return "DELETED";
+        }
+
+        if (/an[uú]ncio finalizado|publica[cç][aã]o finalizada|produto finalizado|encerrad[oa]|finalizad[oa]|ended/i.test(joined)) {
+          return "CLOSED";
+        }
+
+        if (/pausad[oa]|desativad[oa]|suspens[oa]|an[uú]ncio pausado|publica[cç][aã]o pausada/i.test(joined)) {
+          return "PAUSED";
         }
 
         if (/OutOfStock|esgotado|sem estoque|indisponivel|indisponível/i.test(joined)) {
           return "OUT_OF_STOCK";
         }
 
-        if (/pausad|an[uú]ncio finalizado|produto removido|publica[cç][aã]o finalizada/i.test(joined)) {
-          return "PAUSED";
+        if (/account-verification|captcha|robot|challenge|verifica[cç][aã]o/i.test(pageUrl) || /verifique que voce|verifique que voc[eê]|nao sou um robo|não sou um robô/i.test(joined)) {
+          return "CONFIG_REQUIRED";
         }
 
         return priceValue ? "ACTIVE" : "CONFIG_REQUIRED";

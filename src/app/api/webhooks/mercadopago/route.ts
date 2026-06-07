@@ -1,6 +1,7 @@
 import { WebhookProvider, WebhookStatus } from "@/generated/prisma/client";
 import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { processBillingWebhookEvent } from "@/lib/payments/billing-webhook-processor";
 import {
@@ -11,6 +12,22 @@ import { isClientAbortError } from "@/lib/monitoring/sentry-filters";
 import { prisma } from "@/lib/prisma";
 import { verifyMercadoPagoWebhookSignature } from "@/lib/security/mercadopago-signature";
 import { rateLimitRequest } from "@/lib/security/rate-limit";
+
+const mercadoPagoScalarIdSchema = z.union([z.string().trim().min(1).max(160), z.number().int().nonnegative()]);
+const mercadoPagoWebhookPayloadSchema = z
+  .object({
+    action: z.string().trim().max(120).optional(),
+    data: z
+      .object({
+        id: mercadoPagoScalarIdSchema.optional()
+      })
+      .passthrough()
+      .optional(),
+    id: mercadoPagoScalarIdSchema.optional(),
+    topic: z.string().trim().max(120).optional(),
+    type: z.string().trim().max(120).optional()
+  })
+  .passthrough();
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
@@ -95,9 +112,19 @@ async function readWebhookPayload(
   | { ok: false; response: NextResponse }
 > {
   try {
+    const payload = await request.json();
+    const parsedPayload = mercadoPagoWebhookPayloadSchema.safeParse(payload);
+
+    if (!parsedPayload.success) {
+      return {
+        ok: false,
+        response: NextResponse.json({ received: false }, { status: 400 })
+      };
+    }
+
     return {
       ok: true,
-      payload: await request.json()
+      payload: parsedPayload.data
     };
   } catch (error) {
     if (isClientAbortError(error)) {

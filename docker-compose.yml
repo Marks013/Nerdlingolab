@@ -225,6 +225,7 @@ services:
       context: .
       target: supplier-runner
     container_name: nerdlingolab-supplier-capture
+    init: true
     depends_on:
       postgres:
         condition: service_healthy
@@ -237,12 +238,20 @@ services:
       SUPPLIER_CAPTURE_LIMIT: ${SUPPLIER_CAPTURE_LIMIT:-}
       SUPPLIER_CAPTURE_PROVIDER: ${SUPPLIER_CAPTURE_PROVIDER:-}
       SUPPLIER_CAPTURE_QUERY: ${SUPPLIER_CAPTURE_QUERY:-}
+      SUPPLIER_CAPTURE_RETENTION_DAYS: ${SUPPLIER_CAPTURE_RETENTION_DAYS:-14}
       SUPPLIER_CAPTURE_RUN_ON_START: ${SUPPLIER_CAPTURE_RUN_ON_START:-true}
       SUPPLIER_CAPTURE_SCOPE: ${SUPPLIER_CAPTURE_SCOPE:-active}
       SUPPLIER_CAPTURE_SKIP_REVIEW_ONLY: ${SUPPLIER_CAPTURE_SKIP_REVIEW_ONLY:-true}
+      SUPPLIER_CAPTURE_STALE_LOCK_MINUTES: ${SUPPLIER_CAPTURE_STALE_LOCK_MINUTES:-180}
       SUPPLIER_CAPTURE_STATUS: ${SUPPLIER_CAPTURE_STATUS:-}
+      SUPPLIER_CAPTURE_STEP_TIMEOUT_MINUTES: ${SUPPLIER_CAPTURE_STEP_TIMEOUT_MINUTES:-45}
       SUPPLIER_PLAYWRIGHT_PROFILE: /supplier-capture/profile
+    cpus: ${SUPPLIER_CAPTURE_CPUS:-1.0}
+    mem_limit: ${SUPPLIER_CAPTURE_MEMORY_LIMIT:-1536m}
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    shm_size: "1gb"
     volumes:
       - type: bind
         source: ${SUPPLIER_CAPTURE_HOST_DIR:-/srv/nerdlingolab/supplier-capture}

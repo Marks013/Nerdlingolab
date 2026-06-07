@@ -4,6 +4,12 @@ import { join } from "node:path";
 
 import { NextResponse } from "next/server";
 
+import {
+  ProductStatus,
+  SupplierAlertSeverity,
+  SupplierAlertStatus,
+  SupplierSourceStatus
+} from "@/generated/prisma/client";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { rateLimitRequest } from "@/lib/security/rate-limit";
@@ -49,7 +55,9 @@ export async function GET(request: Request): Promise<NextResponse> {
       staleNewsletterDeliveries,
       newsletterCampaignStatuses,
       sourceAlertStatuses,
+      actionableSourceAlerts,
       productSourceStatuses,
+      actionableConfigRequiredSources,
       orderStatuses,
       paymentStatuses,
       shipmentStatuses,
@@ -74,7 +82,27 @@ export async function GET(request: Request): Promise<NextResponse> {
       }),
       prisma.newsletterCampaign.groupBy({ by: ["status"], _count: { _all: true } }),
       prisma.sourceAlert.groupBy({ by: ["status"], _count: { _all: true } }),
+      prisma.sourceAlert.count({
+        where: {
+          severity: { in: [SupplierAlertSeverity.WARNING, SupplierAlertSeverity.CRITICAL] },
+          status: SupplierAlertStatus.OPEN,
+          productSource: {
+            product: {
+              status: { not: ProductStatus.ARCHIVED }
+            }
+          }
+        }
+      }),
       prisma.productSource.groupBy({ by: ["status"], _count: { _all: true } }),
+      prisma.productSource.count({
+        where: {
+          lastError: { not: null },
+          status: SupplierSourceStatus.CONFIG_REQUIRED,
+          product: {
+            status: { not: ProductStatus.ARCHIVED }
+          }
+        }
+      }),
       prisma.order.groupBy({ by: ["status"], _count: { _all: true } }),
       prisma.order.groupBy({ by: ["paymentStatus"], _count: { _all: true } }),
       prisma.shipment.groupBy({ by: ["status"], _count: { _all: true } }),
@@ -84,7 +112,11 @@ export async function GET(request: Request): Promise<NextResponse> {
       getAutomationJobs()
     ]);
 
-    const sourceSignals = buildSourceSignals(normalizeCounts(sourceAlertStatuses), normalizeCounts(productSourceStatuses));
+    const sourceSignals = buildSourceSignals({
+      actionableConfigRequiredSources,
+      actionableSourceAlerts,
+      productSources: normalizeCounts(productSourceStatuses)
+    });
     const incidents = [
       ...buildQueueWarnings("billingWebhooks", webhookStatuses, staleWebhooks),
       ...buildQueueWarnings("newsletterDeliveries", newsletterDeliveryStatuses, staleNewsletterDeliveries),
@@ -118,6 +150,8 @@ export async function GET(request: Request): Promise<NextResponse> {
       },
       commerce: {
         newsletterCampaigns: normalizeCounts(newsletterCampaignStatuses),
+        actionableSourceAlerts,
+        actionableConfigRequiredSources,
         sourceAlerts: normalizeCounts(sourceAlertStatuses),
         productSources: normalizeCounts(productSourceStatuses),
         orders: normalizeCounts(orderStatuses),
@@ -253,26 +287,25 @@ function buildQueueWarnings(label: string, statuses: CountByStatus[], staleProce
   return warnings;
 }
 
-function buildSourceSignals(
-  sourceAlerts: CountByStatus[],
-  productSources: CountByStatus[]
-): { businessWarnings: string[]; incidents: string[] } {
+function buildSourceSignals(input: {
+  actionableConfigRequiredSources: number;
+  actionableSourceAlerts: number;
+  productSources: CountByStatus[];
+}): { businessWarnings: string[]; incidents: string[] } {
   const businessWarnings: string[] = [];
   const incidents: string[] = [];
-  const openAlerts = countStatus(sourceAlerts, "OPEN");
-  const configRequired = countStatus(productSources, "CONFIG_REQUIRED");
-  const sourceErrors = countStatus(productSources, "ERROR");
+  const sourceErrors = countStatus(input.productSources, SupplierSourceStatus.ERROR);
 
   if (sourceErrors > 0) {
     incidents.push(`dropshipping: ${sourceErrors} origens com erro`);
   }
 
-  if (openAlerts > 0) {
-    businessWarnings.push(`dropshipping: ${openAlerts} alertas de fornecedor abertos`);
+  if (input.actionableSourceAlerts > 0) {
+    businessWarnings.push(`dropshipping: ${input.actionableSourceAlerts} alertas acionaveis de fornecedor`);
   }
 
-  if (configRequired > 0) {
-    businessWarnings.push(`dropshipping: ${configRequired} origens pendentes de configuracao`);
+  if (input.actionableConfigRequiredSources > 0) {
+    businessWarnings.push(`dropshipping: ${input.actionableConfigRequiredSources} origens pendentes de configuracao`);
   }
 
   return { businessWarnings, incidents };

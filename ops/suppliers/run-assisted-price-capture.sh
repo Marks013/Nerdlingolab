@@ -14,6 +14,9 @@ delay="${SUPPLIER_CAPTURE_DELAY_MS:-1200}"
 skip_review_only="${SUPPLIER_CAPTURE_SKIP_REVIEW_ONLY:-true}"
 import_result="${SUPPLIER_CAPTURE_IMPORT:-true}"
 profile_dir="${SUPPLIER_PLAYWRIGHT_PROFILE:-${capture_dir}/profile}"
+retention_days="${SUPPLIER_CAPTURE_RETENTION_DAYS:-14}"
+stale_lock_minutes="${SUPPLIER_CAPTURE_STALE_LOCK_MINUTES:-180}"
+step_timeout_minutes="${SUPPLIER_CAPTURE_STEP_TIMEOUT_MINUTES:-45}"
 lock_dir="${capture_dir}/.capture.lock"
 lock_acquired=false
 
@@ -30,15 +33,55 @@ cleanup_lock() {
   fi
 }
 
+is_positive_integer() {
+  [[ "$1" =~ ^[1-9][0-9]*$ ]]
+}
+
+cleanup_old_artifacts() {
+  if ! is_positive_integer "${retention_days}"; then
+    log "Retencao de artefatos desativada ou invalida: ${retention_days}."
+    return 0
+  fi
+
+  local dir
+  for dir in "${capture_dir}/input" "${capture_dir}/output" "${capture_dir}/logs"; do
+    if [[ -d "${dir}" ]]; then
+      find "${dir}" -type f -mtime "+${retention_days}" -delete 2>/dev/null || true
+    fi
+  done
+}
+
+cleanup_stale_lock() {
+  if [[ ! -d "${lock_dir}" ]] || ! is_positive_integer "${stale_lock_minutes}"; then
+    return 0
+  fi
+
+  if find "${lock_dir}" -maxdepth 0 -mmin "+${stale_lock_minutes}" -print -quit 2>/dev/null | grep -q .; then
+    log "Lock antigo de captura encontrado e removido apos ${stale_lock_minutes} minuto(s)."
+    rm -rf "${lock_dir}"
+  fi
+}
+
+run_with_timeout() {
+  if is_positive_integer "${step_timeout_minutes}" && command -v timeout >/dev/null 2>&1; then
+    timeout "${step_timeout_minutes}m" "$@"
+  else
+    "$@"
+  fi
+}
+
 run_capture_once() {
-  lock_acquired=true
   trap cleanup_lock RETURN EXIT INT TERM
 
+  cleanup_stale_lock
+
   if ! mkdir "${lock_dir}" 2>/dev/null; then
-    lock_acquired=false
     log "Outra captura de fornecedores ja esta em andamento. Pulando esta rodada."
     return 0
   fi
+
+  lock_acquired=true
+  printf 'pid=%s\nstarted_at=%s\n' "$$" "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" > "${lock_dir}/meta"
 
   local run_id input_csv output_csv log_file
   run_id="$(date -u '+%Y%m%dT%H%M%SZ')"
@@ -59,7 +102,7 @@ run_capture_once() {
     export_args+=(--busca "${query}")
   fi
 
-  npm run suppliers:export -- "${export_args[@]}" | tee -a "${log_file}"
+  run_with_timeout npm run suppliers:export -- "${export_args[@]}" | tee -a "${log_file}"
 
   local collect_args=(--input "${input_csv}" --output "${output_csv}" --profile "${profile_dir}" --delay "${delay}")
   if [[ -n "${limit}" ]]; then
@@ -69,14 +112,15 @@ run_capture_once() {
     collect_args+=(--skip-review-only)
   fi
 
-  npm run suppliers:collect -- "${collect_args[@]}" | tee -a "${log_file}"
+  run_with_timeout npm run suppliers:collect -- "${collect_args[@]}" | tee -a "${log_file}"
 
   if [[ "${import_result}" != "false" ]]; then
-    npm run suppliers:import -- --input "${output_csv}" | tee -a "${log_file}"
+    run_with_timeout npm run suppliers:import -- --input "${output_csv}" | tee -a "${log_file}"
   else
     log "Importacao automatica desativada. CSV final: ${output_csv}" | tee -a "${log_file}"
   fi
 
+  cleanup_old_artifacts
   log "Captura assistida concluida (${run_id})." | tee -a "${log_file}"
 }
 
@@ -88,9 +132,12 @@ sleep_interval() {
 }
 
 if [[ "${run_once_mode}" == "true" ]]; then
+  cleanup_old_artifacts
   run_capture_once
   exit 0
 fi
+
+cleanup_old_artifacts
 
 if [[ "${run_on_start}" != "false" ]]; then
   run_capture_once

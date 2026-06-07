@@ -13,7 +13,7 @@ RUN apk add --no-cache libc6-compat openssl
 FROM base AS deps
 
 COPY package.json package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci --prefer-offline
+RUN --mount=type=cache,target=/root/.npm npm ci --include=dev --prefer-offline
 
 FROM base AS builder
 
@@ -51,7 +51,7 @@ ENV NPM_CONFIG_FUND="false"
 ENV NPM_CONFIG_UPDATE_NOTIFIER="false"
 
 COPY package.json package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci --prefer-offline
+RUN --mount=type=cache,target=/root/.npm npm ci --include=dev --prefer-offline
 
 COPY . .
 RUN npm run prisma:generate && chmod +x ops/suppliers/run-assisted-price-capture.sh

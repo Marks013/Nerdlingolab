@@ -28,6 +28,14 @@ const operationalSupplierAlertTypes = [
   SupplierAlertType.SOURCE_DELETED,
   SupplierAlertType.SOURCE_PAUSED
 ];
+const operationalSupplierSourceStatuses = [
+  SupplierSourceStatus.CONFIG_REQUIRED,
+  SupplierSourceStatus.CLOSED,
+  SupplierSourceStatus.DELETED,
+  SupplierSourceStatus.ERROR,
+  SupplierSourceStatus.OUT_OF_STOCK,
+  SupplierSourceStatus.PAUSED
+];
 
 type OpsState = "ok" | "degraded";
 
@@ -98,6 +106,7 @@ export async function GET(request: Request): Promise<NextResponse> {
           status: SupplierAlertStatus.OPEN,
           type: { in: operationalSupplierAlertTypes },
           productSource: {
+            status: { in: operationalSupplierSourceStatuses },
             product: {
               status: { not: ProductStatus.ARCHIVED }
             }

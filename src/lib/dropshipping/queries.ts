@@ -1,5 +1,6 @@
 import {
   ProductStatus,
+  SupplierAlertSeverity,
   SupplierAlertStatus,
   SupplierAlertType,
   SupplierProvider,
@@ -19,6 +20,17 @@ const unavailableStatuses: SupplierSourceStatus[] = [
   SupplierSourceStatus.CLOSED,
   SupplierSourceStatus.DELETED
 ];
+const actionableSourceStatuses: SupplierSourceStatus[] = [
+  SupplierSourceStatus.OUT_OF_STOCK,
+  SupplierSourceStatus.PAUSED,
+  SupplierSourceStatus.CLOSED,
+  SupplierSourceStatus.DELETED,
+  SupplierSourceStatus.ERROR
+];
+const actionableAlertWhere = {
+  severity: { in: [SupplierAlertSeverity.WARNING, SupplierAlertSeverity.CRITICAL] },
+  status: SupplierAlertStatus.OPEN
+} satisfies Prisma.SourceAlertWhereInput;
 
 export interface DropshippingDashboardFilters {
   provider?: SupplierProvider;
@@ -82,7 +94,7 @@ export async function getDropshippingDashboard(filters: DropshippingDashboardFil
         alerts: {
           orderBy: { createdAt: "desc" },
           take: 3,
-          where: { status: SupplierAlertStatus.OPEN }
+          where: actionableAlertWhere
         },
         product: true,
         supplier: true,
@@ -102,12 +114,12 @@ export async function getDropshippingDashboard(filters: DropshippingDashboardFil
     prisma.productSource.count({ where }),
     prisma.sourceAlert.count({
       where: {
+        ...actionableAlertWhere,
         productSource: {
           product: {
             status: { not: ProductStatus.ARCHIVED }
           }
-        },
-        status: SupplierAlertStatus.OPEN
+        }
       }
     }),
     prisma.productSource.count({
@@ -250,9 +262,7 @@ function buildDashboardWhere(filters: DropshippingDashboardFilters = {}): Prisma
   if (filters.alert === "open") {
     combinedFilters.push({
       alerts: {
-        some: {
-          status: SupplierAlertStatus.OPEN
-        }
+        some: actionableAlertWhere
       }
     });
   }
@@ -275,9 +285,7 @@ function resolveDashboardScopeWhere(filters: DropshippingDashboardFilters): Pris
   if (filters.scope === "active") {
     return {
       alerts: {
-        none: {
-          status: SupplierAlertStatus.OPEN
-        }
+        none: actionableAlertWhere
       },
       status: SupplierSourceStatus.ACTIVE
     };
@@ -287,14 +295,18 @@ function resolveDashboardScopeWhere(filters: DropshippingDashboardFilters): Pris
     OR: [
       {
         status: {
-          not: SupplierSourceStatus.ACTIVE
+          in: actionableSourceStatuses
+        }
+      },
+      {
+        status: SupplierSourceStatus.CONFIG_REQUIRED,
+        lastError: {
+          not: null
         }
       },
       {
         alerts: {
-          some: {
-            status: SupplierAlertStatus.OPEN
-          }
+          some: actionableAlertWhere
         }
       }
     ]

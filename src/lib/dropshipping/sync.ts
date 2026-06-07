@@ -471,14 +471,6 @@ async function createChangeAlerts(
     });
   }
 
-  if (snapshot.status === SupplierSourceStatus.CONFIG_REQUIRED) {
-    await upsertOpenAlert(source.id, {
-      message: "Origem de terceiro exige validacao manual para preco e estoque.",
-      severity: SupplierAlertSeverity.INFO,
-      type: SupplierAlertType.CONFIG_REQUIRED
-    });
-  }
-
   if (previous?.priceCents && snapshot.priceCents && snapshot.priceCents > previous.priceCents) {
     await upsertOpenAlert(source.id, {
       message: `Preco fornecedor subiu de ${previous.priceCents} para ${snapshot.priceCents} centavos.`,

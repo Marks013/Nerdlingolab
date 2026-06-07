@@ -15,6 +15,7 @@ skip_review_only="${SUPPLIER_CAPTURE_SKIP_REVIEW_ONLY:-true}"
 import_result="${SUPPLIER_CAPTURE_IMPORT:-true}"
 profile_dir="${SUPPLIER_PLAYWRIGHT_PROFILE:-${capture_dir}/profile}"
 lock_dir="${capture_dir}/.capture.lock"
+lock_acquired=false
 
 mkdir -p "${capture_dir}/input" "${capture_dir}/output" "${capture_dir}/logs" "${profile_dir}"
 
@@ -22,13 +23,22 @@ log() {
   printf '[%s] %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$*"
 }
 
+cleanup_lock() {
+  if [[ "${lock_acquired}" == "true" ]]; then
+    rm -rf "${lock_dir}"
+    lock_acquired=false
+  fi
+}
+
 run_capture_once() {
+  lock_acquired=true
+  trap cleanup_lock RETURN EXIT INT TERM
+
   if ! mkdir "${lock_dir}" 2>/dev/null; then
+    lock_acquired=false
     log "Outra captura de fornecedores ja esta em andamento. Pulando esta rodada."
     return 0
   fi
-
-  trap 'rm -rf "${lock_dir}"' RETURN
 
   local run_id input_csv output_csv log_file
   run_id="$(date -u '+%Y%m%dT%H%M%SZ')"

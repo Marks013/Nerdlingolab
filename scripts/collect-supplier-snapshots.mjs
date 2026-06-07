@@ -16,6 +16,7 @@ const userDataDir = path.resolve(args.profile ?? ".tmp/supplier-collector-profil
 const limit = args.limit ? Number.parseInt(args.limit, 10) : undefined;
 const delayMs = args.delay ? Number.parseInt(args.delay, 10) : 900;
 const skipReviewOnly = Boolean(args.skipReviewOnly);
+const mercadoLivreAccessToken = process.env.MERCADO_LIVRE_ACCESS_TOKEN || process.env.MERCADO_ENVIOS_ACCESS_TOKEN || "";
 
 if (!fs.existsSync(inputPath)) {
   throw new Error(`Arquivo de entrada nao encontrado: ${inputPath}`);
@@ -517,7 +518,15 @@ async function collectUrlSnapshot(page, item, delayMs) {
       }
 
       function findStock(bodyText, availability) {
-        if (/OutOfStock|esgotado|sem estoque|indisponivel|indisponível/i.test(`${availability}\n${bodyText}`)) {
+        if (/OutOfStock|SoldOut|Discontinued|esgotado|sem estoque|indisponivel|indisponível/i.test(String(availability || ""))) {
+          return "0";
+        }
+
+        if (isVerificationPage(bodyText)) {
+          return "";
+        }
+
+        if (/produto\s+(?:esgotado|sem estoque|indispon[ií]vel)|an[uú]ncio\s+(?:esgotado|sem estoque|indispon[ií]vel)/i.test(bodyText.slice(0, 5000))) {
           return "0";
         }
 
@@ -528,6 +537,10 @@ async function collectUrlSnapshot(page, item, delayMs) {
 
       function findStatus(bodyText, availability, priceValue) {
         const joined = `${availability}\n${bodyText}`;
+
+        if (isVerificationPage(joined)) {
+          return "CONFIG_REQUIRED";
+        }
 
         if (/produto removido|an[uú]ncio removido|publica[cç][aã]o removida|produto exclu[ií]do|an[uú]ncio exclu[ií]do|deleted/i.test(joined)) {
           return "DELETED";
@@ -541,15 +554,20 @@ async function collectUrlSnapshot(page, item, delayMs) {
           return "PAUSED";
         }
 
-        if (/OutOfStock|esgotado|sem estoque|indisponivel|indisponível/i.test(joined)) {
+        if (/OutOfStock|SoldOut|Discontinued|esgotado|sem estoque|indisponivel|indisponível/i.test(String(availability || ""))) {
           return "OUT_OF_STOCK";
         }
 
-        if (/account-verification|captcha|robot|challenge|verifica[cç][aã]o/i.test(pageUrl) || /verifique que voce|verifique que voc[eê]|nao sou um robo|não sou um robô/i.test(joined)) {
-          return "CONFIG_REQUIRED";
+        if (!priceValue && /produto\s+(?:esgotado|sem estoque|indispon[ií]vel)|an[uú]ncio\s+(?:esgotado|sem estoque|indispon[ií]vel)/i.test(bodyText.slice(0, 5000))) {
+          return "OUT_OF_STOCK";
         }
 
         return priceValue ? "ACTIVE" : "CONFIG_REQUIRED";
+      }
+
+      function isVerificationPage(bodyText) {
+        return /account-verification|captcha|robot|challenge|verifica[cç][aã]o/i.test(pageUrl)
+          || /verifique que voce|verifique que voc[eê]|nao sou um robo|não sou um robô|acesse\s+sua\s+conta/i.test(bodyText);
       }
     });
   } catch (error) {
@@ -577,6 +595,7 @@ async function collectMercadoLivreApiSnapshot(item) {
     const response = await fetch(`https://api.mercadolibre.com/items/${encodeURIComponent(externalId)}`, {
       headers: {
         accept: "application/json",
+        ...(mercadoLivreAccessToken ? { Authorization: `Bearer ${mercadoLivreAccessToken}` } : {}),
         "user-agent": "NerdLingoLab supplier capture"
       }
     });
@@ -622,8 +641,8 @@ function extractMercadoLivreItemId(value) {
 
   try {
     const url = new URL(rawValue);
-    const queryItemId = normalizeMercadoLivreItemId(url.searchParams.get("wid"))
-      || normalizeMercadoLivreItemId(url.searchParams.get("item_id"));
+    const queryItemId = readMercadoLivreUrlParam(url, "wid")
+      || readMercadoLivreUrlParam(url, "item_id");
 
     if (queryItemId) {
       return queryItemId;
@@ -639,6 +658,19 @@ function extractMercadoLivreItemId(value) {
   }
 
   return "";
+}
+
+function readMercadoLivreUrlParam(url, name) {
+  const fromSearch = normalizeMercadoLivreItemId(url.searchParams.get(name));
+
+  if (fromSearch) {
+    return fromSearch;
+  }
+
+  const hash = url.hash.startsWith("#") ? url.hash.slice(1) : url.hash;
+  const fromHash = normalizeMercadoLivreItemId(new URLSearchParams(hash).get(name));
+
+  return fromHash || "";
 }
 
 function formatPriceFromNumber(value) {

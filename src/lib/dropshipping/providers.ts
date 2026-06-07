@@ -60,7 +60,16 @@ function extractMercadoLivreItemId(value: string): string | null {
 
 function readMercadoLivreQueryParam(value: string, name: string): string | null {
   try {
-    return new URL(value).searchParams.get(name);
+    const url = new URL(value);
+    const fromSearch = url.searchParams.get(name);
+
+    if (fromSearch) {
+      return fromSearch;
+    }
+
+    const hash = url.hash.startsWith("#") ? url.hash.slice(1) : url.hash;
+
+    return new URLSearchParams(hash).get(name);
   } catch {
     return null;
   }

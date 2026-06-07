@@ -8,6 +8,7 @@ import {
   ProductStatus,
   SupplierAlertSeverity,
   SupplierAlertStatus,
+  SupplierAlertType,
   SupplierSourceStatus
 } from "@/generated/prisma/client";
 import { env } from "@/lib/env";
@@ -18,6 +19,15 @@ export const dynamic = "force-dynamic";
 
 const staleProcessingMinutes = 30;
 const oldBackupHours = 30;
+const operationalSupplierAlertTypes = [
+  SupplierAlertType.API_ERROR,
+  SupplierAlertType.CONFIG_REQUIRED,
+  SupplierAlertType.LINK_INVALID,
+  SupplierAlertType.OUT_OF_STOCK,
+  SupplierAlertType.SOURCE_CLOSED,
+  SupplierAlertType.SOURCE_DELETED,
+  SupplierAlertType.SOURCE_PAUSED
+];
 
 type OpsState = "ok" | "degraded";
 
@@ -86,6 +96,7 @@ export async function GET(request: Request): Promise<NextResponse> {
         where: {
           severity: { in: [SupplierAlertSeverity.WARNING, SupplierAlertSeverity.CRITICAL] },
           status: SupplierAlertStatus.OPEN,
+          type: { in: operationalSupplierAlertTypes },
           productSource: {
             product: {
               status: { not: ProductStatus.ARCHIVED }

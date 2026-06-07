@@ -40,6 +40,24 @@ RUN npm run prisma:generate
 
 USER node
 
+FROM mcr.microsoft.com/playwright:v1.59.1-noble AS supplier-runner
+
+WORKDIR /app
+
+ENV NEXT_TELEMETRY_DISABLED="1"
+ENV NODE_ENV="production"
+ENV NPM_CONFIG_AUDIT="false"
+ENV NPM_CONFIG_FUND="false"
+ENV NPM_CONFIG_UPDATE_NOTIFIER="false"
+
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci --prefer-offline
+
+COPY . .
+RUN npm run prisma:generate && chmod +x ops/suppliers/run-assisted-price-capture.sh
+
+CMD ["bash", "ops/suppliers/run-assisted-price-capture.sh"]
+
 FROM base AS runner
 
 ENV HOSTNAME="0.0.0.0"

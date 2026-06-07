@@ -215,11 +215,17 @@ export default async function AdminSuppliersPage({
                 Importacao assistida
               </CardTitle>
               <CardDescription>
-                Baixe o CSV preciso, preencha pelo coletor local e reimporte aqui. A correspondência usa sourceId, URL e IDs externos para evitar trocar produto errado.
+                Use o coletor automatico do servidor ou baixe o CSV preciso para uma validacao local. A correspondência usa sourceId, URL e IDs externos para evitar trocar produto errado.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-3">
+                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs leading-5 text-emerald-950 dark:text-emerald-100">
+                  <p className="font-black">Automacao no servidor</p>
+                  <p>
+                    O runner dedicado com Playwright/Chromium atualiza origens ativas em ciclo proprio, sem pesar o container principal da loja. Capturas sem preco confiavel sao puladas para evitar lotar a revisao manual.
+                  </p>
+                </div>
                 <Button asChild variant="outline">
                   <Link href={exportCsvHref}>
                     <Download className="mr-2 size-4" />

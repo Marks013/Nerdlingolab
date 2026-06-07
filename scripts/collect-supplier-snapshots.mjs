@@ -15,6 +15,7 @@ const outputPath = path.resolve(args.output ?? defaultOutputPath);
 const userDataDir = path.resolve(args.profile ?? ".tmp/supplier-collector-profile");
 const limit = args.limit ? Number.parseInt(args.limit, 10) : undefined;
 const delayMs = args.delay ? Number.parseInt(args.delay, 10) : 900;
+const skipReviewOnly = Boolean(args.skipReviewOnly);
 
 if (!fs.existsSync(inputPath)) {
   throw new Error(`Arquivo de entrada nao encontrado: ${inputPath}`);
@@ -28,7 +29,14 @@ const input = readInputRows(inputText);
 const selectedRows = Number.isFinite(limit) ? input.rows.slice(0, limit) : input.rows;
 const outputHeaders = ensureColumns(input.headers, importColumns);
 const context = await chromium.launchPersistentContext(userDataDir, {
+  args: ["--disable-dev-shm-usage", "--no-sandbox"],
+  extraHTTPHeaders: {
+    "accept-language": "pt-BR,pt;q=0.9,en;q=0.6"
+  },
   headless: !args.headed,
+  locale: "pt-BR",
+  timezoneId: "America/Sao_Paulo",
+  userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
   viewport: { height: 900, width: 1366 }
 });
 const page = context.pages()[0] ?? await context.newPage();
@@ -36,6 +44,7 @@ const outputRows = input.rows.map((item) => alignRow(item.row, outputHeaders.len
 const runSummary = {
   priceCaptured: 0,
   stockCaptured: 0,
+  reviewOnlySkipped: 0,
   reviewRequired: 0,
   unavailable: 0,
   statusCounts: {}
@@ -55,22 +64,29 @@ try {
 
     const normalizedPrice = normalizePrice(snapshot.price);
     const suspiciousPrice = isSuspiciousPrice(normalizedPrice);
+    const reviewOnly = isReviewOnlySnapshot({
+      normalizedPrice,
+      snapshot,
+      suspiciousPrice
+    });
     const status = suspiciousPrice ? "CONFIG_REQUIRED" : snapshot.status;
     const note = suspiciousPrice
       ? appendNote(snapshot.note, `Preco coletado fora da faixa segura (R$ ${minimumReliablePrice.toFixed(2).replace(".", ",")} a R$ ${maximumReliablePrice.toFixed(2).replace(".", ",")}) e removido para revisao manual.`)
       : snapshot.note;
+    const shouldSkipReviewOnly = skipReviewOnly && reviewOnly;
 
     setColumn(row, outputHeaders, "provider", snapshot.provider);
-    setColumn(row, outputHeaders, "titulo_importacao", snapshot.title);
-    setColumn(row, outputHeaders, "preco_importacao", suspiciousPrice ? "" : normalizedPrice);
-    setColumn(row, outputHeaders, "estoque_importacao", snapshot.stock);
-    setColumn(row, outputHeaders, "status", status);
-    setColumn(row, outputHeaders, "note", note);
+    setColumn(row, outputHeaders, "titulo_importacao", shouldSkipReviewOnly ? "" : snapshot.title);
+    setColumn(row, outputHeaders, "preco_importacao", shouldSkipReviewOnly || suspiciousPrice ? "" : normalizedPrice);
+    setColumn(row, outputHeaders, "estoque_importacao", shouldSkipReviewOnly ? "" : snapshot.stock);
+    setColumn(row, outputHeaders, "status", shouldSkipReviewOnly ? "" : status);
+    setColumn(row, outputHeaders, "note", shouldSkipReviewOnly ? "" : note);
     setColumn(row, outputHeaders, "checkedAt", new Date().toISOString());
     incrementSummary(runSummary, {
-      price: suspiciousPrice ? "" : normalizedPrice,
-      stock: snapshot.stock,
-      status
+      price: shouldSkipReviewOnly || suspiciousPrice ? "" : normalizedPrice,
+      reviewOnlySkipped: shouldSkipReviewOnly,
+      stock: shouldSkipReviewOnly ? "" : snapshot.stock,
+      status: shouldSkipReviewOnly ? "SKIPPED_REVIEW_ONLY" : status
     });
     fs.writeFileSync(outputPath, toCsv([outputHeaders, ...outputRows], input.delimiter), "utf8");
   }
@@ -88,6 +104,10 @@ console.log(JSON.stringify({
 }, null, 2));
 
 function incrementSummary(summary, snapshot) {
+  if (snapshot.reviewOnlySkipped) {
+    summary.reviewOnlySkipped += 1;
+  }
+
   if (snapshot.price) {
     summary.priceCaptured += 1;
   }
@@ -105,6 +125,14 @@ function incrementSummary(summary, snapshot) {
   }
 
   summary.statusCounts[snapshot.status] = (summary.statusCounts[snapshot.status] || 0) + 1;
+}
+
+function isReviewOnlySnapshot(params) {
+  return !params.suspiciousPrice
+    && !params.normalizedPrice
+    && !params.snapshot.stock
+    && !params.snapshot.title
+    && params.snapshot.status === "CONFIG_REQUIRED";
 }
 
 function parseArgs(rawArgs) {
@@ -132,6 +160,8 @@ function parseArgs(rawArgs) {
     } else if (value === "--delay") {
       parsed.delay = rawArgs[index + 1];
       index += 1;
+    } else if (value === "--skip-review-only") {
+      parsed.skipReviewOnly = true;
     }
   }
 
@@ -217,6 +247,7 @@ async function runInteractiveLogin(context, page) {
 async function collectUrlSnapshot(page, url, delayMs) {
   try {
     await page.goto(url, { timeout: 45_000, waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("networkidle", { timeout: 8_000 }).catch(() => undefined);
     await page.waitForTimeout(delayMs);
 
     return await page.evaluate(() => {

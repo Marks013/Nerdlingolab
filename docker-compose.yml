@@ -220,6 +220,37 @@ services:
   # Billing/newsletter/dropshipping/marketing still execute inside this backend
   # through the /api/cron/* endpoints, but no polling cron containers run here.
 
+  supplier-capture-runner:
+    build:
+      context: .
+      target: supplier-runner
+    container_name: nerdlingolab-supplier-capture
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      <<: *app-environment
+      SUPPLIER_CAPTURE_DELAY_MS: ${SUPPLIER_CAPTURE_DELAY_MS:-1200}
+      SUPPLIER_CAPTURE_DIR: /supplier-capture
+      SUPPLIER_CAPTURE_IMPORT: ${SUPPLIER_CAPTURE_IMPORT:-true}
+      SUPPLIER_CAPTURE_INTERVAL_MINUTES: ${SUPPLIER_CAPTURE_INTERVAL_MINUTES:-720}
+      SUPPLIER_CAPTURE_LIMIT: ${SUPPLIER_CAPTURE_LIMIT:-}
+      SUPPLIER_CAPTURE_PROVIDER: ${SUPPLIER_CAPTURE_PROVIDER:-}
+      SUPPLIER_CAPTURE_QUERY: ${SUPPLIER_CAPTURE_QUERY:-}
+      SUPPLIER_CAPTURE_RUN_ON_START: ${SUPPLIER_CAPTURE_RUN_ON_START:-true}
+      SUPPLIER_CAPTURE_SCOPE: ${SUPPLIER_CAPTURE_SCOPE:-active}
+      SUPPLIER_CAPTURE_SKIP_REVIEW_ONLY: ${SUPPLIER_CAPTURE_SKIP_REVIEW_ONLY:-true}
+      SUPPLIER_CAPTURE_STATUS: ${SUPPLIER_CAPTURE_STATUS:-}
+      SUPPLIER_PLAYWRIGHT_PROFILE: /supplier-capture/profile
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: ${SUPPLIER_CAPTURE_HOST_DIR:-/srv/nerdlingolab/supplier-capture}
+        target: /supplier-capture
+    logging: *service-logging
+    networks:
+      - commerce
+
   backup-runner:
     image: postgres:16-alpine
     container_name: nerdlingolab-backup-runner

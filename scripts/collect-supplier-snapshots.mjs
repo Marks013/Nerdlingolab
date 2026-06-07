@@ -131,7 +131,6 @@ function isReviewOnlySnapshot(params) {
   return !params.suspiciousPrice
     && !params.normalizedPrice
     && !params.snapshot.stock
-    && !params.snapshot.title
     && params.snapshot.status === "CONFIG_REQUIRED";
 }
 

@@ -212,18 +212,18 @@ export default async function AdminSuppliersPage({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Upload className="size-5" />
-                Importacao assistida
+                Importação assistida
               </CardTitle>
               <CardDescription>
-                Use o coletor automatico do servidor ou baixe o CSV preciso para uma validacao local. A correspondência usa sourceId, URL e IDs externos para evitar trocar produto errado.
+                Use a coleta automática do servidor ou baixe o CSV preciso para uma validação local. A correspondência usa origem, URL e IDs externos para evitar trocar produto errado.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-3">
                 <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs leading-5 text-emerald-950 dark:text-emerald-100">
-                  <p className="font-black">Automacao no servidor</p>
+                  <p className="font-black">Automação no servidor</p>
                   <p>
-                    O runner dedicado com Playwright/Chromium atualiza origens ativas em ciclo proprio, sem pesar o container principal da loja. Capturas sem preco confiavel sao puladas para evitar lotar a revisao manual.
+                    A coleta dedicada atualiza origens ativas em ciclo próprio, sem pesar a loja. Capturas sem preço confiável são puladas para evitar excesso de revisão manual.
                   </p>
                 </div>
                 <Button asChild variant="outline">

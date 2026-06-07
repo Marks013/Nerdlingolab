@@ -474,7 +474,16 @@ const criticalSourceContracts = [
       ["assinatura Mercado Pago", "verifyMercadoPagoWebhookSignature(request, payload)"],
       ["persistência do webhook", "prisma.webhookEvent.upsert"],
       ["deduplicação provider/evento", "provider_externalEventId"],
-      ["processamento isolado", "processMercadoPagoPayment({"]
+      ["processamento isolado", "processBillingWebhookEvent(webhookEvent.id)"]
+    ]
+  },
+  {
+    filePath: "src/lib/payments/billing-webhook-processor.ts",
+    snippets: [
+      ["processamento Mercado Pago", "processMercadoPagoPayment({"],
+      ["retentativa recuperável", "isRecoverableMercadoPagoPaymentError(error)"],
+      ["fila de reprocessamento", "runBillingWebhookProcessor"],
+      ["dead letter", "scheduleRetryOrDeadLetter"]
     ]
   },
   {

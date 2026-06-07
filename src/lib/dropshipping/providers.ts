@@ -11,12 +11,12 @@ export function detectSupplierFromUrl(originalUrl: string): ParsedSupplierUrl | 
     return null;
   }
 
-  const mercadoLivreId = url.match(/\bMLB-?(\d{5,})\b/i)?.[1];
+  const mercadoLivreId = extractMercadoLivreItemId(url);
 
   if (/mercadolivre\.com|mercadolibre\.com/i.test(url) || mercadoLivreId) {
     return {
       provider: SupplierProvider.MERCADO_LIVRE,
-      externalId: mercadoLivreId ? `MLB${mercadoLivreId}` : null
+      externalId: mercadoLivreId
     };
   }
 
@@ -34,6 +34,42 @@ export function detectSupplierFromUrl(originalUrl: string): ParsedSupplierUrl | 
     provider: SupplierProvider.CUSTOM,
     externalId: null
   };
+}
+
+function extractMercadoLivreItemId(value: string): string | null {
+  const normalized = normalizeMercadoLivreItemId(readMercadoLivreQueryParam(value, "wid"))
+    ?? normalizeMercadoLivreItemId(readMercadoLivreQueryParam(value, "item_id"));
+
+  if (normalized) {
+    return normalized;
+  }
+
+  try {
+    const url = new URL(value);
+    const pathItemId = normalizeMercadoLivreItemId(url.pathname.match(/\/(MLB-?\d{5,})(?:[-_/]|$)/i)?.[1]);
+
+    if (pathItemId && !/\/p\/MLB/i.test(url.pathname)) {
+      return pathItemId;
+    }
+  } catch {
+    return normalizeMercadoLivreItemId(value);
+  }
+
+  return null;
+}
+
+function readMercadoLivreQueryParam(value: string, name: string): string | null {
+  try {
+    return new URL(value).searchParams.get(name);
+  } catch {
+    return null;
+  }
+}
+
+function normalizeMercadoLivreItemId(value: string | null | undefined): string | null {
+  const match = String(value ?? "").match(/\bMLB-?(\d{5,})\b/i);
+
+  return match ? `MLB${match[1]}` : null;
 }
 
 export async function fetchSupplierSnapshot(params: {

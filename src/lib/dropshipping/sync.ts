@@ -257,15 +257,17 @@ export async function updateManualProductSourceSnapshot(input: {
   }
 
   const now = new Date();
+  const nextPriceCents = input.priceCents ?? source.lastPriceCents;
+  const nextStockQuantity = input.stockQuantity ?? source.lastStockQuantity;
 
   await prisma.$transaction(async (tx) => {
     await tx.productSource.update({
       data: {
         lastCheckedAt: now,
-        lastCurrency: "BRL",
+        lastCurrency: input.priceCents !== null ? "BRL" : source.lastCurrency,
         lastError: input.note || null,
-        lastPriceCents: input.priceCents,
-        lastStockQuantity: input.stockQuantity,
+        lastPriceCents: nextPriceCents,
+        lastStockQuantity: nextStockQuantity,
         lastSuccessfulSyncAt: now,
         status: input.status
       },
@@ -364,6 +366,8 @@ async function persistSnapshot(
 ): Promise<void> {
   const previous = source.snapshots[0];
   const now = snapshot.fetchedAt;
+  const nextPriceCents = snapshot.priceCents ?? source.lastPriceCents;
+  const nextStockQuantity = snapshot.stockQuantity ?? source.lastStockQuantity;
 
   await prisma.$transaction(async (tx) => {
     await tx.productSource.update({
@@ -371,10 +375,10 @@ async function persistSnapshot(
         externalId: snapshot.externalId,
         externalShopId: snapshot.externalShopId,
         lastCheckedAt: now,
-        lastCurrency: snapshot.currency,
+        lastCurrency: snapshot.priceCents !== null ? snapshot.currency : source.lastCurrency,
         lastError: null,
-        lastPriceCents: snapshot.priceCents,
-        lastStockQuantity: snapshot.stockQuantity,
+        lastPriceCents: nextPriceCents,
+        lastStockQuantity: nextStockQuantity,
         lastSuccessfulSyncAt: now,
         status: snapshot.status,
         title: snapshot.title

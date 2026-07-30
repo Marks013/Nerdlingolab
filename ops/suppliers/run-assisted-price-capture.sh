@@ -70,8 +70,29 @@ run_with_timeout() {
   fi
 }
 
+resource_guard_allows() {
+  node - <<'NODE'
+const fs = require("node:fs");
+const path = process.env.RESOURCE_GUARD_STATUS_PATH || "/run/server-resource-guard/status.json";
+
+try {
+  const stat = fs.statSync(path);
+  const status = JSON.parse(fs.readFileSync(path, "utf8"));
+  const fresh = Date.now() - stat.mtimeMs <= 10 * 60 * 1000;
+  process.exit(fresh && status.acceptingHeavyJobs === false ? 1 : 0);
+} catch {
+  process.exit(0);
+}
+NODE
+}
+
 run_capture_once() {
   trap cleanup_lock RETURN EXIT INT TERM
+
+  if ! resource_guard_allows; then
+    log "Captura adiada: o servidor está preservando recursos neste momento."
+    return 0
+  fi
 
   cleanup_stale_lock
 

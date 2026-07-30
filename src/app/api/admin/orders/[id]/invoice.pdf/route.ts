@@ -4,6 +4,10 @@ import { NextResponse } from "next/server";
 import { isAdminSession } from "@/lib/admin";
 import { getAdminOrderById } from "@/lib/orders/queries";
 import { renderOrderInvoicePdf } from "@/lib/pdf/documents";
+import {
+  assertResourceCapacity,
+  ResourceCapacityError
+} from "@/lib/system/resource-capacity";
 
 interface OrderInvoiceRouteProps {
   params: Promise<{
@@ -17,6 +21,7 @@ export async function GET(_request: Request, { params }: OrderInvoiceRouteProps)
       return NextResponse.json({ message: "Acesso não autorizado." }, { status: 401 });
     }
 
+    await assertResourceCapacity();
     const { id } = await params;
     const order = await getAdminOrderById(id);
 
@@ -33,6 +38,13 @@ export async function GET(_request: Request, { params }: OrderInvoiceRouteProps)
       }
     });
   } catch (error) {
+    if (error instanceof ResourceCapacityError) {
+      return NextResponse.json(
+        { code: error.code, message: error.message },
+        { status: 503, headers: { "Retry-After": "300" } }
+      );
+    }
+
     Sentry.captureException(error);
 
     return NextResponse.json(

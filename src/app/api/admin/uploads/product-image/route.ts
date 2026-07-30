@@ -10,6 +10,11 @@ import { rateLimitRequest } from "@/lib/security/rate-limit";
 import { assertSameOriginRequest } from "@/lib/security/request";
 import { ensureProductImageBucket, getProductImagePublicUrl, minioClient, productImageBucketName } from "@/lib/storage";
 import {
+  assertResourceCapacity,
+  getRequestContentLength,
+  ResourceCapacityError
+} from "@/lib/system/resource-capacity";
+import {
   buildProductImageObjectName,
   ProductImageValidationError,
   validateProductImage,
@@ -44,6 +49,10 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ message: "A imagem deve ter até 5 MB." }, { status: 413 });
     }
 
+    await assertResourceCapacity({
+      inputBytes: getRequestContentLength(request),
+      multiplier: 3
+    });
     const formData = await request.formData();
     const parsedUpload = uploadSchema.safeParse({
       file: formData.get("file")
@@ -87,6 +96,13 @@ export async function POST(request: Request): Promise<NextResponse> {
       url
     });
   } catch (error) {
+    if (error instanceof ResourceCapacityError) {
+      return NextResponse.json(
+        { code: error.code, message: error.message },
+        { status: 503, headers: { "Retry-After": "300" } }
+      );
+    }
+
     if (error instanceof ProductImageValidationError) {
       return NextResponse.json({ message: error.message }, { status: error.status });
     }

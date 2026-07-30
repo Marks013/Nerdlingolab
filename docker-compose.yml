@@ -98,6 +98,10 @@ services:
     image: postgres:16-alpine
     container_name: nerdlingolab-postgres
     restart: unless-stopped
+    cpus: ${NERDLINGOLAB_POSTGRES_CPUS:-1.5}
+    mem_limit: ${NERDLINGOLAB_POSTGRES_MEMORY_LIMIT:-2g}
+    mem_reservation: ${NERDLINGOLAB_POSTGRES_MEMORY_RESERVATION:-512m}
+    pids_limit: ${NERDLINGOLAB_POSTGRES_PIDS_LIMIT:-256}
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-nerdlingolab}
       POSTGRES_USER: ${POSTGRES_USER:-nerdlingolab}
@@ -121,6 +125,10 @@ services:
     image: minio/minio:RELEASE.2024-12-18T13-15-44Z
     container_name: nerdlingolab-minio
     restart: unless-stopped
+    cpus: ${NERDLINGOLAB_MINIO_CPUS:-1.0}
+    mem_limit: ${NERDLINGOLAB_MINIO_MEMORY_LIMIT:-1536m}
+    mem_reservation: ${NERDLINGOLAB_MINIO_MEMORY_RESERVATION:-256m}
+    pids_limit: ${NERDLINGOLAB_MINIO_PIDS_LIMIT:-256}
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?MINIO_ROOT_USER is required}
@@ -187,6 +195,10 @@ services:
       args:
         NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: "${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY:?NEXT_SERVER_ACTIONS_ENCRYPTION_KEY is required. Generate with openssl rand -base64 32}"
     container_name: nerdlingolab-app
+    cpus: ${NERDLINGOLAB_APP_CPUS:-2.0}
+    mem_limit: ${NERDLINGOLAB_APP_MEMORY_LIMIT:-3g}
+    mem_reservation: ${NERDLINGOLAB_APP_MEMORY_RESERVATION:-768m}
+    pids_limit: ${NERDLINGOLAB_APP_PIDS_LIMIT:-384}
     depends_on:
       minio-create-bucket:
         condition: service_completed_successfully
@@ -197,6 +209,10 @@ services:
       - type: bind
         source: /srv/nerdlingolab/migration-backups
         target: /ops-backups
+        read_only: true
+      - type: bind
+        source: /var/lib/server-resource-guard/status.json
+        target: /run/server-resource-guard/status.json
         read_only: true
     healthcheck:
       test:
@@ -246,8 +262,10 @@ services:
       SUPPLIER_CAPTURE_STATUS: ${SUPPLIER_CAPTURE_STATUS:-}
       SUPPLIER_CAPTURE_STEP_TIMEOUT_MINUTES: ${SUPPLIER_CAPTURE_STEP_TIMEOUT_MINUTES:-45}
       SUPPLIER_PLAYWRIGHT_PROFILE: /supplier-capture/profile
-    cpus: ${SUPPLIER_CAPTURE_CPUS:-1.0}
-    mem_limit: ${SUPPLIER_CAPTURE_MEMORY_LIMIT:-1536m}
+    cpus: ${SUPPLIER_CAPTURE_CPUS:-1.25}
+    mem_limit: ${SUPPLIER_CAPTURE_MEMORY_LIMIT:-2g}
+    mem_reservation: ${SUPPLIER_CAPTURE_MEMORY_RESERVATION:-512m}
+    pids_limit: ${SUPPLIER_CAPTURE_PIDS_LIMIT:-512}
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -256,6 +274,10 @@ services:
       - type: bind
         source: ${SUPPLIER_CAPTURE_HOST_DIR:-/srv/nerdlingolab/supplier-capture}
         target: /supplier-capture
+      - type: bind
+        source: /var/lib/server-resource-guard/status.json
+        target: /run/server-resource-guard/status.json
+        read_only: true
     logging: *service-logging
     networks:
       - commerce
@@ -263,6 +285,9 @@ services:
   backup-runner:
     image: postgres:16-alpine
     container_name: nerdlingolab-backup-runner
+    cpus: ${NERDLINGOLAB_BACKUP_CPUS:-0.75}
+    mem_limit: ${NERDLINGOLAB_BACKUP_MEMORY_LIMIT:-1g}
+    pids_limit: ${NERDLINGOLAB_BACKUP_PIDS_LIMIT:-128}
     depends_on:
       postgres:
         condition: service_healthy
@@ -288,6 +313,10 @@ services:
       - type: bind
         source: /srv/nerdlingolab/migration-backups
         target: /backups
+      - type: bind
+        source: /var/lib/server-resource-guard/status.json
+        target: /run/server-resource-guard/status.json
+        read_only: true
     logging: *service-logging
     networks:
       - commerce

@@ -9,6 +9,11 @@ import { rateLimitRequest } from "@/lib/security/rate-limit";
 import { assertSameOriginRequest } from "@/lib/security/request";
 import { ensureProductImageBucket, getProductImagePublicUrl, minioClient, productImageBucketName } from "@/lib/storage";
 import { getProductReviewSettings } from "@/lib/reviews/settings";
+import {
+  assertResourceCapacity,
+  getRequestContentLength,
+  ResourceCapacityError
+} from "@/lib/system/resource-capacity";
 
 const uploadSchema = z.object({
   file: z.custom<File>((value) => value instanceof File)
@@ -51,6 +56,10 @@ export async function POST(request: Request): Promise<NextResponse> {
       return NextResponse.json({ message: "A mídia deve ter até 80 MB." }, { status: 413 });
     }
 
+    await assertResourceCapacity({
+      inputBytes: getRequestContentLength(request),
+      multiplier: 3
+    });
     const formData = await request.formData();
     const parsedUpload = uploadSchema.safeParse({
       file: formData.get("file")
@@ -75,6 +84,13 @@ export async function POST(request: Request): Promise<NextResponse> {
       url: asset.url
     });
   } catch (error) {
+    if (error instanceof ResourceCapacityError) {
+      return NextResponse.json(
+        { code: error.code, message: error.message },
+        { status: 503, headers: { "Retry-After": "300" } }
+      );
+    }
+
     if (error instanceof ReviewMediaUploadValidationError) {
       return NextResponse.json({ message: error.message }, { status: error.status });
     }

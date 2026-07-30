@@ -4,6 +4,10 @@ import { NextResponse } from "next/server";
 import { isAdminSession } from "@/lib/admin";
 import { renderAnnualReportPdf } from "@/lib/pdf/documents";
 import { getAdminAnnualReport, resolveReportFilters } from "@/lib/reports/queries";
+import {
+  assertResourceCapacity,
+  ResourceCapacityError
+} from "@/lib/system/resource-capacity";
 
 export async function GET(request: Request): Promise<NextResponse> {
   try {
@@ -11,6 +15,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       return NextResponse.json({ message: "Acesso não autorizado." }, { status: 401 });
     }
 
+    await assertResourceCapacity();
     const requestUrl = new URL(request.url);
     const filters = resolveReportFilters({
       endDate: requestUrl.searchParams.get("fim") ?? undefined,
@@ -26,6 +31,13 @@ export async function GET(request: Request): Promise<NextResponse> {
       }
     });
   } catch (error) {
+    if (error instanceof ResourceCapacityError) {
+      return NextResponse.json(
+        { code: error.code, message: error.message },
+        { status: 503, headers: { "Retry-After": "300" } }
+      );
+    }
+
     Sentry.captureException(error);
 
     return NextResponse.json(

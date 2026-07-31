@@ -250,6 +250,8 @@ services:
       SUPPLIER_CAPTURE_DELAY_MS: ${SUPPLIER_CAPTURE_DELAY_MS:-1200}
       SUPPLIER_CAPTURE_DIR: /supplier-capture
       SUPPLIER_CAPTURE_IMPORT: ${SUPPLIER_CAPTURE_IMPORT:-true}
+      SUPPLIER_CAPTURE_HEARTBEAT_INTERVAL_SECONDS: ${SUPPLIER_CAPTURE_HEARTBEAT_INTERVAL_SECONDS:-30}
+      SUPPLIER_CAPTURE_HEARTBEAT_PATH: /tmp/nerdlingolab-supplier-heartbeat
       SUPPLIER_CAPTURE_INTERVAL_MINUTES: ${SUPPLIER_CAPTURE_INTERVAL_MINUTES:-720}
       SUPPLIER_CAPTURE_LIMIT: ${SUPPLIER_CAPTURE_LIMIT:-}
       SUPPLIER_CAPTURE_PROVIDER: ${SUPPLIER_CAPTURE_PROVIDER:-}
@@ -267,6 +269,17 @@ services:
     mem_reservation: ${SUPPLIER_CAPTURE_MEMORY_RESERVATION:-512m}
     pids_limit: ${SUPPLIER_CAPTURE_PIDS_LIMIT:-512}
     restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "const fs=require('node:fs');const age=Date.now()-fs.statSync('/tmp/nerdlingolab-supplier-heartbeat').mtimeMs;process.exit(age<=90000?0:1)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    stop_grace_period: 60s
     security_opt:
       - no-new-privileges:true
     shm_size: "1gb"

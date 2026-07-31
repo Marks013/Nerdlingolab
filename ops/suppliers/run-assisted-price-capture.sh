@@ -17,6 +17,8 @@ profile_dir="${SUPPLIER_PLAYWRIGHT_PROFILE:-${capture_dir}/profile}"
 retention_days="${SUPPLIER_CAPTURE_RETENTION_DAYS:-14}"
 stale_lock_minutes="${SUPPLIER_CAPTURE_STALE_LOCK_MINUTES:-180}"
 step_timeout_minutes="${SUPPLIER_CAPTURE_STEP_TIMEOUT_MINUTES:-45}"
+heartbeat_path="${SUPPLIER_CAPTURE_HEARTBEAT_PATH:-/tmp/nerdlingolab-supplier-heartbeat}"
+heartbeat_interval_seconds="${SUPPLIER_CAPTURE_HEARTBEAT_INTERVAL_SECONDS:-30}"
 lock_dir="${capture_dir}/.capture.lock"
 lock_acquired=false
 
@@ -24,6 +26,10 @@ mkdir -p "${capture_dir}/input" "${capture_dir}/output" "${capture_dir}/logs" "$
 
 log() {
   printf '[%s] %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$*"
+}
+
+touch_heartbeat() {
+  touch "${heartbeat_path}"
 }
 
 cleanup_lock() {
@@ -63,11 +69,21 @@ cleanup_stale_lock() {
 }
 
 run_with_timeout() {
+  local child_pid elapsed
   if is_positive_integer "${step_timeout_minutes}" && command -v timeout >/dev/null 2>&1; then
-    timeout "${step_timeout_minutes}m" "$@"
+    timeout "${step_timeout_minutes}m" "$@" &
   else
-    "$@"
+    "$@" &
   fi
+  child_pid=$!
+  while kill -0 "${child_pid}" 2>/dev/null; do
+    touch_heartbeat
+    for ((elapsed = 0; elapsed < heartbeat_interval_seconds; elapsed++)); do
+      kill -0 "${child_pid}" 2>/dev/null || break
+      sleep 1
+    done
+  done
+  wait "${child_pid}"
 }
 
 resource_guard_allows() {
@@ -146,11 +162,24 @@ run_capture_once() {
 }
 
 sleep_interval() {
-  local seconds
-  seconds=$((interval_minutes * 60))
+  local remaining sleep_for
+  remaining=$((interval_minutes * 60))
   log "Proxima captura em ${interval_minutes} minuto(s)."
-  sleep "${seconds}"
+  while (( remaining > 0 )); do
+    touch_heartbeat
+    sleep_for="${heartbeat_interval_seconds}"
+    if (( remaining < sleep_for )); then
+      sleep_for="${remaining}"
+    fi
+    sleep "${sleep_for}"
+    remaining=$((remaining - sleep_for))
+  done
 }
+
+if ! is_positive_integer "${heartbeat_interval_seconds}"; then
+  heartbeat_interval_seconds=30
+fi
+touch_heartbeat
 
 if [[ "${run_once_mode}" == "true" ]]; then
   cleanup_old_artifacts
